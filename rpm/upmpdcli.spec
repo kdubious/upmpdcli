@@ -21,14 +21,14 @@ on Android tablets or phones.
 %build
 %configure
 %{__make} %{?_smp_mflags}
-%{__rm} -f %{buildroot}/usr/lib64/libupnpp.a
-%{__rm} -f %{buildroot}/usr/lib64/libupnpp.la
+%{__rm} -f %{buildroot}%{_libdir}/libupnpp.a
+%{__rm} -f %{buildroot}%{_libdir}/libupnpp.la
 
 %install
 %{__rm} -rf %{buildroot}
 %{__make} install DESTDIR=%{buildroot} STRIP=/bin/true INSTALL='install -p'
-%{__rm} -f %{buildroot}/usr/lib64/libupnpp.a
-%{__rm} -f %{buildroot}/usr/lib64/libupnpp.la
+%{__rm} -f %{buildroot}%{_libdir}/libupnpp.a
+%{__rm} -f %{buildroot}%{_libdir}/libupnpp.la
 %{__rm} -f %{buildroot}/etc/upmpdcli.conf
 
 %clean
