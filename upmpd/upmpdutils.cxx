@@ -14,6 +14,13 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
+
+// 
+// This file has a number of mostly uninteresting and badly
+// implemented small utility functions. This is a bit ugly, but I am
+// not linking to Qt or glib just to get path-concatenating
+// functions...
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -120,6 +127,7 @@ string path_cat(const string &s1, const string &s2) {
     res +=  s2;
     return res;
 }
+
 string path_home()
 {
     uid_t uid = getuid();
@@ -156,7 +164,6 @@ string path_tildexpand(const string &s)
     }
     return o;
 }
-
 
 void trimstring(string &s, const char *ws)
 {
@@ -202,6 +209,11 @@ int percentodbvalue(int value)
     }
     return dbvalue;
 }
+
+#ifdef __APPLE__
+#define exp10 __exp10
+#endif
+
 // Translate VolumeDB to MPD 0-100
 int dbvaluetopercent(int dbvalue)
 {
@@ -232,18 +244,21 @@ string upnpduration(int ms)
     return cbuf;
 }
 
+// H:M:S to seconds
 int upnpdurationtos(const string& dur)
 {
     int hours, minutes, seconds;
-    sscanf(dur.c_str(), "%d:%d:%d", &hours, &minutes, &seconds);
+    if (sscanf(dur.c_str(), "%d:%d:%d", &hours, &minutes, &seconds) != 3) {
+	return 0;
+    }
     return 3600 * hours + 60 * minutes + seconds;
 }
 
-// Get from ssl unordered_map, return empty string for non-existing key (so this
-// only works for data where this makes sense.
+// Get from ssl unordered_map, return empty string for non-existing
+// key (so this only works for data where this behaviour makes sense).
 const string& mapget(const unordered_map<string, string>& im, const string& k)
 {
-    static string ns;// null string
+    static string ns; // null string
     unordered_map<string, string>::const_iterator it = im.find(k);
     if (it == im.end())
         return ns;
@@ -300,12 +315,13 @@ string didlmake(const MpdStatus& mpds, bool next)
 
     // TBD: the res element normally has size, sampleFrequency,
     // nrAudioChannels and protocolInfo attributes, which are bogus
-    // for the moment. And mostly everything is bogus if next is
-    // set...  Bitrate keeps changing for VBRs and forces
-    // events. Keeping it out for now
+    // for the moment. partly because MPD does not supply them.  And
+    // mostly everything is bogus if next is set...  
 
     ss << "<res " << "duration=\"" << upnpduration(mpds.songlenms) << "\" "
-//       << "bitrate=\"" << mpds.kbrate << "\" "
+	// Bitrate keeps changing for VBRs and forces events. Keeping
+	// it out for now.
+	//       << "bitrate=\"" << mpds.kbrate << "\" "
        << "sampleFrequency=\"44100\" audioChannels=\"2\" "
        << "protocolInfo=\"http-get:*:audio/mpeg:DLNA.ORG_PN=MP3;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000\""
        << ">"

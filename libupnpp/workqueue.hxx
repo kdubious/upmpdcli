@@ -22,10 +22,10 @@
 
 #include <string>
 #include <queue>
-#include <tr1/unordered_map>
-#include <tr1/unordered_set>
-using std::tr1::unordered_map;
-using std::tr1::unordered_set;
+#include <unordered_map>
+#include <unordered_set>
+using std::unordered_map;
+using std::unordered_set;
 using std::queue;
 using std::string;
 

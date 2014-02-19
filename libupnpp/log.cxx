@@ -18,9 +18,9 @@
 
 #include <errno.h>
 
-using namespace std;
-
 #include "log.hxx"
+
+using namespace std;
 
 namespace upnppdebug {
 

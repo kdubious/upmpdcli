@@ -18,11 +18,19 @@ AC_TYPE_OFF_T
 AC_DEFINE([_LARGE_FILE_SOURCE], [], [Large files support])
 AC_DEFINE([_FILE_OFFSET_BITS], [64], [File Offset size])
 
-AC_CHECK_LIB([upnp], [UpnpInit], [true], AC_MSG_ERROR([libupnp not found]))
-AC_CHECK_LIB([mpdclient], [mpd_connection_new], [true],
-                          AC_MSG_ERROR([libmpdclient not found]))
+AC_CHECK_LIB([rt], [clock_gettime], [], [])
+AC_CHECK_LIB([pthread], [pthread_create], [], [])
+AC_CHECK_LIB([upnp], [UpnpInit], [], AC_MSG_ERROR([libupnp not found]))
+AC_CHECK_LIB([ixml], [ixmlDocument_getElementsByTagName], [], 
+		     AC_MSG_ERROR([libixml not found]))
+LIBUPNPP_LIBS="$LIBS"
+
+AC_CHECK_LIB([mpdclient], [mpd_connection_new], [],
+                     AC_MSG_ERROR([libmpdclient not found]))
                      
 AC_CHECK_FUNCS([getifaddrs] [UpnpSetLogLevel])
+
+AC_SUBST(LIBUPNPP_LIBS)
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

@@ -235,7 +235,7 @@ bool UpMpd::getEventData(bool all, const string& serviceid,
 
 bool UpMpd::rdstateMToU(unordered_map<string, string>& status)
 {
-	const struct MpdStatus &mpds = m_mpdcli->getStatus();
+	const MpdStatus &mpds = m_mpdcli->getStatus();
 
 	int volume = m_desiredvolume >= 0 ? m_desiredvolume : mpds.volume;
 	if (volume < 0)
@@ -456,7 +456,7 @@ int UpMpd::selectPreset(const SoapArgs& sc, SoapData& data)
 ///////////////// AVTransport methods
 
 // Translate MPD mode flags to UPnP Play mode
-static string mpdsToPlaymode(const struct MpdStatus& mpds)
+static string mpdsToPlaymode(const MpdStatus& mpds)
 {
 	string playmode = "NORMAL";
     if (!mpds.rept && mpds.random && !mpds.single)
@@ -510,7 +510,7 @@ static string mpdsToPlaymode(const struct MpdStatus& mpds)
 // Translate MPD state to UPnP AVTRansport state variables
 bool UpMpd::tpstateMToU(unordered_map<string, string>& status)
 {
-	const struct MpdStatus &mpds = m_mpdcli->getStatus();
+	const MpdStatus &mpds = m_mpdcli->getStatus();
 	//DEBOUT << "UpMpd::tpstateMToU: curpos: " << mpds.songpos <<
 	//   " qlen " << mpds.qlen << endl;
 	bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
@@ -643,7 +643,7 @@ int UpMpd::setAVTransportURI(const SoapArgs& sc, SoapData& data, bool setnext)
 		m_mpdcli->clearQueue();
 	}
 
-	const struct MpdStatus &mpds = m_mpdcli->getStatus();
+	const MpdStatus &mpds = m_mpdcli->getStatus();
 	bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
 		(mpds.state == MpdStatus::MPDS_PAUSE);
 	int curpos = mpds.songpos;
@@ -705,7 +705,7 @@ int UpMpd::setAVTransportURI(const SoapArgs& sc, SoapData& data, bool setnext)
 
 int UpMpd::getPositionInfo(const SoapArgs& sc, SoapData& data)
 {
-	const struct MpdStatus &mpds = m_mpdcli->getStatus();
+	const MpdStatus &mpds = m_mpdcli->getStatus();
 	//LOGDEB("UpMpd::getPositionInfo. State: " << mpds.state << endl);
 
 	bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
@@ -754,7 +754,7 @@ int UpMpd::getPositionInfo(const SoapArgs& sc, SoapData& data)
 
 int UpMpd::getTransportInfo(const SoapArgs& sc, SoapData& data)
 {
-	const struct MpdStatus &mpds = m_mpdcli->getStatus();
+	const MpdStatus &mpds = m_mpdcli->getStatus();
 	//LOGDEB("UpMpd::getTransportInfo. State: " << mpds.state << endl);
 
 	string tstate("STOPPED");
@@ -780,7 +780,7 @@ int UpMpd::getDeviceCapabilities(const SoapArgs& sc, SoapData& data)
 
 int UpMpd::getMediaInfo(const SoapArgs& sc, SoapData& data)
 {
-	const struct MpdStatus &mpds = m_mpdcli->getStatus();
+	const MpdStatus &mpds = m_mpdcli->getStatus();
 	LOGDEB("UpMpd::getMediaInfo. State: " << mpds.state << endl);
 
 	bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
@@ -818,7 +818,7 @@ int UpMpd::getMediaInfo(const SoapArgs& sc, SoapData& data)
 
 int UpMpd::playcontrol(const SoapArgs& sc, SoapData& data, int what)
 {
-	const struct MpdStatus &mpds = m_mpdcli->getStatus();
+	const MpdStatus &mpds = m_mpdcli->getStatus();
 	LOGDEB("UpMpd::playcontrol State: " << mpds.state <<" what "<<what<< endl);
 
 	if ((what & ~0x3)) {
@@ -858,7 +858,7 @@ int UpMpd::playcontrol(const SoapArgs& sc, SoapData& data, int what)
 
 int UpMpd::seqcontrol(const SoapArgs& sc, SoapData& data, int what)
 {
-	const struct MpdStatus &mpds = m_mpdcli->getStatus();
+	const MpdStatus &mpds = m_mpdcli->getStatus();
 	LOGDEB("UpMpd::seqcontrol State: " << mpds.state << " what "<<what<< endl);
 
 	if ((what & ~0x1)) {
@@ -913,7 +913,7 @@ int UpMpd::setPlayMode(const SoapArgs& sc, SoapData& data)
 
 int UpMpd::getTransportSettings(const SoapArgs& sc, SoapData& data)
 {
-	const struct MpdStatus &mpds = m_mpdcli->getStatus();
+	const MpdStatus &mpds = m_mpdcli->getStatus();
 	string playmode = mpdsToPlaymode(mpds);
 	data.addarg("PlayMode", playmode);
 	data.addarg("RecQualityMode", "NOT_IMPLEMENTED");
@@ -922,7 +922,7 @@ int UpMpd::getTransportSettings(const SoapArgs& sc, SoapData& data)
 
 int UpMpd::getCurrentTransportActions(const SoapArgs& sc, SoapData& data)
 {
-	const struct MpdStatus &mpds = m_mpdcli->getStatus();
+	const MpdStatus &mpds = m_mpdcli->getStatus();
 	string tactions("Next,Previous");
 	switch(mpds.state) {
 	case MpdStatus::MPDS_PLAY: 
@@ -956,7 +956,7 @@ int UpMpd::seek(const SoapArgs& sc, SoapData& data)
 
 	// LOGDEB("UpMpd::seek: unit " << unit << " target " << target);
 
-	const struct MpdStatus &mpds = m_mpdcli->getStatus();
+	const MpdStatus &mpds = m_mpdcli->getStatus();
 	int abs_seconds;
 	if (!unit.compare("ABS_TIME")) {
 		abs_seconds = upnpdurationtos(target);

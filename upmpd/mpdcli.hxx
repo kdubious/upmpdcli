@@ -21,7 +21,8 @@
 #include <string>
 #include <map>
 
-struct MpdStatus {
+class MpdStatus {
+public:
     enum State {MPDS_UNK, MPDS_STOP, MPDS_PLAY, MPDS_PAUSE};
     int volume;
     bool rept;
@@ -68,7 +69,7 @@ public:
     bool deleteId(int id);
     bool statId(int id);
     int curpos();
-    const struct MpdStatus& getStatus()
+    const MpdStatus& getStatus()
     {
         updStatus();
         return m_stat;

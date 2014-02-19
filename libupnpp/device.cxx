@@ -16,6 +16,9 @@
  */
 #include "config.h"
 
+#include <time.h>
+#include <sys/time.h>
+
 #include <iostream>
 using namespace std;
 
@@ -301,6 +304,20 @@ int timespec_diffms(const struct timespec& old, const struct timespec& recent)
     return (recent.tv_sec - old.tv_sec) * 1000 + 
         (recent.tv_nsec - old.tv_nsec) / (1000 * 1000);
 }
+
+#ifndef CLOCK_REALTIME
+// Mac OS X for one does not have clock_gettime. Gettimeofday is more than
+// enough for our needs.
+#define CLOCK_REALTIME 0
+int clock_gettime(int /*clk_id*/, struct timespec* t) {
+    struct timeval now;
+    int rv = gettimeofday(&now, NULL);
+    if (rv) return rv;
+    t->tv_sec  = now.tv_sec;
+    t->tv_nsec = now.tv_usec * 1000;
+    return 0;
+}
+#endif // ! CLOCK_REALTIME
 
 // Loop on services, and poll each for changed data. Generate event
 // only if changed data exists. Every 3 S we generate an artificial

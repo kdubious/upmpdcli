@@ -1,7 +1,8 @@
 
-# This should be from configure'd CFLAGS 
-AM_CPPFLAGS = -DDEBUG -g -Wall -std=c++0x \
+AM_CPPFLAGS = -DDEBUG -g -Wall \
             -DDATADIR=\"${pkgdatadir}\" -DCONFIGDIR=\"${sysconfdir}\"
+
+AM_CXXFLAGS = -std=c++0x 
 
 lib_LTLIBRARIES = libupnpp.la
 
@@ -36,12 +37,12 @@ libupnpp_la_SOURCES = \
     libupnpp/workqueue.hxx
 
 libupnpp_la_LDFLAGS = -release $(VERSION)
-libupnpp_la_LIBADD = -lixml -lupnp -lexpat -lpthread -lrt
+libupnpp_la_LIBADD = $(LIBUPNPP_LIBS)
 
 bin_PROGRAMS = upmpdcli #upexplorer 
 
 #upexplorer_SOURCES = upexplo/upexplo.cxx
-#upexplorer_LDADD = libupnpp.la -lixml -lupnp -lexpat -lpthread -lrt
+#upexplorer_LDADD = libupnpp.la
 #upexplorer_LDFLAGS = 
 
 upmpdcli_SOURCES = \
