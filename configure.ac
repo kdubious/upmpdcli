@@ -20,13 +20,17 @@ AC_DEFINE([_FILE_OFFSET_BITS], [64], [File Offset size])
 
 AC_CHECK_LIB([rt], [clock_gettime], [], [])
 AC_CHECK_LIB([pthread], [pthread_create], [], [])
-AC_CHECK_LIB([upnp], [UpnpInit], [], AC_MSG_ERROR([libupnp not found]))
 AC_CHECK_LIB([ixml], [ixmlDocument_getElementsByTagName], [], 
 		     AC_MSG_ERROR([libixml not found]))
+AC_CHECK_LIB([upnp], [UpnpInit], [], AC_MSG_ERROR([libupnp not found]))
+AC_CHECK_LIB([expat], [XML_ParserCreate], [], 
+		      AC_MSG_ERROR([libexpat not found]))
 LIBUPNPP_LIBS="$LIBS"
 
 AC_CHECK_LIB([mpdclient], [mpd_connection_new], [],
                      AC_MSG_ERROR([libmpdclient not found]))
+
+LIBS=""
                      
 AC_CHECK_FUNCS([getifaddrs] [UpnpSetLogLevel])
 
