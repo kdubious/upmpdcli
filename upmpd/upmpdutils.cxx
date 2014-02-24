@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <math.h>
 #include <pwd.h>
 #include <regex.h>
@@ -366,3 +367,113 @@ string regsub1(const string& sexp, const string& input, const string& repl)
     regfree(&expr);
     return out;
 }
+
+// We do not want to mess with the pidfile content in the destructor:
+// the lock might still be in use in a child process. In fact as much
+// as we'd like to reset the pid inside the file when we're done, it
+// would be very difficult to do it right and it's probably best left
+// alone.
+Pidfile::~Pidfile()
+{
+    if (m_fd >= 0)
+	::close(m_fd);
+    m_fd = -1;
+}
+
+pid_t Pidfile::read_pid()
+{
+    int fd = ::open(m_path.c_str(), O_RDONLY);
+    if (fd == -1)
+	return (pid_t)-1;
+
+    char buf[16];
+    int i = read(fd, buf, sizeof(buf) - 1);
+    ::close(fd);
+    if (i <= 0)
+	return (pid_t)-1;
+    buf[i] = '\0';
+    char *endptr;
+    pid_t pid = strtol(buf, &endptr, 10);
+    if (endptr != &buf[i])
+	return (pid_t)-1;
+    return pid;
+}
+
+int Pidfile::flopen()
+{
+    const char *path = m_path.c_str();
+    if ((m_fd = ::open(path, O_RDWR|O_CREAT, 0644)) == -1) {
+	m_reason = "Open failed: [" + m_path + "]: " + strerror(errno);
+	return -1;
+    }
+
+#ifdef sun
+    struct flock lockdata;
+    lockdata.l_start = 0;
+    lockdata.l_len = 0;
+    lockdata.l_type = F_WRLCK;
+    lockdata.l_whence = SEEK_SET;
+    if (fcntl(m_fd, F_SETLK,  &lockdata) != 0) {
+	int serrno = errno;
+	(void)::close(m_fd);
+	errno = serrno;
+	m_reason = "fcntl lock failed";
+	return -1;
+    }
+#else
+    int operation = LOCK_EX | LOCK_NB;
+    if (flock(m_fd, operation) == -1) {
+	int serrno = errno;
+	(void)::close(m_fd);
+	errno = serrno;
+	m_reason = "flock failed";
+	return -1;
+    }
+#endif // ! sun
+
+    if (ftruncate(m_fd, 0) != 0) {
+	/* can't happen [tm] */
+	int serrno = errno;
+	(void)::close(m_fd);
+	errno = serrno;
+	m_reason = "ftruncate failed";
+	return -1;
+    }
+    return 0;
+}
+
+pid_t Pidfile::open()
+{
+    if (flopen() < 0) {
+	return read_pid();
+    }
+    return (pid_t)0;
+}
+
+int Pidfile::write_pid()
+{
+    /* truncate to allow multiple calls */
+    if (ftruncate(m_fd, 0) == -1) {
+	m_reason = "ftruncate failed";
+	return -1;
+    }
+    char pidstr[20];
+    sprintf(pidstr, "%u", int(getpid()));
+    lseek(m_fd, 0, 0);
+    if (::write(m_fd, pidstr, strlen(pidstr)) != (ssize_t)strlen(pidstr)) {
+	m_reason = "write failed";
+	return -1;
+    }
+    return 0;
+}
+
+int Pidfile::close()
+{
+    return ::close(m_fd);
+}
+
+int Pidfile::remove()
+{
+    return unlink(m_path.c_str());
+}
+

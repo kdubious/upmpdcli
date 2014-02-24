@@ -18,6 +18,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 #include <string>
 #include <iostream>
@@ -1190,12 +1192,14 @@ int main(int argc, char *argv[])
 {
 	string mpdhost("localhost");
 	int mpdport = 6600;
-//	string upnplogfilename("/tmp/upmpd_libupnp.log");
+	// string upnplogfilename("/tmp/upmpd_libupnp.log");
 	string logfilename;
 	int loglevel(upnppdebug::Logger::LLINF);
 	string configfile;
 	string friendlyname(dfltFriendlyName);
 	bool ownqueue = true;
+	string upmpdcliuser("upmpdcli");
+	string pidfilename("/var/run/upmpdcli.run");
 
 	const char *cp;
 	if ((cp = getenv("UPMPD_HOST")))
@@ -1267,11 +1271,42 @@ int main(int argc, char *argv[])
 	}
 	upnppdebug::Logger::getTheLog("")->setLogLevel(upnppdebug::Logger::LogLevel(loglevel));
 
+    Pidfile pidfile(pidfilename);
+
+	// If started by root, do the pidfile + change uid thing
+	uid_t runas(0);
+	if (geteuid() == 0) {
+		struct passwd *pass = getpwnam(upmpdcliuser.c_str());
+		if (pass == 0) {
+			LOGFAT("upmpdcli won't run as root and user " << upmpdcliuser << 
+				   " does not exist " << endl);
+			return 1;
+		}
+		runas = pass->pw_uid;
+
+		pid_t pid;
+		if ((pid = pidfile.open()) != 0) {
+			LOGFAT("Can't open pidfile: " << pidfile.getreason() << 
+				   ". Return (other pid?): " << pid << endl);
+			return 1;
+		}
+		if (pidfile.write_pid() != 0) {
+			LOGFAT("Can't write pidfile: " << pidfile.getreason() << endl);
+			return 1;
+		}
+	}
+
 	if ((op_flags & OPT_D)) {
 		if (daemon(1, 0)) {
 			LOGFAT("Daemon failed: errno " << errno << endl);
 			return 1;
 		}
+	}
+
+	if (geteuid() == 0) {
+		// Need to rewrite pid, it may have changed with the daemon call
+		pidfile.write_pid();
+		setuid(runas);
 	}
 
 	// Initialize libupnpp, and check health

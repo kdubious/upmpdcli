@@ -43,7 +43,6 @@ bin_PROGRAMS = upmpdcli #upexplorer
 
 #upexplorer_SOURCES = upexplo/upexplo.cxx
 #upexplorer_LDADD = libupnpp.la
-#upexplorer_LDFLAGS = 
 
 upmpdcli_SOURCES = \
      upmpd/conftree.cxx \
@@ -59,6 +58,6 @@ upmpdcli_LDADD = libupnpp.la -lmpdclient
 dist_pkgdata_DATA = upmpd/description.xml upmpd/AVTransport.xml \
                   upmpd/RenderingControl.xml upmpd/ConnectionManager.xml
 
-#dist_sysconf_DATA = upmpd/upmpdcli.conf
+dist_sysconf_DATA = upmpd/upmpdcli.conf
 
 dist_man1_MANS = man/upmpdcli.1
