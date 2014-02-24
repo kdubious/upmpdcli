@@ -43,19 +43,28 @@ bool decodeSoapBody(const char *callnm, IXML_Document *actReq,
         cerr << "decodeSoap: Empty Action request (no topNode) ??" << endl;
         return false;
     }
-    //cerr << "decodeSoap: top node name: " << ixmlNode_getNodeName(topNode) 
-    //<< endl;
+    // cerr << "decodeSoap: top node name: " << ixmlNode_getNodeName(topNode) 
+    // << endl;
 
     nl = ixmlNode_getChildNodes(topNode);
     if (nl == 0) {
-        cerr << "decodeSoap: empty Action request (no childs) ??" << endl;
+        // cerr << "decodeSoap: empty Action request (no childs)" << endl;
         // Ok actually, there are no args
         return true;
     }
+    // cerr << "decodeSoap: childnodes list length: " << ixmlNodeList_length(nl)
+    // << endl;
+
     for (unsigned long i = 0; i <  ixmlNodeList_length(nl); i++) {
         IXML_Node *cld = ixmlNodeList_item(nl, i);
         if (cld == 0) {
-            cerr << "decodeSoap: got null node  from nodelist??" << endl;
+            // cerr << "decodeSoap: got null node  from nodelist at index " <<
+            // i << " ??" << endl;
+            // Seems to happen with empty arg list?? This looks like a bug, 
+            // should we not get an empty node instead?
+            if (i == 0) {
+                ret = true;
+            }
             goto out;
         }
         const char *name = ixmlNode_getNodeName(cld);

@@ -38,7 +38,7 @@ using namespace std::placeholders;
 
 static const string dfltFriendlyName("UpMpd");
 
-// The UPnP MPD frontend device with its 2 services
+// The UPnP MPD frontend device with its 3 services
 class UpMpd : public UpnpDevice {
 public:
 	enum Options {
@@ -76,13 +76,23 @@ public:
 									   std::vector<std::string>& names, 
 									   std::vector<std::string>& values);
 
-	// Re-implemented from the base class and shared by both services
+	// Connection Manager
+	int getCurrentConnectionIDs(const SoapArgs& sc, SoapData& data);
+	int getCurrentConnectionInfo(const SoapArgs& sc, SoapData& data);
+	int getProtocolInfo(const SoapArgs& sc, SoapData& data);
+	virtual bool getEventDataCM(bool all, std::vector<std::string>& names, 
+								std::vector<std::string>& values);
+
+	// Re-implemented from the base class and shared by all services
     virtual bool getEventData(bool all, const string& serviceid, 
 							  std::vector<std::string>& names, 
 							  std::vector<std::string>& values);
 
 private:
 	MPDCli *m_mpdcli;
+
+	string m_curMetadata;
+	string m_nextMetadata;
 
 	// State variable storage
 	unordered_map<string, string> m_rdstate;
@@ -105,6 +115,7 @@ private:
 
 static const string serviceIdRender("urn:upnp-org:serviceId:RenderingControl");
 static const string serviceIdTransport("urn:upnp-org:serviceId:AVTransport");
+static const string serviceIdCM("urn:upnp-org:serviceId:ConnectionManager");
 
 UpMpd::UpMpd(const string& deviceid, 
 			 const unordered_map<string, string>& xmlfiles,
@@ -190,6 +201,18 @@ UpMpd::UpMpd(const string& deviceid,
 	{	auto bound = bind(&UpMpd::seqcontrol, this, _1, _2, 1);
 		addActionMapping("Previous", bound);
 	}
+
+	addServiceType(serviceIdCM,
+				   "urn:schemas-upnp-org:service:ConnectionManager:1");
+	{	auto bound = bind(&UpMpd::getCurrentConnectionIDs, this, _1, _2);
+		addActionMapping("GetCurrentConnectionIDs", bound);
+	}
+	{	auto bound = bind(&UpMpd::getCurrentConnectionInfo, this, _1, _2);
+		addActionMapping("GetCurrentConnectionInfo", bound);
+	}
+	{	auto bound = bind(&UpMpd::getProtocolInfo, this, _1, _2);
+		addActionMapping("GetProtocolInfo", bound);
+	}
 }
 
 // This is called by the polling loop at regular intervals, or when
@@ -209,6 +232,8 @@ bool UpMpd::getEventData(bool all, const string& serviceid,
 		return getEventDataRendering(all, names, values);
 	} else if (!serviceid.compare(serviceIdTransport)) {
 		return getEventDataTransport(all, names, values);
+	} else if (!serviceid.compare(serviceIdCM)) {
+		return getEventDataCM(all, names, values);
 	} else {
 		LOGERR("UpMpd::getEventData: servid? [" << serviceid << "]" << endl);
 		return UPNP_E_INVALID_PARAM;
@@ -548,14 +573,16 @@ bool UpMpd::tpstateMToU(unordered_map<string, string>& status)
 	status["CurrentTrackDuration"] = is_song?
 		upnpduration(mpds.songlenms):"00:00:00";
 	status["AVTransportURI"] = uri;
-	status["AVTransportURIMetaData"] = is_song?didlmake(mpds) : "";
+	//status["AVTransportURIMetaData"] = is_song ? m_curMetadata : "";
+	status["AVTransportURIMetaData"] = is_song ? didlmake(mpds) : "";
 	status["RelativeTimePosition"] = is_song?
 		upnpduration(mpds.songelapsedms):"0:00:00";
 	status["AbsoluteTimePosition"] = is_song?
 		upnpduration(mpds.songelapsedms) : "0:00:00";
 
 	status["NextAVTransportURI"] = mapget(mpds.nextsong, "uri");
-	status["NextAVTransportURIMetaData"] = is_song?didlmake(mpds, true) : "";
+	//status["NextAVTransportURIMetaData"] = is_song ? m_nextMetadata : "";
+	status["NextAVTransportURIMetaData"] = is_song ? didlmake(mpds, true) : "";
 
 	status["PlaybackStorageMedium"] = playmedium;
 	status["PossiblePlaybackStorageMedium"] = "HDD,NETWORK";
@@ -634,6 +661,8 @@ int UpMpd::setAVTransportURI(const SoapArgs& sc, SoapData& data, bool setnext)
 		sc.args.find("CurrentURIMetaData");
 	if (it != sc.args.end())
 		metadata = it->second;
+	//cerr << "SetTransport: setnext " << setnext << " metadata[" << metadata <<
+	// "]" << endl;
 
 	if ((m_options & upmpdOwnQueue) && !setnext) {
 		// If we own the queue, just clear it before setting the
@@ -665,6 +694,11 @@ int UpMpd::setAVTransportURI(const SoapArgs& sc, SoapData& data, bool setnext)
 	if ((songid = m_mpdcli->insert(uri, setnext?curpos+1:curpos)) < 0) {
 		return UPNP_E_INTERNAL_ERROR;
 	}
+	if (setnext)
+		m_nextMetadata = metadata;
+	else
+		m_curMetadata = metadata;
+
 	if (!setnext) {
 		MpdStatus::State st = mpds.state;
 		// Have to tell mpd which track to play, else it will keep on
@@ -972,6 +1006,99 @@ int UpMpd::seek(const SoapArgs& sc, SoapData& data)
 	return m_mpdcli->seek(abs_seconds) ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
+///////////////// ConnectionManager methods
+
+// "http-get:*:audio/mpeg:DLNA.ORG_PN=MP3,"
+// "http-get:*:audio/L16:DLNA.ORG_PN=LPCM,"
+// "http-get:*:audio/x-flac:DLNA.ORG_PN=FLAC"
+static const string 
+myProtocolInfo(
+	"http-get:*:audio/wav:*,"
+	"http-get:*:audio/wave:*,"
+	"http-get:*:audio/x-wav:*,"
+	"http-get:*:audio/mpeg:*,"
+	"http-get:*:audio/x-mpeg:*,"
+	"http-get:*:audio/mp1:*,"
+	"http-get:*:audio/aac:*,"
+	"http-get:*:audio/flac:*,"
+	"http-get:*:audio/x-flac:*,"
+	"http-get:*:audio/m4a:*,"
+	"http-get:*:audio/mp4:*,"
+	"http-get:*:audio/x-m4a:*,"
+	"http-get:*:audio/vorbis:*,"
+	"http-get:*:audio/ogg:*,"
+	"http-get:*:audio/x-ogg:*,"
+	"http-get:*:audio/x-scpls:*,"
+	"http-get:*:audio/L16;rate=11025;channels=1:*,"
+	"http-get:*:audio/L16;rate=22050;channels=1:*,"
+	"http-get:*:audio/L16;rate=44100;channels=1:*,"
+	"http-get:*:audio/L16;rate=48000;channels=1:*,"
+	"http-get:*:audio/L16;rate=88200;channels=1:*,"
+	"http-get:*:audio/L16;rate=96000;channels=1:*,"
+	"http-get:*:audio/L16;rate=176400;channels=1:*,"
+	"http-get:*:audio/L16;rate=192000;channels=1:*,"
+	"http-get:*:audio/L16;rate=11025;channels=2:*,"
+	"http-get:*:audio/L16;rate=22050;channels=2:*,"
+	"http-get:*:audio/L16;rate=44100;channels=2:*,"
+	"http-get:*:audio/L16;rate=48000;channels=2:*,"
+	"http-get:*:audio/L16;rate=88200;channels=2:*,"
+	"http-get:*:audio/L16;rate=96000;channels=2:*,"
+	"http-get:*:audio/L16;rate=176400;channels=2:*,"
+	"http-get:*:audio/L16;rate=192000;channels=2:*"
+	);
+
+bool UpMpd::getEventDataCM(bool all, std::vector<std::string>& names, 
+						   std::vector<std::string>& values)
+{
+	//LOGDEB("UpMpd:getEventDataCM" << endl);
+
+	// Our data never changes, so if this is not an unconditional request,
+	// we return nothing.
+	if (all) {
+		names.push_back("SinkProtocolInfo");
+		values.push_back(myProtocolInfo);
+	}
+	return true;
+}
+
+int UpMpd::getCurrentConnectionIDs(const SoapArgs& sc, SoapData& data)
+{
+	LOGDEB("UpMpd:getCurrentConnectionIDs" << endl);
+	data.addarg("ConnectionIDs", "0");
+	return UPNP_E_SUCCESS;
+}
+
+int UpMpd::getCurrentConnectionInfo(const SoapArgs& sc, SoapData& data)
+{
+	LOGDEB("UpMpd:getCurrentConnectionInfo" << endl);
+	map<string, string>::const_iterator it;
+	it = sc.args.find("ConnectionID");
+	if (it == sc.args.end() || it->second.empty()) {
+		return UPNP_E_INVALID_PARAM;
+	}
+	if (it->second.compare("0")) {
+		return UPNP_E_INVALID_PARAM;
+	}
+
+	data.addarg("RcsID", "0");
+	data.addarg("AVTransportID", "0");
+	data.addarg("ProtocolInfo", "");
+	data.addarg("PeerConnectionManager", "");
+	data.addarg("PeerConnectionID", "-1");
+	data.addarg("Direction", "Input");
+	data.addarg("Status", "Unknown");
+
+	return UPNP_E_SUCCESS;
+}
+
+int UpMpd::getProtocolInfo(const SoapArgs& sc, SoapData& data)
+{
+	LOGDEB("UpMpd:getProtocolInfo" << endl);
+	data.addarg("Source", "");
+	data.addarg("Sink", myProtocolInfo);
+
+	return UPNP_E_SUCCESS;
+}
 
 /////////////////////////////////////////////////////////////////////
 // Main program
@@ -1013,6 +1140,12 @@ static string myDeviceUUID;
 
 static string datadir(DATADIR "/");
 static string configdir(CONFIGDIR "/");
+
+// Our XML description data. !Keep description.xml first!
+static const char *xmlfilenames[] = {/* keep first */ "description.xml", 
+	 "RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml"};
+
+static const int xmlfilenamescnt = sizeof(xmlfilenames) / sizeof(char *);
 
 int main(int argc, char *argv[])
 {
@@ -1125,46 +1258,30 @@ int main(int argc, char *argv[])
 	// Create unique ID
 	string UUID = LibUPnP::makeDevUUID(friendlyname);
 
-	// Read our XML data.
+	// Read our XML data to make it available from the virtual directory
 	string reason;
-
-	string description;
-	string filename = datadir + "description.xml";
-	if (!file_to_string(filename, description, &reason)) {
-		LOGFAT("Failed reading " << filename << " : " << reason << endl);
-		return 1;
-	}
-	// Update device description with UUID and friendlyname
-    description = regsub1("@UUID@", description, UUID);
-    description = regsub1("@FRIENDLYNAME@", description, friendlyname);
-
-	string rdc_scdp;
-	filename = datadir + "RenderingControl.xml";
-	if (!file_to_string(filename, rdc_scdp, &reason)) {
-		LOGFAT("Failed reading " << filename << " : " << reason << endl);
-		return 1;
-	}
-
-	string avt_scdp;
-	filename = datadir + "AVTransport.xml";
-	if (!file_to_string(filename, avt_scdp, &reason)) {
-		LOGFAT("Failed reading " << filename << " : " << reason << endl);
-		return 1;
-	}
-
-	// List the XML files to be served through http (all will live in '/')
 	unordered_map<string, string> xmlfiles;
-	xmlfiles["description.xml"] = description;
-	xmlfiles["RenderingControl.xml"] = rdc_scdp;
-	xmlfiles["AVTransport.xml"] = avt_scdp;
+	for (int i = 0; i < xmlfilenamescnt; i++) {
+		string filename = path_cat(datadir, xmlfilenames[i]);
+		string data;
+		if (!file_to_string(filename, data, &reason)) {
+			LOGFAT("Failed reading " << filename << " : " << reason << endl);
+			return 1;
+		}
+		if (i == 0) {
+			// Special for description: set UUID and friendlyname
+			data = regsub1("@UUID@", data, UUID);
+			data = regsub1("@FRIENDLYNAME@", data, friendlyname);
+		}
+		xmlfiles[xmlfilenames[i]] = data;
+	}
 
 	// Initialize the UPnP device object.
 	UpMpd device(string("uuid:") + UUID, xmlfiles, &mpdcli,
-				 ownqueue?UpMpd::upmpdOwnQueue:UpMpd::upmpdNone);
-
-	LOGDEB("Entering event loop" << endl);
+				 ownqueue ? UpMpd::upmpdOwnQueue : UpMpd::upmpdNone);
 
 	// And forever generate state change events.
+	LOGDEB("Entering event loop" << endl);
 	device.eventloop();
 
 	return 0;
