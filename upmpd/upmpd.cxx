@@ -92,6 +92,7 @@ private:
 	MPDCli *m_mpdcli;
 
 	string m_curMetadata;
+	string m_nextUri;
 	string m_nextMetadata;
 
 	// State variable storage
@@ -563,7 +564,15 @@ bool UpMpd::tpstateMToU(unordered_map<string, string>& status)
 	const string& uri = mapget(mpds.currentsong, "uri");
 	status["CurrentTrack"] = "1";
 	status["CurrentTrackURI"] = uri;
-	status["CurrentTrackMetaData"] = is_song?didlmake(mpds) : "";
+
+	// If we own the queue, just use the metadata from the content directory.
+	// else, try to make up something from mpd status.
+	if ((m_options & upmpdOwnQueue)) {
+		status["CurrentTrackMetaData"] = is_song ? m_curMetadata : "";
+	} else {
+		status["CurrentTrackMetaData"] = is_song ? didlmake(mpds) : "";
+	}
+
 	string playmedium("NONE");
 	if (is_song)
 		playmedium = uri.find("http://") == 0 ?	"HDD" : "NETWORK";
@@ -573,16 +582,22 @@ bool UpMpd::tpstateMToU(unordered_map<string, string>& status)
 	status["CurrentTrackDuration"] = is_song?
 		upnpduration(mpds.songlenms):"00:00:00";
 	status["AVTransportURI"] = uri;
-	//status["AVTransportURIMetaData"] = is_song ? m_curMetadata : "";
-	status["AVTransportURIMetaData"] = is_song ? didlmake(mpds) : "";
+	if ((m_options & upmpdOwnQueue)) {
+		status["AVTransportURIMetaData"] = is_song ? m_curMetadata : "";
+	} else {
+		status["AVTransportURIMetaData"] = is_song ? didlmake(mpds) : "";
+	}
 	status["RelativeTimePosition"] = is_song?
 		upnpduration(mpds.songelapsedms):"0:00:00";
 	status["AbsoluteTimePosition"] = is_song?
 		upnpduration(mpds.songelapsedms) : "0:00:00";
 
 	status["NextAVTransportURI"] = mapget(mpds.nextsong, "uri");
-	//status["NextAVTransportURIMetaData"] = is_song ? m_nextMetadata : "";
-	status["NextAVTransportURIMetaData"] = is_song ? didlmake(mpds, true) : "";
+	if ((m_options & upmpdOwnQueue)) {
+		status["NextAVTransportURIMetaData"] = is_song ? m_nextMetadata : "";
+	} else {
+		status["NextAVTransportURIMetaData"] = is_song?didlmake(mpds, true) :"";
+	}
 
 	status["PlaybackStorageMedium"] = playmedium;
 	status["PossiblePlaybackStorageMedium"] = "HDD,NETWORK";
@@ -694,10 +709,16 @@ int UpMpd::setAVTransportURI(const SoapArgs& sc, SoapData& data, bool setnext)
 	if ((songid = m_mpdcli->insert(uri, setnext?curpos+1:curpos)) < 0) {
 		return UPNP_E_INTERNAL_ERROR;
 	}
-	if (setnext)
+
+	metadata = regsub1("<\\?xml.*\\?>", metadata, "");
+	if (setnext) {
+		m_nextUri = uri;
 		m_nextMetadata = metadata;
-	else
+	} else {
 		m_curMetadata = metadata;
+		m_nextUri = "";
+		m_nextMetadata = "";
+	}
 
 	if (!setnext) {
 		MpdStatus::State st = mpds.state;
@@ -720,19 +741,24 @@ int UpMpd::setAVTransportURI(const SoapArgs& sc, SoapData& data, bool setnext)
 		}
 #endif
 		// Clean up old song ids
-		for (set<int>::iterator it = m_songids.begin();
-			 it != m_songids.end(); it++) {
-			// Can't just delete here. If the id does not exist, MPD 
-			// gets into an apparently permanent error state, where even 
-			// get_status does not work
-			if (m_mpdcli->statId(*it)) {
-				m_mpdcli->deleteId(*it);
+		if (!(m_options & upmpdOwnQueue)) {
+			for (set<int>::iterator it = m_songids.begin();
+				 it != m_songids.end(); it++) {
+				// Can't just delete here. If the id does not exist, MPD 
+				// gets into an apparently permanent error state, where even 
+				// get_status does not work
+				if (m_mpdcli->statId(*it)) {
+					m_mpdcli->deleteId(*it);
+				}
 			}
+			m_songids.clear();
 		}
-		m_songids.clear();
 	}
 
-	m_songids.insert(songid);
+	if (!(m_options & upmpdOwnQueue)) {
+		m_songids.insert(songid);
+	}
+
 	loopWakeup();
 	return UPNP_E_SUCCESS;
 }
@@ -758,7 +784,11 @@ int UpMpd::getPositionInfo(const SoapArgs& sc, SoapData& data)
 	}
 
 	if (is_song) {
-		data.addarg("TrackMetaData", didlmake(mpds));
+		if ((m_options & upmpdOwnQueue)) {
+			data.addarg("TrackMetaData", m_curMetadata);
+		} else {
+			data.addarg("TrackMetaData", didlmake(mpds));
+		}
 	} else {
 		data.addarg("TrackMetaData", "");
 	}
@@ -834,12 +864,21 @@ int UpMpd::getMediaInfo(const SoapArgs& sc, SoapData& data)
 		data.addarg("CurrentURI", "");
 	}
 	if (is_song) {
-		data.addarg("CurrentURIMetaData", didlmake(mpds));
+		if ((m_options & upmpdOwnQueue)) {
+			data.addarg("CurrentURIMetaData", m_curMetadata);
+		} else {
+			data.addarg("CurrentURIMetaData", didlmake(mpds));
+		}
 	} else {
 		data.addarg("CurrentURIMetaData", "");
 	}
-	data.addarg("NextURI", "NOT_IMPLEMENTED");
-	data.addarg("NextURIMetaData", "NOT_IMPLEMENTED");
+	if ((m_options & upmpdOwnQueue)) {
+		data.addarg("NextURI", m_nextUri);
+		data.addarg("NextURIMetaData", is_song ? m_nextMetadata : "");
+	} else {
+		data.addarg("NextURI", mapget(mpds.nextsong, "uri"));
+		data.addarg("NextURIMetaData", is_song ? didlmake(mpds, true) : "");
+	}
 	string playmedium("NONE");
 	if (is_song)
 		playmedium = thisuri.find("http://") == 0 ?	"HDD" : "NETWORK";
