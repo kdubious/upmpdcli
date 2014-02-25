@@ -9,7 +9,7 @@ Homepage: http://www.lesbonscomptes.com/upmpdcli
 
 Package: upmpdcli
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
 Description: UPnP Media Renderer front-end to MPD, the Music Player Daemon
  upmpdcli acts as an UPnP Media Renderer on the front-end so that you can
  control it with any UPnP controller like, e.g. Audionet or BubbleUPnP on an

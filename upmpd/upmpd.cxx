@@ -1199,7 +1199,7 @@ int main(int argc, char *argv[])
 	string friendlyname(dfltFriendlyName);
 	bool ownqueue = true;
 	string upmpdcliuser("upmpdcli");
-	string pidfilename("/var/run/upmpdcli.run");
+	string pidfilename("/var/run/upmpdcli.pid");
 
 	const char *cp;
 	if ((cp = getenv("UPMPD_HOST")))

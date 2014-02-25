@@ -1,3 +1,9 @@
+upmpdcli (0.6-1) unstable; urgency=low
+
+  * Implemented minimal connection manager
+  * Help for starting at boot: run as upmpdcli user after starting as root
+
+ -- Jean-Francois Dockes <jf@dockes.org>  Tue, 25 Feb 2014 14:03:00 +0100
 upmpdcli (0.5-1) unstable; urgency=low
 
   * Cache volume value when mpd is inactive.
