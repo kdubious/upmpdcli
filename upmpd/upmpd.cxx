@@ -1306,7 +1306,11 @@ int main(int argc, char *argv[])
 	if (geteuid() == 0) {
 		// Need to rewrite pid, it may have changed with the daemon call
 		pidfile.write_pid();
-		setuid(runas);
+		if (setuid(runas) < 0) {
+			LOGFAT("Can't set my uid to " << runas << " current: " << geteuid()
+				   << endl);
+			return 1;
+		}
 	}
 
 	// Initialize libupnpp, and check health
