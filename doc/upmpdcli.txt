@@ -77,8 +77,8 @@ If started by `root`, *upmpdcli* will also write its process id to
 `/var/run/upmpdcli.pid`.
 
 This should make it reasonably easy to write an init script for the
-daemon. Such a script exists in the `debian` directory inside the source
-tree.
+daemon. Such a script exists in the `debian/` directory inside the source
+tree. There is also a systemd service file under `systemd/`
 
 [[upmpdcli.downloads]]
 == Source code, packages
