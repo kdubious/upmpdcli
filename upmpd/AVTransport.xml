@@ -86,6 +86,8 @@
       <dataType>ui4</dataType>
       <allowedValueRange>
         <minimum>0</minimum>
+        <maximum>2000</maximum>
+        <step>1</step>
       </allowedValueRange>
     </stateVariable>
     <stateVariable>
@@ -94,6 +96,7 @@
       <dataType>ui4</dataType>
       <allowedValueRange>
         <minimum>0</minimum>
+        <maximum>2000</maximum>
         <step>1</step>
       </allowedValueRange>
     </stateVariable>
