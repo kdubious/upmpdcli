@@ -1057,6 +1057,7 @@ myProtocolInfo(
 	"http-get:*:audio/wav:*,"
 	"http-get:*:audio/wave:*,"
 	"http-get:*:audio/x-wav:*,"
+	"http-get:*:audio/x-aiff:*,"
 	"http-get:*:audio/mpeg:*,"
 	"http-get:*:audio/x-mpeg:*,"
 	"http-get:*:audio/mp1:*,"
@@ -1192,7 +1193,7 @@ int main(int argc, char *argv[])
 {
 	string mpdhost("localhost");
 	int mpdport = 6600;
-	// string upnplogfilename("/tmp/upmpd_libupnp.log");
+	string upnplogfilename("/tmp/upmpdcli_libupnp.log");
 	string logfilename;
 	int loglevel(upnppdebug::Logger::LLINF);
 	string configfile;
@@ -1306,6 +1307,11 @@ int main(int argc, char *argv[])
 	if (geteuid() == 0) {
 		// Need to rewrite pid, it may have changed with the daemon call
 		pidfile.write_pid();
+		if (!logfilename.empty() && logfilename.compare("stderr")) {
+			if (chown(logfilename.c_str(), runas, -1) < 0) {
+				LOGERR("chown("<<logfilename<<") : errno : " << errno << endl);
+			}
+		}
 		if (setuid(runas) < 0) {
 			LOGFAT("Can't set my uid to " << runas << " current: " << geteuid()
 				   << endl);
@@ -1314,17 +1320,25 @@ int main(int argc, char *argv[])
 	}
 
 	// Initialize libupnpp, and check health
-	LibUPnP *mylib = LibUPnP::getLibUPnP(true);
-	if (!mylib) {
-		LOGFAT("Can't get LibUPnP" << endl);
-		return 1;
+	LibUPnP *mylib = 0;
+	int libretrysecs = 10;
+    for (;;) {
+		// Libupnp init fails if we're started at boot and the network
+		// is not ready yet. So retry this forever
+		mylib = LibUPnP::getLibUPnP(true);
+		if (mylib) {
+			break;
+		}
+		sleep(libretrysecs);
+		libretrysecs = MIN(2*libretrysecs, 120);
 	}
+
 	if (!mylib->ok()) {
 		LOGFAT("Lib init failed: " <<
 			   mylib->errAsString("main", mylib->getInitError()) << endl);
 		return 1;
 	}
-	// mylib->setLogFileName(upnplogfilename, LibUPnP::LogLevelDebug);
+	//mylib->setLogFileName(upnplogfilename, LibUPnP::LogLevelDebug);
 
 	// Initialize MPD client module
 	MPDCli mpdcli(mpdhost, mpdport);

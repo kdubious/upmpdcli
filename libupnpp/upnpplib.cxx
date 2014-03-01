@@ -47,8 +47,11 @@ LibUPnP *LibUPnP::getLibUPnP(bool server)
 {
 	if (theLib == 0)
 		theLib = new LibUPnP(server);
-	if (theLib && !theLib->ok())
+	if (theLib && !theLib->ok()) {
+		delete theLib;
+		theLib = 0;
 		return 0;
+	}
 	return theLib;
 }
 
@@ -58,7 +61,7 @@ LibUPnP::LibUPnP(bool server)
 {
 	m_init_error = UpnpInit(0, 0);
 	if (m_init_error != UPNP_E_SUCCESS) {
-		cerr << errAsString("UpnpInit", m_init_error) << endl;
+		LOGERR(errAsString("UpnpInit", m_init_error) << endl);
 		return;
 	}
 	setMaxContentLength(2000*1024);
@@ -81,7 +84,7 @@ LibUPnP::LibUPnP(bool server)
 		if (m_init_error == UPNP_E_SUCCESS) {
 			m_ok = true;
 		} else {
-			cerr << errAsString("UpnpRegisterClient", m_init_error) << endl;
+			LOGERR(errAsString("UpnpRegisterClient", m_init_error) << endl);
 		}
 	}
 
@@ -100,7 +103,7 @@ int LibUPnP::setupWebServer(const string& description)
 		o_callback, (void *)this, &m_dvh);
 
 	if (res != UPNP_E_SUCCESS) {
-		cerr << errAsString("UpnpRegisterRootDevice2", m_init_error) << endl;
+		LOGERR(errAsString("UpnpRegisterRootDevice2", m_init_error) << endl);
 	}
 	return res;
 }
@@ -123,7 +126,7 @@ bool LibUPnP::setLogFileName(const std::string& fn, LogLevel level)
 		UpnpSetLogFileNames(fn.c_str(), fn.c_str());
 		int code = UpnpInitLog();
 		if (code != UPNP_E_SUCCESS) {
-			cerr << errAsString("UpnpInitLog", code);
+			LOGERR(errAsString("UpnpInitLog", code) << endl);
 			return false;
 		}
 #endif
@@ -204,7 +207,7 @@ string LibUPnP::makeDevUUID(const string& name)
 
 	char hw[20];
 	if (getsyshwaddr(hw, 13) < 0) {
-		cerr << "LibUPnP::makeDevUUID: failed retrieving hw addr" << endl;
+		LOGERR("LibUPnP::makeDevUUID: failed retrieving hw addr" << endl);
 		strcpy(hw, "2e87682c5ce8");
 	}
 	char uuid[100];
