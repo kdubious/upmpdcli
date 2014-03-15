@@ -3,8 +3,8 @@
 [[upmpdcli.intro]]
 == Introduction
 
-*upmpdcli* is an UPnP Media Renderer front-end to *mpd*, the Music Player
-Daemon. It turns *mpd* into an UPnP Media Renderer. 
+*upmpdcli* is an UPnP Media Renderer front-end to *MPD*, the Music Player
+Daemon. It turns *MPD* into an UPnP Media Renderer. 
 
 *upmpdcli* is open-source, free and licensed under the GPL. It is written
 in C++ and uses the *libupnp* (1.6) and *libmpdclient* libraries.
@@ -15,24 +15,29 @@ The typical setup is a home network with:
   device).
 - An UPnP control point (e.g. *Audionet* or *Bubble UPnP* running on a
   tablet or phone). 
-- *mpd* running on some Linux device (e.g. Raspberry PI hooked up to your
+- *MPD* running on some Linux device (e.g. Raspberry PI hooked up to your
   bedroom stereo). 
 - *upmpdcli* running on any Linux computer on the network (the same as
-  *mpd* or not). It will be discovered by the UPnP control point in a
+  *MPD* or not). It will be discovered by the UPnP control point in a
   standard fashion.
 
-In this usage, *mpd* does not manage the audio files directly and its
+image::upmpdcli.png["Basic flow", float="right"]
+
+In this usage, *MPD* does not manage the audio files directly and its
 configured music directory will typically be empty. It fetches them from
 the Media Server through HTTP, using the *curl* input plugin, and does not
 need a local tags database.
 
+When used with an appropriate control point, the *upmpdcli*/*MPD*
+combination supports gapless playback.
+
 _What's the point ?_ If you are running an UPnP network with multiple
 devices, you may prefer to use a single control application (UPnP-based)
-for everything. *mpd* is a very capable and robust music-playing application,
+for everything. *MPD* is a very capable and robust music-playing application,
 which runs well on small computers (e.g. Raspberry PI or other "plug" type
 computers). However it needs a specific control application.
 
-*upmpdcli* lets you control your *mpd*-based players with your UPnP control
+*upmpdcli* lets you control your *MPD*-based players with your UPnP control
 point.
 
 [[upmpdcli.config]]
@@ -58,9 +63,9 @@ The following parameters can be set:
 |========================
 |What|Command line|Environment|Config variable
 |Configuration file name|-c config|$UPMPD_CONFIG|
-|Host name or IP address where *mpd* runs|-h mpdhost|$UPMPD_HOST|mpdhost
-|TCP port for *mpd*|-p mpdport|$UPMPD_PORT|mpdport
-|Do we own the *mpd* queue and fearlessly clear it|-o 0/1||ownqueue
+|Host name or IP address where *MPD* runs|-h mpdhost|$UPMPD_HOST|mpdhost
+|TCP port for *MPD*|-p mpdport|$UPMPD_PORT|mpdport
+|Do we own the *MPD* queue and fearlessly clear it|-o 0/1||ownqueue
 |UPnP "friendly name" for the device. This gets displayed in network search
   results.|-f friendlyname|$UPMPD_FRIENDLYNAME|friendlyname 
 |Log file name. Leave empty for stderr|-d logfilename||logfilename
