@@ -1,3 +1,9 @@
+upmpdcli (0.6.2-1) unstable; urgency=low
+
+  * Retry libupnp until we get a network
+  * Publish our aiff capability
+
+ -- Jean-Francois Dockes <jf@dockes.org>  Sun, 02 March 2014 14:03:00 +0100
 upmpdcli (0.6.1-1) unstable; urgency=low
 
   * Implemented minimal connection manager
