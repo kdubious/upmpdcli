@@ -51,6 +51,9 @@ public:
 	 */
 	static UPnPDeviceDirectory *getTheDir(time_t search_window = 1);
 
+	/** Clean up before exit. Do call this.*/
+	static void terminate();
+
 	/** Retrieve the directory services currently seen on the network */
 	bool getDirServices(std::vector<ContentDirectoryService>&);
 	/** Retrieve specific service designated by its friendlyName */

@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
 	} else {
 		Usage();
 	}
-
+	superdir->terminate();
 	return 0;
 }
 

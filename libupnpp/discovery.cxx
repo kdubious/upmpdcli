@@ -35,6 +35,7 @@ using namespace std;
 #include "description.hxx"
 #include "cdirectory.hxx"
 #include "discovery.hxx"
+#include "log.hxx"
 
 // The service type string we are looking for.
 static const string
@@ -135,38 +136,45 @@ static void *discoExplorer(void *)
 		}
 		PLOGDEB("discoExplorer: alive %d deviceId [%s] URL [%s]\n",
 				tsk->alive, tsk->deviceId.c_str(), tsk->url.c_str());
-		PTMutexLocker lock(contentDirectories.m_mutex);
 		if (!tsk->alive) {
 			// Device signals it is going off.
+			PTMutexLocker lock(contentDirectories.m_mutex);
 			DirPoolIt it = contentDirectories.m_directories.find(tsk->deviceId);
 			if (it != contentDirectories.m_directories.end()) {
 				contentDirectories.m_directories.erase(it);
-				PLOGDEB("discoExplorer: delete [%s]\n", tsk->deviceId.c_str());
+				//LOGDEB("discoExplorer: delete " << tsk->deviceId.c_str() << 
+				// endl);
 			}
 		} else {
 			// Device signals its existence and well-being. Perform the
 			// UPnP "description" phase by downloading and decoding the
 			// description document.
-			char *buf;
+			char *buf = 0;
 			// LINE_SIZE is defined by libupnp's upnp.h...
 			char contentType[LINE_SIZE];
 			int code = UpnpDownloadUrlItem(tsk->url.c_str(), &buf, contentType);
 			if (code != UPNP_E_SUCCESS) {
-				cerr << LibUPnP::errAsString("discoExplorer", code) << endl;
+				LOGERR(LibUPnP::errAsString("discoExplorer", code) << endl);
 				continue;
 			}
 			string sdesc(buf);
-			PLOGDEB("discoExplorer: downloaded description document of "
-					"%d bytes\n", int(sdesc.size()));
+			free(buf);
+			
+			//LOGDEB("discoExplorer: downloaded description document of " <<
+			//   sdesc.size() << " bytes" << endl);
 
 			// Update or insert the device
 			ContentDirectoryDescriptor d(tsk->url, sdesc,
 										 time(0), tsk->expires);
 			if (!d.device.ok) {
-				PLOGDEB("discoExplorer: description parse failed\n");
+				LOGERR("discoExplorer: description parse failed for " << 
+					   tsk->deviceId << endl);
+				delete tsk;
 				continue;
 			}
-			PLOGDEB("discoExplorer: inserting id [%s]\n", tsk->deviceId.c_str());
+			PTMutexLocker lock(contentDirectories.m_mutex);
+			//LOGDEB("discoExplorer: inserting id "<< tsk->deviceId.c_str() << 
+			//   endl);
 			contentDirectories.m_directories[tsk->deviceId] = d;
 		}
 		delete tsk;
@@ -232,8 +240,8 @@ void UPnPDeviceDirectory::expireDevices()
 	for (DirPoolIt it = contentDirectories.m_directories.begin();
 		 it != contentDirectories.m_directories.end();) {
 		if (now - it->second.last_seen > it->second.expires) {
-			PLOGDEB("expireDevices: deleting [%s] [%s]\n",
-					it->first.c_str(), it->second.device.friendlyName.c_str());
+			//LOGDEB("expireDevices: deleting " <<  it->first.c_str() << " " << 
+			//   it->second.device.friendlyName.c_str() << endl);
 			contentDirectories.m_directories.erase(it++);
 			didsomething = true;
 		} else {
@@ -309,6 +317,11 @@ UPnPDeviceDirectory *UPnPDeviceDirectory::getTheDir(time_t search_window)
 	return theDevDir;
 }
 
+void UPnPDeviceDirectory::terminate()
+{
+	discoveredQueue.setTerminateAndWait();
+}
+
 time_t UPnPDeviceDirectory::getRemainingDelay()
 {
 	time_t now = time(0);
@@ -319,6 +332,7 @@ time_t UPnPDeviceDirectory::getRemainingDelay()
 
 bool UPnPDeviceDirectory::getDirServices(vector<ContentDirectoryService>& out)
 {
+	//LOGDEB("UPnPDeviceDirectory::getDirServices" << endl);
 	if (m_ok == false)
 		return false;
 
