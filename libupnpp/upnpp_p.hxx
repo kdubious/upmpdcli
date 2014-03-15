@@ -24,7 +24,10 @@
 
 #include <string>
 
+// Concatenate paths. Caller should make sure it makes sense.
 extern std::string caturl(const std::string& s1, const std::string& s2);
+// Return the scheme://host:port[/] part of input, or input if it is weird
+extern std::string baseurl(const std::string& url);
 extern void trimstring(std::string &s, const char *ws = " \t\n");
 extern std::string path_getfather(const std::string &s);
 extern std::string path_getsimple(const std::string &s);

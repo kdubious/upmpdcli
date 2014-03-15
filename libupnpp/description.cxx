@@ -115,22 +115,12 @@ UPnPDevice::UPnPDevice(const string& url, const string& description)
 	if (!mparser.Parse())
 		return;
 	if (URLBase.empty()) {
-		// The standard says that if the URLBase value is empty, we should use
-		// the url the description was retrieved from. However this is
-		// sometimes something like http://host/desc.xml, sometimes something
-		// like http://host/
-
-		if (url.size() < 8) {
-			// ???
-			URLBase = url;
-		} else {
-			string::size_type hostslash = url.find_first_of("/", 7);
-			if (hostslash == string::npos || hostslash == url.size()-1) {
-				URLBase = url;
-			} else {
-				URLBase = path_getfather(url);
-			}
-		}
+		// The standard says that if the URLBase value is empty, we
+		// should use the url the description was retrieved
+		// from. However this is sometimes something like
+		// http://host/desc.xml, sometimes something like http://host/
+		// (rare, but e.g. sent by the server on a dlink nas).
+		URLBase = baseurl(url);
 	}
 	ok = true;
 	//cerr << "URLBase: [" << URLBase << "]" << endl;

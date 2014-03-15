@@ -275,6 +275,20 @@ string caturl(const string& s1, const string& s2)
 	return out;
 }
 
+string baseurl(const string& url)
+{
+    string::size_type pos = url.find("://");
+    if (pos == string::npos)
+        return url;
+
+    pos = url.find_first_of("/", pos + 3);
+    if (pos == string::npos) {
+        return url;
+    } else {
+        return url.substr(0, pos + 1);
+    }
+}
+
 static void path_catslash(string &s) {
 	if (s.empty() || s[s.length() - 1] != '/')
 		s += '/';
