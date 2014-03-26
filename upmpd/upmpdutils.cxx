@@ -41,6 +41,7 @@ using namespace std;
 
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
+#include "libupnpp/log.hxx"
 
 // Append system error string to input string
 void catstrerror(string *reason, const char *what, int _errno)
@@ -346,13 +347,14 @@ string regsub1(const string& sexp, const string& input, const string& repl)
 
     if ((err = regcomp(&expr, sexp.c_str(), REG_EXTENDED))) {
         regerror(err, &expr, errbuf, ERRSIZE);
-        cerr << "upmpd: regsub1: regcomp() failed: " << errbuf << endl;
+        LOGERR("upmpd: regsub1: regcomp() failed: " << errbuf << endl);
         return string();
     }
     
     if ((err = regexec(&expr, input.c_str(), 10, pmatch, 0))) {
         regerror(err, &expr, errbuf, ERRSIZE);
-        cerr << "upmpd: regsub1: regcomp() failed: " <<  errbuf << endl;
+        //LOGDEB("upmpd: regsub1: regexec(" << sexp << ") failed: "
+        //    <<  errbuf << endl);
         regfree(&expr);
         return string();
     }
