@@ -4,7 +4,8 @@
 == Introduction
 
 *upmpdcli* is an UPnP Media Renderer front-end to *MPD*, the Music Player
-Daemon. It turns *MPD* into an UPnP Media Renderer. 
+Daemon. It turns *MPD* into an UPnP Media Renderer, supporting gapless
+track transitions.
 
 *upmpdcli* is open-source, free and licensed under the GPL. It is written
 in C++ and uses the *libupnp* (1.6) and *libmpdclient* libraries.
@@ -81,9 +82,13 @@ started by root. It will refuse to run if the user does not exist.
 If started by `root`, *upmpdcli* will also write its process id to
 `/var/run/upmpdcli.pid`.
 
-This should make it reasonably easy to write an init script for the
-daemon. Such a script exists in the `debian/` directory inside the source
-tree. There is also a systemd service file under `systemd/`
+There are boot-time startup scripts in the `debian/` directory inside the
+source tree (for Debian/Ubuntu/Mint/Raspbian etc.). There is also a systemd
+service file under `systemd/` (for Fedora et al.).
+
+The boot scripts are installed by the pre-built packages, so will just have
+to edit the configuration file after installing them, all the rest should
+just work.
 
 [[upmpdcli.downloads]]
 == Source code, packages
