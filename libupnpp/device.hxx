@@ -24,8 +24,6 @@
 
 class UpnpDevice;
 
-//typedef int (*soapfun)(const SoapArgs&, void *, SoapData&) ;
-
 typedef function<int (const SoapArgs&, SoapData&)> soapfun;
 
 /** Define a virtual interface to link libupnp operations to a device 
