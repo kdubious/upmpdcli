@@ -120,6 +120,8 @@ static const string serviceIdRender("urn:upnp-org:serviceId:RenderingControl");
 static const string serviceIdTransport("urn:upnp-org:serviceId:AVTransport");
 static const string serviceIdCM("urn:upnp-org:serviceId:ConnectionManager");
 
+// Note: if we ever need this to work without cxx11, there is this:
+// http://www.tutok.sk/fastgl/callback.html
 UpMpd::UpMpd(const string& deviceid, 
 			 const unordered_map<string, string>& xmlfiles,
 			 MPDCli *mpdcli, Options opts)
@@ -128,94 +130,55 @@ UpMpd::UpMpd(const string& deviceid,
 {
 	addServiceType(serviceIdRender,
 				   "urn:schemas-upnp-org:service:RenderingControl:1");
-	{	auto bound = bind(&UpMpd::setMute, this, _1, _2);
-		addActionMapping("SetMute", bound);
-	}
-	{	auto bound = bind(&UpMpd::getMute, this, _1, _2);
-		addActionMapping("GetMute", bound);
-	}
-	{	auto bound = bind(&UpMpd::setVolume, this, _1, _2, false);
-		addActionMapping("SetVolume", bound);
-	}
-//	{	auto bound = bind(&UpMpd::setVolume, this, _1, _2, true);
-//		addActionMapping("SetVolumeDB", bound);
-//	}
-	{	auto bound = bind(&UpMpd::getVolume, this, _1, _2, false);
-		addActionMapping("GetVolume", bound);
-	}
-//	{	auto bound = bind(&UpMpd::getVolume, this, _1, _2, true);
-//		addActionMapping("GetVolumeDB", bound);
-//	}
-	{	auto bound = bind(&UpMpd::listPresets, this, _1, _2);
-		addActionMapping("ListPresets", bound);
-	}
-	{	auto bound = bind(&UpMpd::selectPreset, this, _1, _2);
-		addActionMapping("SelectPreset", bound);
-	}
-//	{	auto bound = bind(&UpMpd::getVolumeDBRange, this, _1, _2);
-//		addActionMapping("GetVolumeDBRange", bound);
-//	}
+	addActionMapping("SetMute", bind(&UpMpd::setMute, this, _1, _2));
+	addActionMapping("GetMute", bind(&UpMpd::getMute, this, _1, _2));
+	addActionMapping("SetVolume", bind(&UpMpd::setVolume, this, _1, _2, false));
+	addActionMapping("GetVolume", bind(&UpMpd::getVolume, this, _1, _2, false));
+	addActionMapping("ListPresets", bind(&UpMpd::listPresets, this, _1, _2));
+	addActionMapping("SelectPreset", bind(&UpMpd::selectPreset, this, _1, _2));
+#if 0
+	addActionMapping("GetVolumeDB", 
+					 bind(&UpMpd::getVolume, this, _1, _2, true));
+	addActionMapping("SetVolumeDB", 
+					 bind(&UpMpd::setVolume, this, _1, _2, true));
+	addActionMapping("GetVolumeDBRange", 
+					 bind(&UpMpd::getVolumeDBRange, this, _1, _2));
+#endif
 
 	addServiceType(serviceIdTransport,
 				   "urn:schemas-upnp-org:service:AVTransport:1");
-
-	{	auto bound = bind(&UpMpd::setAVTransportURI, this, _1, _2, false);
-		addActionMapping("SetAVTransportURI", bound);
-	}
-	{	auto bound = bind(&UpMpd::setAVTransportURI, this, _1, _2, true);
-		addActionMapping("SetNextAVTransportURI", bound);
-	}
-	{	auto bound = bind(&UpMpd::getPositionInfo, this, _1, _2);
-		addActionMapping("GetPositionInfo", bound);
-	}
-	{	auto bound = bind(&UpMpd::getTransportInfo, this, _1, _2);
-		addActionMapping("GetTransportInfo", bound);
-	}
-	{	auto bound = bind(&UpMpd::getMediaInfo, this, _1, _2);
-		addActionMapping("GetMediaInfo", bound);
-	}
-	{	auto bound = bind(&UpMpd::getDeviceCapabilities, this, _1, _2);
-		addActionMapping("GetDeviceCapabilities", bound);
-	}
-	{	auto bound = bind(&UpMpd::setPlayMode, this, _1, _2);
-		addActionMapping("SetPlayMode", bound);
-	}
-	{	auto bound = bind(&UpMpd::getTransportSettings, this, _1, _2);
-		addActionMapping("GetTransportSettings", bound);
-	}
-	{	auto bound = bind(&UpMpd::getCurrentTransportActions, this, _1, _2);
-		addActionMapping("GetCurrentTransportActions", bound);
-	}
-	{	auto bound = bind(&UpMpd::playcontrol, this, _1, _2, 0);
-		addActionMapping("Stop", bound);
-	}
-	{	auto bound = bind(&UpMpd::playcontrol, this, _1, _2, 1);
-		addActionMapping("Play", bound);
-	}
-	{	auto bound = bind(&UpMpd::playcontrol, this, _1, _2, 2);
-		addActionMapping("Pause", bound);
-	}
-	{	auto bound = bind(&UpMpd::seek, this, _1, _2);
-		addActionMapping("Seek", bound);
-	}
-	{	auto bound = bind(&UpMpd::seqcontrol, this, _1, _2, 0);
-		addActionMapping("Next", bound);
-	}
-	{	auto bound = bind(&UpMpd::seqcontrol, this, _1, _2, 1);
-		addActionMapping("Previous", bound);
-	}
+	addActionMapping("SetAVTransportURI", 
+					 bind(&UpMpd::setAVTransportURI, this, _1, _2, false));
+	addActionMapping("SetNextAVTransportURI", 
+					 bind(&UpMpd::setAVTransportURI, this, _1, _2, true));
+	addActionMapping("GetPositionInfo", 
+					 bind(&UpMpd::getPositionInfo, this, _1, _2));
+	addActionMapping("GetTransportInfo", 
+					 bind(&UpMpd::getTransportInfo, this, _1, _2));
+	addActionMapping("GetMediaInfo", 
+					 bind(&UpMpd::getMediaInfo, this, _1, _2));
+	addActionMapping("GetDeviceCapabilities", 
+					 bind(&UpMpd::getDeviceCapabilities, this, _1, _2));
+	addActionMapping("SetPlayMode", bind(&UpMpd::setPlayMode, this, _1, _2));
+	addActionMapping("GetTransportSettings", 
+					 bind(&UpMpd::getTransportSettings, this, _1, _2));
+	addActionMapping("GetCurrentTransportActions", 
+					 bind(&UpMpd::getCurrentTransportActions, this, _1, _2));
+	addActionMapping("Stop", bind(&UpMpd::playcontrol, this, _1, _2, 0));
+	addActionMapping("Play", bind(&UpMpd::playcontrol, this, _1, _2, 1));
+	addActionMapping("Pause", bind(&UpMpd::playcontrol, this, _1, _2, 2));
+	addActionMapping("Seek", bind(&UpMpd::seek, this, _1, _2));
+	addActionMapping("Next", bind(&UpMpd::seqcontrol, this, _1, _2, 0));
+	addActionMapping("Previous", bind(&UpMpd::seqcontrol, this, _1, _2, 1));
 
 	addServiceType(serviceIdCM,
 				   "urn:schemas-upnp-org:service:ConnectionManager:1");
-	{	auto bound = bind(&UpMpd::getCurrentConnectionIDs, this, _1, _2);
-		addActionMapping("GetCurrentConnectionIDs", bound);
-	}
-	{	auto bound = bind(&UpMpd::getCurrentConnectionInfo, this, _1, _2);
-		addActionMapping("GetCurrentConnectionInfo", bound);
-	}
-	{	auto bound = bind(&UpMpd::getProtocolInfo, this, _1, _2);
-		addActionMapping("GetProtocolInfo", bound);
-	}
+	addActionMapping("GetCurrentConnectionIDs", 
+					 bind(&UpMpd::getCurrentConnectionIDs, this, _1, _2));
+	addActionMapping("GetCurrentConnectionInfo", 
+					 bind(&UpMpd::getCurrentConnectionInfo, this, _1, _2));
+	addActionMapping("GetProtocolInfo", 
+					 bind(&UpMpd::getProtocolInfo, this, _1, _2));
 }
 
 // This is called by the polling loop at regular intervals, or when
@@ -1029,19 +992,24 @@ int UpMpd::seek(const SoapArgs& sc, SoapData& data)
 	}
 	string target(it->second);
 
-	// LOGDEB("UpMpd::seek: unit " << unit << " target " << target);
-
 	const MpdStatus &mpds = m_mpdcli->getStatus();
+
+	//LOGDEB("UpMpd::seek: unit " << unit << " target " << target << 
+	//	   " current posisition " << mpds.songelapsedms / 1000 << 
+	//	   " seconds" << endl);
+
 	int abs_seconds;
-	if (!unit.compare("ABS_TIME")) {
+	// Note that ABS_TIME and REL_TIME don't mean what you'd think
+	// they mean.  REL_TIME means relative to the current track,
+	// ABS_TIME to the whole media (ie for a multitrack tape). So
+	// we only support REL_TIME, as absolute position in the current song
+ 	if (!unit.compare("REL_TIME")) {
 		abs_seconds = upnpdurationtos(target);
-	} else 	if (!unit.compare("REL_TIME")) {
-		abs_seconds = mpds.songelapsedms / 1000;
-		abs_seconds += upnpdurationtos(target);
-//	} else 	if (!unit.compare("TRACK_NR")) {
 	} else {
 		return UPNP_E_INVALID_PARAM;
 	}
+	LOGDEB("UpMpd::seek: seeking to " << abs_seconds << " seconds (" <<
+		   upnpduration(abs_seconds * 1000) << ")" << endl);
 
 	loopWakeup();
 	return m_mpdcli->seek(abs_seconds) ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
