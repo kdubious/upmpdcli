@@ -1,3 +1,8 @@
+upmpdcli (0.6.3-1) unstable; urgency=low
+
+  * Fix seeking
+
+ -- Jean-Francois Dockes <jf@dockes.org>  Wed, 26 March 2014 21:58:00 +0100
 upmpdcli (0.6.2-1) unstable; urgency=low
 
   * Retry libupnp until we get a network

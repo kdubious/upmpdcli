@@ -1,6 +1,6 @@
 Summary:        UPnP Media Renderer front-end to MPD, the Music Player Daemon
 Name:           upmpdcli
-Version:        0.6.2
+Version:        0.6.3
 Release:        1%{?dist}
 Group:          Applications/Multimedia
 License:        GPLv2+
@@ -67,6 +67,8 @@ install -D -m644 systemd/upmpdcli.service \
 %systemd_postun_with_restart upmpdcli.service 
 
 %changelog
+* Wed Mar 26 2014 J.F. Dockes <jf@dockes.org> - 0.6.3
+- Version 0.6.3 fixes seeking
 * Sun Mar 02 2014 J.F. Dockes <jf@dockes.org> - 0.6.2
 - Version 0.6.2
 * Wed Feb 26 2014 J.F. Dockes <jf@dockes.org> - 0.6.1
