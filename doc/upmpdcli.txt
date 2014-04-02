@@ -41,8 +41,8 @@ computers). However it needs a specific control application.
 *upmpdcli* lets you control your *MPD*-based players with your UPnP control
 point.
 
-[[upmpdcli.config]]
 == Configuration
+[[upmpdcli.config]]
 
 See the man page for command line details. In most situations, *upmpdcli*
 will be run as follows:
@@ -89,14 +89,6 @@ service file under `systemd/` (for Fedora et al.).
 The boot scripts are installed by the pre-built packages, so will just have
 to edit the configuration file after installing them, all the rest should
 just work.
-
-[[upmpdcli.downloads]]
-== Source code, packages
-
-The source repository is on link:http://www.github.com/medoc92/upmpdcli[GitHub].
-
-See the link:http://www.lesbonscomptes.com/upmpdcli[home page] for pointers
-to releases and built packages.
 
 [[upmpdcli.building]]
 == Building
