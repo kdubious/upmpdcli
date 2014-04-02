@@ -992,8 +992,6 @@ int UpMpd::seek(const SoapArgs& sc, SoapData& data)
 	}
 	string target(it->second);
 
-	const MpdStatus &mpds = m_mpdcli->getStatus();
-
 	//LOGDEB("UpMpd::seek: unit " << unit << " target " << target << 
 	//	   " current posisition " << mpds.songelapsedms / 1000 << 
 	//	   " seconds" << endl);
@@ -1002,8 +1000,8 @@ int UpMpd::seek(const SoapArgs& sc, SoapData& data)
 	// Note that ABS_TIME and REL_TIME don't mean what you'd think
 	// they mean.  REL_TIME means relative to the current track,
 	// ABS_TIME to the whole media (ie for a multitrack tape). So
-	// we only support REL_TIME, as absolute position in the current song
- 	if (!unit.compare("REL_TIME")) {
+	// take both ABS and REL as absolute position in the current song
+ 	if (!unit.compare("REL_TIME") || !unit.compare("ABS_TIME")) {
 		abs_seconds = upnpdurationtos(target);
 	} else {
 		return UPNP_E_INVALID_PARAM;
