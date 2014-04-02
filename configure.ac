@@ -5,6 +5,7 @@ AC_CONFIG_SRCDIR([libupnpp/upnpplib.hxx])
 AC_CONFIG_HEADERS([libupnpp/config.h])
 
 AM_INIT_AUTOMAKE([1.10 no-define subdir-objects foreign])
+AC_DISABLE_STATIC
 LT_INIT
 
 AC_PROG_CXX
