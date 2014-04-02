@@ -403,3 +403,92 @@ int MPDCli::curpos()
            << m_stat.songid << endl);
     return m_stat.songpos;
 }
+
+
+
+
+#ifdef MPDCLI_TEST
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+
+#include <string>
+#include <iostream>
+using namespace std;
+
+#include "mpdcli.hxx"
+
+static char *thisprog;
+
+static char usage [] =
+"  \n\n"
+;
+static void
+Usage(void)
+{
+    fprintf(stderr, "%s: usage:\n%s", thisprog, usage);
+    exit(1);
+}
+
+static int     op_flags;
+#define OPT_MOINS 0x1
+#define OPT_s	  0x2 
+#define OPT_b	  0x4 
+
+int main(int argc, char **argv)
+{
+  int count = 10;
+    
+  thisprog = argv[0];
+  argc--; argv++;
+
+  while (argc > 0 && **argv == '-') {
+    (*argv)++;
+    if (!(**argv))
+      /* Cas du "adb - core" */
+      Usage();
+    while (**argv)
+      switch (*(*argv)++) {
+      case 's':	op_flags |= OPT_s; break;
+      case 'b':	op_flags |= OPT_b; if (argc < 2)  Usage();
+	if ((sscanf(*(++argv), "%d", &count)) != 1) 
+	  Usage(); 
+	argc--; 
+	goto b1;
+      default: Usage();	break;
+      }
+  b1: argc--; argv++;
+  }
+
+  if (argc != 0)
+    Usage();
+
+  MPDCli cli("localhost");
+  if (!cli.ok()) {
+      cerr << "Cli connection failed" << endl;
+      return 1;
+  }
+  const MpdStatus& status = cli.getStatus();
+  
+  if (status.state != MpdStatus::MPDS_PLAY) {
+      cerr << "Not playing" << endl;
+      return 1;
+  }
+
+  unsigned int seektarget = (status.songlenms - 4500)/1000;
+  cerr << "songpos " << status.songpos << " songid " << status.songid <<
+      " seeking to " << seektarget << " seconds" << endl;
+
+  if (!cli.seek(seektarget)) {
+      cerr << "Seek failed" << endl;
+      return 1;
+  }
+  return 0;
+}
+
+
+#endif
+
