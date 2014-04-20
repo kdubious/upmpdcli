@@ -30,16 +30,15 @@
 #define __GETIFADDR_H__
 #include <arpa/inet.h>
 
-#define MACADDR_IS_ZERO(x) \
-  ((x[0] == 0x00) && \
-   (x[1] == 0x00) && \
-   (x[2] == 0x00) && \
-   (x[3] == 0x00) && \
-   (x[4] == 0x00) && \
-   (x[5] == 0x00))
-
-int
-getsyshwaddr(char * buf, int len);
+/** 
+ * Retrieve hardware (ethernet) network address for this host.
+ * @param iface if not null or empty, use this interface, else first found.
+ * @param[output] ip return IP address.
+ * @param ilen size in bytes of the ip buffer.
+ * @param[output] buf return hardware address.
+ * @param hlen size in bytes of the buf buffer.
+ */
+int getsyshwaddr(const char *iface, char *ip, int ilen, char *buf, int hlen);
 
 #endif
 

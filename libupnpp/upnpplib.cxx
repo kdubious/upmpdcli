@@ -43,10 +43,12 @@ extern "C" {
 
 static LibUPnP *theLib;
 
-LibUPnP *LibUPnP::getLibUPnP(bool server)
+LibUPnP *LibUPnP::getLibUPnP(bool serveronly, string* hwaddr,
+							 const string ifname, const string ip,
+							 unsigned short port)
 {
 	if (theLib == 0)
-		theLib = new LibUPnP(server);
+		theLib = new LibUPnP(serveronly, hwaddr, ifname, ip, port);
 	if (theLib && !theLib->ok()) {
 		delete theLib;
 		theLib = 0;
@@ -56,29 +58,55 @@ LibUPnP *LibUPnP::getLibUPnP(bool server)
 }
 
 
-LibUPnP::LibUPnP(bool server)
+LibUPnP::LibUPnP(bool serveronly, string* hwaddr,
+				 const string ifname, const string inip, unsigned short port)
 	: m_ok(false)
 {
-	m_init_error = UpnpInit(0, 0);
+	LOGDEB("LibUPnP: serveronly " << serveronly << " &hwaddr " << hwaddr <<
+		   " ifname [" << ifname << "] inip [" << inip << "] port " << port 
+		   << endl);
+
+	// If our caller wants to retrieve an ethernet address (typically
+	// for uuid purposes), or has specified an interface we have to
+	// look at the network config.
+	const int ipalen(100);
+	char ip_address[ipalen];
+	ip_address[0] = 0;
+	if (hwaddr || !ifname.empty()) {
+		char mac[20];
+		if (getsyshwaddr(ifname.c_str(), ip_address, ipalen, mac, 13) < 0) {
+			LOGERR("LibUPnP::LibUPnP: failed retrieving addr" << endl);
+			return;
+		}
+		if (hwaddr)
+			*hwaddr = string(mac);
+	}
+
+	// If the interface name was not specified, we possibly use the
+	// supplied IP address.
+	if (ifname.empty())
+		strncpy(ip_address, inip.c_str(), ipalen);
+
+	m_init_error = UpnpInit(ip_address[0] ? ip_address : 0, port);
+
 	if (m_init_error != UPNP_E_SUCCESS) {
 		LOGERR(errAsString("UpnpInit", m_init_error) << endl);
 		return;
 	}
 	setMaxContentLength(2000*1024);
 
-	const char *ip_address = UpnpGetServerIpAddress();
-	int port = UpnpGetServerPort();
-	LOGDEB("Using IP " << ip_address << " port " << port << endl);
+	LOGDEB("Using IP " << UpnpGetServerIpAddress() << " port " << 
+		   UpnpGetServerPort() << endl);
 
 #if defined(HAVE_UPNPSETLOGLEVEL)
 	UpnpCloseLog();
 #endif
 
-	if (server) {
+	// Client initialization is simple, just do it. Defer device
+	// initialization because it's more complicated.
+	if (serveronly) {
 		m_ok = true;
 	} else {
-		// Client initialization is simple, just do it. Defer device init
-		// completion because it's more complicated.
 		m_init_error = UpnpRegisterClient(o_callback, (void *)this, &m_clh);
 		
 		if (m_init_error == UPNP_E_SUCCESS) {
@@ -88,8 +116,7 @@ LibUPnP::LibUPnP(bool server)
 		}
 	}
 
-	// Servers sometimes make error (e.g.: minidlna returns bad
-	// utf-8). 
+	// Servers sometimes make errors (e.g.: minidlna returns bad utf-8).
 	ixmlRelaxParser(1);
 }
 
@@ -197,7 +224,7 @@ LibUPnP::~LibUPnP()
 	PLOGDEB("LibUPnP: done\n");
 }
 
-string LibUPnP::makeDevUUID(const string& name)
+string LibUPnP::makeDevUUID(const std::string& name, const std::string& hw)
 {
 	string digest;
 	MD5String(name, digest);
@@ -205,16 +232,11 @@ string LibUPnP::makeDevUUID(const string& name)
 	// f81d4fae-7dec-11d0-a765-00a0c91e6bf6
 	// Where the last 12 chars are provided by the hw addr
 
-	char hw[20];
-	if (getsyshwaddr(hw, 13) < 0) {
-		LOGERR("LibUPnP::makeDevUUID: failed retrieving hw addr" << endl);
-		strcpy(hw, "2e87682c5ce8");
-	}
 	char uuid[100];
 	sprintf(uuid, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%s",
 			digest[0]&0xff, digest[1]&0xff, digest[2]&0xff, digest[3]&0xff,
 			digest[4]&0xff, digest[5]&0xff,  digest[6]&0xff, digest[7]&0xff,
-			digest[8]&0xff, digest[9]&0xff, hw);
+			digest[8]&0xff, digest[9]&0xff, hw.c_str());
 	return uuid;
 }
 

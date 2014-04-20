@@ -30,7 +30,7 @@ they search the network.
 .B \-p\fR \fIport\fP
 Define the IP port used by \fBmpd\fP.
 .TP
-.B \-1\fR \f0|1t\fP
+.B \-q\fR \fI0|1\fP
 Decide if we own the MPD queue (-q 1) or not (-q 0). We own it by default,
 and clear it fearlessly.
 .TP
@@ -45,10 +45,19 @@ Daemonize (fork and run in background). Using -D for this is the reverse
 from usual convention, but the authors found it better to avoid surprising
 naïve users with an unexpected disparition of the program...
 .TP
+.B \-i\fR \fIiface\fP
+Define the network interface to use for UPnP.
+.TP
+.B \-P\fR \fIport\fP
+Define the IP port to use for UPnP.
+.TP
 .B \-c\fR \fIconfigfile\fP
 Use the configuration from \fIconfigfile\fP. The configuration file has a
 simple \fIname = value\fP format and can set the same values as the command
 line options (with a lower priority). The parameter names are
-\fImpdhost\fP, \fImpdport\fP, \fIlogfilename\fP, and \fIloglevel\fP.
+\fImpdhost\fP, \fImpdport\fP, \fIfriendlyname\fP, \fIlogfilename\fP,
+\fIloglevel\fP, \fIupnpiface\fP, \fIupnpport\fP. The configuration file can
+also be used to set the MPD password (\fImpdpassword\fP), and the UPnP IP
+address (instead of interface name, \fIupnpip\fP).
 .SH SEE ALSO
 .BR mpd (1),

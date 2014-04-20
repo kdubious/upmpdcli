@@ -32,15 +32,24 @@ public:
 
 	/** Retrieve the singleton LibUPnP object 
 	 *
-	 * On the first call, this initializes libupnp and registers us as a 
-	 * client, but does not perform any other action (does not start
-	 * discovery)
-	 * @param server Act as server (implement device) if true, client else.
-	 *   This is only used on the first call, it's ignored once the library is
-	 *   initialized.
+	 * This initializes libupnp, possibly setting an address and port, possibly
+	 * registering a client if serveronly is false.
+	 *
+	 * @param serveronly no client init
+	 * @param hwaddr returns the hardware address for the specified network 
+	 *   interface, or the first one is ifname is empty. If the IP address is
+	 *   specified instead of the interface name, the hardware address
+	 *   returned is not necessarily the one matching the IP.
+	 * @param ifname if not empty, network interface to use. Translated to
+	 *   IP address for the UpnpInit() call.
+	 * @param ip if not empty, IP address to use. Only used if ifname is empty.
+	 * @param port   port parameter to UpnpInit() (0 for default).
 	 * @return 0 for failure.
 	 */
-	static LibUPnP* getLibUPnP(bool server = false);
+	static LibUPnP* getLibUPnP(bool serveronly = false, std::string* hwaddr = 0,
+							   const std::string ifname = string(),
+							   const std::string ip = string(),
+							   unsigned short port = 0);
 
 	/** Set libupnp log file name and activate logging.
 	 *
@@ -67,7 +76,7 @@ public:
 
 	/** Build a unique persistent UUID for a root device. This uses a hash
 		of the input name (e.g.: friendlyName), and the host Ethernet address */
-	static std::string makeDevUUID(const std::string& name);
+	static std::string makeDevUUID(const std::string& name, const std::string& hw);
 
 	/** Translate libupnp integer error code (UPNP_E_XXX) to string */
 	static std::string errAsString(const std::string& who, int code);
@@ -110,7 +119,11 @@ private:
 		void *cookie;
 	};
 
-	LibUPnP(bool server);
+	
+	LibUPnP(bool serveronly, std::string *hwaddr, 
+			const std::string ifname, const std::string ip,
+			unsigned short port);
+
 	LibUPnP(const LibUPnP &);
 	LibUPnP& operator=(const LibUPnP &);
 

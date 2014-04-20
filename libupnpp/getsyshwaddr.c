@@ -56,17 +56,25 @@
 
 #include "getsyshwaddr.h"
 
+#define MACADDR_IS_ZERO(x) \
+  ((x[0] == 0x00) && \
+   (x[1] == 0x00) && \
+   (x[2] == 0x00) && \
+   (x[3] == 0x00) && \
+   (x[4] == 0x00) && \
+   (x[5] == 0x00))
+
 #define DPRINTF(A,B,C,D) 
 
-int
-getsyshwaddr(char *buf, int len)
+int getsyshwaddr(const char *iface, char *ip, int ilen, char *buf, int hlen)
 {
 	unsigned char mac[6];
 	int ret = -1;
+
+	memset(&mac, 0, sizeof(mac));
+
 #if HAVE_GETIFADDRS
 	struct ifaddrs *ifap, *p;
-	struct sockaddr_in *addr_in;
-	uint8_t a;
 
 	if (getifaddrs(&ifap) != 0)
 	{
@@ -77,10 +85,22 @@ getsyshwaddr(char *buf, int len)
 	{
 		if (p->ifa_addr && p->ifa_addr->sa_family == AF_LINK)
 		{
+			struct sockaddr_in *addr_in;
+			uint8_t a;
+
+			if (iface && *iface && 
+				strncmp(iface, p->ifa_name, strnlen(iface, 20)) != 0 )
+				continue;
+
 			addr_in = (struct sockaddr_in *)p->ifa_addr;
 			a = (htonl(addr_in->sin_addr.s_addr) >> 0x18) & 0xFF;
 			if (a == 127)
 				continue;
+
+			if (ip)
+				inet_ntop(AF_INET, (const void *) &(addr_in->sin_addr), 
+						  ip, ilen);
+
 #ifdef __linux__
 			struct ifreq ifr;
 			int fd;
@@ -94,6 +114,7 @@ getsyshwaddr(char *buf, int len)
 				continue;
 			}
 			memcpy(mac, ifr.ifr_hwaddr.sa_data, 6);
+			close(fd);
 #else
 			struct sockaddr_dl *sdl;
 			sdl = (struct sockaddr_dl*)p->ifa_addr;
@@ -106,12 +127,13 @@ getsyshwaddr(char *buf, int len)
 		}
 	}
 	freeifaddrs(ifap);
+
 #else
+
 	struct if_nameindex *ifaces, *if_idx;
 	struct ifreq ifr;
 	int fd;
 
-	memset(&mac, '\0', sizeof(mac));
 	/* Get the spatially unique node identifier */
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd < 0)
@@ -123,6 +145,10 @@ getsyshwaddr(char *buf, int len)
 
 	for (if_idx = ifaces; if_idx->if_index; if_idx++)
 	{
+		if (iface && *iface && 
+			strncmp(name, if_idx->if_name, strnlen(name, 20)) != 0 )
+			continue;
+
 		strncpy(ifr.ifr_name, if_idx->if_name, IFNAMSIZ);
 		if (ioctl(fd, SIOCGIFFLAGS, &ifr) < 0)
 			continue;
@@ -133,20 +159,36 @@ getsyshwaddr(char *buf, int len)
 		if (MACADDR_IS_ZERO(ifr.ifr_hwaddr.sa_data))
 			continue;
 		memcpy(mac, ifr.ifr_hwaddr.sa_data, 6);
+		if (ip) {
+			if (ioctl(fd, SIOCGIFADDR, &ifr) == 0) {
+				// Not sure at all that this branch is ever used on modern
+				// systems. So just procrastinate until/if we ever need this.
+#error please fill in the code to retrieve the IP address, 
+			}
+		}
+
 		ret = 0;
 		break;
 	}
 	if_freenameindex(ifaces);
 	close(fd);
 #endif
+
 	if (ret == 0)
 	{
-		if (len > 12)
+		if (ilen > 12)
 			sprintf(buf, "%02x%02x%02x%02x%02x%02x",
 			        mac[0]&0xFF, mac[1]&0xFF, mac[2]&0xFF,
 			        mac[3]&0xFF, mac[4]&0xFF, mac[5]&0xFF);
-		else if (len == 6)
+		else if (ilen == 6)
 			memmove(buf, mac, 6);
 	}
 	return ret;
 }
+
+/* Local Variables: */
+/* mode: c++ */
+/* c-basic-offset: 4 */
+/* tab-width: 4 */
+/* indent-tabs-mode: t */
+/* End: */

@@ -1125,6 +1125,8 @@ static int op_flags;
 #define OPT_l     0x40
 #define OPT_f     0x80
 #define OPT_q     0x100
+#define OPT_i     0x200
+#define OPT_P     0x400
 
 static const char usage[] = 
 "-c configfile \t configuration file to use\n"
@@ -1134,7 +1136,9 @@ static const char usage[] =
 "-l loglevel\t  log level (0-6)\n"
 "-D          \t run as a daemon\n"
 "-f friendlyname\t define device displayed name\n"
-"-q 0|1      \t if set, we own the mpd queue, else avoid clearing it whenever we feel like it"
+"-q 0|1      \t if set, we own the mpd queue, else avoid clearing it whenever we feel like it\n"
+"-i iface    \t specify network interface name to be used for UPnP"
+"-P upport    \t specify port number to be used for UPnP"
 "  \n\n"
 			;
 static void
@@ -1160,7 +1164,6 @@ int main(int argc, char *argv[])
 	string mpdhost("localhost");
 	int mpdport = 6600;
 	string mpdpassword;
-	string upnplogfilename("/tmp/upmpdcli_libupnp.log");
 	string logfilename;
 	int loglevel(upnppdebug::Logger::LLINF);
 	string configfile;
@@ -1168,6 +1171,9 @@ int main(int argc, char *argv[])
 	bool ownqueue = true;
 	string upmpdcliuser("upmpdcli");
 	string pidfilename("/var/run/upmpdcli.pid");
+	string iface;
+	unsigned short upport = 0;
+	string upnpip;
 
 	const char *cp;
 	if ((cp = getenv("UPMPD_HOST")))
@@ -1178,6 +1184,10 @@ int main(int argc, char *argv[])
 		friendlyname = atoi(cp);
 	if ((cp = getenv("UPMPD_CONFIG")))
 		configfile = cp;
+	if ((cp = getenv("UPMPD_UPNPIFACE")))
+		iface = cp;
+	if ((cp = getenv("UPMPD_UPNPPORT")))
+		upport = atoi(cp);
 
 	thisprog = argv[0];
 	argc--; argv++;
@@ -1202,6 +1212,10 @@ int main(int argc, char *argv[])
 				mpdport = atoi(*(++argv)); argc--; goto b1;
 			case 'q':	op_flags |= OPT_q; if (argc < 2)  Usage();
 				ownqueue = atoi(*(++argv)) != 0; argc--; goto b1;
+			case 'i':	op_flags |= OPT_i; if (argc < 2)  Usage();
+				iface = *(++argv); argc--; goto b1;
+			case 'P':	op_flags |= OPT_P; if (argc < 2)  Usage();
+				upport = atoi(*(++argv)); argc--; goto b1;
 			default: Usage();	break;
 			}
 	b1: argc--; argv++;
@@ -1228,10 +1242,19 @@ int main(int argc, char *argv[])
 		if (!(op_flags & OPT_p) && config.get("mpdport", value)) {
 			mpdport = atoi(value.c_str());
 		}
+		config.get("mpdpassword", mpdpassword);
 		if (!(op_flags & OPT_q) && config.get("ownqueue", value)) {
 			ownqueue = atoi(value.c_str()) != 0;
 		}
-		config.get("mpdpassword", mpdpassword);
+		if (!(op_flags & OPT_i)) {
+			config.get("upnpiface", iface);
+			if (iface.empty()) {
+				config.get("upnpip", upnpip);
+			}
+		}
+		if (!(op_flags & OPT_P) && config.get("upnpport", value)) {
+			upport = atoi(value.c_str());
+		}
 	}
 
 	if (upnppdebug::Logger::getTheLog(logfilename) == 0) {
@@ -1289,11 +1312,12 @@ int main(int argc, char *argv[])
 
 	// Initialize libupnpp, and check health
 	LibUPnP *mylib = 0;
+	string hwaddr;
 	int libretrysecs = 10;
     for (;;) {
 		// Libupnp init fails if we're started at boot and the network
 		// is not ready yet. So retry this forever
-		mylib = LibUPnP::getLibUPnP(true);
+		mylib = LibUPnP::getLibUPnP(true, &hwaddr, iface, upnpip, upport);
 		if (mylib) {
 			break;
 		}
@@ -1306,6 +1330,8 @@ int main(int argc, char *argv[])
 			   mylib->errAsString("main", mylib->getInitError()) << endl);
 		return 1;
 	}
+
+	//string upnplogfilename("/tmp/upmpdcli_libupnp.log");
 	//mylib->setLogFileName(upnplogfilename, LibUPnP::LogLevelDebug);
 
 	// Initialize MPD client module
@@ -1314,9 +1340,9 @@ int main(int argc, char *argv[])
 		LOGFAT("MPD connection failed" << endl);
 		return 1;
 	}
-	
+
 	// Create unique ID
-	string UUID = LibUPnP::makeDevUUID(friendlyname);
+	string UUID = LibUPnP::makeDevUUID(friendlyname, hwaddr);
 
 	// Read our XML data to make it available from the virtual directory
 	string reason;

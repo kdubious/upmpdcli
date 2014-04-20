@@ -4,8 +4,15 @@
 *upmpdcli* is an UPnP Media Renderer front-end to *MPD*, the Music Player
 Daemon. 
 
-== Configuration
+[[upmpdcli.security]]
+== Security
+
+*upmpdcli* is not audited for security issues, and, as far as I
+know, it may be full of exploitable bugs. Do not run it on an
+Internet-facing host.
+
 [[upmpdcli.config]]
+== Configuration
 
 See the man page for command line details. In most situations, *upmpdcli*
 will be run as follows:
@@ -22,6 +29,12 @@ configuration file, or the environment in this order of priority. It would
 be rather confusing to use a mix of methods, so you should probably chose
 one. 
 
+All parameters have defaults, and a typical installation needs no
+modification of the configuration file. If several instances of *upmpdcli*
+run on the same network, it may be useful to give them distinct names
+(_friendlyname_ parameter). The other parameters are only useful in special
+situations.
+
 The following parameters can be set:
 
 |========================
@@ -35,6 +48,9 @@ The following parameters can be set:
   results.|-f friendlyname|$UPMPD_FRIENDLYNAME|friendlyname 
 |Log file name. Leave empty for stderr|-d logfilename||logfilename
 |Verbosity level (0-4)|-l loglevel||loglevel
+|UPnP network interface|-i iface|$UPMPD_UPNPIFACE|upnpiface
+|UPnP IP address (if interface not set)|||upnpip
+|UPnP port|-p port|$UPMPD_UPNPPORT|upnpport
 |===========================    
 
 [[upmpdcli.boot]]

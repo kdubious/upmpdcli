@@ -747,6 +747,14 @@ Daemon.</p></div>
 </div>
 </div>
 <div class="sect1">
+<h2 id="_security">Security</h2>
+<div class="sectionbody">
+<div class="paragraph"><p><strong>upmpdcli</strong> is not audited for security issues, and, as far as I
+know, it may be full of exploitable bugs. Do not run it on an
+Internet-facing host.</p></div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_configuration">Configuration</h2>
 <div class="sectionbody">
 <div class="paragraph" id="upmpdcli.config"><p>See the man page for command line details. In most situations, <strong>upmpdcli</strong>
@@ -762,6 +770,11 @@ option specifies a configuration file.</p></div>
 configuration file, or the environment in this order of priority. It would
 be rather confusing to use a mix of methods, so you should probably chose
 one.</p></div>
+<div class="paragraph"><p>All parameters have defaults, and a typical installation needs no
+modification of the configuration file. If several instances of <strong>upmpdcli</strong>
+run on the same network, it may be useful to give them distinct names
+(<em>friendlyname</em> parameter). The other parameters are only useful in special
+situations.</p></div>
 <div class="paragraph"><p>The following parameters can be set:</p></div>
 <div class="tableblock">
 <table rules="all"
@@ -828,6 +841,24 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">loglevel</p></td>
 </tr>
+<tr>
+<td align="left" valign="top"><p class="table">UPnP network interface</p></td>
+<td align="left" valign="top"><p class="table">-i iface</p></td>
+<td align="left" valign="top"><p class="table">$UPMPD_UPNPIFACE</p></td>
+<td align="left" valign="top"><p class="table">upnpiface</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">UPnP IP address (if interface not set)</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">upnpip</p></td>
+</tr>
+<tr>
+<td align="left" valign="top"><p class="table">UPnP port</p></td>
+<td align="left" valign="top"><p class="table">-p port</p></td>
+<td align="left" valign="top"><p class="table">$UPMPD_UPNPPORT</p></td>
+<td align="left" valign="top"><p class="table">upnpport</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -870,7 +901,7 @@ sudo make install</tt></pre>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-04-20 08:04:03 CEST
+Last updated 2014-04-20 12:25:55 CEST
 </div>
 </div>
 </body>
