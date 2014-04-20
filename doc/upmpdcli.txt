@@ -1,45 +1,8 @@
-= Upmpdcli: an UPnP Renderer Front-End to the Music Player Daemon
+= Upmpdcli: MPD UPnP Renderer Front-End
 
-[[upmpdcli.intro]]
-== Introduction
 
 *upmpdcli* is an UPnP Media Renderer front-end to *MPD*, the Music Player
-Daemon. It turns *MPD* into an UPnP Media Renderer, supporting gapless
-track transitions.
-
-*upmpdcli* is open-source, free and licensed under the GPL. It is written
-in C++ and uses the *libupnp* (1.6) and *libmpdclient* libraries.
-
-The typical setup is a home network with:
-
-- An UPnP media server (e.g. *Minidlna*, *Mediatomb*, or some commercial
-  device).
-- An UPnP control point (e.g. *Audionet* or *Bubble UPnP* running on a
-  tablet or phone). 
-- *MPD* running on some Linux device (e.g. Raspberry PI hooked up to your
-  bedroom stereo). 
-- *upmpdcli* running on any Linux computer on the network (the same as
-  *MPD* or not). It will be discovered by the UPnP control point in a
-  standard fashion.
-
-image::upmpdcli.png["Basic flow", float="right"]
-
-In this usage, *MPD* does not manage the audio files directly and its
-configured music directory will typically be empty. It fetches them from
-the Media Server through HTTP, using the *curl* input plugin, and does not
-need a local tags database.
-
-When used with an appropriate control point, the *upmpdcli*/*MPD*
-combination supports gapless playback.
-
-_What's the point ?_ If you are running an UPnP network with multiple
-devices, you may prefer to use a single control application (UPnP-based)
-for everything. *MPD* is a very capable and robust music-playing application,
-which runs well on small computers (e.g. Raspberry PI or other "plug" type
-computers). However it needs a specific control application.
-
-*upmpdcli* lets you control your *MPD*-based players with your UPnP control
-point.
+Daemon. 
 
 == Configuration
 [[upmpdcli.config]]
@@ -66,6 +29,7 @@ The following parameters can be set:
 |Configuration file name|-c config|$UPMPD_CONFIG|
 |Host name or IP address where *MPD* runs|-h mpdhost|$UPMPD_HOST|mpdhost
 |TCP port for *MPD*|-p mpdport|$UPMPD_PORT|mpdport
+|*MPD* password|||mpdpassword
 |Do we own the *MPD* queue and fearlessly clear it|-o 0/1||ownqueue
 |UPnP "friendly name" for the device. This gets displayed in network search
   results.|-f friendlyname|$UPMPD_FRIENDLYNAME|friendlyname 
@@ -76,7 +40,7 @@ The following parameters can be set:
 [[upmpdcli.boot]]
 == Boot time startup
 
-*upmpdcli* will will try to change its `uid` to user `upmpdcli` if it is
+*upmpdcli* will try to change its `uid` to user `upmpdcli` if it is
 started by root. It will refuse to run if the user does not exist.
 
 If started by `root`, *upmpdcli* will also write its process id to

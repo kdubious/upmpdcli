@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.7" />
-<title>Upmpdcli: an UPnP Renderer Front-End to the Music Player Daemon</title>
+<title>Upmpdcli: MPD UPnP Renderer Front-End</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -737,63 +737,13 @@ asciidoc.install();
 </head>
 <body class="article">
 <div id="header">
-<h1>Upmpdcli: an UPnP Renderer Front-End to the Music Player Daemon</h1>
+<h1>Upmpdcli: MPD UPnP Renderer Front-End</h1>
 </div>
 <div id="content">
-<div class="sect1">
-<h2 id="upmpdcli.intro">Introduction</h2>
+<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph"><p><strong>upmpdcli</strong> is an UPnP Media Renderer front-end to <strong>MPD</strong>, the Music Player
-Daemon. It turns <strong>MPD</strong> into an UPnP Media Renderer, supporting gapless
-track transitions.</p></div>
-<div class="paragraph"><p><strong>upmpdcli</strong> is open-source, free and licensed under the GPL. It is written
-in C++ and uses the <strong>libupnp</strong> (1.6) and <strong>libmpdclient</strong> libraries.</p></div>
-<div class="paragraph"><p>The typical setup is a home network with:</p></div>
-<div class="ulist"><ul>
-<li>
-<p>
-An UPnP media server (e.g. <strong>Minidlna</strong>, <strong>Mediatomb</strong>, or some commercial
-  device).
-</p>
-</li>
-<li>
-<p>
-An UPnP control point (e.g. <strong>Audionet</strong> or <strong>Bubble UPnP</strong> running on a
-  tablet or phone).
-</p>
-</li>
-<li>
-<p>
-<strong>MPD</strong> running on some Linux device (e.g. Raspberry PI hooked up to your
-  bedroom stereo).
-</p>
-</li>
-<li>
-<p>
-<strong>upmpdcli</strong> running on any Linux computer on the network (the same as
-  <strong>MPD</strong> or not). It will be discovered by the UPnP control point in a
-  standard fashion.
-</p>
-</li>
-</ul></div>
-<div class="imageblock" style="float:right;">
-<div class="content">
-<img src="upmpdcli.png" alt="Basic flow" />
-</div>
-</div>
-<div class="paragraph"><p>In this usage, <strong>MPD</strong> does not manage the audio files directly and its
-configured music directory will typically be empty. It fetches them from
-the Media Server through HTTP, using the <strong>curl</strong> input plugin, and does not
-need a local tags database.</p></div>
-<div class="paragraph"><p>When used with an appropriate control point, the <strong>upmpdcli</strong>/<strong>MPD</strong>
-combination supports gapless playback.</p></div>
-<div class="paragraph"><p><em>What&#8217;s the point ?</em> If you are running an UPnP network with multiple
-devices, you may prefer to use a single control application (UPnP-based)
-for everything. <strong>MPD</strong> is a very capable and robust music-playing application,
-which runs well on small computers (e.g. Raspberry PI or other "plug" type
-computers). However it needs a specific control application.</p></div>
-<div class="paragraph"><p><strong>upmpdcli</strong> lets you control your <strong>MPD</strong>-based players with your UPnP control
-point.</p></div>
+Daemon.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -848,6 +798,12 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">mpdport</p></td>
 </tr>
 <tr>
+<td align="left" valign="top"><p class="table"><strong>MPD</strong> password</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">mpdpassword</p></td>
+</tr>
+<tr>
 <td align="left" valign="top"><p class="table">Do we own the <strong>MPD</strong> queue and fearlessly clear it</p></td>
 <td align="left" valign="top"><p class="table">-o 0/1</p></td>
 <td align="left" valign="top"><p class="table"></p></td>
@@ -880,7 +836,7 @@ cellspacing="0" cellpadding="4">
 <div class="sect1">
 <h2 id="upmpdcli.boot">Boot time startup</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>upmpdcli</strong> will will try to change its <tt>uid</tt> to user <tt>upmpdcli</tt> if it is
+<div class="paragraph"><p><strong>upmpdcli</strong> will try to change its <tt>uid</tt> to user <tt>upmpdcli</tt> if it is
 started by root. It will refuse to run if the user does not exist.</p></div>
 <div class="paragraph"><p>If started by <tt>root</tt>, <strong>upmpdcli</strong> will also write its process id to
 <tt>/var/run/upmpdcli.pid</tt>.</p></div>
@@ -914,7 +870,7 @@ sudo make install</tt></pre>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-03-28 14:47:32 CET
+Last updated 2014-04-20 08:04:03 CEST
 </div>
 </div>
 </body>
