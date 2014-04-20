@@ -1159,6 +1159,7 @@ int main(int argc, char *argv[])
 {
 	string mpdhost("localhost");
 	int mpdport = 6600;
+	string mpdpassword;
 	string upnplogfilename("/tmp/upmpdcli_libupnp.log");
 	string logfilename;
 	int loglevel(upnppdebug::Logger::LLINF);
@@ -1230,6 +1231,7 @@ int main(int argc, char *argv[])
 		if (!(op_flags & OPT_q) && config.get("ownqueue", value)) {
 			ownqueue = atoi(value.c_str()) != 0;
 		}
+		config.get("mpdpassword", mpdpassword);
 	}
 
 	if (upnppdebug::Logger::getTheLog(logfilename) == 0) {
@@ -1307,7 +1309,7 @@ int main(int argc, char *argv[])
 	//mylib->setLogFileName(upnplogfilename, LibUPnP::LogLevelDebug);
 
 	// Initialize MPD client module
-	MPDCli mpdcli(mpdhost, mpdport);
+	MPDCli mpdcli(mpdhost, mpdport, mpdpassword);
 	if (!mpdcli.ok()) {
 		LOGFAT("MPD connection failed" << endl);
 		return 1;
