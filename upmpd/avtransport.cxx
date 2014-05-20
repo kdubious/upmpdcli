@@ -40,45 +40,52 @@ using namespace std::placeholders;
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
 
-static const string serviceIdTransport("urn:upnp-org:serviceId:AVTransport");
+static const string sIdTransport("urn:upnp-org:serviceId:AVTransport");
+static const string sTpTransport("urn:schemas-upnp-org:service:AVTransport:1");
 
 UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev)
-: UpnpService(dev), m_dev(dev)
+    : UpnpService(sTpTransport, sIdTransport, dev), m_dev(dev)
 {
-    m_dev->addService(this, serviceIdTransport);
-
     m_dev->addActionMapping("SetAVTransportURI", 
-                            bind(&UpMpdAVTransport::setAVTransportURI, this,_1,_2, false));
+                            bind(&UpMpdAVTransport::setAVTransportURI, 
+                                 this,_1,_2, false));
     m_dev->addActionMapping("SetNextAVTransportURI", 
-                            bind(&UpMpdAVTransport::setAVTransportURI, this,_1, _2, true));
+                            bind(&UpMpdAVTransport::setAVTransportURI, 
+                                 this,_1, _2, true));
     m_dev->addActionMapping("GetPositionInfo", 
-                            bind(&UpMpdAVTransport::getPositionInfo, this, _1, _2));
+                            bind(&UpMpdAVTransport::getPositionInfo, 
+                                 this, _1, _2));
     m_dev->addActionMapping("GetTransportInfo", 
-                            bind(&UpMpdAVTransport::getTransportInfo, this, _1, _2));
+                            bind(&UpMpdAVTransport::getTransportInfo, 
+                                 this, _1, _2));
     m_dev->addActionMapping("GetMediaInfo", 
-                            bind(&UpMpdAVTransport::getMediaInfo, this, _1, _2));
+                            bind(&UpMpdAVTransport::getMediaInfo, 
+                                 this, _1, _2));
     m_dev->addActionMapping("GetDeviceCapabilities", 
-                            bind(&UpMpdAVTransport::getDeviceCapabilities, this, _1, _2));
+                            bind(&UpMpdAVTransport::getDeviceCapabilities, 
+                                 this, _1, _2));
     m_dev->addActionMapping("SetPlayMode", 
                             bind(&UpMpdAVTransport::setPlayMode, this, _1, _2));
     m_dev->addActionMapping("GetTransportSettings", 
-                            bind(&UpMpdAVTransport::getTransportSettings, this, _1, _2));
+                            bind(&UpMpdAVTransport::getTransportSettings, 
+                                 this, _1, _2));
     m_dev->addActionMapping("GetCurrentTransportActions", 
                             bind(&UpMpdAVTransport::getCurrentTransportActions,
                                  this,_1,_2));
-    m_dev->addActionMapping("Stop", bind(&UpMpdAVTransport::playcontrol, this, _1, _2, 0));
-    m_dev->addActionMapping("Play", bind(&UpMpdAVTransport::playcontrol, this, _1, _2, 1));
+    m_dev->addActionMapping("Stop", bind(&UpMpdAVTransport::playcontrol, 
+                                         this, _1, _2, 0));
+    m_dev->addActionMapping("Play", bind(&UpMpdAVTransport::playcontrol, 
+                                         this, _1, _2, 1));
     m_dev->addActionMapping("Pause", 
-                            bind(&UpMpdAVTransport::playcontrol, this, _1, _2, 2));
-    m_dev->addActionMapping("Seek", bind(&UpMpdAVTransport::seek, this, _1, _2));
-    m_dev->addActionMapping("Next", bind(&UpMpdAVTransport::seqcontrol, this, _1, _2, 0));
+                            bind(&UpMpdAVTransport::playcontrol, 
+                                 this, _1, _2, 2));
+    m_dev->addActionMapping("Seek", bind(&UpMpdAVTransport::seek, 
+                                         this, _1, _2));
+    m_dev->addActionMapping("Next", bind(&UpMpdAVTransport::seqcontrol, 
+                                         this, _1, _2, 0));
     m_dev->addActionMapping("Previous", 
-                            bind(&UpMpdAVTransport::seqcontrol, this, _1, _2, 1));
-}
-
-const std::string& UpMpdAVTransport::getServiceType()
-{
-    return serviceIdTransport;
+                            bind(&UpMpdAVTransport::seqcontrol, 
+                                 this, _1, _2, 1));
 }
 
 // Translate MPD mode flags to UPnP Play mode

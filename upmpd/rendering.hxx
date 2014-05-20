@@ -29,7 +29,6 @@ public:
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
-    virtual const std::string& getServiceType();
 
 private:
     bool rdstateMToU(unordered_map<string, string>& status);

@@ -26,10 +26,10 @@ class UpMpd;
 class UpMpdAVTransport : public UpnpService {
 public:
     UpMpdAVTransport(UpMpd *dev);
-    virtual bool getEventData(bool all, 
-                              std::vector<std::string>& names, 
+
+    virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
-    virtual const std::string& getServiceType();
+
 private:
     int setAVTransportURI(const SoapArgs& sc, SoapData& data, bool setnext);
     int getPositionInfo(const SoapArgs& sc, SoapData& data);

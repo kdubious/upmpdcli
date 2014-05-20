@@ -26,10 +26,9 @@ class UpMpd;
 class UpMpdConMan : public UpnpService {
 public:
     UpMpdConMan(UpMpd *dev);
+
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
-    virtual const std::string& getServiceType();
-
 private:
     int getCurrentConnectionIDs(const SoapArgs& sc, SoapData& data);
     int getCurrentConnectionInfo(const SoapArgs& sc, SoapData& data);

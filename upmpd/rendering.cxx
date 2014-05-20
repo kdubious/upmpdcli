@@ -40,13 +40,13 @@ using namespace std::placeholders;
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
 
-static const string serviceIdRender("urn:upnp-org:serviceId:RenderingControl");
+static const string 
+sTpRender("urn:schemas-upnp-org:service:RenderingControl:1");
+static const string sIdRender("urn:upnp-org:serviceId:RenderingControl");
 
 UpMpdRenderCtl::UpMpdRenderCtl(UpMpd *dev)
-    : UpnpService(dev), m_dev(dev), m_desiredvolume(-1)
+    : UpnpService(sTpRender, sIdRender, dev), m_dev(dev), m_desiredvolume(-1)
 {
-    m_dev->addService(this, serviceIdRender);
-
     m_dev->addActionMapping("SetMute", 
                             bind(&UpMpdRenderCtl::setMute, this, _1, _2));
     m_dev->addActionMapping("GetMute", 
@@ -59,11 +59,6 @@ UpMpdRenderCtl::UpMpdRenderCtl(UpMpd *dev)
                             bind(&UpMpdRenderCtl::listPresets, this, _1, _2));
     m_dev->addActionMapping("SelectPreset", 
                             bind(&UpMpdRenderCtl::selectPreset, this, _1, _2));
-}
-
-const std::string& UpMpdRenderCtl::getServiceType()
-{
-    return serviceIdRender;
 }
 
 ////////////////////////////////////////////////////

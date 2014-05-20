@@ -99,7 +99,11 @@ private:
  */
 class UpnpService {
 public:
-    UpnpService(UpnpDevice *) {}
+    UpnpService(const std::string& stp,const std::string& sid, UpnpDevice *dev) 
+        : m_serviceType(stp)
+        {
+            dev->addService(this, sid);
+        }
     virtual ~UpnpService() {}
 
     /** 
@@ -111,7 +115,13 @@ public:
      */
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values) = 0;
-    virtual const std::string& getServiceType() = 0;
+    virtual const std::string& getServiceType() const
+        {
+            return m_serviceType;
+        }
+
+protected:
+    const std::string m_serviceType;
 };
 
 #endif /* _DEVICE_H_X_INCLUDED_ */

@@ -40,12 +40,12 @@ using namespace std::placeholders;
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
 
-static const string serviceIdCM("urn:upnp-org:serviceId:ConnectionManager");
+static const string sTpCM("urn:schemas-upnp-org:service:ConnectionManager:1");
+static const string sIdCM("urn:upnp-org:serviceId:ConnectionManager");
 
 UpMpdConMan::UpMpdConMan(UpMpd *dev)
-    : UpnpService(dev)
+    : UpnpService(sTpCM, sIdCM, dev)
 {
-    dev->addService(this, serviceIdCM);
     dev->addActionMapping("GetCurrentConnectionIDs", 
                           bind(&UpMpdConMan::getCurrentConnectionIDs, 
                                this, _1,_2));
@@ -54,11 +54,6 @@ UpMpdConMan::UpMpdConMan(UpMpd *dev)
                                this,_1,_2));
     dev->addActionMapping("GetProtocolInfo", 
                           bind(&UpMpdConMan::getProtocolInfo, this, _1, _2));
-}
-
-const std::string& UpMpdConMan::getServiceType()
-{
-    return serviceIdCM;
 }
 
 // "http-get:*:audio/mpeg:DLNA.ORG_PN=MP3,"
