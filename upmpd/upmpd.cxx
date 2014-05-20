@@ -136,14 +136,6 @@ UpMpd::UpMpd(const string& deviceid,
 	addActionMapping("GetVolume", bind(&UpMpd::getVolume, this, _1, _2, false));
 	addActionMapping("ListPresets", bind(&UpMpd::listPresets, this, _1, _2));
 	addActionMapping("SelectPreset", bind(&UpMpd::selectPreset, this, _1, _2));
-#if 0
-	addActionMapping("GetVolumeDB", 
-					 bind(&UpMpd::getVolume, this, _1, _2, true));
-	addActionMapping("SetVolumeDB", 
-					 bind(&UpMpd::setVolume, this, _1, _2, true));
-	addActionMapping("GetVolumeDBRange", 
-					 bind(&UpMpd::getVolumeDBRange, this, _1, _2));
-#endif
 
 	addServiceType(serviceIdTransport,
 				   "urn:schemas-upnp-org:service:AVTransport:1");

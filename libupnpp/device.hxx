@@ -33,35 +33,65 @@ class UpnpDevice {
 public:
     UpnpDevice(const std::string& deviceId, 
                const std::unordered_map<std::string, std::string>& xmlfiles);
+
+    /**
+     * Add serviceId to serviceType mapping. 
+     *
+     * This exists only so that we can prefill the 
+     * Soap answer structure with the service type on account of the specific
+     * device (pure convenience, but mandatory). We get the serviceId
+     * in the callbacks but not the serviceType, and the latter needs
+     * to be set in the reply.
+     */
     void addServiceType(const std::string& serviceId, 
                         const std::string& serviceType);
+
+    /**
+     * Add mapping from action-name to handler function.
+     */
     void addActionMapping(const std::string& actName, soapfun fun);
 
-    /** To be implemented by the derived class.
-        Called by the library when a control point subscribes, to
-        retrieve eventable data. Return name/value pairs in the data array 
-    */
+    /** 
+     * Poll to retrieve evented data changed since last call.
+     *
+     * To be implemented by the derived class.
+     * Called by the library when a control point subscribes, to
+     * retrieve eventable data. Return name/value pairs in the data array 
+     */
     virtual bool getEventData(bool all, const std::string& serviceid,
                               std::vector<std::string>& names, 
                               std::vector<std::string>& values) = 0;
 
-    /** To be called by the device layer when data changes and an
-     * event should happen. */
+    /** 
+     * Generate event.
+     *
+     * To be called by the device layer when data changes and an
+     * event should happen. Use is not mandatory because the polling by 
+     * getEventData() may be sufficient.
+     */
     void notifyEvent(const std::string& serviceId,
                      const std::vector<std::string>& names, 
                      const std::vector<std::string>& values);
 
-    /** This loop polls getEventData and generates an UPnP event if
-     * there is anything to broadcast. To be called by main() when
-     * done with initialization. */
+    /** 
+     * Main routine. To be called by main() when done with initialization. 
+     *
+     * This loop mostly polls getEventData and generates an UPnP event if
+     * there is anything to broadcast. The UPnP action calls happen in
+     * other threads with which we synchronize, currently using a global lock.
+     */
     void eventloop();
 
-    /** Called from a callback to Wakeup the event loop early if we
-     * need to broadcast something quickly. Will only do something if
-     * the previous event is not too recent.
+    /** 
+     * To be called from a service action callback to wake up the
+     * event loop early if something needs to be broadcast without
+     * waiting for the normal delay.
+     *
+     * Will only do something if the previous event is not too recent.
      */
     void loopWakeup(); // To trigger an early event
 
+    /** Check status */
     bool ok() {return m_lib != 0;}
 
 private:
@@ -73,7 +103,13 @@ private:
     std::unordered_map<std::string, soapfun> m_calls;
 
     static unordered_map<std::string, UpnpDevice *> o_devices;
+
+    /* Static callback for libupnp. This looks up the appropriate
+     * device using the device ID (UDN), the calls its callback
+     * method */
     static int sCallBack(Upnp_EventType et, void* evp, void*);
+
+    /* Gets called when something needs doing */
     int callBack(Upnp_EventType et, void* evp);
 };
 
