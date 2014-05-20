@@ -22,7 +22,7 @@
 
 #include "soaphelp.hxx"
 
-class UpnpDevice;
+class UpnpService;
 
 typedef function<int (const SoapArgs&, SoapData&)> soapfun;
 
@@ -34,33 +34,12 @@ public:
     UpnpDevice(const std::string& deviceId, 
                const std::unordered_map<std::string, std::string>& xmlfiles);
 
-    /**
-     * Add serviceId to serviceType mapping. 
-     *
-     * This exists only so that we can prefill the 
-     * Soap answer structure with the service type on account of the specific
-     * device (pure convenience, but mandatory). We get the serviceId
-     * in the callbacks but not the serviceType, and the latter needs
-     * to be set in the reply.
-     */
-    void addServiceType(const std::string& serviceId, 
-                        const std::string& serviceType);
+    void addService(UpnpService *, const std::string& serviceId);
 
     /**
      * Add mapping from action-name to handler function.
      */
     void addActionMapping(const std::string& actName, soapfun fun);
-
-    /** 
-     * Poll to retrieve evented data changed since last call.
-     *
-     * To be implemented by the derived class.
-     * Called by the library when a control point subscribes, to
-     * retrieve eventable data. Return name/value pairs in the data array 
-     */
-    virtual bool getEventData(bool all, const std::string& serviceid,
-                              std::vector<std::string>& names, 
-                              std::vector<std::string>& values) = 0;
 
     /** 
      * Generate event.
@@ -99,7 +78,7 @@ private:
             
     LibUPnP *m_lib;
     std::string m_deviceId;
-    std::unordered_map<std::string, std::string> m_serviceTypes;
+    std::unordered_map<std::string, UpnpService*> m_services;
     std::unordered_map<std::string, soapfun> m_calls;
 
     static unordered_map<std::string, UpnpDevice *> o_devices;
@@ -113,5 +92,26 @@ private:
     int callBack(Upnp_EventType et, void* evp);
 };
 
+/**
+ * Upnp service implementation class. This does not do much useful beyond
+ * encapsulating the service actions and event callback. In most cases, the
+ * services will need full access to the device state anyway.
+ */
+class UpnpService {
+public:
+    UpnpService(UpnpDevice *) {}
+    virtual ~UpnpService() {}
+
+    /** 
+     * Poll to retrieve evented data changed since last call.
+     *
+     * To be implemented by the derived class.
+     * Called by the library when a control point subscribes, to
+     * retrieve eventable data. Return name/value pairs in the data array 
+     */
+    virtual bool getEventData(bool all, std::vector<std::string>& names, 
+                              std::vector<std::string>& values) = 0;
+    virtual const std::string& getServiceType() = 0;
+};
 
 #endif /* _DEVICE_H_X_INCLUDED_ */

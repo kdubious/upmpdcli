@@ -51,8 +51,14 @@ upmpdcli_SOURCES = \
      upmpd/mpdcli.hxx \
      upmpd/upmpd.cxx \
      upmpd/upmpdutils.cxx \
-     upmpd/upmpdutils.hxx
-
+     upmpd/upmpdutils.hxx \
+     upmpd/rendering.hxx \
+     upmpd/rendering.cxx \
+     upmpd/avtransport.hxx \
+     upmpd/avtransport.cxx \
+     upmpd/conman.hxx \
+     upmpd/conman.cxx
+                           
 upmpdcli_LDADD = libupnpp.la -lmpdclient 
 
 dist_pkgdata_DATA = upmpd/description.xml upmpd/AVTransport.xml \

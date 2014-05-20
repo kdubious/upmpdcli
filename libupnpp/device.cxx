@@ -171,13 +171,13 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
         LOGDEB("UPNP_CONTROL_ACTION_REQUEST: " << act->ActionName <<
                ". Params: " << ixmlPrintDocument(act->ActionRequest) << endl);
 
-        unordered_map<string, string>::const_iterator servit = 
-            m_serviceTypes.find(act->ServiceID);
-        if (servit == m_serviceTypes.end()) {
+        unordered_map<string, UpnpService*>::const_iterator servit = 
+            m_services.find(act->ServiceID);
+        if (servit == m_services.end()) {
             LOGERR("Bad serviceID" << endl);
             return UPNP_E_INVALID_PARAM;
         }
-        const string& servicetype = servit->second;
+        const string& servicetype = servit->second->getServiceType();
 
         unordered_map<string, soapfun>::iterator callit = 
             m_calls.find(act->ActionName);
@@ -227,8 +227,15 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
             (struct  Upnp_Subscription_Request*)evp;
         LOGDEB("UPNP_EVENT_SUBSCRIPTION_REQUEST: " << act->ServiceId << endl);
 
+        unordered_map<string, UpnpService*>::const_iterator servit = 
+            m_services.find(act->ServiceId);
+        if (servit == m_services.end()) {
+            LOGERR("Bad serviceID" << endl);
+            return UPNP_E_INVALID_PARAM;
+        }
+
         vector<string> names, values, qvalues;
-        if (!getEventData(true, act->ServiceId, names, values)) {
+        if (!servit->second->getEventData(true, names, values)) {
             break;
         }
         vector<const char *> cnames, cvalues;
@@ -254,12 +261,9 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
     return UPNP_E_INVALID_PARAM;
 }
 
-void UpnpDevice::addServiceType(const std::string& serviceId, 
-                                const std::string& serviceType)
+void UpnpDevice::addService(UpnpService *serv, const std::string& serviceId)
 {
-    //LOGDEB("UpnpDevice::addServiceType: [" << 
-    //    serviceId << "] -> [" << serviceType << endl);
-    m_serviceTypes[serviceId] = serviceType;
+    m_services[serviceId] = serv;
 }
 
 void UpnpDevice::addActionMapping(const std::string& actName, soapfun fun)
@@ -374,10 +378,11 @@ void UpnpDevice::eventloop()
         bool all = count && ((count % nloopstofull) == 0);
         //LOGDEB("UpnpDevice::eventloop count "<<count<<" all "<<all<<endl);
 
-        for (unordered_map<string, string>::const_iterator it = 
-                 m_serviceTypes.begin(); it != m_serviceTypes.end(); it++) {
+        for (unordered_map<string, UpnpService*>::const_iterator it = 
+                 m_services.begin(); it != m_services.end(); it++) {
             vector<string> names, values;
-            if (!getEventData(all, it->first, names, values) || names.empty()) {
+            if (!it->second->getEventData(all, names, values) || 
+                names.empty()) {
                 continue;
             }
             notifyEvent(it->first, names, values);
