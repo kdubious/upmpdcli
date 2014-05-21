@@ -111,10 +111,15 @@ public:
      *
      * To be implemented by the derived class.
      * Called by the library when a control point subscribes, to
-     * retrieve eventable data. Return name/value pairs in the data array 
+     * retrieve eventable data. 
+     * Return name/value pairs for changed variables in the data arrays.
      */
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
-                              std::vector<std::string>& values) = 0;
+                              std::vector<std::string>& values) 
+        {
+            return true;
+        }
+
     virtual const std::string& getServiceType() const
         {
             return m_serviceType;

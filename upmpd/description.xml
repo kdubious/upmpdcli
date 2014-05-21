@@ -37,6 +37,13 @@
         <controlURL>/ctl/ConnectionManager</controlURL>
         <eventSubURL>/evt/ConnectionManager</eventSubURL>
       </service>
+      <service>
+        <serviceType>urn:av-openhome-org:service:Product:1</serviceType>
+        <serviceId>urn:av-openhome-org:serviceId:Product</serviceId>
+        <SCPDURL>/OHProduct.xml</SCPDURL>
+        <controlURL>/ctl/OHProduct</controlURL>
+        <eventSubURL>/evt/OHProduct</eventSubURL>
+      </service>
     </serviceList>
     <presentationURL>/presentation.html</presentationURL>
   </device>

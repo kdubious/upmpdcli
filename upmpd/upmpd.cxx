@@ -41,6 +41,7 @@ using namespace std::placeholders;
 #include "rendering.hxx"
 #include "avtransport.hxx"
 #include "conman.hxx"
+#include "ohproduct.hxx"
 
 static const string dfltFriendlyName("UpMpd");
 
@@ -55,6 +56,7 @@ UpMpd::UpMpd(const string& deviceid,
 	m_services.push_back(new UpMpdRenderCtl(this));
 	m_services.push_back(new UpMpdAVTransport(this));
 	m_services.push_back(new UpMpdConMan(this));
+	m_services.push_back(new OHProduct(this));
 }
 
 UpMpd::~UpMpd()
@@ -112,7 +114,9 @@ static string configdir(CONFIGDIR "/");
 
 // Our XML description data. !Keep description.xml first!
 static const char *xmlfilenames[] = {/* keep first */ "description.xml", 
-	 "RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml"};
+									 "RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml",
+									 "OHProduct.xml",
+};
 
 static const int xmlfilenamescnt = sizeof(xmlfilenames) / sizeof(char *);
 
