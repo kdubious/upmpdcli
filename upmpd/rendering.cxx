@@ -81,7 +81,7 @@ UpMpdRenderCtl::UpMpdRenderCtl(UpMpd *dev)
 
 bool UpMpdRenderCtl::rdstateMToU(unordered_map<string, string>& status)
 {
-    const MpdStatus &mpds = m_dev->m_mpdcli->getStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatus();
 
     int volume = m_desiredvolume >= 0 ? m_desiredvolume : mpds.volume;
     if (volume < 0)
@@ -89,8 +89,8 @@ bool UpMpdRenderCtl::rdstateMToU(unordered_map<string, string>& status)
     char cvalue[30];
     sprintf(cvalue, "%d", volume);
     status["Volume"] = cvalue;
-//	sprintf(cvalue, "%d", percentodbvalue(volume));
-//	status["VolumeDB"] =  cvalue;
+    //sprintf(cvalue, "%d", percentodbvalue(volume));
+    //status["VolumeDB"] =  cvalue;
     status["Mute"] =  volume == 0 ? "1" : "0";
     return true;
 }

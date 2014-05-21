@@ -23,6 +23,9 @@
 
 class MpdStatus {
 public:
+    MpdStatus()
+        : trackcounter(0), detailscounter(0)
+        {}
     enum State {MPDS_UNK, MPDS_STOP, MPDS_PLAY, MPDS_PAUSE};
     int volume;
     bool rept;
@@ -40,11 +43,18 @@ public:
     unsigned int songelapsedms; //current ms
     unsigned int songlenms; // song millis
     unsigned int kbrate;
+    unsigned int sample_rate;
+    unsigned int bitdepth;
+    unsigned int channels;
     std::string errormessage;
     // Current song info. The keys are didl-lite names (which can be
     // attribute or element names
     std::unordered_map<std::string, std::string> currentsong;
     std::unordered_map<std::string, std::string> nextsong;
+
+    // Synthetized fields
+    int trackcounter;
+    int detailscounter;
 };
 
 class MPDCli {

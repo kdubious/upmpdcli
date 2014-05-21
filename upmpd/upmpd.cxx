@@ -42,6 +42,7 @@ using namespace std::placeholders;
 #include "avtransport.hxx"
 #include "conman.hxx"
 #include "ohproduct.hxx"
+#include "ohinfo.hxx"
 
 static const string dfltFriendlyName("UpMpd");
 
@@ -50,13 +51,17 @@ static const string dfltFriendlyName("UpMpd");
 UpMpd::UpMpd(const string& deviceid, 
 			 const unordered_map<string, string>& xmlfiles,
 			 MPDCli *mpdcli, Options opts)
-	: UpnpDevice(deviceid, xmlfiles), m_mpdcli(mpdcli), 
+	: UpnpDevice(deviceid, xmlfiles), m_mpdcli(mpdcli), m_mpds(0),
 	  m_options(opts)
 {
+	// Note: the order is significant here as it will be used when
+	// calling the getStatus() methods, and we want AVTransport to
+	// update the mpd status for OHInfo
 	m_services.push_back(new UpMpdRenderCtl(this));
 	m_services.push_back(new UpMpdAVTransport(this));
 	m_services.push_back(new UpMpdConMan(this));
 	m_services.push_back(new OHProduct(this));
+	m_services.push_back(new OHInfo(this));
 }
 
 UpMpd::~UpMpd()
@@ -65,6 +70,12 @@ UpMpd::~UpMpd()
 		 it != m_services.end(); it++) {
 		delete(*it);
 	}
+}
+
+const MpdStatus& UpMpd::getMpdStatus()
+{
+    m_mpds = &m_mpdcli->getStatus();
+    return *m_mpds;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -113,9 +124,10 @@ static string datadir(DATADIR "/");
 static string configdir(CONFIGDIR "/");
 
 // Our XML description data. !Keep description.xml first!
-static const char *xmlfilenames[] = {/* keep first */ "description.xml", 
-									 "RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml",
-									 "OHProduct.xml",
+static const char *xmlfilenames[] = 
+{/* keep first */ "description.xml", 
+ "RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml",
+ "OHProduct.xml", "OHInfo.xml",
 };
 
 static const int xmlfilenamescnt = sizeof(xmlfilenames) / sizeof(char *);

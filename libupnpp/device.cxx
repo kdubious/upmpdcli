@@ -172,8 +172,8 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
                ". Params: " << ixmlPrintDocument(act->ActionRequest) << endl);
 
         unordered_map<string, UpnpService*>::const_iterator servit = 
-            m_services.find(act->ServiceID);
-        if (servit == m_services.end()) {
+            m_servicemap.find(act->ServiceID);
+        if (servit == m_servicemap.end()) {
             LOGERR("Bad serviceID" << endl);
             return UPNP_E_INVALID_PARAM;
         }
@@ -228,8 +228,8 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
         LOGDEB("UPNP_EVENT_SUBSCRIPTION_REQUEST: " << act->ServiceId << endl);
 
         unordered_map<string, UpnpService*>::const_iterator servit = 
-            m_services.find(act->ServiceId);
-        if (servit == m_services.end()) {
+            m_servicemap.find(act->ServiceId);
+        if (servit == m_servicemap.end()) {
             LOGERR("Bad serviceID" << endl);
             return UPNP_E_INVALID_PARAM;
         }
@@ -263,7 +263,8 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
 
 void UpnpDevice::addService(UpnpService *serv, const std::string& serviceId)
 {
-    m_services[serviceId] = serv;
+    m_servicemap[serviceId] = serv;
+    m_serviceids.push_back(serviceId);
 }
 
 void UpnpDevice::addActionMapping(const std::string& actName, soapfun fun)
@@ -329,7 +330,7 @@ int clock_gettime(int /*clk_id*/, struct timespec* t) {
 void UpnpDevice::eventloop()
 {
     int count = 0;
-    const int loopwait_ms = 1000; // Polling mpd every 1 S
+    const int loopwait_ms = 1000; // Polling the services every 1 S
     const int nloopstofull = 10;  // Full state every 10 S
     struct timespec wkuptime, earlytime;
     bool didearly = false;
@@ -378,14 +379,14 @@ void UpnpDevice::eventloop()
         bool all = count && ((count % nloopstofull) == 0);
         //LOGDEB("UpnpDevice::eventloop count "<<count<<" all "<<all<<endl);
 
-        for (unordered_map<string, UpnpService*>::const_iterator it = 
-                 m_services.begin(); it != m_services.end(); it++) {
+        for (vector<string>::const_iterator it = 
+                 m_serviceids.begin(); it != m_serviceids.end(); it++) {
             vector<string> names, values;
-            if (!it->second->getEventData(all, names, values) || 
-                names.empty()) {
+            UpnpService* serv = m_servicemap[*it];
+            if (!serv->getEventData(all, names, values) || names.empty()) {
                 continue;
             }
-            notifyEvent(it->first, names, values);
+            notifyEvent(*it, names, values);
         }
     }
 }

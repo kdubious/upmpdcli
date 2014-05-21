@@ -78,7 +78,11 @@ private:
             
     LibUPnP *m_lib;
     std::string m_deviceId;
-    std::unordered_map<std::string, UpnpService*> m_services;
+    // We keep the services in a map for easy access from id and in a
+    // vector for ordered walking while fetching status. Order is
+    // determine by addService() call sequence.
+    std::unordered_map<std::string, UpnpService*> m_servicemap;
+    std::vector<std::string> m_serviceids;
     std::unordered_map<std::string, soapfun> m_calls;
 
     static unordered_map<std::string, UpnpDevice *> o_devices;

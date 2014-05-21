@@ -44,6 +44,13 @@
         <controlURL>/ctl/OHProduct</controlURL>
         <eventSubURL>/evt/OHProduct</eventSubURL>
       </service>
+      <service>
+        <serviceType>urn:av-openhome-org:service:Info:1</serviceType>
+        <serviceId>urn:av-openhome-org:serviceId:Info</serviceId>
+        <SCPDURL>/OHInfo.xml</SCPDURL>
+        <controlURL>/ctl/OHInfo</controlURL>
+        <eventSubURL>/evt/OHInfo</eventSubURL>
+      </service>
     </serviceList>
     <presentationURL>/presentation.html</presentationURL>
   </device>

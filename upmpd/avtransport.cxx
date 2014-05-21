@@ -143,7 +143,7 @@ static string mpdsToPlaymode(const MpdStatus& mpds)
 // Translate MPD state to UPnP AVTransport state variables
 bool UpMpdAVTransport::tpstateMToU(unordered_map<string, string>& status)
 {
-    const MpdStatus &mpds = m_dev->m_mpdcli->getStatus();
+    const MpdStatus &mpds =  m_dev->getMpdStatus();
     //DEBOUT << "UpMpdAVTransport::tpstateMToU: curpos: " << mpds.songpos <<
     //   " qlen " << mpds.qlen << endl;
     bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
@@ -295,7 +295,7 @@ int UpMpdAVTransport::setAVTransportURI(const SoapArgs& sc, SoapData& data,
         m_dev->m_mpdcli->clearQueue();
     }
 
-    const MpdStatus &mpds = m_dev->m_mpdcli->getStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatus();
     bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
         (mpds.state == MpdStatus::MPDS_PAUSE);
     int curpos = mpds.songpos;
@@ -373,7 +373,7 @@ int UpMpdAVTransport::setAVTransportURI(const SoapArgs& sc, SoapData& data,
 
 int UpMpdAVTransport::getPositionInfo(const SoapArgs& sc, SoapData& data)
 {
-    const MpdStatus &mpds = m_dev->m_mpdcli->getStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatus();
     //LOGDEB("UpMpdAVTransport::getPositionInfo. State: " << mpds.state <<endl);
 
     bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
@@ -426,7 +426,7 @@ int UpMpdAVTransport::getPositionInfo(const SoapArgs& sc, SoapData& data)
 
 int UpMpdAVTransport::getTransportInfo(const SoapArgs& sc, SoapData& data)
 {
-    const MpdStatus &mpds = m_dev->m_mpdcli->getStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatus();
     //LOGDEB("UpMpdAVTransport::getTransportInfo. State: " << mpds.state<<endl);
 
     string tstate("STOPPED");
@@ -452,7 +452,7 @@ int UpMpdAVTransport::getDeviceCapabilities(const SoapArgs& sc, SoapData& data)
 
 int UpMpdAVTransport::getMediaInfo(const SoapArgs& sc, SoapData& data)
 {
-    const MpdStatus &mpds = m_dev->m_mpdcli->getStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatus();
     LOGDEB("UpMpdAVTransport::getMediaInfo. State: " << mpds.state << endl);
 
     bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
@@ -499,7 +499,7 @@ int UpMpdAVTransport::getMediaInfo(const SoapArgs& sc, SoapData& data)
 
 int UpMpdAVTransport::playcontrol(const SoapArgs& sc, SoapData& data, int what)
 {
-    const MpdStatus &mpds = m_dev->m_mpdcli->getStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatus();
     LOGDEB("UpMpdAVTransport::playcontrol State: " << mpds.state <<
            " what "<<what<< endl);
 
@@ -540,7 +540,7 @@ int UpMpdAVTransport::playcontrol(const SoapArgs& sc, SoapData& data, int what)
 
 int UpMpdAVTransport::seqcontrol(const SoapArgs& sc, SoapData& data, int what)
 {
-    const MpdStatus &mpds = m_dev->m_mpdcli->getStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatus();
     LOGDEB("UpMpdAVTransport::seqcontrol State: " << mpds.state << " what "
            <<what<< endl);
 
@@ -596,7 +596,7 @@ int UpMpdAVTransport::setPlayMode(const SoapArgs& sc, SoapData& data)
 
 int UpMpdAVTransport::getTransportSettings(const SoapArgs& sc, SoapData& data)
 {
-    const MpdStatus &mpds = m_dev->m_mpdcli->getStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatus();
     string playmode = mpdsToPlaymode(mpds);
     data.addarg("PlayMode", playmode);
     data.addarg("RecQualityMode", "NOT_IMPLEMENTED");
@@ -606,7 +606,7 @@ int UpMpdAVTransport::getTransportSettings(const SoapArgs& sc, SoapData& data)
 int UpMpdAVTransport::getCurrentTransportActions(const SoapArgs& sc, 
                                                  SoapData& data)
 {
-    const MpdStatus &mpds = m_dev->m_mpdcli->getStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatus();
     string tactions("Next,Previous");
     switch(mpds.state) {
     case MpdStatus::MPDS_PLAY: 

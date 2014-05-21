@@ -18,14 +18,7 @@
 
 #include <iostream>
 
-#include <mpd/connection.h>
-#include <mpd/password.h>
-#include <mpd/mixer.h>
-#include <mpd/status.h>
-#include <mpd/song.h>
-#include <mpd/tag.h>
-#include <mpd/player.h>
-#include <mpd/queue.h>
+#include <mpd/client.h>
 
 #include "libupnpp/log.hxx"
 #include "mpdcli.hxx"
@@ -161,13 +154,27 @@ bool MPDCli::updStatus()
     m_stat.songpos = mpd_status_get_song_pos(mpds);
     m_stat.songid = mpd_status_get_song_id(mpds);
     if (m_stat.songpos >= 0) {
+        string prevuri = m_stat.currentsong["uri"];
         updSong(m_stat.currentsong);
+        if (m_stat.currentsong["uri"].compare(prevuri)) {
+            m_stat.trackcounter++;
+            m_stat.detailscounter = 0;
+        }
         updSong(m_stat.nextsong, m_stat.songpos + 1);
     }
 
     m_stat.songelapsedms = mpd_status_get_elapsed_ms(mpds);
     m_stat.songlenms = mpd_status_get_total_time(mpds) * 1000;
     m_stat.kbrate = mpd_status_get_kbit_rate(mpds);
+    const struct mpd_audio_format *maf = 
+        mpd_status_get_audio_format(mpds);
+    if (maf) {
+        m_stat.bitdepth = maf->bits;
+        m_stat.sample_rate = maf->sample_rate;
+        m_stat.channels = maf->channels;
+    } else {
+        m_stat.bitdepth = m_stat.channels = m_stat.sample_rate = 0;
+    }
 
     const char *err = mpd_status_get_error(mpds);
     if (err != 0)

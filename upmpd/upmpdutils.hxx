@@ -62,6 +62,13 @@ extern std::string didlmake(const MpdStatus& mpds, bool next = false);
 extern std::string regsub1(const std::string& sexp, const std::string& input, 
                            const std::string& repl);
 
+// Return map with "newer" elements which differ from "old".  Old may
+// have fewer elts than "newer" (e.g. may be empty), we use the
+// "newer" entries for diffing
+extern std::unordered_map<std::string, std::string> 
+diffmaps(const std::unordered_map<std::string, std::string>& old,
+         const std::unordered_map<std::string, std::string>& newer);
+
 /// Lock/pid file class. From Recoll
 class Pidfile {
 public:

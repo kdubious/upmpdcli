@@ -268,6 +268,21 @@ const string& mapget(const unordered_map<string, string>& im, const string& k)
         return it->second;
 }
 
+unordered_map<string, string> 
+diffmaps(const unordered_map<string, string>& old,
+         const unordered_map<string, string>& newer)
+{
+    unordered_map<string, string>  out;
+    
+    for (unordered_map<string, string>::const_iterator it = newer.begin();
+         it != newer.end(); it++) {
+        unordered_map<string, string>::const_iterator ito = old.find(it->first);
+        if (ito == old.end() || ito->second.compare(it->second))
+            out[it->first] = it->second;
+    }
+    return out;
+}
+
 // Bogus didl fragment maker. We probably don't need a full-blown XML
 // helper here
 string didlmake(const MpdStatus& mpds, bool next)

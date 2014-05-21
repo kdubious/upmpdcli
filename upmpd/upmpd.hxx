@@ -19,13 +19,14 @@
 #define _UPMPD_H_X_INCLUDED_
 
 class MPDCli;
+class MpdStatus;
 
 // The UPnP MPD frontend device with its 3 services
 class UpMpd : public UpnpDevice {
 public:
     friend class UpMpdRenderCtl;
     friend class UpMpdAVTransport;
-    friend class UpMpdConMan;
+    friend class OHInfo;
 
     enum Options {
         upmpdNone,
@@ -39,8 +40,11 @@ public:
           MPDCli *mpdcli, Options opts = upmpdNone);
     ~UpMpd();
 
+    const MpdStatus &getMpdStatus();
+
 private:
     MPDCli *m_mpdcli;
+    const MpdStatus *m_mpds;
 
     int m_options;
     vector<UpnpService*> m_services;
