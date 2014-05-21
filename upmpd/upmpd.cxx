@@ -43,6 +43,7 @@ using namespace std::placeholders;
 #include "conman.hxx"
 #include "ohproduct.hxx"
 #include "ohinfo.hxx"
+#include "ohtime.hxx"
 
 static const string dfltFriendlyName("UpMpd");
 
@@ -62,6 +63,7 @@ UpMpd::UpMpd(const string& deviceid,
 	m_services.push_back(new UpMpdConMan(this));
 	m_services.push_back(new OHProduct(this));
 	m_services.push_back(new OHInfo(this));
+	m_services.push_back(new OHTime(this));
 }
 
 UpMpd::~UpMpd()
@@ -127,7 +129,7 @@ static string configdir(CONFIGDIR "/");
 static const char *xmlfilenames[] = 
 {/* keep first */ "description.xml", 
  "RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml",
- "OHProduct.xml", "OHInfo.xml",
+ "OHProduct.xml", "OHInfo.xml", "OHTime.xml",
 };
 
 static const int xmlfilenamescnt = sizeof(xmlfilenames) / sizeof(char *);

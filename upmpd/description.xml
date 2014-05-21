@@ -51,6 +51,13 @@
         <controlURL>/ctl/OHInfo</controlURL>
         <eventSubURL>/evt/OHInfo</eventSubURL>
       </service>
+      <service>
+        <serviceType>urn:av-openhome-org:service:Time:1</serviceType>
+        <serviceId>urn:av-openhome-org:serviceId:Time</serviceId>
+        <SCPDURL>/OHTime.xml</SCPDURL>
+        <controlURL>/ctl/OHTime</controlURL>
+        <eventSubURL>/evt/OHTime</eventSubURL>
+      </service>
     </serviceList>
     <presentationURL>/presentation.html</presentationURL>
   </device>

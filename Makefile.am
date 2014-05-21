@@ -61,13 +61,15 @@ upmpdcli_SOURCES = \
      upmpd/ohproduct.hxx \
      upmpd/ohproduct.cxx \
      upmpd/ohinfo.hxx \
-     upmpd/ohinfo.cxx
+     upmpd/ohinfo.cxx \
+     upmpd/ohtime.hxx \
+     upmpd/ohtime.cxx
                            
 upmpdcli_LDADD = libupnpp.la -lmpdclient 
 
 dist_pkgdata_DATA = upmpd/description.xml upmpd/AVTransport.xml \
                   upmpd/RenderingControl.xml upmpd/ConnectionManager.xml \
-                  upmpd/OHProduct.xml upmpd/OHInfo.xml
+                  upmpd/OHProduct.xml upmpd/OHInfo.xml upmpd/OHTime.xml
 
 dist_sysconf_DATA = upmpd/upmpdcli.conf
 
