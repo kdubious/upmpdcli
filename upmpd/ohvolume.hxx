@@ -14,39 +14,38 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#ifndef _RENDERING_H_X_INCLUDED_
-#define _RENDERING_H_X_INCLUDED_
+#ifndef _OHVOLUME_H_X_INCLUDED_
+#define _OHVOLUME_H_X_INCLUDED_
 
 #include <string>
 
 #include "libupnpp/device.hxx"
 
 class UpMpd;
+class UpMpdRenderCtl;
 
-class UpMpdRenderCtl : public UpnpService {
+class OHVolume : public UpnpService {
 public:
-    UpMpdRenderCtl(UpMpd *dev);
+    OHVolume(UpMpd *dev, UpMpdRenderCtl *ctl);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
-    int getvolume_i();
-    void setvolume_i(int volume);
-    void setmute_i(bool onoff);
 private:
-    bool rdstateMToU(unordered_map<string, string>& status);
+    int characteristics(const SoapArgs& sc, SoapData& data);
+    int setVolume(const SoapArgs& sc, SoapData& data);
+    int volume(const SoapArgs& sc, SoapData& data);
+    int volumeInc(const SoapArgs& sc, SoapData& data);
+    int volumeDec(const SoapArgs& sc, SoapData& data);
+    int volumeLimit(const SoapArgs& sc, SoapData& data);
+    int mute(const SoapArgs& sc, SoapData& data);
     int setMute(const SoapArgs& sc, SoapData& data);
-    int getMute(const SoapArgs& sc, SoapData& data);
-    int setVolume(const SoapArgs& sc, SoapData& data, bool isDb);
-    int getVolume(const SoapArgs& sc, SoapData& data, bool isDb);
-    int listPresets(const SoapArgs& sc, SoapData& data);
-    int selectPreset(const SoapArgs& sc, SoapData& data);
 
-    UpMpd *m_dev;
-    // Desired volume target. We may delay executing small volume
-    // changes to avoid saturating with small requests.
-    int m_desiredvolume;
+    void getdata(string& trackcount, string &duration, string& seconds);
+    bool makestate(unordered_map<string, string> &st);
     // State variable storage
-    unordered_map<string, string> m_rdstate;
+    unordered_map<string, string> m_state;
+    UpMpd *m_dev;
+    UpMpdRenderCtl *m_ctl;
 };
 
-#endif /* _RENDERING_H_X_INCLUDED_ */
+#endif /* _OHVOLUME_H_X_INCLUDED_ */

@@ -175,6 +175,42 @@ int UpMpdRenderCtl::getVolumeDBRange(const SoapArgs& sc, SoapData& data)
 }
 #endif
 
+int UpMpdRenderCtl::getvolume_i()
+{
+    return m_desiredvolume >= 0 ? m_desiredvolume : 
+        m_dev->m_mpdcli->getVolume();
+}
+
+void UpMpdRenderCtl::setvolume_i(int volume)
+{
+    int previous_volume = m_dev->m_mpdcli->getVolume();
+    int delta = previous_volume - volume;
+    if (delta < 0)
+        delta = -delta;
+    LOGDEB("UpMpdRenderCtl::setVolume: volume " << volume << " delta " << 
+           delta << endl);
+    if (delta >= 5) {
+        m_dev->m_mpdcli->setVolume(volume);
+        m_desiredvolume = -1;
+    } else {
+        m_desiredvolume = volume;
+    }
+}
+
+void UpMpdRenderCtl::setmute_i(bool onoff)
+{
+    if (onoff) {
+        if (m_desiredvolume >= 0) {
+            m_dev->m_mpdcli->setVolume(m_desiredvolume);
+            m_desiredvolume = -1;
+        }
+        m_dev->m_mpdcli->setVolume(0, true);
+    } else {
+        // Restore pre-mute
+        m_dev->m_mpdcli->setVolume(1, true);
+    }
+}
+
 int UpMpdRenderCtl::setMute(const SoapArgs& sc, SoapData& data)
 {
     map<string, string>::const_iterator it;
@@ -189,14 +225,9 @@ int UpMpdRenderCtl::setMute(const SoapArgs& sc, SoapData& data)
         return UPNP_E_INVALID_PARAM;
     }
     if (it->second[0] == 'F' || it->second[0] == '0') {
-        // Restore pre-mute
-        m_dev->m_mpdcli->setVolume(1, true);
+        setmute_i(false);
     } else if (it->second[0] == 'T' || it->second[0] == '1') {
-        if (m_desiredvolume >= 0) {
-            m_dev->m_mpdcli->setVolume(m_desiredvolume);
-            m_desiredvolume = -1;
-        }
-        m_dev->m_mpdcli->setVolume(0, true);
+        setmute_i(true);
     } else {
         return UPNP_E_INVALID_PARAM;
     }
@@ -238,17 +269,7 @@ int UpMpdRenderCtl::setVolume(const SoapArgs& sc, SoapData& data, bool isDb)
         return UPNP_E_INVALID_PARAM;
     }
 	
-    int previous_volume = m_dev->m_mpdcli->getVolume();
-    int delta = previous_volume - volume;
-    if (delta < 0)
-        delta = -delta;
-    LOGDEB("UpMpdRenderCtl::setVolume: volume " << volume << " delta " << delta << endl);
-    if (delta >= 5) {
-        m_dev->m_mpdcli->setVolume(volume);
-        m_desiredvolume = -1;
-    } else {
-        m_desiredvolume = volume;
-    }
+    setvolume_i(volume);
 
     m_dev->loopWakeup();
     return UPNP_E_SUCCESS;
@@ -264,7 +285,7 @@ int UpMpdRenderCtl::getVolume(const SoapArgs& sc, SoapData& data, bool isDb)
         return UPNP_E_INVALID_PARAM;
     }
 		
-    int volume = m_dev->m_mpdcli->getVolume();
+    int volume = getvolume_i();
     if (isDb) {
         volume = percentodbvalue(volume);
     }

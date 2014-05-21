@@ -44,6 +44,7 @@ using namespace std::placeholders;
 #include "ohproduct.hxx"
 #include "ohinfo.hxx"
 #include "ohtime.hxx"
+#include "ohvolume.hxx"
 
 static const string dfltFriendlyName("UpMpd");
 
@@ -58,12 +59,14 @@ UpMpd::UpMpd(const string& deviceid,
 	// Note: the order is significant here as it will be used when
 	// calling the getStatus() methods, and we want AVTransport to
 	// update the mpd status for OHInfo
-	m_services.push_back(new UpMpdRenderCtl(this));
+	UpMpdRenderCtl *rdctl = new UpMpdRenderCtl(this);
+	m_services.push_back(rdctl);
 	m_services.push_back(new UpMpdAVTransport(this));
 	m_services.push_back(new UpMpdConMan(this));
 	m_services.push_back(new OHProduct(this));
 	m_services.push_back(new OHInfo(this));
 	m_services.push_back(new OHTime(this));
+	m_services.push_back(new OHVolume(this, rdctl));
 }
 
 UpMpd::~UpMpd()
@@ -129,7 +132,7 @@ static string configdir(CONFIGDIR "/");
 static const char *xmlfilenames[] = 
 {/* keep first */ "description.xml", 
  "RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml",
- "OHProduct.xml", "OHInfo.xml", "OHTime.xml",
+ "OHProduct.xml", "OHInfo.xml", "OHTime.xml", "OHVolume.xml",
 };
 
 static const int xmlfilenamescnt = sizeof(xmlfilenames) / sizeof(char *);
