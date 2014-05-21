@@ -65,24 +65,6 @@ OHVolume::OHVolume(UpMpd *dev, UpMpdRenderCtl *ctl)
                           bind(&OHVolume::setMute, this, _1, _2));
 }
 
-void OHVolume::getdata(string& trackcount, string &duration, 
-                     string& seconds)
-{
-    const MpdStatus &mpds =  m_dev->getMpdStatus();
-
-    char cbuf[30];
-    sprintf(cbuf, "%d", mpds.trackcounter);
-    trackcount = cbuf;
-    bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
-        (mpds.state == MpdStatus::MPDS_PAUSE);
-    if (is_song) {
-        sprintf(cbuf, "%u", mpds.songlenms / 1000);
-        duration = cbuf;
-        sprintf(cbuf, "%u", mpds.songelapsedms / 1000);
-        seconds = cbuf;
-    }
-}
-
 bool OHVolume::makestate(unordered_map<string, string> &st)
 {
     st.clear();

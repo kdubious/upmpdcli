@@ -65,6 +65,13 @@
         <controlURL>/ctl/OHVolume</controlURL>
         <eventSubURL>/evt/OHVolume</eventSubURL>
       </service>
+      <service>
+        <serviceType>urn:av-openhome-org:service:Playlist:1</serviceType>
+        <serviceId>urn:av-openhome-org:serviceId:Playlist</serviceId>
+        <SCPDURL>/OHPlaylist.xml</SCPDURL>
+        <controlURL>/ctl/OHPlaylist</controlURL>
+        <eventSubURL>/evt/OHPlaylist</eventSubURL>
+      </service>
     </serviceList>
     <presentationURL>/presentation.html</presentationURL>
   </device>

@@ -45,6 +45,7 @@ using namespace std::placeholders;
 #include "ohinfo.hxx"
 #include "ohtime.hxx"
 #include "ohvolume.hxx"
+#include "ohplaylist.hxx"
 
 static const string dfltFriendlyName("UpMpd");
 
@@ -67,6 +68,7 @@ UpMpd::UpMpd(const string& deviceid,
 	m_services.push_back(new OHInfo(this));
 	m_services.push_back(new OHTime(this));
 	m_services.push_back(new OHVolume(this, rdctl));
+	m_services.push_back(new OHPlaylist(this, rdctl));
 }
 
 UpMpd::~UpMpd()

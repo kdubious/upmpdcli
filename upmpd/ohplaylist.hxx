@@ -14,8 +14,8 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#ifndef _OHVOLUME_H_X_INCLUDED_
-#define _OHVOLUME_H_X_INCLUDED_
+#ifndef _OHPLAYLIST_H_X_INCLUDED_
+#define _OHPLAYLIST_H_X_INCLUDED_
 
 #include <string>
 
@@ -24,21 +24,13 @@
 class UpMpd;
 class UpMpdRenderCtl;
 
-class OHVolume : public UpnpService {
+class OHPlaylist : public UpnpService {
 public:
-    OHVolume(UpMpd *dev, UpMpdRenderCtl *ctl);
+    OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
 private:
-    int characteristics(const SoapArgs& sc, SoapData& data);
-    int setVolume(const SoapArgs& sc, SoapData& data);
-    int volume(const SoapArgs& sc, SoapData& data);
-    int volumeInc(const SoapArgs& sc, SoapData& data);
-    int volumeDec(const SoapArgs& sc, SoapData& data);
-    int volumeLimit(const SoapArgs& sc, SoapData& data);
-    int mute(const SoapArgs& sc, SoapData& data);
-    int setMute(const SoapArgs& sc, SoapData& data);
 
     bool makestate(unordered_map<string, string> &st);
     // State variable storage
@@ -47,4 +39,4 @@ private:
     UpMpdRenderCtl *m_ctl;
 };
 
-#endif /* _OHVOLUME_H_X_INCLUDED_ */
+#endif /* _OHPLAYLIST_H_X_INCLUDED_ */
