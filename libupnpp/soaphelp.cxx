@@ -91,6 +91,41 @@ out:
     return ret;
 }
 
+bool SoapArgs::getBool(const char *nm, bool *value) const
+{
+    map<string, string>::const_iterator it = args.find(nm);
+    if (it == args.end() || it->second.empty()) {
+        return false;
+    }
+    if (it->second[0] == 'F' || it->second[0] == '0') {
+        *value = false;
+    } else if (it->second[0] == 'T' || it->second[0] == '1') {
+        *value = true;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool SoapArgs::getInt(const char *nm, int *value) const
+{
+    map<string, string>::const_iterator it = args.find(nm);
+    if (it == args.end() || it->second.empty()) {
+        return false;
+    }
+    *value = atoi(it->second.c_str());
+    return true;
+}
+
+bool SoapArgs::getString(const char *nm, string *value) const
+{
+    map<string, string>::const_iterator it = args.find(nm);
+    if (it == args.end() || it->second.empty()) {
+        return false;
+    }
+    *value = it->second;
+    return true;
+}
 
 IXML_Document *buildSoapBody(SoapData& data)
 {

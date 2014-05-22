@@ -134,7 +134,8 @@ static string configdir(CONFIGDIR "/");
 static const char *xmlfilenames[] = 
 {/* keep first */ "description.xml", 
  "RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml",
- "OHProduct.xml", "OHInfo.xml", "OHTime.xml", "OHVolume.xml",
+ "OHProduct.xml", "OHInfo.xml", "OHTime.xml", "OHVolume.xml", 
+ "OHPlaylist.xml",
 };
 
 static const int xmlfilenamescnt = sizeof(xmlfilenames) / sizeof(char *);

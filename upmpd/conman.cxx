@@ -56,46 +56,6 @@ UpMpdConMan::UpMpdConMan(UpMpd *dev)
                           bind(&UpMpdConMan::getProtocolInfo, this, _1, _2));
 }
 
-// "http-get:*:audio/mpeg:DLNA.ORG_PN=MP3,"
-// "http-get:*:audio/L16:DLNA.ORG_PN=LPCM,"
-// "http-get:*:audio/x-flac:DLNA.ORG_PN=FLAC"
-static const string 
-myProtocolInfo(
-    "http-get:*:audio/wav:*,"
-    "http-get:*:audio/wave:*,"
-    "http-get:*:audio/x-wav:*,"
-    "http-get:*:audio/x-aiff:*,"
-    "http-get:*:audio/mpeg:*,"
-    "http-get:*:audio/x-mpeg:*,"
-    "http-get:*:audio/mp1:*,"
-    "http-get:*:audio/aac:*,"
-    "http-get:*:audio/flac:*,"
-    "http-get:*:audio/x-flac:*,"
-    "http-get:*:audio/m4a:*,"
-    "http-get:*:audio/mp4:*,"
-    "http-get:*:audio/x-m4a:*,"
-    "http-get:*:audio/vorbis:*,"
-    "http-get:*:audio/ogg:*,"
-    "http-get:*:audio/x-ogg:*,"
-    "http-get:*:audio/x-scpls:*,"
-    "http-get:*:audio/L16;rate=11025;channels=1:*,"
-    "http-get:*:audio/L16;rate=22050;channels=1:*,"
-    "http-get:*:audio/L16;rate=44100;channels=1:*,"
-    "http-get:*:audio/L16;rate=48000;channels=1:*,"
-    "http-get:*:audio/L16;rate=88200;channels=1:*,"
-    "http-get:*:audio/L16;rate=96000;channels=1:*,"
-    "http-get:*:audio/L16;rate=176400;channels=1:*,"
-    "http-get:*:audio/L16;rate=192000;channels=1:*,"
-    "http-get:*:audio/L16;rate=11025;channels=2:*,"
-    "http-get:*:audio/L16;rate=22050;channels=2:*,"
-    "http-get:*:audio/L16;rate=44100;channels=2:*,"
-    "http-get:*:audio/L16;rate=48000;channels=2:*,"
-    "http-get:*:audio/L16;rate=88200;channels=2:*,"
-    "http-get:*:audio/L16;rate=96000;channels=2:*,"
-    "http-get:*:audio/L16;rate=176400;channels=2:*,"
-    "http-get:*:audio/L16;rate=192000;channels=2:*"
-    );
-
 bool UpMpdConMan::getEventData(bool all, std::vector<std::string>& names, 
                                  std::vector<std::string>& values)
 {
@@ -105,7 +65,7 @@ bool UpMpdConMan::getEventData(bool all, std::vector<std::string>& names,
     // we return nothing.
     if (all) {
         names.push_back("SinkProtocolInfo");
-        values.push_back(myProtocolInfo);
+        values.push_back(upmpdProtocolInfo);
     }
     return true;
 }
@@ -144,7 +104,7 @@ int UpMpdConMan::getProtocolInfo(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("UpMpdConMan::getProtocolInfo" << endl);
     data.addarg("Source", "");
-    data.addarg("Sink", myProtocolInfo);
+    data.addarg("Sink", upmpdProtocolInfo);
 
     return UPNP_E_SUCCESS;
 }

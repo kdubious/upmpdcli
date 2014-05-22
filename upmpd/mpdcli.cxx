@@ -155,12 +155,12 @@ bool MPDCli::updStatus()
     m_stat.songid = mpd_status_get_song_id(mpds);
     if (m_stat.songpos >= 0) {
         string prevuri = m_stat.currentsong["uri"];
-        updSong(m_stat.currentsong);
+        statSong(m_stat.currentsong);
         if (m_stat.currentsong["uri"].compare(prevuri)) {
             m_stat.trackcounter++;
             m_stat.detailscounter = 0;
         }
-        updSong(m_stat.nextsong, m_stat.songpos + 1);
+        statSong(m_stat.nextsong, m_stat.songpos + 1);
     }
 
     m_stat.songelapsedms = mpd_status_get_elapsed_ms(mpds);
@@ -184,7 +184,7 @@ bool MPDCli::updStatus()
     return true;
 }
 
-bool MPDCli::updSong(unordered_map<string, string>& tsong, int pos)
+bool MPDCli::statSong(unordered_map<string, string>& tsong, int pos, bool isid)
 {
     // LOGDEB("MPDCli::updSong" << endl);
     tsong.clear();
@@ -192,11 +192,17 @@ bool MPDCli::updSong(unordered_map<string, string>& tsong, int pos)
         return false;
 
     struct mpd_song *song;
-    if (pos == -1) {
-        RETRY_CMD(song = mpd_run_current_song(M_CONN));
+    if (isid == false) {
+        if (pos == -1) {
+            RETRY_CMD(song = mpd_run_current_song(M_CONN));
+        } else {
+            RETRY_CMD(song = mpd_run_get_queue_song_pos(M_CONN, 
+                                                        (unsigned int)pos));
+        }
     } else {
-        RETRY_CMD(song = mpd_run_get_queue_song_pos(M_CONN, (unsigned int)pos));
+        RETRY_CMD(song = mpd_run_get_queue_song_id(M_CONN, (unsigned int)pos));
     }
+        
         
     if (song == 0) {
         LOGERR("mpd_run_current_song failed" << endl);
@@ -287,6 +293,15 @@ bool MPDCli::togglePause()
     return true;
 }
 
+bool MPDCli::pause(bool onoff)
+{
+    LOGDEB("MPDCli::pause" << endl);
+    if (!ok())
+        return false;
+    RETRY_CMD(mpd_run_pause(M_CONN, onoff));
+    return true;
+}
+
 bool MPDCli::play(int pos)
 {
     LOGDEB("MPDCli::play(pos=" << pos << ")" << endl);
@@ -297,6 +312,15 @@ bool MPDCli::play(int pos)
     } else {
         RETRY_CMD(mpd_run_play(M_CONN));
     }
+    return updStatus();
+}
+
+bool MPDCli::playId(int id)
+{
+    LOGDEB("MPDCli::playId(id=" << id << ")" << endl);
+    if (!ok())
+        return false;
+    RETRY_CMD(mpd_run_play_id(M_CONN, (unsigned int)id));
     return updStatus();
 }
 bool MPDCli::stop()
@@ -389,6 +413,7 @@ bool MPDCli::deleteId(int id)
     RETRY_CMD(mpd_run_delete_id(M_CONN, (unsigned)id));
     return true;
 }
+
 bool MPDCli::statId(int id)
 {
     LOGDEB("MPDCli::statId " << id << endl);
@@ -402,6 +427,33 @@ bool MPDCli::statId(int id)
     }
     return false;
 }
+
+bool MPDCli::getQueueSongs(vector<mpd_song*>& songs)
+{
+    songs.clear();
+
+    RETRY_CMD(mpd_send_list_queue_meta(M_CONN));
+
+    struct mpd_song *song;
+    while ((song = mpd_recv_song(M_CONN)) != NULL) {
+        songs.push_back(song);
+    }
+
+    if (!mpd_response_finish(M_CONN)) {
+        LOGERR("MPDCli::getQueueSongs: mpd_list_queue_meta failed"<< endl);
+        return false;
+    }
+    return true;
+}
+
+void MPDCli::freeSongs(vector<mpd_song*>& songs)
+{
+    for (vector<mpd_song*>::iterator it = songs.begin();
+         it != songs.end(); it++) {
+        mpd_song_free(*it);
+    }
+}
+
 int MPDCli::curpos()
 {
     if (!updStatus())

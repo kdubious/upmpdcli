@@ -86,7 +86,7 @@ bool OHInfo::makestate(unordered_map<string, string> &st)
 bool OHInfo::getEventData(bool all, std::vector<std::string>& names, 
                              std::vector<std::string>& values)
 {
-    LOGDEB("OHInfo::getEventData" << endl);
+    //LOGDEB("OHInfo::getEventData" << endl);
 
     unordered_map<string, string> state;
     makestate(state);

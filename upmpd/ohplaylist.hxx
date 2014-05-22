@@ -31,6 +31,30 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
 private:
+    int play(const SoapArgs& sc, SoapData& data);
+    int pause(const SoapArgs& sc, SoapData& data);
+    int stop(const SoapArgs& sc, SoapData& data);
+    int next(const SoapArgs& sc, SoapData& data);
+    int previous(const SoapArgs& sc, SoapData& data);
+    int setRepeat(const SoapArgs& sc, SoapData& data);
+    int repeat(const SoapArgs& sc, SoapData& data);
+    int setShuffle(const SoapArgs& sc, SoapData& data);
+    int shuffle(const SoapArgs& sc, SoapData& data);
+    int seekSecondAbsolute(const SoapArgs& sc, SoapData& data);
+    int seekSecondRelative(const SoapArgs& sc, SoapData& data);
+    int seekId(const SoapArgs& sc, SoapData& data);
+    int seekIndex(const SoapArgs& sc, SoapData& data);
+    int transportState(const SoapArgs& sc, SoapData& data);
+    int id(const SoapArgs& sc, SoapData& data);
+    int ohread(const SoapArgs& sc, SoapData& data);
+    int readlist(const SoapArgs& sc, SoapData& data);
+    int insert(const SoapArgs& sc, SoapData& data);
+    int deleteId(const SoapArgs& sc, SoapData& data);
+    int deleteAll(const SoapArgs& sc, SoapData& data);
+    int tracksMax(const SoapArgs& sc, SoapData& data);
+    int idArray(const SoapArgs& sc, SoapData& data);
+    int idArrayChanged(const SoapArgs& sc, SoapData& data);
+    int protocolInfo(const SoapArgs& sc, SoapData& data);
 
     bool makestate(unordered_map<string, string> &st);
     // State variable storage

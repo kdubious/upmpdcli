@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <string>
 #include <map>
+#include <vector>
 
 class MpdStatus {
 public:
@@ -57,6 +58,8 @@ public:
     int detailscounter;
 };
 
+struct mpd_song;
+
 class MPDCli {
 public:
     MPDCli(const std::string& host, int port = 6600, 
@@ -66,7 +69,9 @@ public:
     bool setVolume(int ivol, bool isMute = false);
     int  getVolume();
     bool togglePause();
+    bool pause(bool onoff);
     bool play(int pos = -1);
+    bool playId(int pos = -1);
     bool stop();
     bool next();
     bool previous();
@@ -79,6 +84,11 @@ public:
     bool deleteId(int id);
     bool statId(int id);
     int curpos();
+    bool getQueueSongs(std::vector<mpd_song*>& songs);
+    void freeSongs(std::vector<mpd_song*>& songs);
+    bool statSong(std::unordered_map<std::string, std::string>& status, 
+                  int pos = -1, bool isId = false);
+
     const MpdStatus& getStatus()
     {
         updStatus();
@@ -100,8 +110,6 @@ private:
 
     bool openconn();
     bool updStatus();
-    bool updSong(std::unordered_map<std::string, std::string>& status, 
-                 int pos = -1);
     bool showError(const std::string& who);
 };
 

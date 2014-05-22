@@ -172,20 +172,10 @@ int OHProduct::standby(const SoapArgs& sc, SoapData& data)
 int OHProduct::setStandby(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHProduct::setStandby" << endl);
-    map<string, string>::const_iterator it;
-
-    it = sc.args.find("Value");
-    if (it == sc.args.end() || it->second.empty()) {
+    bool standby;
+    if (!sc.getBool("Value", &standby)) {
         return UPNP_E_INVALID_PARAM;
     }
-    if (it->second[0] == 'F' || it->second[0] == '0') {
-        LOGDEB("OHProduct::setStandby-> standby off" << endl);
-    } else if (it->second[0] == 'T' || it->second[0] == '1') {
-        LOGDEB("OHProduct::setStandby-> standby on" << endl);
-    } else {
-        return UPNP_E_INVALID_PARAM;
-    }
-    m_dev->loopWakeup();
     return UPNP_E_SUCCESS;
 }
 
@@ -213,14 +203,11 @@ int OHProduct::sourceIndex(const SoapArgs& sc, SoapData& data)
 int OHProduct::setSourceIndex(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHProduct::setSourceIndex" << endl);
-    map<string, string>::const_iterator it;
-
-    it = sc.args.find("Value");
-    if (it == sc.args.end() || it->second.empty()) {
+    int sindex;
+    if (!sc.getInt("Value", &sindex)) {
         return UPNP_E_INVALID_PARAM;
     }
-    LOGDEB("OHProduct::setSourceIndex: " << it->second << endl);
-    m_dev->loopWakeup();
+    LOGDEB("OHProduct::setSourceIndex: " << sindex << endl);
     return UPNP_E_SUCCESS;
 }
 
@@ -241,15 +228,12 @@ int OHProduct::setSourceIndexByName(const SoapArgs& sc, SoapData& data)
 int OHProduct::source(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHProduct::source" << endl);
-    map<string, string>::const_iterator it;
-
-    it = sc.args.find("Index");
-    if (it == sc.args.end() || it->second.empty()) {
+    int sindex;
+    if (!sc.getInt("Index", &sindex)) {
         return UPNP_E_INVALID_PARAM;
     }
-    string sindex(it->second);
     LOGDEB("OHProduct::setSourceIndex: " << sindex << endl);
-    if (sindex.compare("0")) {
+    if (sindex != 0) {
         return UPNP_E_INVALID_PARAM;
     }
     data.addarg("SystemName", "Default");

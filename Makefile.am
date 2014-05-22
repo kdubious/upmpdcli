@@ -67,7 +67,9 @@ upmpdcli_SOURCES = \
      upmpd/ohvolume.hxx \
      upmpd/ohvolume.cxx \
      upmpd/ohplaylist.hxx \
-     upmpd/ohplaylist.cxx
+     upmpd/ohplaylist.cxx \
+     upmpd/base64.hxx \
+     upmpd/base64.cxx
                            
 upmpdcli_LDADD = libupnpp.la -lmpdclient 
 

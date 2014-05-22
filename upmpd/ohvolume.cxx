@@ -87,7 +87,7 @@ bool OHVolume::makestate(unordered_map<string, string> &st)
 bool OHVolume::getEventData(bool all, std::vector<std::string>& names, 
                             std::vector<std::string>& values)
 {
-    LOGDEB("OHVolume::getEventData" << endl);
+    //LOGDEB("OHVolume::getEventData" << endl);
 
     unordered_map<string, string> state;
     makestate(state);
@@ -125,15 +125,11 @@ int OHVolume::characteristics(const SoapArgs& sc, SoapData& data)
 int OHVolume::setVolume(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHVolume::setVolume" << endl);
-    map<string, string>::const_iterator it;
-
-    it = sc.args.find("Value");
-    if (it == sc.args.end() || it->second.empty()) {
+    int volume;
+    if (!sc.getInt("Value", &volume)) {
         return UPNP_E_INVALID_PARAM;
     }
-    int volume = atoi(it->second.c_str());
     m_ctl->setvolume_i(volume);
-
     m_dev->loopWakeup();
     return UPNP_E_SUCCESS;
 }
@@ -141,18 +137,8 @@ int OHVolume::setVolume(const SoapArgs& sc, SoapData& data)
 int OHVolume::setMute(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHVolume::setMute" << endl);
-    map<string, string>::const_iterator it;
-
-    it = sc.args.find("Value");
-    if (it == sc.args.end() || it->second.empty()) {
-        return UPNP_E_INVALID_PARAM;
-    }
     bool mute;
-    if (it->second[0] == 'F' || it->second[0] == '0') {
-        mute = false;
-    } else if (it->second[0] == 'T' || it->second[0] == '1') {
-        mute = true;
-    } else {
+    if (!sc.getBool("Value", &mute)) {
         return UPNP_E_INVALID_PARAM;
     }
     m_ctl->setmute_i(mute);
