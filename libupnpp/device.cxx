@@ -180,7 +180,7 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
         const string& servicetype = servit->second->getServiceType();
 
         unordered_map<string, soapfun>::iterator callit = 
-            m_calls.find(act->ActionName);
+            m_calls.find(string(act->ActionName) + string(act->ServiceID));
         if (callit == m_calls.end()) {
             LOGINF("No such action: " << act->ActionName << endl);
             return UPNP_E_INVALID_PARAM;
@@ -267,10 +267,12 @@ void UpnpDevice::addService(UpnpService *serv, const std::string& serviceId)
     m_serviceids.push_back(serviceId);
 }
 
-void UpnpDevice::addActionMapping(const std::string& actName, soapfun fun)
+void UpnpDevice::addActionMapping(const UpnpService* serv,
+                                  const std::string& actName,
+                                  soapfun fun)
 {
     // LOGDEB("UpnpDevice::addActionMapping:" << actName << endl);
-    m_calls[actName] = fun;
+    m_calls[actName + serv->getServiceId()] = fun;
 }
 
 void UpnpDevice::notifyEvent(const string& serviceId,
@@ -331,7 +333,7 @@ void UpnpDevice::eventloop()
 {
     int count = 0;
     const int loopwait_ms = 1000; // Polling the services every 1 S
-    const int nloopstofull = 10;  // Full state every 10 S
+    const int nloopstofull = 100;  // Full state every 10 S
     struct timespec wkuptime, earlytime;
     bool didearly = false;
 

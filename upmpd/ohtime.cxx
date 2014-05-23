@@ -46,7 +46,7 @@ static const string sIdProduct("urn:av-openhome-org:serviceId:Time");
 OHTime::OHTime(UpMpd *dev)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev)
 {
-    dev->addActionMapping("Time", bind(&OHTime::ohtime, this, _1, _2));
+    dev->addActionMapping(this, "Time", bind(&OHTime::ohtime, this, _1, _2));
 }
 
 void OHTime::getdata(string& trackcount, string &duration, 

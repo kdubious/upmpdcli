@@ -63,6 +63,7 @@ private:
     unordered_map<string, string> m_state;
     UpMpd *m_dev;
     UpMpdRenderCtl *m_ctl;
+    std::unordered_map<int, std::string> m_metacache;
 };
 
 #endif /* _OHPLAYLIST_H_X_INCLUDED_ */

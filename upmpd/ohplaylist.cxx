@@ -48,54 +48,55 @@ static const string sIdProduct("urn:av-openhome-org:serviceId:Playlist");
 OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), m_ctl(ctl)
 {
-    dev->addActionMapping("Play", 
+    dev->addActionMapping(this, "Play", 
                           bind(&OHPlaylist::play, this, _1, _2));
-    dev->addActionMapping("Pause", 
+    dev->addActionMapping(this, "Pause", 
                           bind(&OHPlaylist::pause, this, _1, _2));
-    dev->addActionMapping("Stop", 
+    dev->addActionMapping(this, "Stop", 
                           bind(&OHPlaylist::stop, this, _1, _2));
-    dev->addActionMapping("Next", 
+    dev->addActionMapping(this, "Next", 
                           bind(&OHPlaylist::next, this, _1, _2));
-    dev->addActionMapping("Previous", 
+    dev->addActionMapping(this, "Previous", 
                           bind(&OHPlaylist::previous, this, _1, _2));
-    dev->addActionMapping("SetRepeat",
+    dev->addActionMapping(this, "SetRepeat",
                           bind(&OHPlaylist::setRepeat, this, _1, _2));
-    dev->addActionMapping("Repeat",
+    dev->addActionMapping(this, "Repeat",
                           bind(&OHPlaylist::repeat, this, _1, _2));
-    dev->addActionMapping("SetShuffle",
+    dev->addActionMapping(this, "SetShuffle",
                           bind(&OHPlaylist::setShuffle, this, _1, _2));
-    dev->addActionMapping("Shuffle",
+    dev->addActionMapping(this, "Shuffle",
                           bind(&OHPlaylist::shuffle, this, _1, _2));
-    dev->addActionMapping("SeekSecondAbsolute",
+    dev->addActionMapping(this, "SeekSecondAbsolute",
                           bind(&OHPlaylist::seekSecondAbsolute, this, _1, _2));
-    dev->addActionMapping("SeekSecondRelative",
+    dev->addActionMapping(this, "SeekSecondRelative",
                           bind(&OHPlaylist::seekSecondRelative, this, _1, _2));
-    dev->addActionMapping("SeekId",
+    dev->addActionMapping(this, "SeekId",
                           bind(&OHPlaylist::seekId, this, _1, _2));
-    dev->addActionMapping("SeekIndex",
+    dev->addActionMapping(this, "SeekIndex",
                           bind(&OHPlaylist::seekIndex, this, _1, _2));
-    dev->addActionMapping("TransportState",
+    dev->addActionMapping(this, "TransportState",
                           bind(&OHPlaylist::transportState, this, _1, _2));
-    dev->addActionMapping("Id",
+    dev->addActionMapping(this, "Id",
                           bind(&OHPlaylist::id, this, _1, _2));
-    dev->addActionMapping("Read",
+    dev->addActionMapping(this, "Read",
                           bind(&OHPlaylist::ohread, this, _1, _2));
-    dev->addActionMapping("Readlist",
+    dev->addActionMapping(this, "ReadList",
                           bind(&OHPlaylist::readlist, this, _1, _2));
-    dev->addActionMapping("Insert",
+    dev->addActionMapping(this, "Insert",
                           bind(&OHPlaylist::insert, this, _1, _2));
-    dev->addActionMapping("DeleteId",
+    dev->addActionMapping(this, "DeleteId",
                           bind(&OHPlaylist::deleteId, this, _1, _2));
-    dev->addActionMapping("DeleteAll",
+    dev->addActionMapping(this, "DeleteAll",
                           bind(&OHPlaylist::deleteAll, this, _1, _2));
-    dev->addActionMapping("TracksMax",
+    dev->addActionMapping(this, "TracksMax",
                           bind(&OHPlaylist::tracksMax, this, _1, _2));
-    dev->addActionMapping("IdArray",
+    dev->addActionMapping(this, "IdArray",
                           bind(&OHPlaylist::idArray, this, _1, _2));
-    dev->addActionMapping("IdArrayChanged",
+    dev->addActionMapping(this, "IdArrayChanged",
                           bind(&OHPlaylist::idArrayChanged, this, _1, _2));
-    dev->addActionMapping("ProtocolInfo",
+    dev->addActionMapping(this, "ProtocolInfo",
                           bind(&OHPlaylist::protocolInfo, this, _1, _2));
+    dev->m_mpdcli->consume(false);
 }
 
 static const int tracksmax = 16384;
@@ -143,10 +144,20 @@ string OHPlaylist::makeIdArray()
 {
     string out;
     vector<unsigned int> vids;
+    unordered_map<int, string> nmeta;
     bool ok = m_dev->m_mpdcli->getQueueIds(vids);
     if (ok) {
         out = translateIdArray(vids);
     }
+
+    // Clear metadata cache: entries not in vids are not interesting
+    for (auto& id : vids) {
+        unordered_map<int, string>::iterator it1 = m_metacache.find(id);
+        if (it1 != m_metacache.end())
+            nmeta[id] = it1->second;
+    }
+    m_metacache = nmeta;
+
     return out;
 }
 
@@ -213,7 +224,6 @@ int OHPlaylist::pause(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::pause" << endl);
     bool ok = m_dev->m_mpdcli->pause(true);
-#warning check that using play to disable pause as oh does does not restart from bot
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
@@ -382,8 +392,14 @@ int OHPlaylist::ohread(const SoapArgs& sc, SoapData& data)
         ok = m_dev->m_mpdcli->statSong(song, id, true);
     }
     if (ok) {
+        unordered_map<int, string>::iterator mit = m_metacache.find(id);
+        string metadata;
+        if (mit != m_metacache.end()) {
+            metadata = xmlquote(mit->second);
+        } else {
+            metadata = xmlquote(didlmake(song));
+        }
         data.addarg("Uri", song.uri);
-        string metadata = didlmake(song);
         data.addarg("Metadata", metadata);
     }
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
@@ -415,13 +431,22 @@ int OHPlaylist::readlist(const SoapArgs& sc, SoapData& data)
             UpSong song;
             if (!m_dev->m_mpdcli->statSong(song, id, true))
                 continue;
+            unordered_map<int, string>::iterator mit = m_metacache.find(id);
+            string metadata;
+            if (mit != m_metacache.end()) {
+                metadata = xmlquote(mit->second);
+            } else {
+                metadata = xmlquote(didlmake(song));
+            }
             out += "<Entry><Id>";
             out += it->c_str();
-            out += "</Id><Metadata>";
-            out += didlmake(song);
+            out += "</Id><Uri>";
+            out += song.uri;
+            out += "</Uri><Metadata>";
+            out += metadata;
             out += "</Metadata></Entry>";
         }
-        out += "</Tracklist>";
+        out += "</TrackList>";
         data.addarg("TrackList", out);
     }
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
@@ -446,8 +471,11 @@ int OHPlaylist::insert(const SoapArgs& sc, SoapData& data)
 
     LOGDEB("OHPlaylist::insert: afterid " << afterid << " Uri " <<
            uri << " Metadata " << metadata << endl);
-    if (ok)
-        ok = m_dev->m_mpdcli->insertAfterId(uri, afterid);
+    if (ok) {
+        int id = m_dev->m_mpdcli->insertAfterId(uri, afterid);
+        if ((ok = (id != -1)))
+            m_metacache[id] = metadata;
+    }
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }

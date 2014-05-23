@@ -67,7 +67,6 @@ bool MPDCli::openconn()
             return false;
         }
     }
-    mpd_run_consume(M_CONN, true);
     return true;
 }
 
@@ -371,6 +370,16 @@ bool MPDCli::repeat(bool on)
     RETRY_CMD(mpd_run_repeat(M_CONN, on));
     return true;
 }
+
+bool MPDCli::consume(bool on)
+{
+    LOGDEB("MPDCli::consume:" << on << endl);
+    if (!ok())
+        return false;
+
+    RETRY_CMD(mpd_run_consume(M_CONN, on));
+    return true;
+}
 bool MPDCli::random(bool on)
 {
     LOGDEB("MPDCli::random:" << on << endl);
@@ -403,7 +412,7 @@ int MPDCli::insert(const string& uri, int pos)
     return id;
 }
 
-bool MPDCli::insertAfterId(const string& uri, int id)
+int MPDCli::insertAfterId(const string& uri, int id)
 {
     LOGDEB("MPDCli::insertAfterId: id " << id << " uri " << uri << endl);
     if (!ok())
@@ -414,23 +423,23 @@ bool MPDCli::insertAfterId(const string& uri, int id)
 
     // id == 0 means insert at start
     if (id == 0) {
-        return insert(uri, 0) != -1;
+        return insert(uri, 0);
     }
 
     vector<mpd_song*> songs;
     if (!getQueueSongs(songs)) {
         return false;
     }
-    bool ok = false;
+    int newid = -1;
     for (unsigned int pos = 0; pos < songs.size(); pos++) {
         unsigned int qid = mpd_song_get_id(songs[pos]);
-        if (qid == (unsigned int)id) {
-            ok = insert(uri, pos+1) != -1;
+        if (qid == (unsigned int)id || pos == songs.size() -1) {
+            newid = insert(uri, pos+1);
             break;
         }
     }
     freeSongs(songs);
-    return ok;
+    return newid;
 }
 
 bool MPDCli::clearQueue()

@@ -53,7 +53,7 @@ static const string dfltFriendlyName("UpMpd");
 // http://www.tutok.sk/fastgl/callback.html
 UpMpd::UpMpd(const string& deviceid, 
 			 const unordered_map<string, string>& xmlfiles,
-			 MPDCli *mpdcli, Options opts)
+			 MPDCli *mpdcli, unsigned int opts)
 	: UpnpDevice(deviceid, xmlfiles), m_mpdcli(mpdcli), m_mpds(0),
 	  m_options(opts)
 {
@@ -64,11 +64,13 @@ UpMpd::UpMpd(const string& deviceid,
 	m_services.push_back(rdctl);
 	m_services.push_back(new UpMpdAVTransport(this));
 	m_services.push_back(new UpMpdConMan(this));
-	m_services.push_back(new OHProduct(this));
-	m_services.push_back(new OHInfo(this));
-	m_services.push_back(new OHTime(this));
-	m_services.push_back(new OHVolume(this, rdctl));
-	m_services.push_back(new OHPlaylist(this, rdctl));
+	if (m_options & upmpdDoOH) {
+		m_services.push_back(new OHProduct(this));
+		m_services.push_back(new OHInfo(this));
+		m_services.push_back(new OHTime(this));
+		m_services.push_back(new OHVolume(this, rdctl));
+		m_services.push_back(new OHPlaylist(this, rdctl));
+	}
 }
 
 UpMpd::~UpMpd()
@@ -107,13 +109,13 @@ static int op_flags;
 
 static const char usage[] = 
 "-c configfile \t configuration file to use\n"
-"-h host    \t specify host MPD is running on\n"
+"""""""""""""""""""""""""""""-h host    \t specify host MPD is running on\n"""""""""""""""""""""""""""""
 "-p port     \t specify MPD port\n"
 "-d logfilename\t debug messages to\n"
 "-l loglevel\t  log level (0-6)\n"
-"-D          \t run as a daemon\n"
+"-D    \t run as a daemon\n"
 "-f friendlyname\t define device displayed name\n"
-"-q 0|1      \t if set, we own the mpd queue, else avoid clearing it whenever we feel like it\n"
+"-q 0|1\t if set, we own the mpd queue, else avoid clearing it whenever we feel like it\n"
 "-i iface    \t specify network interface name to be used for UPnP"
 "-P upport    \t specify port number to be used for UPnP"
 "  \n\n"
@@ -131,14 +133,55 @@ static string datadir(DATADIR "/");
 static string configdir(CONFIGDIR "/");
 
 // Our XML description data. !Keep description.xml first!
-static const char *xmlfilenames[] = 
-{/* keep first */ "description.xml", 
- "RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml",
- "OHProduct.xml", "OHInfo.xml", "OHTime.xml", "OHVolume.xml", 
- "OHPlaylist.xml",
+static vector<const char *> xmlfilenames = 
+{
+	/* keep first */ "description.xml", /* keep first */
+	"RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml",
+};
+static vector<const char *> ohxmlfilenames = 
+{
+	"OHProduct.xml", "OHInfo.xml", "OHTime.xml", "OHVolume.xml", 
+	"OHPlaylist.xml",
 };
 
-static const int xmlfilenamescnt = sizeof(xmlfilenames) / sizeof(char *);
+
+static const string ohDesc(
+	"<service>"
+	"  <serviceType>urn:av-openhome-org:service:Product:1</serviceType>"
+	"  <serviceId>urn:av-openhome-org:serviceId:Product</serviceId>"
+	"  <SCPDURL>/OHProduct.xml</SCPDURL>"
+	"  <controlURL>/ctl/OHProduct</controlURL>"
+	"  <eventSubURL>/evt/OHProduct</eventSubURL>"
+	"</service>"
+	"<service>"
+	"  <serviceType>urn:av-openhome-org:service:Info:1</serviceType>"
+	"  <serviceId>urn:av-openhome-org:serviceId:Info</serviceId>"
+	"  <SCPDURL>/OHInfo.xml</SCPDURL>"
+	"  <controlURL>/ctl/OHInfo</controlURL>"
+	"  <eventSubURL>/evt/OHInfo</eventSubURL>"
+	"</service>"
+	"<service>"
+	"  <serviceType>urn:av-openhome-org:service:Time:1</serviceType>"
+	"  <serviceId>urn:av-openhome-org:serviceId:Time</serviceId>"
+	"  <SCPDURL>/OHTime.xml</SCPDURL>"
+	"  <controlURL>/ctl/OHTime</controlURL>"
+	"  <eventSubURL>/evt/OHTime</eventSubURL>"
+	"</service>"
+	"<service>"
+	"  <serviceType>urn:av-openhome-org:service:Volume:1</serviceType>"
+	"  <serviceId>urn:av-openhome-org:serviceId:Volume</serviceId>"
+	"  <SCPDURL>/OHVolume.xml</SCPDURL>"
+	"  <controlURL>/ctl/OHVolume</controlURL>"
+	"  <eventSubURL>/evt/OHVolume</eventSubURL>"
+	"</service>"
+	"<service>"
+	"  <serviceType>urn:av-openhome-org:service:Playlist:1</serviceType>"
+	"  <serviceId>urn:av-openhome-org:serviceId:Playlist</serviceId>"
+	"  <SCPDURL>/OHPlaylist.xml</SCPDURL>"
+	"  <controlURL>/ctl/OHPlaylist</controlURL>"
+	"  <eventSubURL>/evt/OHPlaylist</eventSubURL>"
+	"</service>"
+	);
 
 int main(int argc, char *argv[])
 {
@@ -150,6 +193,7 @@ int main(int argc, char *argv[])
 	string configfile;
 	string friendlyname(dfltFriendlyName);
 	bool ownqueue = true;
+	bool openhome = false;
 	string upmpdcliuser("upmpdcli");
 	string pidfilename("/var/run/upmpdcli.pid");
 	string iface;
@@ -226,6 +270,9 @@ int main(int argc, char *argv[])
 		config.get("mpdpassword", mpdpassword);
 		if (!(op_flags & OPT_q) && config.get("ownqueue", value)) {
 			ownqueue = atoi(value.c_str()) != 0;
+		}
+		if (config.get("openhome", value)) {
+			openhome = atoi(value.c_str()) != 0;
 		}
 		if (!(op_flags & OPT_i)) {
 			config.get("upnpiface", iface);
@@ -326,9 +373,13 @@ int main(int argc, char *argv[])
 	string UUID = LibUPnP::makeDevUUID(friendlyname, hwaddr);
 
 	// Read our XML data to make it available from the virtual directory
+	if (openhome) {
+		xmlfilenames.insert(xmlfilenames.end(), ohxmlfilenames.begin(),
+							ohxmlfilenames.end());
+	}
 	string reason;
 	unordered_map<string, string> xmlfiles;
-	for (int i = 0; i < xmlfilenamescnt; i++) {
+	for (unsigned int i = 0; i < xmlfilenames.size(); i++) {
 		string filename = path_cat(datadir, xmlfilenames[i]);
 		string data;
 		if (!file_to_string(filename, data, &reason)) {
@@ -339,13 +390,18 @@ int main(int argc, char *argv[])
 			// Special for description: set UUID and friendlyname
 			data = regsub1("@UUID@", data, UUID);
 			data = regsub1("@FRIENDLYNAME@", data, friendlyname);
+			if (openhome) 
+				data = regsub1("@OPENHOME@", data, ohDesc);
 		}
 		xmlfiles[xmlfilenames[i]] = data;
 	}
-
+	unsigned int options = UpMpd::upmpdNone;
+	if (ownqueue)
+		options |= UpMpd::upmpdOwnQueue;
+	if (openhome)
+		options |= UpMpd::upmpdDoOH;
 	// Initialize the UPnP device object.
-	UpMpd device(string("uuid:") + UUID, xmlfiles, &mpdcli,
-				 ownqueue ? UpMpd::upmpdOwnQueue : UpMpd::upmpdNone);
+	UpMpd device(string("uuid:") + UUID, xmlfiles, &mpdcli, options);
 
 	// And forever generate state change events.
 	LOGDEB("Entering event loop" << endl);

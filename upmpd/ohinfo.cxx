@@ -46,13 +46,13 @@ static const string sIdProduct("urn:av-openhome-org:serviceId:Info");
 OHInfo::OHInfo(UpMpd *dev)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev)
 {
-    dev->addActionMapping("Counters", bind(&OHInfo::counters,
+    dev->addActionMapping(this, "Counters", bind(&OHInfo::counters,
                                            this, _1, _2));
-    dev->addActionMapping("Track", bind(&OHInfo::track,
+    dev->addActionMapping(this, "Track", bind(&OHInfo::track,
                                            this, _1, _2));
-    dev->addActionMapping("Details", bind(&OHInfo::details,
+    dev->addActionMapping(this, "Details", bind(&OHInfo::details,
                                           this, _1, _2));
-    dev->addActionMapping("Metatext", bind(&OHInfo::metatext,
+    dev->addActionMapping(this, "Metatext", bind(&OHInfo::metatext,
                                           this, _1, _2));
 }
 

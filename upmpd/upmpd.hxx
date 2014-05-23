@@ -34,11 +34,12 @@ public:
         // If set, the MPD queue belongs to us, we shall clear
         // it as we like.
         upmpdOwnQueue, 
-
+        // Export OpenHome services
+        upmpdDoOH,
     };
     UpMpd(const string& deviceid, 
           const unordered_map<string, string>& xmlfiles,
-          MPDCli *mpdcli, Options opts = upmpdNone);
+          MPDCli *mpdcli, unsigned int opts = upmpdNone);
     ~UpMpd();
 
     const MpdStatus &getMpdStatus();
@@ -47,7 +48,7 @@ private:
     MPDCli *m_mpdcli;
     const MpdStatus *m_mpds;
 
-    int m_options;
+    unsigned int m_options;
     vector<UpnpService*> m_services;
 };
 

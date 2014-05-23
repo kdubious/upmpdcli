@@ -98,11 +98,12 @@ public:
     bool repeat(bool on);
     bool random(bool on);
     bool single(bool on);
+    bool consume(bool on);
     bool seek(int seconds);
     bool clearQueue();
     int insert(const std::string& uri, int pos);
-    // Insert after given id
-    bool insertAfterId(const std::string& uri, int id);
+    // Insert after given id. Returns new id or -1
+    int insertAfterId(const std::string& uri, int id);
     bool deleteId(int id);
     bool statId(int id);
     int curpos();

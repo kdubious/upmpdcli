@@ -47,21 +47,21 @@ static const string sIdProduct("urn:av-openhome-org:serviceId:Volume");
 OHVolume::OHVolume(UpMpd *dev, UpMpdRenderCtl *ctl)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), m_ctl(ctl)
 {
-    dev->addActionMapping("Characteristics", 
+    dev->addActionMapping(this,"Characteristics", 
                           bind(&OHVolume::characteristics, this, _1, _2));
-    dev->addActionMapping("SetVolume", 
+    dev->addActionMapping(this,"SetVolume", 
                           bind(&OHVolume::setVolume, this, _1, _2));
-    dev->addActionMapping("Volume", 
+    dev->addActionMapping(this,"Volume", 
                           bind(&OHVolume::volume, this, _1, _2));
-    dev->addActionMapping("VolumeInc", 
+    dev->addActionMapping(this,"VolumeInc", 
                           bind(&OHVolume::volumeInc, this, _1, _2));
-    dev->addActionMapping("VolumeDec", 
+    dev->addActionMapping(this,"VolumeDec", 
                           bind(&OHVolume::volumeDec, this, _1, _2));
-    dev->addActionMapping("VolumeLimit", 
+    dev->addActionMapping(this,"VolumeLimit", 
                           bind(&OHVolume::volumeLimit, this, _1, _2));
-    dev->addActionMapping("Mute", 
+    dev->addActionMapping(this,"Mute", 
                           bind(&OHVolume::mute, this, _1, _2));
-    dev->addActionMapping("SetMute", 
+    dev->addActionMapping(this,"SetMute", 
                           bind(&OHVolume::setMute, this, _1, _2));
 }
 

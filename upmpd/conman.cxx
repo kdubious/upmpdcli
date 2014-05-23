@@ -46,13 +46,13 @@ static const string sIdCM("urn:upnp-org:serviceId:ConnectionManager");
 UpMpdConMan::UpMpdConMan(UpMpd *dev)
     : UpnpService(sTpCM, sIdCM, dev)
 {
-    dev->addActionMapping("GetCurrentConnectionIDs", 
+    dev->addActionMapping(this,"GetCurrentConnectionIDs", 
                           bind(&UpMpdConMan::getCurrentConnectionIDs, 
                                this, _1,_2));
-    dev->addActionMapping("GetCurrentConnectionInfo", 
+    dev->addActionMapping(this,"GetCurrentConnectionInfo", 
                           bind(&UpMpdConMan::getCurrentConnectionInfo, 
                                this,_1,_2));
-    dev->addActionMapping("GetProtocolInfo", 
+    dev->addActionMapping(this,"GetProtocolInfo", 
                           bind(&UpMpdConMan::getProtocolInfo, this, _1, _2));
 }
 

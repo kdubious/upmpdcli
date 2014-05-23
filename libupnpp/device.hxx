@@ -37,9 +37,10 @@ public:
     void addService(UpnpService *, const std::string& serviceId);
 
     /**
-     * Add mapping from action-name to handler function.
+     * Add mapping from service+action-name to handler function.
      */
-    void addActionMapping(const std::string& actName, soapfun fun);
+    void addActionMapping(const UpnpService*, 
+                          const std::string& actName, soapfun);
 
     /** 
      * Generate event.
@@ -104,7 +105,7 @@ private:
 class UpnpService {
 public:
     UpnpService(const std::string& stp,const std::string& sid, UpnpDevice *dev) 
-        : m_serviceType(stp)
+        : m_serviceType(stp), m_serviceId(sid)
         {
             dev->addService(this, sid);
         }
@@ -128,9 +129,14 @@ public:
         {
             return m_serviceType;
         }
+    virtual const std::string& getServiceId() const
+        {
+            return m_serviceId;
+        }
 
 protected:
     const std::string m_serviceType;
+    const std::string m_serviceId;
 };
 
 #endif /* _DEVICE_H_X_INCLUDED_ */

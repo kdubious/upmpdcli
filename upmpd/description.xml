@@ -37,41 +37,7 @@
         <controlURL>/ctl/ConnectionManager</controlURL>
         <eventSubURL>/evt/ConnectionManager</eventSubURL>
       </service>
-      <service>
-        <serviceType>urn:av-openhome-org:service:Product:1</serviceType>
-        <serviceId>urn:av-openhome-org:serviceId:Product</serviceId>
-        <SCPDURL>/OHProduct.xml</SCPDURL>
-        <controlURL>/ctl/OHProduct</controlURL>
-        <eventSubURL>/evt/OHProduct</eventSubURL>
-      </service>
-      <service>
-        <serviceType>urn:av-openhome-org:service:Info:1</serviceType>
-        <serviceId>urn:av-openhome-org:serviceId:Info</serviceId>
-        <SCPDURL>/OHInfo.xml</SCPDURL>
-        <controlURL>/ctl/OHInfo</controlURL>
-        <eventSubURL>/evt/OHInfo</eventSubURL>
-      </service>
-      <service>
-        <serviceType>urn:av-openhome-org:service:Time:1</serviceType>
-        <serviceId>urn:av-openhome-org:serviceId:Time</serviceId>
-        <SCPDURL>/OHTime.xml</SCPDURL>
-        <controlURL>/ctl/OHTime</controlURL>
-        <eventSubURL>/evt/OHTime</eventSubURL>
-      </service>
-      <service>
-        <serviceType>urn:av-openhome-org:service:Volume:1</serviceType>
-        <serviceId>urn:av-openhome-org:serviceId:Volume</serviceId>
-        <SCPDURL>/OHVolume.xml</SCPDURL>
-        <controlURL>/ctl/OHVolume</controlURL>
-        <eventSubURL>/evt/OHVolume</eventSubURL>
-      </service>
-      <service>
-        <serviceType>urn:av-openhome-org:service:Playlist:1</serviceType>
-        <serviceId>urn:av-openhome-org:serviceId:Playlist</serviceId>
-        <SCPDURL>/OHPlaylist.xml</SCPDURL>
-        <controlURL>/ctl/OHPlaylist</controlURL>
-        <eventSubURL>/evt/OHPlaylist</eventSubURL>
-      </service>
+      @OPENHOME@
     </serviceList>
     <presentationURL>/presentation.html</presentationURL>
   </device>

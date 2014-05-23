@@ -46,46 +46,50 @@ static const string sTpTransport("urn:schemas-upnp-org:service:AVTransport:1");
 UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev)
     : UpnpService(sTpTransport, sIdTransport, dev), m_dev(dev)
 {
-    m_dev->addActionMapping("SetAVTransportURI", 
+    m_dev->addActionMapping(this,"SetAVTransportURI", 
                             bind(&UpMpdAVTransport::setAVTransportURI, 
                                  this,_1,_2, false));
-    m_dev->addActionMapping("SetNextAVTransportURI", 
+    m_dev->addActionMapping(this,"SetNextAVTransportURI", 
                             bind(&UpMpdAVTransport::setAVTransportURI, 
                                  this,_1, _2, true));
-    m_dev->addActionMapping("GetPositionInfo", 
+    m_dev->addActionMapping(this,"GetPositionInfo", 
                             bind(&UpMpdAVTransport::getPositionInfo, 
                                  this, _1, _2));
-    m_dev->addActionMapping("GetTransportInfo", 
+    m_dev->addActionMapping(this,"GetTransportInfo", 
                             bind(&UpMpdAVTransport::getTransportInfo, 
                                  this, _1, _2));
-    m_dev->addActionMapping("GetMediaInfo", 
+    m_dev->addActionMapping(this,"GetMediaInfo", 
                             bind(&UpMpdAVTransport::getMediaInfo, 
                                  this, _1, _2));
-    m_dev->addActionMapping("GetDeviceCapabilities", 
+    m_dev->addActionMapping(this,"GetDeviceCapabilities", 
                             bind(&UpMpdAVTransport::getDeviceCapabilities, 
                                  this, _1, _2));
-    m_dev->addActionMapping("SetPlayMode", 
+    m_dev->addActionMapping(this,"SetPlayMode", 
                             bind(&UpMpdAVTransport::setPlayMode, this, _1, _2));
-    m_dev->addActionMapping("GetTransportSettings", 
+    m_dev->addActionMapping(this,"GetTransportSettings", 
                             bind(&UpMpdAVTransport::getTransportSettings, 
                                  this, _1, _2));
-    m_dev->addActionMapping("GetCurrentTransportActions", 
+    m_dev->addActionMapping(this,"GetCurrentTransportActions", 
                             bind(&UpMpdAVTransport::getCurrentTransportActions,
                                  this,_1,_2));
-    m_dev->addActionMapping("Stop", bind(&UpMpdAVTransport::playcontrol, 
+    m_dev->addActionMapping(this,"Stop", bind(&UpMpdAVTransport::playcontrol, 
                                          this, _1, _2, 0));
-    m_dev->addActionMapping("Play", bind(&UpMpdAVTransport::playcontrol, 
+    m_dev->addActionMapping(this,"Play", bind(&UpMpdAVTransport::playcontrol, 
                                          this, _1, _2, 1));
-    m_dev->addActionMapping("Pause", 
+    m_dev->addActionMapping(this,"Pause", 
                             bind(&UpMpdAVTransport::playcontrol, 
                                  this, _1, _2, 2));
-    m_dev->addActionMapping("Seek", bind(&UpMpdAVTransport::seek, 
+    m_dev->addActionMapping(this,"Seek", bind(&UpMpdAVTransport::seek, 
                                          this, _1, _2));
-    m_dev->addActionMapping("Next", bind(&UpMpdAVTransport::seqcontrol, 
-                                         this, _1, _2, 0));
-    m_dev->addActionMapping("Previous", 
+
+    // should we get rid of those ? They don't make sense for us
+    m_dev->addActionMapping(this, "Next", bind(&UpMpdAVTransport::seqcontrol, 
+                                               this, _1, _2, 0));
+    m_dev->addActionMapping(this, "Previous", 
                             bind(&UpMpdAVTransport::seqcontrol, 
                                  this, _1, _2, 1));
+
+//    dev->m_mpdcli->consume(true);
 }
 
 // Translate MPD mode flags to UPnP Play mode

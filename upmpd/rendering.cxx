@@ -47,17 +47,17 @@ static const string sIdRender("urn:upnp-org:serviceId:RenderingControl");
 UpMpdRenderCtl::UpMpdRenderCtl(UpMpd *dev)
     : UpnpService(sTpRender, sIdRender, dev), m_dev(dev), m_desiredvolume(-1)
 {
-    m_dev->addActionMapping("SetMute", 
+    m_dev->addActionMapping(this, "SetMute", 
                             bind(&UpMpdRenderCtl::setMute, this, _1, _2));
-    m_dev->addActionMapping("GetMute", 
+    m_dev->addActionMapping(this, "GetMute", 
                             bind(&UpMpdRenderCtl::getMute, this, _1, _2));
-    m_dev->addActionMapping("SetVolume", bind(&UpMpdRenderCtl::setVolume, 
+    m_dev->addActionMapping(this, "SetVolume", bind(&UpMpdRenderCtl::setVolume, 
                                               this, _1, _2, false));
-    m_dev->addActionMapping("GetVolume", bind(&UpMpdRenderCtl::getVolume, 
+    m_dev->addActionMapping(this, "GetVolume", bind(&UpMpdRenderCtl::getVolume, 
                                               this, _1, _2, false));
-    m_dev->addActionMapping("ListPresets", 
+    m_dev->addActionMapping(this, "ListPresets", 
                             bind(&UpMpdRenderCtl::listPresets, this, _1, _2));
-    m_dev->addActionMapping("SelectPreset", 
+    m_dev->addActionMapping(this, "SelectPreset", 
                             bind(&UpMpdRenderCtl::selectPreset, this, _1, _2));
 }
 
