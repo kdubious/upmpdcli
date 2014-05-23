@@ -57,15 +57,14 @@ static bool vectorstoargslists(const vector<string>& names,
     }
 
     cnames.reserve(names.size());
-    for (unsigned int i = 0; i < names.size(); i++) {
-        cnames.push_back(names[i].c_str());
-    }
     qvalues.clear();
     qvalues.reserve(values.size());
     cvalues.reserve(values.size());
     for (unsigned int i = 0; i < values.size(); i++) {
+        cnames.push_back(names[i].c_str());
         qvalues.push_back(xmlquote(values[i]));
         cvalues.push_back(qvalues[i].c_str());
+        //LOGDEB("Edata: " << cnames[i] << " -> " << cvalues[i] << endl);
     }
     return true;
 }

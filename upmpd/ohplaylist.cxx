@@ -167,16 +167,13 @@ bool OHPlaylist::makestate(unordered_map<string, string> &st)
 
     const MpdStatus &mpds = m_dev->getMpdStatus();
 
-    st["TracksMax"] = makesint(tracksmax);
-    st["ProtocolInfo"] = upmpdProtocolInfo;
-    
-    st["Id"] = makesint(mpds.songid);
-
-    st["IdArray"] = makeIdArray();
-
+    st["TransportState"] =  mpdstatusToTransportState(mpds.state);
     st["Repeat"] = makesint(mpds.rept);
     st["Shuffle"] = makesint(mpds.random);
-    st["TransportState"] =  mpdstatusToTransportState(mpds.state);
+    st["Id"] = makesint(mpds.songid);
+    st["TracksMax"] = makesint(tracksmax);
+    st["ProtocolInfo"] = upmpdProtocolInfo;
+    st["IdArray"] = makeIdArray();
 
     return true;
 }

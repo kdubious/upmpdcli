@@ -70,7 +70,7 @@ bool OHVolume::makestate(unordered_map<string, string> &st)
     st.clear();
 
     st["VolumeMax"] = "100";
-    st["VolumeLimit"] = 100;
+    st["VolumeLimit"] = "100";
     st["VolumeUnity"] = "100";
     st["VolumeSteps"] = "100";
     st["VolumeMilliDbPerSteps"] = "500";
