@@ -37,7 +37,7 @@ public:
         // Export OpenHome services
         upmpdDoOH,
     };
-    UpMpd(const string& deviceid, 
+    UpMpd(const string& deviceid, const string& friendlyname,
           const unordered_map<string, string>& xmlfiles,
           MPDCli *mpdcli, unsigned int opts = upmpdNone);
     ~UpMpd();

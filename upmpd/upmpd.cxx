@@ -51,7 +51,7 @@ static const string dfltFriendlyName("UpMpd");
 
 // Note: if we ever need this to work without cxx11, there is this:
 // http://www.tutok.sk/fastgl/callback.html
-UpMpd::UpMpd(const string& deviceid, 
+UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
 			 const unordered_map<string, string>& xmlfiles,
 			 MPDCli *mpdcli, unsigned int opts)
 	: UpnpDevice(deviceid, xmlfiles), m_mpdcli(mpdcli), m_mpds(0),
@@ -65,7 +65,7 @@ UpMpd::UpMpd(const string& deviceid,
 	m_services.push_back(new UpMpdAVTransport(this));
 	m_services.push_back(new UpMpdConMan(this));
 	if (m_options & upmpdDoOH) {
-		m_services.push_back(new OHProduct(this));
+		m_services.push_back(new OHProduct(this, friendlyname));
 		m_services.push_back(new OHInfo(this));
 		m_services.push_back(new OHTime(this));
 		m_services.push_back(new OHVolume(this, rdctl));
@@ -401,7 +401,8 @@ int main(int argc, char *argv[])
 	if (openhome)
 		options |= UpMpd::upmpdDoOH;
 	// Initialize the UPnP device object.
-	UpMpd device(string("uuid:") + UUID, xmlfiles, &mpdcli, options);
+	UpMpd device(string("uuid:") + UUID, friendlyname, 
+				 xmlfiles, &mpdcli, options);
 
 	// And forever generate state change events.
 	LOGDEB("Entering event loop" << endl);

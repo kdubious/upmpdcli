@@ -43,8 +43,9 @@ using namespace std::placeholders;
 static const string sTpProduct("urn:av-openhome-org:service:Product:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Product");
 
-OHProduct::OHProduct(UpMpd *dev)
-    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev)
+OHProduct::OHProduct(UpMpd *dev, const string& friendlyname)
+    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
+      m_roomOrName(friendlyname)
 {
     dev->addActionMapping(this, "Manufacturer", 
                           bind(&OHProduct::manufacturer, this, _1, _2));
@@ -90,7 +91,6 @@ static const string csmaninfo("Such nice guys and gals");
 static const string csmanurl("http://www.lesbonscomptes.com/upmpdcli");
 static const string csmodname("UpMPDCli UPnP-MPD gateway");
 static const string csmodurl("http://www.lesbonscomptes.com/upmpdcli");
-static const string csprodroom("Bureau");
 static const string csprodname("Upmpdcli");
 bool OHProduct::getEventData(bool all, std::vector<std::string>& names, 
                              std::vector<std::string>& values)
@@ -107,7 +107,7 @@ bool OHProduct::getEventData(bool all, std::vector<std::string>& names,
         names.push_back("ModelInfo"); values.push_back(csversion);
         names.push_back("ModelUrl");  values.push_back(csmodurl);
         names.push_back("ModelImageUri"); values.push_back("");
-        names.push_back("ProductRoom"); values.push_back(csprodroom);
+        names.push_back("ProductRoom"); values.push_back(m_roomOrName);
         names.push_back("ProductName"); values.push_back(csprodname);
         names.push_back("ProductInfo"); values.push_back(csversion);
         names.push_back("ProductUrl"); values.push_back("");
@@ -144,7 +144,7 @@ int OHProduct::model(const SoapArgs& sc, SoapData& data)
 int OHProduct::product(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHProduct::product" << endl);
-    data.addarg("Room", csprodroom);
+    data.addarg("Room", m_roomOrName);
     data.addarg("Name", csprodname);
     data.addarg("Info", csversion);
     data.addarg("Url", "");
@@ -226,7 +226,7 @@ int OHProduct::source(const SoapArgs& sc, SoapData& data)
     if (sindex != 0) {
         return UPNP_E_INVALID_PARAM;
     }
-    data.addarg("SystemName", csprodroom);
+    data.addarg("SystemName", m_roomOrName);
     data.addarg("Type", "Playlist");
     data.addarg("Name", "PlayList");
     data.addarg("Visible", "1");

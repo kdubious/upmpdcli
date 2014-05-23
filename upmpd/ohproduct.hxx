@@ -25,7 +25,7 @@ class UpMpd;
 
 class OHProduct : public UpnpService {
 public:
-    OHProduct(UpMpd *dev);
+    OHProduct(UpMpd *dev, const string& friendlyname);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
@@ -43,7 +43,9 @@ private:
     int source(const SoapArgs& sc, SoapData& data);
     int attributes(const SoapArgs& sc, SoapData& data);
     int sourceXMLChangeCount(const SoapArgs& sc, SoapData& data);
+
     UpMpd *m_dev;
+    string m_roomOrName;
 };
 
 #endif /* _OHPRODUCT_H_X_INCLUDED_ */
