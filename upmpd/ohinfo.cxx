@@ -127,8 +127,8 @@ void OHInfo::urimetadata(string& uri, string& metadata)
         (mpds.state == MpdStatus::MPDS_PAUSE);
 
     if (is_song) {
-        uri = mapget(mpds.currentsong, "uri");
-        metadata = didlmake(mpds);
+        uri = mpds.currentsong.uri;
+        metadata = didlmake(mpds.currentsong);
     }
 }
 

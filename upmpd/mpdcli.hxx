@@ -22,12 +22,34 @@
 #include <map>
 #include <vector>
 
+class UpSong {
+public:
+    UpSong() : duration_secs(0), mpdid(0) {}
+    void clear() {
+        uri.clear(); 
+        artist.clear(); 
+        album.clear();
+        title.clear();
+        tracknum.clear();
+        genre.clear();
+        duration_secs = mpdid = 0;
+    }
+    std::string uri;
+    std::string artist;
+    std::string album;
+    std::string title;
+    std::string tracknum;
+    std::string genre;
+    unsigned int duration_secs;
+    unsigned int mpdid;
+};
+
 class MpdStatus {
 public:
-    MpdStatus()
-        : trackcounter(0), detailscounter(0)
-        {}
+    MpdStatus() : trackcounter(0), detailscounter(0) {}
+
     enum State {MPDS_UNK, MPDS_STOP, MPDS_PLAY, MPDS_PAUSE};
+
     int volume;
     bool rept;
     bool random;
@@ -48,10 +70,8 @@ public:
     unsigned int bitdepth;
     unsigned int channels;
     std::string errormessage;
-    // Current song info. The keys are didl-lite names (which can be
-    // attribute or element names
-    std::unordered_map<std::string, std::string> currentsong;
-    std::unordered_map<std::string, std::string> nextsong;
+    UpSong currentsong;
+    UpSong nextsong;
 
     // Synthetized fields
     int trackcounter;
@@ -81,14 +101,15 @@ public:
     bool seek(int seconds);
     bool clearQueue();
     int insert(const std::string& uri, int pos);
+    // Insert after given id
+    bool insertAfterId(const std::string& uri, int id);
     bool deleteId(int id);
     bool statId(int id);
     int curpos();
-    bool getQueueSongs(std::vector<mpd_song*>& songs);
-    void freeSongs(std::vector<mpd_song*>& songs);
-    bool statSong(std::unordered_map<std::string, std::string>& status, 
-                  int pos = -1, bool isId = false);
-
+    bool getQueueIds(std::vector<unsigned int>& vids);
+    bool statSong(UpSong& usong, int pos = -1, bool isId = false);
+    bool mapSong(UpSong& usong, struct mpd_song *song);
+    
     const MpdStatus& getStatus()
     {
         updStatus();
@@ -110,6 +131,8 @@ private:
 
     bool openconn();
     bool updStatus();
+    bool getQueueSongs(std::vector<mpd_song*>& songs);
+    void freeSongs(std::vector<mpd_song*>& songs);
     bool showError(const std::string& who);
 };
 

@@ -180,6 +180,35 @@ void trimstring(string &s, const char *ws)
     if (pos != string::npos && pos != s.length()-1)
 	s.replace(pos+1, string::npos, string());
 }
+void stringToTokens(const string& str, vector<string>& tokens,
+		    const string& delims, bool skipinit)
+{
+    string::size_type startPos = 0, pos;
+
+    // Skip initial delims, return empty if this eats all.
+    if (skipinit && 
+	(startPos = str.find_first_not_of(delims, 0)) == string::npos) {
+	return;
+    }
+    while (startPos < str.size()) { 
+        // Find next delimiter or end of string (end of token)
+        pos = str.find_first_of(delims, startPos);
+
+        // Add token to the vector and adjust start
+	if (pos == string::npos) {
+	    tokens.push_back(str.substr(startPos));
+	    break;
+	} else if (pos == startPos) {
+	    // Dont' push empty tokens after first
+	    if (tokens.empty())
+		tokens.push_back(string());
+	    startPos = ++pos;
+	} else {
+	    tokens.push_back(str.substr(startPos, pos - startPos));
+	    startPos = ++pos;
+	}
+    }
+}
 
 string xmlquote(const string& in)
 {
@@ -285,10 +314,8 @@ diffmaps(const unordered_map<string, string>& old,
 
 // Bogus didl fragment maker. We probably don't need a full-blown XML
 // helper here
-string didlmake(const MpdStatus& mpds, bool next)
+string didlmake(const UpSong& song)
 {
-    const unordered_map<string, string>& songmap = 
-        next? mpds.nextsong : mpds.currentsong;
     ostringstream ss;
     ss << "<DIDL-Lite xmlns:dc=\"http://purl.org/dc/elements/1.1/\" "
         "xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\" "
@@ -296,14 +323,14 @@ string didlmake(const MpdStatus& mpds, bool next)
         "xmlns:dlna=\"urn:schemas-dlna-org:metadata-1-0/\">"
        << "<item restricted=\"1\">";
 
-    {   const string& val = mapget(songmap, "dc:title");
+    {   const string& val = song.title;
         ss << "<dc:title>" << xmlquote(val) << "</dc:title>";
     }
 	
     // TBD Playlists etc?
     ss << "<upnp:class>object.item.audioItem.musicTrack</upnp:class>";
 
-    {   const string& val = mapget(songmap, "upnp:artist");
+    {   const string& val = song.artist;
         if (!val.empty()) {
             string a = xmlquote(val);
             ss << "<dc:creator>" << a << "</dc:creator>" << 
@@ -311,19 +338,19 @@ string didlmake(const MpdStatus& mpds, bool next)
         }
     }
 
-    {   const string& val = mapget(songmap, "upnp:album");
+    {   const string& val = song.album;
         if (!val.empty()) {
             ss << "<upnp:album>" << xmlquote(val) << "</upnp:album>";
         }
     }
 
-    {   const string& val = mapget(songmap, "upnp:genre");
+    {   const string& val = song.genre;
         if (!val.empty()) {
             ss << "<upnp:genre>" << xmlquote(val) << "</upnp:genre>";
         }
     }
 
-    {const string& val = mapget(songmap, "upnp:originalTrackNumber");
+    {const string& val = song.tracknum;
         if (!val.empty()) {
             ss << "<upnp:originalTrackNumber>" << val << 
                 "</upnp:originalTrackNumber>";
@@ -335,14 +362,15 @@ string didlmake(const MpdStatus& mpds, bool next)
     // for the moment. partly because MPD does not supply them.  And
     // mostly everything is bogus if next is set...  
 
-    ss << "<res " << "duration=\"" << upnpduration(mpds.songlenms) << "\" "
+    ss << "<res " << "duration=\"" << upnpduration(song.duration_secs * 1000) 
+       << "\" "
 	// Bitrate keeps changing for VBRs and forces events. Keeping
 	// it out for now.
 	//       << "bitrate=\"" << mpds.kbrate << "\" "
        << "sampleFrequency=\"44100\" audioChannels=\"2\" "
        << "protocolInfo=\"http-get:*:audio/mpeg:DLNA.ORG_PN=MP3;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000\""
        << ">"
-       << xmlquote(mapget(songmap, "uri")) 
+       << xmlquote(song.uri) 
        << "</res>"
        << "</item></DIDL-Lite>";
     return ss.str();

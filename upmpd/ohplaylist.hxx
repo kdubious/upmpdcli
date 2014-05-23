@@ -56,7 +56,9 @@ private:
     int idArrayChanged(const SoapArgs& sc, SoapData& data);
     int protocolInfo(const SoapArgs& sc, SoapData& data);
 
+    std::string makeIdArray();
     bool makestate(unordered_map<string, string> &st);
+    void maybeWakeUp(bool ok);
     // State variable storage
     unordered_map<string, string> m_state;
     UpMpd *m_dev;

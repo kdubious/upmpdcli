@@ -31,6 +31,8 @@ extern void path_catslash(std::string &s);
 extern std::string path_cat(const std::string &s1, const std::string &s2);
 extern void trimstring(string &s, const char *ws = " \t");
 extern string path_tildexpand(const string &s);
+extern void stringToTokens(const string &s, vector<string> &tokens, 
+			   const string &delims = " \t", bool skipinit=true);
 
 
 // Escape XML special chars.
@@ -54,8 +56,8 @@ extern const std::string& mapget(
     const std::string& k);
 
 // Format a didl fragment from MPD status data
-class MpdStatus;
-extern std::string didlmake(const MpdStatus& mpds, bool next = false);
+class UpSong;
+extern std::string didlmake(const UpSong& song);
 
 // Replace the first occurrence of regexp. cxx11 regex does not work
 // that well yet...
