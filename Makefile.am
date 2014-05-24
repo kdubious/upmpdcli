@@ -2,7 +2,7 @@
 AM_CPPFLAGS = -DDEBUG -g -Wall \
             -DDATADIR=\"${pkgdatadir}\" -DCONFIGDIR=\"${sysconfdir}\"
 
-AM_CXXFLAGS = -std=c++11 
+AM_CXXFLAGS = -std=c++0x 
 
 lib_LTLIBRARIES = libupnpp.la
 
