@@ -473,8 +473,10 @@ int OHPlaylist::insert(const SoapArgs& sc, SoapData& data)
            uri << " Metadata " << metadata << endl);
     if (ok) {
         int id = m_dev->m_mpdcli->insertAfterId(uri, afterid);
-        if ((ok = (id != -1)))
+        if ((ok = (id != -1))) {
             m_metacache[id] = metadata;
+            data.addarg("NewId", makesint(id));
+        }
     }
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
