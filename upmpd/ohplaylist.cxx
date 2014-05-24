@@ -81,7 +81,7 @@ OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl)
     dev->addActionMapping(this, "Read",
                           bind(&OHPlaylist::ohread, this, _1, _2));
     dev->addActionMapping(this, "ReadList",
-                          bind(&OHPlaylist::readlist, this, _1, _2));
+                          bind(&OHPlaylist::readList, this, _1, _2));
     dev->addActionMapping(this, "Insert",
                           bind(&OHPlaylist::insert, this, _1, _2));
     dev->addActionMapping(this, "DeleteId",
@@ -125,36 +125,39 @@ static string mpdstatusToTransportState(MpdStatus::State st)
     return tstate;
 }
 
-// The data format for id lists is an array of msb 32b its ints
+// The data format for id lists is an array of msb 32 bits ints
 // encoded in base64...
 static string translateIdArray(const vector<unsigned int>& in)
 {
     string out1;
-    for (vector<unsigned int>::const_iterator it = in.begin(); 
-         it != in.end(); it++) {
-        out1 += (unsigned char) (((*it) & 0xff000000) >> 24);
-        out1 += (unsigned char) ( ((*it) & 0x00ff0000) >> 16);
-        out1 += (unsigned char) ( ((*it) & 0x0000ff00) >> 8);
-        out1 += (unsigned char) (  (*it) & 0x000000ff);
+    string sdeb;
+    for (auto val : in) {
+        out1 += (unsigned char) ((val & 0xff000000) >> 24);
+        out1 += (unsigned char) ((val & 0x00ff0000) >> 16);
+        out1 += (unsigned char) ((val & 0x0000ff00) >> 8);
+        out1 += (unsigned char) ((val & 0x000000ff));
+        //sdeb += makesint(val) + " ";
     }
+    //LOGDEB("OHPlaylist: current ids: " << sdeb << endl);
     return base64_encode(out1);
 }
-
 string OHPlaylist::makeIdArray()
 {
     string out;
     vector<unsigned int> vids;
-    unordered_map<int, string> nmeta;
+    // Retrieve the ids for current queue songs from mpd, and translate format
     bool ok = m_dev->m_mpdcli->getQueueIds(vids);
     if (ok) {
         out = translateIdArray(vids);
     }
 
-    // Clear metadata cache: entries not in vids are not interesting
+    // Clear metadata cache: entries not in vids are not valid any more
+    // We just build a new cache for data about current entries
+    unordered_map<int, string> nmeta;
     for (auto& id : vids) {
-        unordered_map<int, string>::iterator it1 = m_metacache.find(id);
-        if (it1 != m_metacache.end())
-            nmeta[id] = it1->second;
+        auto inold = m_metacache.find(id);
+        if (inold != m_metacache.end())
+            nmeta[id].swap(inold->second);
     }
     m_metacache = nmeta;
 
@@ -179,11 +182,12 @@ bool OHPlaylist::makestate(unordered_map<string, string> &st)
 }
 
 bool OHPlaylist::getEventData(bool all, std::vector<std::string>& names, 
-                            std::vector<std::string>& values)
+                              std::vector<std::string>& values)
 {
     //LOGDEB("OHPlaylist::getEventData" << endl);
 
     unordered_map<string, string> state;
+
     makestate(state);
 
     unordered_map<string, string> changed;
@@ -194,10 +198,9 @@ bool OHPlaylist::getEventData(bool all, std::vector<std::string>& names,
     }
     m_state = state;
 
-    for (unordered_map<string, string>::iterator it = changed.begin();
-         it != changed.end(); it++) {
-        names.push_back(it->first);
-        values.push_back(it->second);
+    for (auto& entry : changed) {
+        names.push_back(entry.first);
+        values.push_back(entry.second);
     }
 
     return true;
@@ -389,12 +392,12 @@ int OHPlaylist::ohread(const SoapArgs& sc, SoapData& data)
         ok = m_dev->m_mpdcli->statSong(song, id, true);
     }
     if (ok) {
-        unordered_map<int, string>::iterator mit = m_metacache.find(id);
+        auto cached = m_metacache.find(id);
         string metadata;
-        if (mit != m_metacache.end()) {
-            metadata = xmlquote(mit->second);
+        if (cached != m_metacache.end()) {
+            metadata = SoapArgs::xmlQuote(cached->second);
         } else {
-            metadata = xmlquote(didlmake(song));
+            metadata = SoapArgs::xmlQuote(didlmake(song));
         }
         data.addarg("Uri", song.uri);
         data.addarg("Metadata", metadata);
@@ -414,29 +417,29 @@ int OHPlaylist::ohread(const SoapArgs& sc, SoapData& data)
 //  </TrackList>
 //
 // Any ids not in the playlist are ignored. 
-int OHPlaylist::readlist(const SoapArgs& sc, SoapData& data)
+int OHPlaylist::readList(const SoapArgs& sc, SoapData& data)
 {
-    LOGDEB("OHPlaylist::readlist" << endl);
+    LOGDEB("OHPlaylist::readList" << endl);
     string sids;
     bool ok = sc.getString("IdList", &sids);
     vector<string> ids;
     string out("<TrackList>");
     if (ok) {
         stringToTokens(sids, ids);
-        for (vector<string>::iterator it = ids.begin(); it != ids.end(); it++) {
-            int id = atoi(it->c_str());
+        for (auto& sid : ids) {
+            int id = atoi(sid.c_str());
             UpSong song;
             if (!m_dev->m_mpdcli->statSong(song, id, true))
                 continue;
-            unordered_map<int, string>::iterator mit = m_metacache.find(id);
+            auto mit = m_metacache.find(id);
             string metadata;
             if (mit != m_metacache.end()) {
-                metadata = xmlquote(mit->second);
+                metadata = SoapArgs::xmlQuote(mit->second);
             } else {
-                metadata = xmlquote(didlmake(song));
+                metadata = SoapArgs::xmlQuote(didlmake(song));
             }
             out += "<Entry><Id>";
-            out += it->c_str();
+            out += sid.c_str();
             out += "</Id><Uri>";
             out += song.uri;
             out += "</Uri><Metadata>";
@@ -518,9 +521,8 @@ int OHPlaylist::idArray(const SoapArgs& sc, SoapData& data)
 int OHPlaylist::idArrayChanged(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::idArrayChanged" << endl);
-    bool ok = false;
-
-    data.addarg("Token", "0");
+    int token;
+    bool ok = sc.getInt("Token", &token);
     // Bool indicating if array changed
     data.addarg("Value", "0");
 

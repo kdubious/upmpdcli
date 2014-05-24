@@ -127,7 +127,7 @@ bool UpMpdRenderCtl::getEventData(bool all, std::vector<std::string>& names,
         chgdata += "<";
         chgdata += it->first;
         chgdata += " val=\"";
-        chgdata += xmlquote(it->second);
+        chgdata += SoapArgs::xmlQuote(it->second);
         chgdata += "\"/>\n";
     }
     chgdata += "</InstanceID>\n</Event>\n";

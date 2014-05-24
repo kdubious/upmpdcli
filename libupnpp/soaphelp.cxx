@@ -127,6 +127,22 @@ bool SoapArgs::getString(const char *nm, string *value) const
     return true;
 }
 
+string SoapArgs::xmlQuote(const string& in)
+{
+    string out;
+    for (unsigned int i = 0; i < in.size(); i++) {
+        switch(in[i]) {
+        case '"': out += "&quot;";break;
+        case '&': out += "&amp;";break;
+        case '<': out += "&lt;";break;
+        case '>': out += "&gt;";break;
+        case '\'': out += "&apos;";break;
+        default: out += in[i];
+        }
+    }
+    return out;
+}
+
 IXML_Document *buildSoapBody(SoapData& data)
 {
     IXML_Document *doc = ixmlDocument_createDocument();
@@ -153,3 +169,4 @@ IXML_Document *buildSoapBody(SoapData& data)
     
     return doc;
 }
+

@@ -33,6 +33,7 @@ public:
     bool getBool(const char *nm, bool *value) const;
     bool getInt(const char *nm, int *value) const;
     bool getString(const char *nm, std::string *value) const;
+    static std::string xmlQuote(const std::string& in);
 };
 
 /** Decode the XML in a Soap call and return the arguments in a SoapArgs 

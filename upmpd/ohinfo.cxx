@@ -46,14 +46,52 @@ static const string sIdProduct("urn:av-openhome-org:serviceId:Info");
 OHInfo::OHInfo(UpMpd *dev)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev)
 {
-    dev->addActionMapping(this, "Counters", bind(&OHInfo::counters,
-                                           this, _1, _2));
-    dev->addActionMapping(this, "Track", bind(&OHInfo::track,
-                                           this, _1, _2));
-    dev->addActionMapping(this, "Details", bind(&OHInfo::details,
-                                          this, _1, _2));
-    dev->addActionMapping(this, "Metatext", bind(&OHInfo::metatext,
-                                          this, _1, _2));
+    dev->addActionMapping(this, "Counters", 
+                          bind(&OHInfo::counters, this, _1, _2));
+    dev->addActionMapping(this, "Track", 
+                          bind(&OHInfo::track, this, _1, _2));
+    dev->addActionMapping(this, "Details", 
+                          bind(&OHInfo::details, this, _1, _2));
+    dev->addActionMapping(this, "Metatext", 
+                          bind(&OHInfo::metatext, this, _1, _2));
+}
+
+void OHInfo::urimetadata(string& uri, string& metadata)
+{
+    const MpdStatus &mpds =  m_dev->getMpdStatus();
+    bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
+        (mpds.state == MpdStatus::MPDS_PAUSE);
+
+    if (is_song) {
+        uri = mpds.currentsong.uri;
+        metadata = didlmake(mpds.currentsong);
+    } else {
+        uri.clear();
+        metadata.clear();
+    }
+}
+
+void OHInfo::makedetails(string &duration, string& bitrate, 
+                         string& bitdepth, string& samplerate)
+{
+    const MpdStatus &mpds =  m_dev->getMpdStatus();
+
+    bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
+        (mpds.state == MpdStatus::MPDS_PAUSE);
+
+    if (is_song) {
+        char cbuf[30];
+        sprintf(cbuf, "%u", mpds.songlenms / 1000);
+        duration = cbuf;
+        sprintf(cbuf, "%u", mpds.kbrate * 1000);
+        bitrate = cbuf;
+        sprintf(cbuf, "%u", mpds.bitdepth);
+        bitdepth = cbuf;
+        sprintf(cbuf, "%u", mpds.sample_rate);
+        samplerate = cbuf;
+    } else {
+        duration = bitrate = bitdepth = samplerate = "0";
+    }
 }
 
 bool OHInfo::makestate(unordered_map<string, string> &st)
@@ -70,15 +108,10 @@ bool OHInfo::makestate(unordered_map<string, string> &st)
     urimetadata(uri, metadata);
     st["Uri"] = uri;
     st["Metadata"] = metadata;
-    string duration("0"), bitrate("0"), bitdepth("0"), samplerate("0");
-    makedetails(duration, bitrate, bitdepth, samplerate);
-    st["Duration"] = duration;
-    st["BitRate"] = bitrate;
-    st["BitDepth"] = bitdepth;
-    st["SampleRate"] = samplerate;
+    makedetails(st["Duration"], st["BitRate"], st["BitDepth"], 
+                st["SampleRate"]);
     st["Lossless"] = "0";
     st["CodecName"] = "";
-
     st["Metatext"] = "";
     return true;
 }
@@ -88,10 +121,8 @@ bool OHInfo::getEventData(bool all, std::vector<std::string>& names,
 {
     //LOGDEB("OHInfo::getEventData" << endl);
 
-    unordered_map<string, string> state;
+    unordered_map<string, string> state, changed;
     makestate(state);
-
-    unordered_map<string, string> changed;
     if (all) {
         changed = state;
     } else {
@@ -99,10 +130,9 @@ bool OHInfo::getEventData(bool all, std::vector<std::string>& names,
     }
     m_state = state;
 
-    for (unordered_map<string, string>::iterator it = changed.begin();
-         it != changed.end(); it++) {
-        names.push_back(it->first);
-        values.push_back(it->second);
+    for (auto& member : changed) {
+        names.push_back(member.first);
+        values.push_back(member.second);
     }
 
     return true;
@@ -120,18 +150,6 @@ int OHInfo::counters(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-void OHInfo::urimetadata(string& uri, string& metadata)
-{
-    const MpdStatus &mpds =  m_dev->getMpdStatus();
-    bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
-        (mpds.state == MpdStatus::MPDS_PAUSE);
-
-    if (is_song) {
-        uri = mpds.currentsong.uri;
-        metadata = didlmake(mpds.currentsong);
-    }
-}
-
 int OHInfo::track(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHInfo::track" << endl);
@@ -143,32 +161,11 @@ int OHInfo::track(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-void OHInfo::makedetails(string &duration, string& bitrate, 
-                         string& bitdepth, string& samplerate)
-{
-    const MpdStatus &mpds =  m_dev->getMpdStatus();
-
-    bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
-        (mpds.state == MpdStatus::MPDS_PAUSE);
-
-    char cbuf[30];
-    if (is_song) {
-        sprintf(cbuf, "%u", mpds.songlenms / 1000);
-        duration = cbuf;
-        sprintf(cbuf, "%u", mpds.kbrate * 1000);
-        bitrate = cbuf;
-        sprintf(cbuf, "%u", mpds.bitdepth);
-        bitdepth = cbuf;
-        sprintf(cbuf, "%u", mpds.sample_rate);
-        samplerate = cbuf;
-    }
-}
-
 int OHInfo::details(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHInfo::details" << endl);
 
-    string duration("0"), bitrate("0"), bitdepth("0"), samplerate("0");
+    string duration, bitrate, bitdepth, samplerate;
     makedetails(duration, bitrate, bitdepth, samplerate);
     data.addarg("Duration", duration);
     data.addarg("BitRate", bitrate);

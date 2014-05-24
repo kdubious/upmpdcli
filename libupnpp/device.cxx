@@ -29,22 +29,6 @@ using namespace std;
 
 unordered_map<std::string, UpnpDevice *> UpnpDevice::o_devices;
 
-static string xmlquote(const string& in)
-{
-    string out;
-    for (unsigned int i = 0; i < in.size(); i++) {
-        switch(in[i]) {
-        case '"': out += "&quot;";break;
-        case '&': out += "&amp;";break;
-        case '<': out += "&lt;";break;
-        case '>': out += "&gt;";break;
-        case '\'': out += "&apos;";break;
-        default: out += in[i];
-        }
-    }
-    return out;
-}
-
 static bool vectorstoargslists(const vector<string>& names, 
                                const vector<string>& values,
                                vector<string>& qvalues,
@@ -62,7 +46,7 @@ static bool vectorstoargslists(const vector<string>& names,
     cvalues.reserve(values.size());
     for (unsigned int i = 0; i < values.size(); i++) {
         cnames.push_back(names[i].c_str());
-        qvalues.push_back(xmlquote(values[i]));
+        qvalues.push_back(SoapArgs::xmlQuote(values[i]));
         cvalues.push_back(qvalues[i].c_str());
         //LOGDEB("Edata: " << cnames[i] << " -> " << cvalues[i] << endl);
     }

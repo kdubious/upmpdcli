@@ -64,17 +64,16 @@ void OHTime::getdata(string& trackcount, string &duration,
         duration = cbuf;
         sprintf(cbuf, "%u", mpds.songelapsedms / 1000);
         seconds = cbuf;
+    } else {
+        duration = "0";
+        seconds = "0";
     }
 }
 
 bool OHTime::makestate(unordered_map<string, string> &st)
 {
     st.clear();
-    string trackcount("0"), duration("0"), seconds("0");
-    getdata(trackcount, duration, seconds);
-    st["TrackCount"] = trackcount;
-    st["Duration"] = duration;
-    st["Seconds"] = seconds;
+    getdata(st["TrackCount"], st["Duration"], st["Seconds"]);
     return true;
 }
 
@@ -94,10 +93,9 @@ bool OHTime::getEventData(bool all, std::vector<std::string>& names,
     }
     m_state = state;
 
-    for (unordered_map<string, string>::iterator it = changed.begin();
-         it != changed.end(); it++) {
-        names.push_back(it->first);
-        values.push_back(it->second);
+    for (auto& member : changed) {
+        names.push_back(member.first);
+        values.push_back(member.second);
     }
 
     return true;
@@ -106,7 +104,7 @@ bool OHTime::getEventData(bool all, std::vector<std::string>& names,
 int OHTime::ohtime(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHTime::ohtime" << endl);
-    string trackcount("0"), duration("0"), seconds("0");
+    string trackcount, duration, seconds;
     getdata(trackcount, duration, seconds);
     data.addarg("TrackCount", trackcount);
     data.addarg("Duration", duration);

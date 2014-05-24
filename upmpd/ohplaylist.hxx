@@ -47,7 +47,7 @@ private:
     int transportState(const SoapArgs& sc, SoapData& data);
     int id(const SoapArgs& sc, SoapData& data);
     int ohread(const SoapArgs& sc, SoapData& data);
-    int readlist(const SoapArgs& sc, SoapData& data);
+    int readList(const SoapArgs& sc, SoapData& data);
     int insert(const SoapArgs& sc, SoapData& data);
     int deleteId(const SoapArgs& sc, SoapData& data);
     int deleteAll(const SoapArgs& sc, SoapData& data);

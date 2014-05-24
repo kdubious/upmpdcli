@@ -89,10 +89,8 @@ bool OHVolume::getEventData(bool all, std::vector<std::string>& names,
 {
     //LOGDEB("OHVolume::getEventData" << endl);
 
-    unordered_map<string, string> state;
+    unordered_map<string, string> state, changed;
     makestate(state);
-
-    unordered_map<string, string> changed;
     if (all) {
         changed = state;
     } else {
@@ -100,10 +98,9 @@ bool OHVolume::getEventData(bool all, std::vector<std::string>& names,
     }
     m_state = state;
 
-    for (unordered_map<string, string>::iterator it = changed.begin();
-         it != changed.end(); it++) {
-        names.push_back(it->first);
-        values.push_back(it->second);
+    for (auto& member : changed) {
+        names.push_back(member.first);
+        values.push_back(member.second);
     }
 
     return true;
@@ -115,7 +112,6 @@ int OHVolume::characteristics(const SoapArgs& sc, SoapData& data)
     data.addarg("VolumeMax", "100");
     data.addarg("VolumeUnity", "100");
     data.addarg("VolumeSteps", "100");
-    // No idea...
     data.addarg("VolumeMilliDbPerStep", "500");
     data.addarg("BalanceMax", "0");
     data.addarg("FadeMax", "0");
@@ -148,7 +144,7 @@ int OHVolume::setMute(const SoapArgs& sc, SoapData& data)
 int OHVolume::volumeInc(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHVolume::volumeInc" << endl);
-    int newvol = m_ctl->getvolume_i()+1;
+    int newvol = m_ctl->getvolume_i() + 1;
     if (newvol > 100)
         newvol = 100;
     m_ctl->setvolume_i(newvol);
@@ -191,4 +187,3 @@ int OHVolume::volumeLimit(const SoapArgs& sc, SoapData& data)
     data.addarg("Value", "100");
     return UPNP_E_SUCCESS;
 }
-

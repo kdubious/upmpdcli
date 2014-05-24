@@ -35,9 +35,6 @@ extern void stringToTokens(const string &s, vector<string> &tokens,
 			   const string &delims = " \t", bool skipinit=true);
 
 
-// Escape XML special chars.
-extern std::string xmlquote(const std::string& in);
-
 // Convert between db value to percent values (Get/Set Volume and VolumeDb)
 extern int percentodbvalue(int value);
 extern int dbvaluetopercent(int dbvalue);
