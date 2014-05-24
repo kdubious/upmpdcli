@@ -39,7 +39,7 @@ using namespace std::placeholders;
 #include "ohplaylist.hxx"
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
-//#include "rendering.hxx"
+//#include "renderctl.hxx"
 #include "base64.hxx"
 
 static const string sTpProduct("urn:av-openhome-org:service:Playlist:1");

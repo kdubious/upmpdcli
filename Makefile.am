@@ -52,8 +52,8 @@ upmpdcli_SOURCES = \
      upmpd/upmpd.cxx \
      upmpd/upmpdutils.cxx \
      upmpd/upmpdutils.hxx \
-     upmpd/rendering.hxx \
-     upmpd/rendering.cxx \
+     upmpd/renderctl.hxx \
+     upmpd/renderctl.cxx \
      upmpd/avtransport.hxx \
      upmpd/avtransport.cxx \
      upmpd/conman.hxx \

@@ -36,7 +36,7 @@ using namespace std::placeholders;
 #include "libupnpp/log.hxx"
 
 #include "upmpd.hxx"
-#include "rendering.hxx"
+#include "renderctl.hxx"
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
 

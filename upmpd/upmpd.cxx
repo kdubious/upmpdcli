@@ -38,7 +38,7 @@ using namespace std::placeholders;
 #include "upmpd.hxx"
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
-#include "rendering.hxx"
+#include "renderctl.hxx"
 #include "avtransport.hxx"
 #include "conman.hxx"
 #include "ohproduct.hxx"

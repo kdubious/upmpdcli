@@ -39,7 +39,7 @@ using namespace std::placeholders;
 #include "ohvolume.hxx"
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
-#include "rendering.hxx"
+#include "renderctl.hxx"
 
 static const string sTpProduct("urn:av-openhome-org:service:Volume:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Volume");
