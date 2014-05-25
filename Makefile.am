@@ -49,6 +49,7 @@ upmpdcli_SOURCES = \
      upmpd/conftree.hxx \
      upmpd/mpdcli.cxx \
      upmpd/mpdcli.hxx \
+     upmpd/upmpd.hxx \
      upmpd/upmpd.cxx \
      upmpd/upmpdutils.cxx \
      upmpd/upmpdutils.hxx \
