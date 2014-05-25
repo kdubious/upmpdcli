@@ -80,15 +80,10 @@ void OHInfo::makedetails(string &duration, string& bitrate,
         (mpds.state == MpdStatus::MPDS_PAUSE);
 
     if (is_song) {
-        char cbuf[30];
-        sprintf(cbuf, "%u", mpds.songlenms / 1000);
-        duration = cbuf;
-        sprintf(cbuf, "%u", mpds.kbrate * 1000);
-        bitrate = cbuf;
-        sprintf(cbuf, "%u", mpds.bitdepth);
-        bitdepth = cbuf;
-        sprintf(cbuf, "%u", mpds.sample_rate);
-        samplerate = cbuf;
+        duration = SoapArgs::i2s(mpds.songlenms / 1000);
+        bitrate = SoapArgs::i2s(mpds.kbrate * 1000);
+        bitdepth = SoapArgs::i2s(mpds.bitdepth);
+        samplerate = SoapArgs::i2s(mpds.sample_rate);
     } else {
         duration = bitrate = bitdepth = samplerate = "0";
     }
@@ -98,18 +93,16 @@ bool OHInfo::makestate(unordered_map<string, string> &st)
 {
     st.clear();
 
-    char cbuf[30];
-    sprintf(cbuf, "%d", m_dev->m_mpds ? m_dev->m_mpds->trackcounter : 0);
-    st["TrackCount"] = cbuf;
-    sprintf(cbuf, "%d", m_dev->m_mpds ? m_dev->m_mpds->detailscounter : 0);
-    st["DetailsCount"] = cbuf;
+    st["TrackCount"] = SoapArgs::i2s(m_dev->m_mpds ? 
+                                     m_dev->m_mpds->trackcounter : 0);
+    st["DetailsCount"] = SoapArgs::i2s(m_dev->m_mpds ? 
+                                       m_dev->m_mpds->detailscounter : 0);
     st["MetatextCount"] = "0";
     string uri, metadata;
     urimetadata(uri, metadata);
     st["Uri"] = uri;
     st["Metadata"] = metadata;
-    makedetails(st["Duration"], st["BitRate"], st["BitDepth"], 
-                st["SampleRate"]);
+    makedetails(st["Duration"], st["BitRate"], st["BitDepth"],st["SampleRate"]);
     st["Lossless"] = "0";
     st["CodecName"] = "";
     st["Metatext"] = "";
@@ -141,11 +134,11 @@ bool OHInfo::getEventData(bool all, std::vector<std::string>& names,
 int OHInfo::counters(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHInfo::counters" << endl);
-    char cbuf[30];
-    sprintf(cbuf, "%d", m_dev->m_mpds ? m_dev->m_mpds->trackcounter : 0);
-    data.addarg("TrackCount", cbuf);
-    sprintf(cbuf, "%d", m_dev->m_mpds ? m_dev->m_mpds->detailscounter : 0);
-    data.addarg("DetailsCount", cbuf);
+    
+    data.addarg("TrackCount", SoapArgs::i2s(m_dev->m_mpds ?
+                                            m_dev->m_mpds->trackcounter : 0));
+    data.addarg("DetailsCount", SoapArgs::i2s(m_dev->m_mpds ?
+                                              m_dev->m_mpds->detailscounter:0));
     data.addarg("MetatextCount", "0");
     return UPNP_E_SUCCESS;
 }

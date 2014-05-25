@@ -54,16 +54,13 @@ void OHTime::getdata(string& trackcount, string &duration,
 {
     const MpdStatus &mpds =  m_dev->getMpdStatus();
 
-    char cbuf[30];
-    sprintf(cbuf, "%d", mpds.trackcounter);
-    trackcount = cbuf;
+    trackcount = SoapArgs::i2s(mpds.trackcounter);
+
     bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
         (mpds.state == MpdStatus::MPDS_PAUSE);
     if (is_song) {
-        sprintf(cbuf, "%u", mpds.songlenms / 1000);
-        duration = cbuf;
-        sprintf(cbuf, "%u", mpds.songelapsedms / 1000);
-        seconds = cbuf;
+        duration = SoapArgs::i2s(mpds.songlenms / 1000);
+        seconds = SoapArgs::i2s(mpds.songelapsedms / 1000);
     } else {
         duration = "0";
         seconds = "0";

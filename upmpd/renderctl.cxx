@@ -86,11 +86,8 @@ bool UpMpdRenderCtl::rdstateMToU(unordered_map<string, string>& status)
     int volume = m_desiredvolume >= 0 ? m_desiredvolume : mpds.volume;
     if (volume < 0)
         volume = 0;
-    char cvalue[30];
-    sprintf(cvalue, "%d", volume);
-    status["Volume"] = cvalue;
-    //sprintf(cvalue, "%d", percentodbvalue(volume));
-    //status["VolumeDB"] =  cvalue;
+    status["Volume"] = SoapArgs::i2s(volume);
+    //status["VolumeDB"] =  SoapArgs::i2s(percentodbvalue(volume));
     status["Mute"] =  volume == 0 ? "1" : "0";
     return true;
 }
@@ -289,9 +286,7 @@ int UpMpdRenderCtl::getVolume(const SoapArgs& sc, SoapData& data, bool isDb)
     if (isDb) {
         volume = percentodbvalue(volume);
     }
-    char svolume[30];
-    sprintf(svolume, "%d", volume);
-    data.addarg("CurrentVolume", svolume);
+    data.addarg("CurrentVolume", SoapArgs::i2s(volume));
     return UPNP_E_SUCCESS;
 }
 

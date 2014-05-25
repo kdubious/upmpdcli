@@ -151,8 +151,10 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
     case UPNP_CONTROL_ACTION_REQUEST:
     {
         struct Upnp_Action_Request *act = (struct Upnp_Action_Request *)evp;
+        DOMString pdoc = ixmlPrintDocument(act->ActionRequest);
         LOGDEB("UPNP_CONTROL_ACTION_REQUEST: " << act->ActionName <<
-               ". Params: " << ixmlPrintDocument(act->ActionRequest) << endl);
+               ". Params: " << pdoc << endl);
+        ixmlFreeDOMString(pdoc);
 
         unordered_map<string, UpnpService*>::const_iterator servit = 
             m_servicemap.find(act->ServiceID);
@@ -187,8 +189,11 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
 
         // Encode result data
         act->ActionResult = buildSoapBody(dt);
-        //LOGDEB("Response data: " << 
-        //   ixmlPrintDocument(act->ActionResult) << endl);
+
+        //{DOMString pdoc = ixmlPrintDocument(act->ActionResult);
+        //LOGDEB("Response data: " << pdoc << endl);
+        //ixmlFreeDOMString(pdoc);
+        //}
 
         return ret;
     }

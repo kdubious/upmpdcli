@@ -743,11 +743,12 @@ asciidoc.install();
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph"><p><strong>upmpdcli</strong> is an UPnP Media Renderer front-end to <strong>MPD</strong>, the Music Player
-Daemon.</p></div>
+Daemon. The last version supports both pure UPnP and the OpenHome ohMedia
+services.</p></div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_security">Security</h2>
+<h2 id="upmpdcli.security">Security</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>upmpdcli</strong> is not audited for security issues, and, as far as I
 know, it may be full of exploitable bugs. Do not run it on an
@@ -755,9 +756,9 @@ Internet-facing host.</p></div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_configuration">Configuration</h2>
+<h2 id="upmpdcli.config">Configuration</h2>
 <div class="sectionbody">
-<div class="paragraph" id="upmpdcli.config"><p>See the man page for command line details. In most situations, <strong>upmpdcli</strong>
+<div class="paragraph"><p>See the man page for command line details. In most situations, <strong>upmpdcli</strong>
 will be run as follows:</p></div>
 <div class="literalblock">
 <div class="content">
@@ -859,9 +860,26 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table">$UPMPD_UPNPPORT</p></td>
 <td align="left" valign="top"><p class="table">upnpport</p></td>
 </tr>
+<tr>
+<td align="left" valign="top"><p class="table">OpenHome support switch</p></td>
+<td align="left" valign="top"><p class="table">-O 0/1</p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">openhome</p></td>
+</tr>
 </tbody>
 </table>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="upmpdcli.openhome">OpenHome ohMedia services</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>The support for ohMedia services (play queue managed by the player instead
+of on the control point) is set to <em>off</em> by default in the software, and
+<em>on</em> in the configuration file (which normally does not
+overwrite the previous one during an upgrade). If you are upgrading to a
+version supporting OpenHome and you want to enable the services, you need
+to set the option in the configuration file.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -901,7 +919,7 @@ sudo make install</tt></pre>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-04-20 12:25:55 CEST
+Last updated 2014-05-25 09:43:40 CEST
 </div>
 </div>
 </body>

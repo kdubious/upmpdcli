@@ -2,7 +2,8 @@
 
 
 *upmpdcli* is an UPnP Media Renderer front-end to *MPD*, the Music Player
-Daemon. 
+Daemon. The last version supports both pure UPnP and the OpenHome ohMedia
+services.
 
 [[upmpdcli.security]]
 == Security
@@ -51,7 +52,18 @@ The following parameters can be set:
 |UPnP network interface|-i iface|$UPMPD_UPNPIFACE|upnpiface
 |UPnP IP address (if interface not set)|||upnpip
 |UPnP port|-p port|$UPMPD_UPNPPORT|upnpport
+|OpenHome support switch|-O 0/1||openhome
 |===========================    
+
+[[upmpdcli.openhome]]
+== OpenHome ohMedia services
+
+The support for ohMedia services (play queue managed by the player instead
+of on the control point) is set to _off_ by default in the software, and
+_on_ in the configuration file (which normally does not
+overwrite the previous one during an upgrade). If you are upgrading to a
+version supporting OpenHome and you want to enable the services, you need
+to set the option in the configuration file.
 
 [[upmpdcli.boot]]
 == Boot time startup

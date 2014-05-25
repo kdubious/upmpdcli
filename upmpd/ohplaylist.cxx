@@ -101,14 +101,6 @@ OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl)
 
 static const int tracksmax = 16384;
 
-// Yes inefficient. whatever...
-static string makesint(int val)
-{
-    char cbuf[30];
-    sprintf(cbuf, "%d", val);
-    return string(cbuf);
-}
-
 static string mpdstatusToTransportState(MpdStatus::State st)
 {
     string tstate;
@@ -136,7 +128,7 @@ static string translateIdArray(const vector<unsigned int>& in)
         out1 += (unsigned char) ((val & 0x00ff0000) >> 16);
         out1 += (unsigned char) ((val & 0x0000ff00) >> 8);
         out1 += (unsigned char) ((val & 0x000000ff));
-        //sdeb += makesint(val) + " ";
+        //sdeb += SoapArgs::i2s(val) + " ";
     }
     //LOGDEB("OHPlaylist: current ids: " << sdeb << endl);
     return base64_encode(out1);
@@ -171,10 +163,10 @@ bool OHPlaylist::makestate(unordered_map<string, string> &st)
     const MpdStatus &mpds = m_dev->getMpdStatus();
 
     st["TransportState"] =  mpdstatusToTransportState(mpds.state);
-    st["Repeat"] = makesint(mpds.rept);
-    st["Shuffle"] = makesint(mpds.random);
-    st["Id"] = makesint(mpds.songid);
-    st["TracksMax"] = makesint(tracksmax);
+    st["Repeat"] = SoapArgs::i2s(mpds.rept);
+    st["Shuffle"] = SoapArgs::i2s(mpds.random);
+    st["Id"] = SoapArgs::i2s(mpds.songid);
+    st["TracksMax"] = SoapArgs::i2s(tracksmax);
     st["ProtocolInfo"] = upmpdProtocolInfo;
     st["IdArray"] = makeIdArray();
 
@@ -376,7 +368,7 @@ int OHPlaylist::id(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::id" << endl);
     const MpdStatus &mpds = m_dev->getMpdStatus();
-    data.addarg("Value", makesint(mpds.songid));
+    data.addarg("Value", SoapArgs::i2s(mpds.songid));
     return UPNP_E_SUCCESS;
 }
 
@@ -475,7 +467,7 @@ int OHPlaylist::insert(const SoapArgs& sc, SoapData& data)
         int id = m_dev->m_mpdcli->insertAfterId(uri, afterid);
         if ((ok = (id != -1))) {
             m_metacache[id] = metadata;
-            data.addarg("NewId", makesint(id));
+            data.addarg("NewId", SoapArgs::i2s(id));
         }
     }
     maybeWakeUp(ok);
@@ -505,7 +497,7 @@ int OHPlaylist::deleteAll(const SoapArgs& sc, SoapData& data)
 int OHPlaylist::tracksMax(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::tracksMax" << endl);
-    data.addarg("Value", makesint(tracksmax));
+    data.addarg("Value", SoapArgs::i2s(tracksmax));
     return UPNP_E_SUCCESS;
 }
 

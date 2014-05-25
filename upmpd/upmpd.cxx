@@ -92,59 +92,6 @@ const MpdStatus& UpMpd::getMpdStatus()
 
 #include "conftree.hxx"
 
-static char *thisprog;
-
-static int op_flags;
-#define OPT_MOINS 0x1
-#define OPT_h	  0x2
-#define OPT_p	  0x4
-#define OPT_d	  0x8
-#define OPT_D     0x10
-#define OPT_c     0x20
-#define OPT_l     0x40
-#define OPT_f     0x80
-#define OPT_q     0x100
-#define OPT_i     0x200
-#define OPT_P     0x400
-
-static const char usage[] = 
-"-c configfile \t configuration file to use\n"
-"""""""""""""""""""""""""""""-h host    \t specify host MPD is running on\n"""""""""""""""""""""""""""""
-"-p port     \t specify MPD port\n"
-"-d logfilename\t debug messages to\n"
-"-l loglevel\t  log level (0-6)\n"
-"-D    \t run as a daemon\n"
-"-f friendlyname\t define device displayed name\n"
-"-q 0|1\t if set, we own the mpd queue, else avoid clearing it whenever we feel like it\n"
-"-i iface    \t specify network interface name to be used for UPnP"
-"-P upport    \t specify port number to be used for UPnP"
-"  \n\n"
-			;
-static void
-Usage(void)
-{
-	fprintf(stderr, "%s: usage:\n%s", thisprog, usage);
-	exit(1);
-}
-
-static string myDeviceUUID;
-
-static string datadir(DATADIR "/");
-static string configdir(CONFIGDIR "/");
-
-// Our XML description data. !Keep description.xml first!
-static vector<const char *> xmlfilenames = 
-{
-	/* keep first */ "description.xml", /* keep first */
-	"RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml",
-};
-static vector<const char *> ohxmlfilenames = 
-{
-	"OHProduct.xml", "OHInfo.xml", "OHTime.xml", "OHVolume.xml", 
-	"OHPlaylist.xml",
-};
-
-
 static const string ohDesc(
 	"<service>"
 	"  <serviceType>urn:av-openhome-org:service:Product:1</serviceType>"
@@ -182,6 +129,61 @@ static const string ohDesc(
 	"  <eventSubURL>/evt/OHPlaylist</eventSubURL>"
 	"</service>"
 	);
+
+static char *thisprog;
+
+static int op_flags;
+#define OPT_MOINS 0x1
+#define OPT_h	  0x2
+#define OPT_p	  0x4
+#define OPT_d	  0x8
+#define OPT_D     0x10
+#define OPT_c     0x20
+#define OPT_l     0x40
+#define OPT_f     0x80
+#define OPT_q     0x100
+#define OPT_i     0x200
+#define OPT_P     0x400
+#define OPT_O     0x800
+
+static const char usage[] = 
+"-c configfile \t configuration file to use\n"
+"""""""""""""""""""""""""""""-h host    \t specify host MPD is running on\n"""""""""""""""""""""""""""""
+"-p port     \t specify MPD port\n"
+"-d logfilename\t debug messages to\n"
+"-l loglevel\t  log level (0-6)\n"
+"-D    \t run as a daemon\n"
+"-f friendlyname\t define device displayed name\n"
+"-q 0|1\t if set, we own the mpd queue, else avoid clearing it whenever we feel like it\n"
+"-i iface    \t specify network interface name to be used for UPnP\n"
+"-P upport    \t specify port number to be used for UPnP\n"
+"-O 0|1\t decide if we run and export the OpenHome services\n"
+"\n"
+			;
+static void
+Usage(void)
+{
+	fprintf(stderr, "%s: usage:\n%s", thisprog, usage);
+	exit(1);
+}
+
+static string myDeviceUUID;
+
+static string datadir(DATADIR "/");
+static string configdir(CONFIGDIR "/");
+
+// Our XML description data. !Keep description.xml first!
+static vector<const char *> xmlfilenames = 
+{
+	/* keep first */ "description.xml", /* keep first */
+	"RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml",
+};
+static vector<const char *> ohxmlfilenames = 
+{
+	"OHProduct.xml", "OHInfo.xml", "OHTime.xml", "OHVolume.xml", 
+	"OHPlaylist.xml",
+};
+
 
 int main(int argc, char *argv[])
 {
@@ -222,25 +224,34 @@ int main(int argc, char *argv[])
 			Usage();
 		while (**argv)
 			switch (*(*argv)++) {
-			case 'D':	op_flags |= OPT_D; break;
 			case 'c':	op_flags |= OPT_c; if (argc < 2)  Usage();
 				configfile = *(++argv); argc--; goto b1;
-			case 'f':	op_flags |= OPT_f; if (argc < 2)  Usage();
-				friendlyname = *(++argv); argc--; goto b1;
+			case 'D':	op_flags |= OPT_D; break;
 			case 'd':	op_flags |= OPT_d; if (argc < 2)  Usage();
 				logfilename = *(++argv); argc--; goto b1;
+			case 'f':	op_flags |= OPT_f; if (argc < 2)  Usage();
+				friendlyname = *(++argv); argc--; goto b1;
 			case 'h':	op_flags |= OPT_h; if (argc < 2)  Usage();
 				mpdhost = *(++argv); argc--; goto b1;
+			case 'i':	op_flags |= OPT_i; if (argc < 2)  Usage();
+				iface = *(++argv); argc--; goto b1;
 			case 'l':	op_flags |= OPT_l; if (argc < 2)  Usage();
 				loglevel = atoi(*(++argv)); argc--; goto b1;
+			case 'O': {
+				op_flags |= OPT_O; 
+				if (argc < 2)  Usage();
+				const char *cp =  *(++argv);
+				if (*cp == '1' || *cp == 't' || *cp == 'T' || *cp == 'y' || 
+					*cp == 'Y')
+					openhome = true;
+				argc--; goto b1;
+			}
+			case 'P':	op_flags |= OPT_P; if (argc < 2)  Usage();
+				upport = atoi(*(++argv)); argc--; goto b1;
 			case 'p':	op_flags |= OPT_p; if (argc < 2)  Usage();
 				mpdport = atoi(*(++argv)); argc--; goto b1;
 			case 'q':	op_flags |= OPT_q; if (argc < 2)  Usage();
 				ownqueue = atoi(*(++argv)) != 0; argc--; goto b1;
-			case 'i':	op_flags |= OPT_i; if (argc < 2)  Usage();
-				iface = *(++argv); argc--; goto b1;
-			case 'P':	op_flags |= OPT_P; if (argc < 2)  Usage();
-				upport = atoi(*(++argv)); argc--; goto b1;
 			default: Usage();	break;
 			}
 	b1: argc--; argv++;

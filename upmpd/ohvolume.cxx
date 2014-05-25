@@ -76,10 +76,8 @@ bool OHVolume::makestate(unordered_map<string, string> &st)
     st["VolumeMilliDbPerSteps"] = "500";
     st["BalanceMax"] = "0";
     st["FadeMax"] = "0";
-    char cbuf[30];
     int volume = m_ctl->getvolume_i();
-    sprintf(cbuf, "%d", volume);
-    st["Volume"] = cbuf;
+    st["Volume"] = SoapArgs::i2s(volume);
     st["Mute"] = volume == 0 ? "1" : "0";
     return true;
 }
@@ -166,10 +164,7 @@ int OHVolume::volumeDec(const SoapArgs& sc, SoapData& data)
 int OHVolume::volume(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHVolume::volume" << endl);
-    char cbuf[30];
-    int volume = m_ctl->getvolume_i();
-    sprintf(cbuf, "%d", volume);
-    data.addarg("Value", cbuf);
+    data.addarg("Value", SoapArgs::i2s(m_ctl->getvolume_i()));
     return UPNP_E_SUCCESS;
 }
 

@@ -69,8 +69,9 @@ bool decodeSoapBody(const char *callnm, IXML_Document *actReq,
         }
         const char *name = ixmlNode_getNodeName(cld);
         if (cld == 0) {
-            cerr << "decodeSoap: got null name ??:" << 
-                ixmlPrintNode(cld) << endl;
+            DOMString pnode = ixmlPrintNode(cld);
+            cerr << "decodeSoap: got null name ??:" << pnode << endl;
+            ixmlFreeDOMString(pnode);
             goto out;
         }
         IXML_Node *txtnode = ixmlNode_getFirstChild(cld);
@@ -141,6 +142,14 @@ string SoapArgs::xmlQuote(const string& in)
         }
     }
     return out;
+}
+
+// Yes inefficient. whatever...
+string SoapArgs::i2s(int val)
+{
+    char cbuf[30];
+    sprintf(cbuf, "%d", val);
+    return string(cbuf);
 }
 
 IXML_Document *buildSoapBody(SoapData& data)
