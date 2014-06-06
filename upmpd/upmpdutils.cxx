@@ -37,6 +37,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <fstream>
 using namespace std;
 
 #include "mpdcli.hxx"
@@ -82,6 +83,36 @@ void catstrerror(string *reason, const char *what, int _errno)
     (void)strerror_r(_errno, errbuf, ERRBUFSZ);
     reason->append(errbuf);
 #endif
+}
+
+bool read_protocolinfo(const string& fn, string& out)
+{
+    ifstream input;
+    input.open(fn, ios::in);
+    if (!input.is_open()) {
+	return false;
+    }	    
+    bool eof = false;
+    for (;;) {
+        string line;
+	getline(input, line);
+	if (!input.good()) {
+	    if (input.bad()) {
+		return false;
+	    }
+	    // Must be eof ? But maybe we have a partial line which
+	    // must be processed. This happens if the last line before
+	    // eof ends with a backslash, or there is no final \n
+            eof = true;
+	}
+        trimstring(line, " \t\n\r");
+        if (line[0] == '#')
+            continue;
+        out += line;
+        if (eof) 
+            break;
+    }
+    return true;
 }
 
 bool file_to_string(const string &fn, string &data, string *reason)
@@ -181,6 +212,7 @@ void trimstring(string &s, const char *ws)
     if (pos != string::npos && pos != s.length()-1)
 	s.replace(pos+1, string::npos, string());
 }
+
 void stringToTokens(const string& str, vector<string>& tokens,
 		    const string& delims, bool skipinit)
 {

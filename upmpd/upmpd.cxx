@@ -48,6 +48,7 @@ using namespace std::placeholders;
 #include "ohplaylist.hxx"
 
 static const string dfltFriendlyName("UpMpd");
+string upmpdProtocolInfo;
 
 // Note: if we ever need this to work without cxx11, there is this:
 // http://www.tutok.sk/fastgl/callback.html
@@ -388,6 +389,15 @@ int main(int argc, char *argv[])
 		xmlfilenames.insert(xmlfilenames.end(), ohxmlfilenames.begin(),
 							ohxmlfilenames.end());
 	}
+
+	{
+		string protofile = path_cat(datadir, "protocolinfo.txt");
+		if (!read_protocolinfo(protofile, upmpdProtocolInfo)) {
+			LOGFAT("Failed reading protocol info from " << protofile << endl);
+			return 1;
+		}
+	}
+			
 	string reason;
 	unordered_map<string, string> xmlfiles;
 	for (unsigned int i = 0; i < xmlfilenames.size(); i++) {
