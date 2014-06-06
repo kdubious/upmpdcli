@@ -98,9 +98,13 @@ bool SoapArgs::getBool(const char *nm, bool *value) const
     if (it == args.end() || it->second.empty()) {
         return false;
     }
-    if (it->second[0] == 'F' || it->second[0] == '0') {
+    if (it->second[0] == 'F' || it->second[0] == 'f' || 
+        it->second[0] == 'N' || it->second[0] == 'n' || 
+        it->second[0] == '0') {
         *value = false;
-    } else if (it->second[0] == 'T' || it->second[0] == '1') {
+    } else if (it->second[0] == 'T' || it->second[0] == 't' || 
+               it->second[0] == 'Y' || it->second[0] == 'y' || 
+               it->second[0] == '1') {
         *value = true;
     } else {
         return false;
