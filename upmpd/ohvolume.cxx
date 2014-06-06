@@ -41,6 +41,8 @@ using namespace std::placeholders;
 #include "upmpdutils.hxx"
 #include "renderctl.hxx"
 
+static const string millidbperstep("500");
+
 static const string sTpProduct("urn:av-openhome-org:service:Volume:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Volume");
 
@@ -73,7 +75,7 @@ bool OHVolume::makestate(unordered_map<string, string> &st)
     st["VolumeLimit"] = "100";
     st["VolumeUnity"] = "100";
     st["VolumeSteps"] = "100";
-    st["VolumeMilliDbPerSteps"] = "500";
+    st["VolumeMilliDbPerSteps"] = millidbperstep;
     st["BalanceMax"] = "0";
     st["FadeMax"] = "0";
     int volume = m_ctl->getvolume_i();
@@ -110,7 +112,7 @@ int OHVolume::characteristics(const SoapArgs& sc, SoapData& data)
     data.addarg("VolumeMax", "100");
     data.addarg("VolumeUnity", "100");
     data.addarg("VolumeSteps", "100");
-    data.addarg("VolumeMilliDbPerStep", "500");
+    data.addarg("VolumeMilliDbPerStep", millidbperstep);
     data.addarg("BalanceMax", "0");
     data.addarg("FadeMax", "0");
     return UPNP_E_SUCCESS;

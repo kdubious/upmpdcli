@@ -44,6 +44,8 @@ static const string
 sTpRender("urn:schemas-upnp-org:service:RenderingControl:1");
 static const string sIdRender("urn:upnp-org:serviceId:RenderingControl");
 
+static const int minVolumeDelta = 5;
+
 UpMpdRenderCtl::UpMpdRenderCtl(UpMpd *dev)
     : UpnpService(sTpRender, sIdRender, dev), m_dev(dev), m_desiredvolume(-1)
 {
@@ -186,7 +188,7 @@ void UpMpdRenderCtl::setvolume_i(int volume)
         delta = -delta;
     LOGDEB("UpMpdRenderCtl::setVolume: volume " << volume << " delta " << 
            delta << endl);
-    if (delta >= 5) {
+    if (delta >= minVolumeDelta) {
         m_dev->m_mpdcli->setVolume(volume);
         m_desiredvolume = -1;
     } else {
