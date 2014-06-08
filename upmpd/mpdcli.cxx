@@ -28,7 +28,7 @@ using namespace std;
 #define M_CONN ((struct mpd_connection *)m_conn)
 
 MPDCli::MPDCli(const string& host, int port, const string& pass)
-    : m_conn(0), m_premutevolume(0), m_cachedvolume(50),
+    : m_conn(0), m_ok(false), m_premutevolume(0), m_cachedvolume(50),
       m_host(host), m_port(port), m_password(pass)
 {
     if (!openconn()) {

@@ -350,6 +350,26 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	// Initialize MPD client object. Retry until it works or power fail.
+	MPDCli *mpdclip = 0;
+	int mpdretrysecs = 2;
+	for (;;) {
+		mpdclip = new MPDCli(mpdhost, mpdport, mpdpassword);
+		if (mpdclip == 0) {
+			LOGFAT("Can't allocate MPD client object" << endl);
+			return 1;
+		}
+		if (!mpdclip->ok()) {
+			LOGERR("MPD connection failed" << endl);
+			delete mpdclip;
+			mpdclip = 0;
+			sleep(mpdretrysecs);
+			mpdretrysecs = MIN(2*mpdretrysecs, 120);
+		} else {
+			break;
+		}
+	}
+
 	// Initialize libupnpp, and check health
 	LibUPnP *mylib = 0;
 	string hwaddr;
@@ -373,13 +393,6 @@ int main(int argc, char *argv[])
 
 	//string upnplogfilename("/tmp/upmpdcli_libupnp.log");
 	//mylib->setLogFileName(upnplogfilename, LibUPnP::LogLevelDebug);
-
-	// Initialize MPD client module
-	MPDCli mpdcli(mpdhost, mpdport, mpdpassword);
-	if (!mpdcli.ok()) {
-		LOGFAT("MPD connection failed" << endl);
-		return 1;
-	}
 
 	// Create unique ID
 	string UUID = LibUPnP::makeDevUUID(friendlyname, hwaddr);
@@ -423,7 +436,7 @@ int main(int argc, char *argv[])
 		options |= UpMpd::upmpdDoOH;
 	// Initialize the UPnP device object.
 	UpMpd device(string("uuid:") + UUID, friendlyname, 
-				 xmlfiles, &mpdcli, options);
+				 xmlfiles, mpdclip, options);
 
 	// And forever generate state change events.
 	LOGDEB("Entering event loop" << endl);
