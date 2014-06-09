@@ -1,9 +1,9 @@
-upmpdcli (0.7.0-1) unstable; urgency=low
+upmpdcli (0.7.1-1) unstable; urgency=low
 
   * Add support for the OpenHome ohMedia services. Set openhome=1 in 
     configuration file to enable.
 
- -- Jean-Francois Dockes <jf@dockes.org>  Sun, 25 May 2014 18:43:00 +0200
+ -- Jean-Francois Dockes <jf@dockes.org>  Mon, 09 Jun 2014 08:56:00 +0200
 upmpdcli (0.6.4-1) unstable; urgency=low
 
   * Configuration for UPnP interface and port, MPD password
