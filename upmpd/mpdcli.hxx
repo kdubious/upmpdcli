@@ -107,9 +107,9 @@ public:
     bool deleteId(int id);
     bool statId(int id);
     int curpos();
-    bool getQueueIds(std::vector<unsigned int>& vids);
+    bool getQueueData(std::vector<UpSong>& vdata);
     bool statSong(UpSong& usong, int pos = -1, bool isId = false);
-    bool mapSong(UpSong& usong, struct mpd_song *song);
+    UpSong& mapSong(UpSong& usong, struct mpd_song *song);
     
     const MpdStatus& getStatus()
     {

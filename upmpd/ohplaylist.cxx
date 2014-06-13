@@ -119,15 +119,18 @@ static string mpdstatusToTransportState(MpdStatus::State st)
 
 // The data format for id lists is an array of msb 32 bits ints
 // encoded in base64...
-static string translateIdArray(const vector<unsigned int>& in)
+static string translateIdArray(const vector<UpSong>& in)
 {
     string out1;
     string sdeb;
-    for (auto val : in) {
-        out1 += (unsigned char) ((val & 0xff000000) >> 24);
-        out1 += (unsigned char) ((val & 0x00ff0000) >> 16);
-        out1 += (unsigned char) ((val & 0x0000ff00) >> 8);
-        out1 += (unsigned char) ((val & 0x000000ff));
+    for (auto us : in) {
+        unsigned int val = us.mpdid;
+        if (val) {
+            out1 += (unsigned char) ((val & 0xff000000) >> 24);
+            out1 += (unsigned char) ((val & 0x00ff0000) >> 16);
+            out1 += (unsigned char) ((val & 0x0000ff00) >> 8);
+            out1 += (unsigned char) ((val & 0x000000ff));
+        }
         //sdeb += SoapArgs::i2s(val) + " ";
     }
     //LOGDEB("OHPlaylist: current ids: " << sdeb << endl);
@@ -136,20 +139,27 @@ static string translateIdArray(const vector<unsigned int>& in)
 string OHPlaylist::makeIdArray()
 {
     string out;
-    vector<unsigned int> vids;
-    // Retrieve the ids for current queue songs from mpd, and translate format
-    bool ok = m_dev->m_mpdcli->getQueueIds(vids);
+
+    // Retrieve the data for current queue songs from mpd, and make an
+    // ohPlaylist id array.
+    vector<UpSong> vdata;
+    bool ok = m_dev->m_mpdcli->getQueueData(vdata);
     if (ok) {
-        out = translateIdArray(vids);
+        out = translateIdArray(vdata);
     }
 
-    // Clear metadata cache: entries not in vids are not valid any more
-    // We just build a new cache for data about current entries
+    // Update metadata cache: entries not in the curren id list are
+    // not valid any more. Also there may be entries which were added
+    // through an MPD client and which don't know about, record the
+    // metadata for these. We don't update the current array, but
+    // just build a new cache for data about current entries
     unordered_map<int, string> nmeta;
-    for (auto& id : vids) {
-        auto inold = m_metacache.find(id);
+    for (auto& usong : vdata) {
+        auto inold = m_metacache.find(usong.mpdid);
         if (inold != m_metacache.end())
-            nmeta[id].swap(inold->second);
+            nmeta[usong.mpdid].swap(inold->second);
+        else
+            nmeta[usong.mpdid] = didlmake(usong);
     }
     m_metacache = nmeta;
 

@@ -209,40 +209,45 @@ bool MPDCli::statSong(UpSong& upsong, int pos, bool isid)
     return ret;
 }    
 
-bool  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
+UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
 {
     const char *cp;
-
-    upsong.clear();
 
     cp = mpd_song_get_uri(song);
     if (cp != 0)
         upsong.uri = cp;
-
+    else 
+        upson.uri.clear();
     cp = mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
     if (cp != 0)
         upsong.artist = cp;
-
+    else
+        upsong.artist.clear();
     cp = mpd_song_get_tag(song, MPD_TAG_ALBUM, 0);
     if (cp != 0)
         upsong.album = cp;
-
+    else
+        upsong.album.clear();
     cp = mpd_song_get_tag(song, MPD_TAG_TITLE, 0);
     if (cp != 0) 
         upsong.title = cp;
-
+    else
+        upsong.title.clear();
     cp = mpd_song_get_tag(song, MPD_TAG_TRACK, 0);
     if (cp != 0)
         upsong.tracknum = cp;
-
+    else 
+        upsong.tracknum.clear();
     cp = mpd_song_get_tag(song, MPD_TAG_GENRE, 0);
     if (cp != 0)
         upsong.genre = cp;
+    else
+        upsong.genre.clear();
 
     upsong.duration_secs = mpd_song_get_duration(song);
     upsong.mpdid = mpd_song_get_id(song);
 
-    return true;
+    return upsong;
 }
 
 bool MPDCli::setVolume(int volume, bool isMute)
@@ -500,15 +505,17 @@ void MPDCli::freeSongs(vector<mpd_song*>& songs)
         mpd_song_free(*it);
     }
 }
-bool MPDCli::getQueueIds(std::vector<unsigned int>& vids)
+
+bool MPDCli::getQueueData(std::vector<UpSong>& vdata)
 {
     vector<mpd_song*> songs;
     if (!getQueueSongs(songs)) {
         return false;
     }
-    vids.reserve(songs.size());
+    vdata.reserve(songs.size());
+    UpSong usong;
     for (unsigned int pos = 0; pos < songs.size(); pos++) {
-        vids.push_back(mpd_song_get_id(songs[pos]));
+        vdata.push_back(mapSong(usong, songs[pos]););
     }
     freeSongs(songs);
     return true;
@@ -608,6 +615,4 @@ int main(int argc, char **argv)
   return 0;
 }
 
-
 #endif
-
