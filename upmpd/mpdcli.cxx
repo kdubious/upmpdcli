@@ -31,17 +31,24 @@ MPDCli::MPDCli(const string& host, int port, const string& pass)
     : m_conn(0), m_ok(false), m_premutevolume(0), m_cachedvolume(50),
       m_host(host), m_port(port), m_password(pass)
 {
+    regcomp(&m_tpuexpr, "^[[:alpha:]]+://.+", REG_EXTENDED|REG_NOSUB);
     if (!openconn()) {
         return;
     }
     m_ok = true;
-    updStatus();
+    m_ok = updStatus();
 }
 
 MPDCli::~MPDCli()
 {
     if (m_conn) 
         mpd_connection_free(M_CONN);
+    regfree(&m_tpuexpr);
+}
+
+bool MPDCli::looksLikeTransportURI(const string& path)
+{
+    return (regexec(&m_tpuexpr, path.c_str(), 0, 0, 0) == 0);
 }
 
 bool MPDCli::openconn()
@@ -185,7 +192,7 @@ bool MPDCli::updStatus()
 
 bool MPDCli::statSong(UpSong& upsong, int pos, bool isid)
 {
-    // LOGDEB("MPDCli::statSong" << endl);
+    //LOGDEB("MPDCli::statSong. isid " << isid << " val " << pos << endl);
     if (!ok())
         return false;
 
@@ -204,9 +211,9 @@ bool MPDCli::statSong(UpSong& upsong, int pos, bool isid)
         LOGERR("mpd_run_current_song failed" << endl);
         return false;
     }
-    bool ret = mapSong(upsong, song);
+    mapSong(upsong, song);
     mpd_song_free(song);
-    return ret;
+    return true;
 }    
 
 UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
@@ -217,7 +224,17 @@ UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
     if (cp != 0)
         upsong.uri = cp;
     else 
-        upson.uri.clear();
+        upsong.uri.clear();
+    // If the URI looks like a local file
+    // name, replace with a bogus http uri. This is to fool
+    // Bubble UPnP into accepting to play them (it does not
+    // actually need an URI as it's going to use seekid, but
+    // it believes it does).
+    if (!looksLikeTransportURI(upsong.uri)) {
+        //LOGDEB("MPDCli::mapSong: id " << upsong.mpdid << 
+        // " replacing [" << upsong.uri << "]" << endl);
+        upsong.uri = "http://127.0.0.1/bogusuri.mp3";
+    }
     cp = mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
     if (cp != 0)
         upsong.artist = cp;
@@ -508,6 +525,7 @@ void MPDCli::freeSongs(vector<mpd_song*>& songs)
 
 bool MPDCli::getQueueData(std::vector<UpSong>& vdata)
 {
+    //LOGDEB("MPDCli::getQueueData" << endl);
     vector<mpd_song*> songs;
     if (!getQueueSongs(songs)) {
         return false;
@@ -515,7 +533,7 @@ bool MPDCli::getQueueData(std::vector<UpSong>& vdata)
     vdata.reserve(songs.size());
     UpSong usong;
     for (unsigned int pos = 0; pos < songs.size(); pos++) {
-        vdata.push_back(mapSong(usong, songs[pos]););
+        vdata.push_back(mapSong(usong, songs[pos]));
     }
     freeSongs(songs);
     return true;

@@ -43,6 +43,10 @@ public:
     ~UpMpd();
 
     const MpdStatus &getMpdStatus();
+    const MpdStatus &getMpdStatusNoUpdate()
+        {
+            return *m_mpds;
+        }
 
 private:
     MPDCli *m_mpdcli;

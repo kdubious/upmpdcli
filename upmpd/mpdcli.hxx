@@ -22,6 +22,8 @@
 #include <map>
 #include <vector>
 
+#include <regex.h>
+
 class UpSong {
 public:
     UpSong() : duration_secs(0), mpdid(0) {}
@@ -129,12 +131,14 @@ private:
     std::string m_host;
     int m_port;
     std::string m_password;
+    regex_t m_tpuexpr;
 
     bool openconn();
     bool updStatus();
     bool getQueueSongs(std::vector<mpd_song*>& songs);
     void freeSongs(std::vector<mpd_song*>& songs);
     bool showError(const std::string& who);
+    bool looksLikeTransportURI(const std::string& path);
 };
 
 

@@ -52,7 +52,8 @@ OHTime::OHTime(UpMpd *dev)
 void OHTime::getdata(string& trackcount, string &duration, 
                      string& seconds)
 {
-    const MpdStatus &mpds =  m_dev->getMpdStatus();
+    // We're relying on AVTransport to have updated the status for us
+    const MpdStatus& mpds =  m_dev->getMpdStatusNoUpdate();
 
     trackcount = SoapArgs::i2s(mpds.trackcounter);
 

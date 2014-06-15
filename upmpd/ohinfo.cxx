@@ -58,7 +58,7 @@ OHInfo::OHInfo(UpMpd *dev)
 
 void OHInfo::urimetadata(string& uri, string& metadata)
 {
-    const MpdStatus &mpds =  m_dev->getMpdStatus();
+    const MpdStatus &mpds =  m_dev->getMpdStatusNoUpdate();
     bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
         (mpds.state == MpdStatus::MPDS_PAUSE);
 
@@ -74,7 +74,7 @@ void OHInfo::urimetadata(string& uri, string& metadata)
 void OHInfo::makedetails(string &duration, string& bitrate, 
                          string& bitdepth, string& samplerate)
 {
-    const MpdStatus &mpds =  m_dev->getMpdStatus();
+    const MpdStatus &mpds =  m_dev->getMpdStatusNoUpdate();
 
     bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
         (mpds.state == MpdStatus::MPDS_PAUSE);
