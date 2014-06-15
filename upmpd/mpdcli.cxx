@@ -233,7 +233,7 @@ UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
     if (!looksLikeTransportURI(upsong.uri)) {
         //LOGDEB("MPDCli::mapSong: id " << upsong.mpdid << 
         // " replacing [" << upsong.uri << "]" << endl);
-        upsong.uri = "http://127.0.0.1/bogusuri.mp3";
+        upsong.uri = "http://127.0.0.1/" + upsong.uri;
     }
     cp = mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
     if (cp != 0)
