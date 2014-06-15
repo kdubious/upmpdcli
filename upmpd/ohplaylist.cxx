@@ -154,12 +154,20 @@ string OHPlaylist::makeIdArray()
     // metadata for these. We don't update the current array, but
     // just build a new cache for data about current entries
     unordered_map<int, string> nmeta;
+
+    // Walk the playlist data from MPD
     for (auto& usong : vdata) {
         auto inold = m_metacache.find(usong.mpdid);
-        if (inold != m_metacache.end())
+        if (inold != m_metacache.end()) {
+            // Entries already in the metadata array just get
+            // transferred to the new array
             nmeta[usong.mpdid].swap(inold->second);
-        else
+        } else {
+            // Entries not in the old array are translated from the
+            // MPD data to our format. They were probably added by
+            // another MPD client. 
             nmeta[usong.mpdid] = didlmake(usong);
+        }
     }
     m_metacache = nmeta;
 
@@ -170,7 +178,7 @@ bool OHPlaylist::makestate(unordered_map<string, string> &st)
 {
     st.clear();
 
-    const MpdStatus &mpds = m_dev->getMpdStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
 
     st["TransportState"] =  mpdstatusToTransportState(mpds.state);
     st["Repeat"] = SoapArgs::i2s(mpds.rept);
@@ -314,7 +322,7 @@ int OHPlaylist::seekSecondRelative(const SoapArgs& sc, SoapData& data)
     int seconds;
     bool ok = sc.getInt("Value", &seconds);
     if (ok) {
-        const MpdStatus &mpds =  m_dev->getMpdStatus();
+        const MpdStatus &mpds =  m_dev->getMpdStatusNoUpdate();
         bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
             (mpds.state == MpdStatus::MPDS_PAUSE);
         if (is_song) {
@@ -331,7 +339,7 @@ int OHPlaylist::seekSecondRelative(const SoapArgs& sc, SoapData& data)
 int OHPlaylist::transportState(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::transportState" << endl);
-    const MpdStatus &mpds = m_dev->getMpdStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
     string tstate;
     switch(mpds.state) {
     case MpdStatus::MPDS_PLAY: 
@@ -377,7 +385,7 @@ int OHPlaylist::seekIndex(const SoapArgs& sc, SoapData& data)
 int OHPlaylist::id(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::id" << endl);
-    const MpdStatus &mpds = m_dev->getMpdStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
     data.addarg("Value", SoapArgs::i2s(mpds.songid));
     return UPNP_E_SUCCESS;
 }
@@ -388,7 +396,7 @@ int OHPlaylist::ohread(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::ohread" << endl);
     int id;
-    bool ok = sc.getInt("Value", &id);
+    bool ok = sc.getInt("Id", &id);
     UpSong song;
     if (ok) {
         ok = m_dev->m_mpdcli->statSong(song, id, true);
