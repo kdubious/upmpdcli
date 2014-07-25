@@ -86,7 +86,8 @@ just work.
 == Building
 
 For building from source, you will need a recent `C++` compiler (`C++11`),
-and the development packages for *libupnp* version 1.6, and *libmpdclient*.
+and the development packages for *libupnp* version 1.6, *libmpdclient*, and
+*libexpat*.
 
 If you are using the source from Github, you will also need the
 autoconf/automake/libtool trio. Use the `autogen.sh` script to set things

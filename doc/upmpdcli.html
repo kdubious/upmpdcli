@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
-<meta name="generator" content="AsciiDoc 8.6.7" />
+<meta name="generator" content="AsciiDoc 8.6.9" />
 <title>Upmpdcli: MPD UPnP Renderer Front-End</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
@@ -87,9 +87,15 @@ ul, ol, li > p {
 ul > li     { color: #aaa; }
 ul > li > * { color: black; }
 
-pre {
+.monospaced, code, pre {
+  font-family: "Courier New", Courier, monospace;
+  font-size: inherit;
+  color: navy;
   padding: 0;
   margin: 0;
+}
+pre {
+  white-space: pre-wrap;
 }
 
 #author {
@@ -219,7 +225,7 @@ div.exampleblock > div.content {
 }
 
 div.imageblock div.content { padding-left: 0; }
-span.image img { border-style: none; }
+span.image img { border-style: none; vertical-align: text-bottom; }
 a.image:visited { color: white; }
 
 dl {
@@ -415,12 +421,6 @@ div.unbreakable { page-break-inside: avoid; }
  *
  * */
 
-tt {
-  font-family: "Courier New", Courier, monospace;
-  font-size: inherit;
-  color: navy;
-}
-
 div.tableblock {
   margin-top: 1.0em;
   margin-bottom: 1.5em;
@@ -453,12 +453,6 @@ div.tableblock > table[frame="vsides"] {
  * html5 specific
  *
  * */
-
-.monospaced {
-  font-family: "Courier New", Courier, monospace;
-  font-size: inherit;
-  color: navy;
-}
 
 table.tableblock {
   margin-top: 1.0em;
@@ -539,6 +533,8 @@ body.manpage div.sectionbody {
 @media print {
   body.manpage div#toc { display: none; }
 }
+
+
 </style>
 <script type="text/javascript">
 /*<![CDATA[*/
@@ -762,11 +758,11 @@ Internet-facing host.</p></div>
 will be run as follows:</p></div>
 <div class="literalblock">
 <div class="content">
-<pre><tt>upmpdcli -D -c /etc/upmpdcli.conf</tt></pre>
+<pre><code>upmpdcli -D -c /etc/upmpdcli.conf</code></pre>
 </div></div>
-<div class="paragraph"><p>The <tt>-D</tt> option tells <strong>upmpdcli</strong> to fork and run in background. The <tt>-c</tt>
+<div class="paragraph"><p>The <code>-D</code> option tells <strong>upmpdcli</strong> to fork and run in background. The <code>-c</code>
 option specifies a configuration file.</p></div>
-<div class="paragraph"><p>The configuration file has a simple <tt>name = value</tt> format.</p></div>
+<div class="paragraph"><p>The configuration file has a simple <code>name = value</code> format.</p></div>
 <div class="paragraph"><p>The configuration parameters can be set from the command line, a
 configuration file, or the environment in this order of priority. It would
 be rather confusing to use a mix of methods, so you should probably chose
@@ -885,13 +881,13 @@ to set the option in the configuration file.</p></div>
 <div class="sect1">
 <h2 id="upmpdcli.boot">Boot time startup</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>upmpdcli</strong> will try to change its <tt>uid</tt> to user <tt>upmpdcli</tt> if it is
+<div class="paragraph"><p><strong>upmpdcli</strong> will try to change its <code>uid</code> to user <code>upmpdcli</code> if it is
 started by root. It will refuse to run if the user does not exist.</p></div>
-<div class="paragraph"><p>If started by <tt>root</tt>, <strong>upmpdcli</strong> will also write its process id to
-<tt>/var/run/upmpdcli.pid</tt>.</p></div>
-<div class="paragraph"><p>There are boot-time startup scripts in the <tt>debian/</tt> directory inside the
+<div class="paragraph"><p>If started by <code>root</code>, <strong>upmpdcli</strong> will also write its process id to
+<code>/var/run/upmpdcli.pid</code>.</p></div>
+<div class="paragraph"><p>There are boot-time startup scripts in the <code>debian/</code> directory inside the
 source tree (for Debian/Ubuntu/Mint/Raspbian etc.). There is also a systemd
-service file under <tt>systemd/</tt> (for Fedora et al.).</p></div>
+service file under <code>systemd/</code> (for Fedora et al.).</p></div>
 <div class="paragraph"><p>The boot scripts are installed by the pre-built packages, so will just have
 to edit the configuration file after installing them, all the rest should
 just work.</p></div>
@@ -900,18 +896,19 @@ just work.</p></div>
 <div class="sect1">
 <h2 id="upmpdcli.building">Building</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>For building from source, you will need a recent <tt>C++</tt> compiler (<tt>C++11</tt>),
-and the development packages for <strong>libupnp</strong> version 1.6, and <strong>libmpdclient</strong>.</p></div>
+<div class="paragraph"><p>For building from source, you will need a recent <code>C++</code> compiler (<code>C++11</code>),
+and the development packages for <strong>libupnp</strong> version 1.6, <strong>libmpdclient</strong>, and
+<strong>libexpat</strong>.</p></div>
 <div class="paragraph"><p>If you are using the source from Github, you will also need the
-autoconf/automake/libtool trio. Use the <tt>autogen.sh</tt> script to set things
+autoconf/automake/libtool trio. Use the <code>autogen.sh</code> script to set things
 up.</p></div>
 <div class="paragraph"><p>Otherwise, the procedure is standard and there are currently no specific
 configure options:</p></div>
 <div class="literalblock">
 <div class="content">
-<pre><tt>configure --prefix=/usr
+<pre><code>configure --prefix=/usr
 make
-sudo make install</tt></pre>
+sudo make install</code></pre>
 </div></div>
 </div>
 </div>
@@ -919,7 +916,7 @@ sudo make install</tt></pre>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-05-25 09:43:40 CEST
+Last updated 2014-07-14 14:11:50 CEST
 </div>
 </div>
 </body>
