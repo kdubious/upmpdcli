@@ -321,7 +321,7 @@ void UpnpDevice::eventloop()
 {
     int count = 0;
     const int loopwait_ms = 1000; // Polling the services every 1 S
-    const int nloopstofull = 100;  // Full state every 10 S
+    const int nloopstofull = 10;  // Full state every 10 S
     struct timespec wkuptime, earlytime;
     bool didearly = false;
 
