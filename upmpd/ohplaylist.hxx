@@ -64,9 +64,10 @@ private:
     UpMpd *m_dev;
     UpMpdRenderCtl *m_ctl;
 
-    // Storage for song metadata, indexed by MPD song queue id. The
-    // data is the DIDL XML string.
-    std::unordered_map<int, std::string> m_metacache;
+    // Storage for song metadata, indexed by URL.  This used to be
+    // indexed by song id, but this does not survive MPD restarts.
+    // The data is the DIDL XML string.
+    std::unordered_map<std::string, std::string> m_metacache;
 };
 
 #endif /* _OHPLAYLIST_H_X_INCLUDED_ */

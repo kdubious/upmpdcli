@@ -143,30 +143,39 @@ bool OHPlaylist::makeIdArray(string& out)
     // ohPlaylist id array.
     vector<UpSong> vdata;
     bool ok = m_dev->m_mpdcli->getQueueData(vdata);
-    if (!ok)
+    if (!ok) {
+        LOGERR("OHPlaylist::makeIdArray: getQueueData failed." 
+               "metacache size " << m_metacache.size() << endl);
         return false;
+    }
 
     out = translateIdArray(vdata);
 
-    // Update metadata cache: entries not in the curren id list are
+    // Update metadata cache: entries not in the current list are
     // not valid any more. Also there may be entries which were added
     // through an MPD client and which don't know about, record the
     // metadata for these. We don't update the current array, but
-    // just build a new cache for data about current entries
-    unordered_map<int, string> nmeta;
+    // just build a new cache for data about current entries.
+    //
+    // The songids are not preserved through mpd restarts (they
+    // restart at 0) this means that the ids are not a good cache key,
+    // we use the uris instead.
+    unordered_map<string, string> nmeta;
 
     // Walk the playlist data from MPD
     for (auto& usong : vdata) {
-        auto inold = m_metacache.find(usong.mpdid);
+        auto inold = m_metacache.find(usong.uri);
         if (inold != m_metacache.end()) {
             // Entries already in the metadata array just get
             // transferred to the new array
-            nmeta[usong.mpdid].swap(inold->second);
+            nmeta[usong.uri].swap(inold->second);
         } else {
             // Entries not in the old array are translated from the
             // MPD data to our format. They were probably added by
             // another MPD client. 
-            nmeta[usong.mpdid] = didlmake(usong);
+            nmeta[usong.uri] = didlmake(usong);
+            LOGDEB("OHPlaylist::makeIdArray: set mpd data for " << 
+                   usong.mpdid << endl);
         }
     }
     m_metacache = nmeta;
@@ -402,12 +411,14 @@ int OHPlaylist::ohread(const SoapArgs& sc, SoapData& data)
         ok = m_dev->m_mpdcli->statSong(song, id, true);
     }
     if (ok) {
-        auto cached = m_metacache.find(id);
+        auto cached = m_metacache.find(song.uri);
         string metadata;
         if (cached != m_metacache.end()) {
             metadata = SoapArgs::xmlQuote(cached->second);
         } else {
-            metadata = SoapArgs::xmlQuote(didlmake(song));
+            metadata = didlmake(song);
+            m_metacache[song.uri] = metadata;
+            metadata = SoapArgs::xmlQuote(metadata);
         }
         data.addarg("Uri", song.uri);
         data.addarg("Metadata", metadata);
@@ -441,12 +452,18 @@ int OHPlaylist::readList(const SoapArgs& sc, SoapData& data)
             UpSong song;
             if (!m_dev->m_mpdcli->statSong(song, id, true))
                 continue;
-            auto mit = m_metacache.find(id);
+            auto mit = m_metacache.find(song.uri);
             string metadata;
             if (mit != m_metacache.end()) {
+                //LOGDEB("readList: metadata for songid " << id << " uri " 
+                // << song.uri << " found in cache " << endl);
                 metadata = SoapArgs::xmlQuote(mit->second);
             } else {
-                metadata = SoapArgs::xmlQuote(didlmake(song));
+                //LOGDEB("readList: metadata for songid " << id << " uri " 
+                // << song.uri << " not found " << endl);
+                metadata = didlmake(song);
+                m_metacache[song.uri] = metadata;
+                metadata = SoapArgs::xmlQuote(metadata);
             }
             out += "<Entry><Id>";
             out += sid.c_str();
@@ -484,7 +501,7 @@ int OHPlaylist::insert(const SoapArgs& sc, SoapData& data)
     if (ok) {
         int id = m_dev->m_mpdcli->insertAfterId(uri, afterid);
         if ((ok = (id != -1))) {
-            m_metacache[id] = metadata;
+            m_metacache[uri] = metadata;
             data.addarg("NewId", SoapArgs::i2s(id));
         }
     }
