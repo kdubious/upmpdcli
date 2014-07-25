@@ -2,9 +2,25 @@
 # after data). White space / newlines will be stripped and everything else
 # concatenated 
 
-# http-get:*:audio/mpeg:DLNA.ORG_PN=MP3,
-# http-get:*:audio/L16:DLNA.ORG_PN=LPCM,
-# http-get:*:audio/x-flac:DLNA.ORG_PN=FLAC
+#http-get:*:audio/mpeg:DLNA.ORG_PN=MP3,
+#http-get:*:audio/L16:DLNA.ORG_PN=LPCM,
+#http-get:*:audio/x-flac:DLNA.ORG_PN=FLAC
+#http-get:*:audio/L16;rate=11025;channels=1:*,
+#http-get:*:audio/L16;rate=22050;channels=1:*,
+#http-get:*:audio/L16;rate=44100;channels=1:*,
+#http-get:*:audio/L16;rate=48000;channels=1:*,
+#http-get:*:audio/L16;rate=88200;channels=1:*,
+#http-get:*:audio/L16;rate=96000;channels=1:*,
+#http-get:*:audio/L16;rate=176400;channels=1:*,
+#http-get:*:audio/L16;rate=192000;channels=1:*,
+#http-get:*:audio/L16;rate=11025;channels=2:*,
+#http-get:*:audio/L16;rate=22050;channels=2:*,
+#http-get:*:audio/L16;rate=44100;channels=2:*,
+#http-get:*:audio/L16;rate=48000;channels=2:*,
+#http-get:*:audio/L16;rate=88200;channels=2:*,
+#http-get:*:audio/L16;rate=96000;channels=2:*,
+#http-get:*:audio/L16;rate=176400;channels=2:*,
+#http-get:*:audio/L16;rate=192000;channels=2:*
 
 http-get:*:audio/dsd:*,
 http-get:*:audio/wav:*,
@@ -23,21 +39,5 @@ http-get:*:audio/x-m4a:*,
 http-get:*:audio/vorbis:*,
 http-get:*:audio/ogg:*,
 http-get:*:audio/x-ogg:*,
-http-get:*:audio/x-scpls:*,
-http-get:*:audio/L16;rate=11025;channels=1:*,
-http-get:*:audio/L16;rate=22050;channels=1:*,
-http-get:*:audio/L16;rate=44100;channels=1:*,
-http-get:*:audio/L16;rate=48000;channels=1:*,
-http-get:*:audio/L16;rate=88200;channels=1:*,
-http-get:*:audio/L16;rate=96000;channels=1:*,
-http-get:*:audio/L16;rate=176400;channels=1:*,
-http-get:*:audio/L16;rate=192000;channels=1:*,
-http-get:*:audio/L16;rate=11025;channels=2:*,
-http-get:*:audio/L16;rate=22050;channels=2:*,
-http-get:*:audio/L16;rate=44100;channels=2:*,
-http-get:*:audio/L16;rate=48000;channels=2:*,
-http-get:*:audio/L16;rate=88200;channels=2:*,
-http-get:*:audio/L16;rate=96000;channels=2:*,
-http-get:*:audio/L16;rate=176400;channels=2:*,
-http-get:*:audio/L16;rate=192000;channels=2:*
+http-get:*:audio/x-scpls:*
 
