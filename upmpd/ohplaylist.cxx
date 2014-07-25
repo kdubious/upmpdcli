@@ -136,17 +136,17 @@ static string translateIdArray(const vector<UpSong>& in)
     //LOGDEB("OHPlaylist: current ids: " << sdeb << endl);
     return base64_encode(out1);
 }
-string OHPlaylist::makeIdArray()
-{
-    string out;
 
+bool OHPlaylist::makeIdArray(string& out)
+{
     // Retrieve the data for current queue songs from mpd, and make an
     // ohPlaylist id array.
     vector<UpSong> vdata;
     bool ok = m_dev->m_mpdcli->getQueueData(vdata);
-    if (ok) {
-        out = translateIdArray(vdata);
-    }
+    if (!ok)
+        return false;
+
+    out = translateIdArray(vdata);
 
     // Update metadata cache: entries not in the curren id list are
     // not valid any more. Also there may be entries which were added
@@ -171,7 +171,7 @@ string OHPlaylist::makeIdArray()
     }
     m_metacache = nmeta;
 
-    return out;
+    return true;
 }
 
 bool OHPlaylist::makestate(unordered_map<string, string> &st)
@@ -186,7 +186,7 @@ bool OHPlaylist::makestate(unordered_map<string, string> &st)
     st["Id"] = SoapArgs::i2s(mpds.songid);
     st["TracksMax"] = SoapArgs::i2s(tracksmax);
     st["ProtocolInfo"] = upmpdProtocolInfo;
-    st["IdArray"] = makeIdArray();
+    makeIdArray(st["IdArray"]);
 
     return true;
 }
@@ -394,9 +394,9 @@ int OHPlaylist::id(const SoapArgs& sc, SoapData& data)
 // Returns a 800 fault code if the given id is not in the playlist. 
 int OHPlaylist::ohread(const SoapArgs& sc, SoapData& data)
 {
-    LOGDEB("OHPlaylist::ohread" << endl);
     int id;
     bool ok = sc.getInt("Id", &id);
+    LOGDEB("OHPlaylist::ohread id " << id << endl);
     UpSong song;
     if (ok) {
         ok = m_dev->m_mpdcli->statSong(song, id, true);
@@ -524,19 +524,31 @@ int OHPlaylist::tracksMax(const SoapArgs& sc, SoapData& data)
 int OHPlaylist::idArray(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::idArray" << endl);
-    data.addarg("Token", "0");
-    data.addarg("Array", makeIdArray());
-    return UPNP_E_SUCCESS;
+    string idarray;
+    if (makeIdArray(idarray)) {
+        const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
+        LOGDEB("OHPlaylist::idArray: qvers " << mpds.qvers << endl);
+        data.addarg("Token", SoapArgs::i2s(mpds.qvers));
+        data.addarg("Array", idarray);
+        return UPNP_E_SUCCESS;
+    }
+    return UPNP_E_INTERNAL_ERROR;
 }
 
 // Check if id array changed since last call (which returned a gen token)
 int OHPlaylist::idArrayChanged(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::idArrayChanged" << endl);
-    int token;
-    bool ok = sc.getInt("Token", &token);
+    int qvers;
+    bool ok = sc.getInt("Token", &qvers);
+    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
+    
+    LOGDEB("OHPlaylist::idArrayChanged: query qvers " << qvers << 
+           " mpd qvers " << mpds.qvers << endl);
+
     // Bool indicating if array changed
-    data.addarg("Value", "0");
+    int val = mpds.qvers == qvers;
+    data.addarg("Value", SoapArgs::i2s(val));
 
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
