@@ -12,6 +12,7 @@ Requires(preun): systemd
 Requires(postun): systemd
 BuildRequires:  libupnp-devel
 BuildRequires:  libmpdclient-devel
+BuildRequires:  expat-devel
 BuildRequires:  systemd-units
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
