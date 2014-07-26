@@ -199,6 +199,25 @@ string path_tildexpand(const string &s)
     return o;
 }
 
+bool path_makepath(const string& path, int mode)
+{
+    if (path.empty() || path[0] != '/') {
+        return false;
+    }
+    vector<string> vpath;
+    stringToTokens(path, vpath, "/", true);
+    string npath;
+    for (auto& pelt : vpath) {
+        npath += string("/") + pelt;
+        if (access(npath.c_str(), 0) < 0) {
+            if (mkdir(npath.c_str(), mode)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 void trimstring(string &s, const char *ws)
 {
     string::size_type pos = s.find_first_not_of(ws);

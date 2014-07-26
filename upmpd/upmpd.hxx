@@ -39,7 +39,7 @@ public:
     };
     UpMpd(const string& deviceid, const string& friendlyname,
           const unordered_map<string, string>& xmlfiles,
-          MPDCli *mpdcli, unsigned int opts = upmpdNone);
+          MPDCli *mpdcli, unsigned int opts, const std::string& cachefn);
     ~UpMpd();
 
     const MpdStatus &getMpdStatus();
@@ -48,11 +48,16 @@ public:
             return *m_mpds;
         }
 
+    const string& getMetaCacheFn() 
+        {
+            return m_mcachefn;
+        }
+
 private:
     MPDCli *m_mpdcli;
     const MpdStatus *m_mpds;
-
     unsigned int m_options;
+    string m_mcachefn;
     vector<UpnpService*> m_services;
 };
 

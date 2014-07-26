@@ -47,6 +47,8 @@ bin_PROGRAMS = upmpdcli #upexplorer
 upmpdcli_SOURCES = \
      upmpd/conftree.cxx \
      upmpd/conftree.hxx \
+     upmpd/ohmetacache.cxx \
+     upmpd/ohmetacache.hxx \
      upmpd/mpdcli.cxx \
      upmpd/mpdcli.hxx \
      upmpd/upmpd.hxx \

@@ -40,7 +40,7 @@ extern void trimstring(string &s, const char *ws = " \t");
 extern string path_tildexpand(const string &s);
 extern void stringToTokens(const string &s, vector<string> &tokens, 
 			   const string &delims = " \t", bool skipinit=true);
-
+extern bool path_makepath(const string& path, int mode);
 
 // Convert between db value to percent values (Get/Set Volume and VolumeDb)
 extern int percentodbvalue(int value);

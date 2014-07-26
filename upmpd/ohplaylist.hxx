@@ -68,6 +68,7 @@ private:
     // indexed by song id, but this does not survive MPD restarts.
     // The data is the DIDL XML string.
     std::unordered_map<std::string, std::string> m_metacache;
+    bool m_cachedirty;
 };
 
 #endif /* _OHPLAYLIST_H_X_INCLUDED_ */

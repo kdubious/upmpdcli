@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <pwd.h>
 
@@ -54,9 +55,10 @@ string upmpdProtocolInfo;
 // http://www.tutok.sk/fastgl/callback.html
 UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
 			 const unordered_map<string, string>& xmlfiles,
-			 MPDCli *mpdcli, unsigned int opts)
+			 MPDCli *mpdcli, unsigned int opts, const string& cachefn)
 	: UpnpDevice(deviceid, xmlfiles), m_mpdcli(mpdcli), m_mpds(0),
-	  m_options(opts)
+	  m_options(opts),
+	  m_mcachefn(cachefn)
 {
 	// Note: the order is significant here as it will be used when
 	// calling the getStatus() methods, and we want AVTransport to
@@ -305,6 +307,8 @@ int main(int argc, char *argv[])
 
     Pidfile pidfile(pidfilename);
 
+	string cachedir;
+
 	// If started by root, do the pidfile + change uid thing
 	uid_t runas(0);
 	if (geteuid() == 0) {
@@ -326,8 +330,26 @@ int main(int argc, char *argv[])
 			LOGFAT("Can't write pidfile: " << pidfile.getreason() << endl);
 			return 1;
 		}
+		cachedir = "/var/cache/upmpdcli";
+	} else {
+		cachedir = path_cat(path_tildexpand("~") , "/.cache/upmpdcli");
 	}
 
+	string mcfn = path_cat(cachedir, "/metacache");
+	if (!path_makepath(cachedir, 0755)) {
+		LOGERR("makepath("<< cachedir << ") : errno : " << errno << endl);
+	} else {
+		int fd;
+		if ((fd = open(mcfn.c_str(), O_CREAT|O_RDWR, 0644)) < 0) {
+			LOGERR("creat("<< mcfn << ") : errno : " << errno << endl);
+		} else {
+			close(fd);
+			if (geteuid() == 0 && chown(mcfn.c_str(), runas, -1) != 0) {
+				LOGERR("chown("<< mcfn << ") : errno : " << errno << endl);
+			}
+		}
+	}
+	
 	if ((op_flags & OPT_D)) {
 		if (daemon(1, 0)) {
 			LOGFAT("Daemon failed: errno " << errno << endl);
@@ -434,9 +456,10 @@ int main(int argc, char *argv[])
 		options |= UpMpd::upmpdOwnQueue;
 	if (openhome)
 		options |= UpMpd::upmpdDoOH;
+
 	// Initialize the UPnP device object.
 	UpMpd device(string("uuid:") + UUID, friendlyname, 
-				 xmlfiles, mpdclip, options);
+				 xmlfiles, mpdclip, options, mcfn);
 
 	// And forever generate state change events.
 	LOGDEB("Entering event loop" << endl);

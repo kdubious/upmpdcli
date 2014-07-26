@@ -43,7 +43,7 @@ using namespace std;
 #define MIN(A,B) ((A) < (B) ? (A) : (B))
 #endif
 
-#define LL 1024
+#define LL 2048
 
 void ConfSimple::parseinput(istream &input)
 {

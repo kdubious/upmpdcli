@@ -37,16 +37,17 @@ using namespace std::placeholders;
 
 #include "upmpd.hxx"
 #include "ohplaylist.hxx"
+#include "ohmetacache.hxx"
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
-//#include "renderctl.hxx"
 #include "base64.hxx"
 
 static const string sTpProduct("urn:av-openhome-org:service:Playlist:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Playlist");
 
 OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl)
-    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), m_ctl(ctl)
+    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), m_ctl(ctl),
+      m_cachedirty(false)
 {
     dev->addActionMapping(this, "Play", 
                           bind(&OHPlaylist::play, this, _1, _2));
@@ -97,6 +98,8 @@ OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl)
     dev->addActionMapping(this, "ProtocolInfo",
                           bind(&OHPlaylist::protocolInfo, this, _1, _2));
     dev->m_mpdcli->consume(false);
+    
+    dmcacheRestore(dev->getMetaCacheFn().c_str(), m_metacache);
 }
 
 static const int tracksmax = 16384;
@@ -169,14 +172,24 @@ bool OHPlaylist::makeIdArray(string& out)
             // Entries already in the metadata array just get
             // transferred to the new array
             nmeta[usong.uri].swap(inold->second);
+            m_metacache.erase(inold);
         } else {
             // Entries not in the old array are translated from the
             // MPD data to our format. They were probably added by
             // another MPD client. 
             nmeta[usong.uri] = didlmake(usong);
+            m_cachedirty = true;
             LOGDEB("OHPlaylist::makeIdArray: set mpd data for " << 
                    usong.mpdid << endl);
         }
+    }
+
+    // If we added entries or there are some stale entries, the new
+    // map differs, save it to cache
+    if (!m_metacache.empty() || m_cachedirty) {
+        LOGDEB("OHPlaylist::makeIdArray: saving metacache" << endl);
+        dmcacheSave(m_dev->getMetaCacheFn().c_str(), nmeta);
+        m_cachedirty = false;
     }
     m_metacache = nmeta;
 
@@ -418,6 +431,7 @@ int OHPlaylist::ohread(const SoapArgs& sc, SoapData& data)
         } else {
             metadata = didlmake(song);
             m_metacache[song.uri] = metadata;
+            m_cachedirty = true;
             metadata = SoapArgs::xmlQuote(metadata);
         }
         data.addarg("Uri", song.uri);
@@ -463,6 +477,7 @@ int OHPlaylist::readList(const SoapArgs& sc, SoapData& data)
                 // << song.uri << " not found " << endl);
                 metadata = didlmake(song);
                 m_metacache[song.uri] = metadata;
+                m_cachedirty = true;
                 metadata = SoapArgs::xmlQuote(metadata);
             }
             out += "<Entry><Id>";
@@ -502,6 +517,7 @@ int OHPlaylist::insert(const SoapArgs& sc, SoapData& data)
         int id = m_dev->m_mpdcli->insertAfterId(uri, afterid);
         if ((ok = (id != -1))) {
             m_metacache[uri] = metadata;
+            m_cachedirty = true;
             data.addarg("NewId", SoapArgs::i2s(id));
         }
     }
