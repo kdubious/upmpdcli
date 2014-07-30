@@ -36,6 +36,9 @@ public:
         upmpdOwnQueue, 
         // Export OpenHome services
         upmpdDoOH,
+        // Save queue metadata to disk for persistence across restarts
+        // (mpd does it)
+        upmpdOhMetaPersist
     };
     UpMpd(const string& deviceid, const string& friendlyname,
           const unordered_map<string, string>& xmlfiles,

@@ -99,7 +99,9 @@ OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl)
                           bind(&OHPlaylist::protocolInfo, this, _1, _2));
     dev->m_mpdcli->consume(false);
     
-    dmcacheRestore(dev->getMetaCacheFn().c_str(), m_metacache);
+    if ((dev->m_options & UpMpd::upmpdOhMetaPersist)) {
+        dmcacheRestore(dev->getMetaCacheFn().c_str(), m_metacache);
+    }
 }
 
 static const int tracksmax = 16384;
@@ -193,7 +195,8 @@ bool OHPlaylist::makeIdArray(string& out)
 
     // If we added entries or there are some stale entries, the new
     // map differs, save it to cache
-    if (!m_metacache.empty() || m_cachedirty) {
+    if ((m_dev->m_options & UpMpd::upmpdOhMetaPersist) &&
+        !m_metacache.empty() || m_cachedirty) {
         LOGDEB("OHPlaylist::makeIdArray: saving metacache" << endl);
         dmcacheSave(m_dev->getMetaCacheFn().c_str(), nmeta);
         m_cachedirty = false;

@@ -198,7 +198,8 @@ int main(int argc, char *argv[])
 	string configfile;
 	string friendlyname(dfltFriendlyName);
 	bool ownqueue = true;
-	bool openhome = false;
+	bool openhome = true;
+	bool ohmetapersist = true;
 	string upmpdcliuser("upmpdcli");
 	string pidfilename("/var/run/upmpdcli.pid");
 	string iface;
@@ -287,6 +288,9 @@ int main(int argc, char *argv[])
 		}
 		if (config.get("openhome", value)) {
 			openhome = atoi(value.c_str()) != 0;
+		}
+		if (config.get("ohmetapersist", value)) {
+			ohmetapersist = atoi(value.c_str()) != 0;
 		}
 		if (!(op_flags & OPT_i)) {
 			config.get("upnpiface", iface);
@@ -456,6 +460,8 @@ int main(int argc, char *argv[])
 		options |= UpMpd::upmpdOwnQueue;
 	if (openhome)
 		options |= UpMpd::upmpdDoOH;
+	if (ohmetapersist)
+		options |= UpMpd::upmpdOhMetaPersist;
 
 	// Initialize the UPnP device object.
 	UpMpd device(string("uuid:") + UUID, friendlyname, 
