@@ -14,6 +14,7 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -85,7 +86,7 @@ static const string csxml(
     );
 
 static const string csattrs("Info Time Volume");
-static const string csversion("1.0");
+static const string csversion(PACKAGE_VERSION);
 static const string csmanname("UpMPDCli heavy industries Co.");
 static const string csmaninfo("Such nice guys and gals");
 static const string csmanurl("http://www.lesbonscomptes.com/upmpdcli");
