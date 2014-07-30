@@ -339,17 +339,20 @@ int main(int argc, char *argv[])
 		cachedir = path_cat(path_tildexpand("~") , "/.cache/upmpdcli");
 	}
 
-	string mcfn = path_cat(cachedir, "/metacache");
-	if (!path_makepath(cachedir, 0755)) {
-		LOGERR("makepath("<< cachedir << ") : errno : " << errno << endl);
-	} else {
-		int fd;
-		if ((fd = open(mcfn.c_str(), O_CREAT|O_RDWR, 0644)) < 0) {
-			LOGERR("creat("<< mcfn << ") : errno : " << errno << endl);
+	string mcfn;
+	if (ohmetapersist) {
+		mcfn = path_cat(cachedir, "/metacache");
+		if (!path_makepath(cachedir, 0755)) {
+			LOGERR("makepath("<< cachedir << ") : errno : " << errno << endl);
 		} else {
-			close(fd);
-			if (geteuid() == 0 && chown(mcfn.c_str(), runas, -1) != 0) {
-				LOGERR("chown("<< mcfn << ") : errno : " << errno << endl);
+			int fd;
+			if ((fd = open(mcfn.c_str(), O_CREAT|O_RDWR, 0644)) < 0) {
+				LOGERR("creat("<< mcfn << ") : errno : " << errno << endl);
+			} else {
+				close(fd);
+				if (geteuid() == 0 && chown(mcfn.c_str(), runas, -1) != 0) {
+					LOGERR("chown("<< mcfn << ") : errno : " << errno << endl);
+				}
 			}
 		}
 	}
