@@ -134,9 +134,9 @@ static string translateIdArray(const vector<UpSong>& in)
             out1 += (unsigned char) ((val & 0x0000ff00) >> 8);
             out1 += (unsigned char) ((val & 0x000000ff));
         }
-        //sdeb += SoapArgs::i2s(val) + " ";
+        sdeb += SoapArgs::i2s(val) + " ";
     }
-    //LOGDEB("OHPlaylist: current ids: " << sdeb << endl);
+    LOGDEB("OHPlaylist: current ids: " << sdeb << endl);
     return base64_encode(out1);
 }
 
@@ -174,14 +174,21 @@ bool OHPlaylist::makeIdArray(string& out)
             nmeta[usong.uri].swap(inold->second);
             m_metacache.erase(inold);
         } else {
-            // Entries not in the old array are translated from the
+            // Entries not in the arrays are translated from the
             // MPD data to our format. They were probably added by
             // another MPD client. 
-            nmeta[usong.uri] = didlmake(usong);
-            m_cachedirty = true;
-            LOGDEB("OHPlaylist::makeIdArray: set mpd data for " << 
-                   usong.mpdid << endl);
+            if (nmeta.find(usong.uri) == nmeta.end()) {
+                nmeta[usong.uri] = didlmake(usong);
+                m_cachedirty = true;
+                LOGDEB("OHPlaylist::makeIdArray: using mpd data for " << 
+                       usong.mpdid << " uri " << usong.uri << endl);
+            }
         }
+    }
+
+    for (unordered_map<string, string>::const_iterator it = m_metacache.begin();
+         it != m_metacache.end(); it++) {
+        LOGDEB("OHPlaylist::makeIdArray: dropping uri " << it->first << endl);
     }
 
     // If we added entries or there are some stale entries, the new
@@ -463,6 +470,11 @@ int OHPlaylist::readList(const SoapArgs& sc, SoapData& data)
         stringToTokens(sids, ids);
         for (auto& sid : ids) {
             int id = atoi(sid.c_str());
+            if (id == -1) {
+                // Lumin does this??
+                LOGDEB("OHPlaylist::readlist: request for id -1" << endl);
+                continue;
+            }
             UpSong song;
             if (!m_dev->m_mpdcli->statSong(song, id, true))
                 continue;
