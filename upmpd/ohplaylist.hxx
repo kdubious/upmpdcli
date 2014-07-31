@@ -69,6 +69,11 @@ private:
     // The data is the DIDL XML string.
     std::unordered_map<std::string, std::string> m_metacache;
     bool m_cachedirty;
+
+    // Avoid re-reading the whole MPD queue every time by using the
+    // queue version.
+    int m_mpdqvers;
+    string m_idArrayCached;
 };
 
 #endif /* _OHPLAYLIST_H_X_INCLUDED_ */

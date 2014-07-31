@@ -47,7 +47,7 @@ static const string sIdProduct("urn:av-openhome-org:serviceId:Playlist");
 
 OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), m_ctl(ctl),
-      m_cachedirty(false)
+      m_cachedirty(false), m_mpdqvers(-1)
 {
     dev->addActionMapping(this, "Play", 
                           bind(&OHPlaylist::play, this, _1, _2));
@@ -144,6 +144,15 @@ static string translateIdArray(const vector<UpSong>& in)
 
 bool OHPlaylist::makeIdArray(string& out)
 {
+    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
+
+    if (mpds.qvers == m_mpdqvers) {
+        out = m_idArrayCached;
+        // Mpd queue did not change: no need to look at the metadata cache
+        //LOGDEB("OHPlaylist::makeIdArray: mpd queue did not change" << endl);
+        return true;
+    }
+
     // Retrieve the data for current queue songs from mpd, and make an
     // ohPlaylist id array.
     vector<UpSong> vdata;
@@ -154,7 +163,8 @@ bool OHPlaylist::makeIdArray(string& out)
         return false;
     }
 
-    out = translateIdArray(vdata);
+    m_idArrayCached = out = translateIdArray(vdata);
+    m_mpdqvers = mpds.qvers;
 
     // Update metadata cache: entries not in the current list are
     // not valid any more. Also there may be entries which were added
@@ -533,6 +543,7 @@ int OHPlaylist::insert(const SoapArgs& sc, SoapData& data)
         if ((ok = (id != -1))) {
             m_metacache[uri] = metadata;
             m_cachedirty = true;
+            m_mpdqvers = -1;
             data.addarg("NewId", SoapArgs::i2s(id));
         }
     }
@@ -547,6 +558,7 @@ int OHPlaylist::deleteId(const SoapArgs& sc, SoapData& data)
     bool ok = sc.getInt("Value", &id);
     if (ok) {
         ok = m_dev->m_mpdcli->deleteId(id);
+        m_mpdqvers = -1;
         maybeWakeUp(ok);
     }
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
@@ -556,6 +568,7 @@ int OHPlaylist::deleteAll(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::deleteAll" << endl);
     bool ok = m_dev->m_mpdcli->clearQueue();
+    m_mpdqvers = -1;
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }

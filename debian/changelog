@@ -1,3 +1,9 @@
+upmpdcli (0.8.0-1) unstable; urgency=low
+
+  * Save queue metadata to disk for persistence across restarts. 
+    Set ohmetapersist to 0 in configuration file to disable.
+
+ -- Jean-Francois Dockes <jf@dockes.org>  Mon, 09 Jun 2014 08:56:00 +0200
 upmpdcli (0.7.1-1) unstable; urgency=low
 
   * Add support for the OpenHome ohMedia services. Set openhome=1 in 
