@@ -196,7 +196,7 @@ bool OHPlaylist::makeIdArray(string& out)
     // If we added entries or there are some stale entries, the new
     // map differs, save it to cache
     if ((m_dev->m_options & UpMpd::upmpdOhMetaPersist) &&
-        !m_metacache.empty() || m_cachedirty) {
+        (!m_metacache.empty() || m_cachedirty)) {
         LOGDEB("OHPlaylist::makeIdArray: saving metacache" << endl);
         dmcacheSave(m_dev->getMetaCacheFn().c_str(), nmeta);
         m_cachedirty = false;
