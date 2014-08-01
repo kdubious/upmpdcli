@@ -34,7 +34,7 @@ using std::string;
 /// Store per-worker-thread data. Just an initialized timespec, and
 /// used at the moment.
 class WQTData {
-	public:
+public:
 	WQTData() {wstart.tv_sec = 0; wstart.tv_nsec = 0;}
 	struct timespec wstart;
 };
@@ -67,7 +67,7 @@ public:
 		  m_tottasks(0), m_nowake(0), m_workersleeps(0), m_clientsleeps(0)
 	{
 		m_ok = (pthread_cond_init(&m_ccond, 0) == 0) &&
-		(pthread_cond_init(&m_wcond, 0) == 0);
+			(pthread_cond_init(&m_wcond, 0) == 0);
 	}
 
 	~WorkQueue()
@@ -102,7 +102,7 @@ public:
 	 *
 	 * Sleeps if there are already too many.
 	 */
-	bool put(T t)
+	bool put(T t, bool flushprevious = false)
 	{
 		PTMutexLocker lock(m_mutex);
 		if (!lock.ok() || !ok()) {
@@ -110,16 +110,19 @@ public:
 		}
 
 		while (ok() && m_high > 0 && m_queue.size() >= m_high) {
-		m_clientsleeps++;
+			m_clientsleeps++;
 			// Keep the order: we test ok() AFTER the sleep...
-		m_clients_waiting++;
+			m_clients_waiting++;
 			if (pthread_cond_wait(&m_ccond, lock.getMutex()) || !ok()) {
-		m_clients_waiting--;
+				m_clients_waiting--;
 				return false;
 			}
-		m_clients_waiting--;
+			m_clients_waiting--;
 		}
-
+		if (flushprevious) {
+			while (!m_queue.empty())
+				m_queue.pop();
+		}
 		m_queue.push(t);
 		if (m_workers_waiting > 0) {
 			// Just wake one worker, there is only one new task.
@@ -324,9 +327,3 @@ private:
 };
 
 #endif /* _WORKQUEUE_H_INCLUDED_ */
-/* Local Variables: */
-/* mode: c++ */
-/* c-basic-offset: 4 */
-/* tab-width: 4 */
-/* indent-tabs-mode: t */
-/* End: */
