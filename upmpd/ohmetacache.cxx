@@ -17,15 +17,14 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <string.h>
 
 #include <iostream>
 using namespace std;
 
 #include "ohmetacache.hxx"
-#include "conftree.hxx"
 #include "libupnpp/workqueue.hxx"
 #include "libupnpp/log.hxx"
-#include "base64.hxx"
 
 class SaveCacheTask {
 public:
@@ -38,21 +37,57 @@ public:
 };
 static WorkQueue<SaveCacheTask*> saveQueue("SaveQueue");
 
-// We use base64 to encode names and value, and need to replace the '='
-static const char eqesc = '*';
-static void eqtoggle(string& nm)
+// Encode uris and values so that they can be decoded (escape %, =, and eol)
+static string encode(const string& in)
 {
-    int i = nm.size() - 1;
-    while (i >= 0) {
-        if (nm[i] == '=') {
-            nm[i] = eqesc;
-        } else if (nm[i] == eqesc) {
-            nm[i] = '=';
-        } else {
-            break;
-        }
-        i--;
+    string out;
+    const char *cp = in.c_str();
+    for (string::size_type i = 0; i < in.size(); i++) {
+	unsigned int c;
+	const char *h = "0123456789ABCDEF";
+	c = cp[i];
+	if (c == '%' || c == '=' || c == '\n' || c == '\r') {
+	    out += '%';
+	    out += h[(c >> 4) & 0xf];
+	    out += h[c & 0xf];
+	} else {
+	    out += char(c);
+	}
     }
+    return out;
+}
+
+static int h2d(int c)
+{
+    if ('0' <= c && c <= '9')
+        return c - '0';
+    else if ('A' <= c && c <= 'F')
+        return 10 + c - 'A';
+    else 
+        return -1;
+}
+
+static string decode(const string &in)
+{
+    string out;
+    const char *cp = in.c_str();
+    if (in.size() <= 2)
+        return in;
+    string::size_type i = 0;
+    for (; i < in.size() - 2; i++) {
+	if (cp[i] == '%') {
+            int d1 = h2d(cp[++i]);
+            int d2 = h2d(cp[++i]);
+            if (d1 != -1 && d2 != -1)
+                out += (d1 << 4) + d2;
+	} else {
+            out += cp[i];
+        }
+    }
+    while (i < in.size()) {
+        out += cp[i++];
+    }
+    return out;
 }
 
 bool dmcacheSave(const string& fn, const mcache_type& cache)
@@ -81,33 +116,35 @@ static void *dmcacheSaveWorker(void *)
         LOGDEB("dmcacheSave: got save task: " << tsk->m_cache.size() << 
                " entries to " << tsk->m_fn << endl);
 
-        // Beware that calling the constructor with a std::string
-        // would result in a memory-based object...
-        ConfSimple cs(tsk->m_fn.c_str());
-        cs.clear();
-        if (cs.getStatus() != ConfSimple::STATUS_RW) {
+      	ofstream output(tsk->m_fn, ios::out | ios::trunc);
+	if (!output.is_open()) {
             LOGERR("dmcacheSave: could not open " << tsk->m_fn 
                    << " for writing" << endl);
             delete tsk;
             continue;
         }
-        cs.holdWrites(true);
+
         for (mcache_type::const_iterator it = tsk->m_cache.begin();
              it != tsk->m_cache.end(); it++) {
-            string name = base64_encode(it->first);
-            eqtoggle(name);
-            string value = base64_encode(it->second);
-            //LOGDEB("dmcacheSave: " << name << " -> " << value << endl);
-            cs.set(name, value);
+            output << encode(it->first) << '=' << encode(it->second) << '\n';
+	    if (!output.good()) {
+                LOGERR("dmcacheSave: write error while saving to " << 
+                       tsk->m_fn << endl);
+                break;
+            }
         }
-    
-        if (!cs.holdWrites(false)) {
-            LOGERR("dmcacheSave: write error while saving to " << 
+        output.flush();
+        if (!output.good()) {
+            LOGERR("dmcacheSave: flush error while saving to " << 
                    tsk->m_fn << endl);
         }
+
         delete tsk;
     }
 }
+
+// Max size of metadata element ??
+#define LL 10*1024
 
 bool dmcacheRestore(const string& fn, mcache_type& cache)
 {
@@ -118,29 +155,29 @@ bool dmcacheRestore(const string& fn, mcache_type& cache)
         return false;
     }
 
-    // Beware that calling the constructor with a std::string
-    // would result in a memory-based object...
-    ConfSimple cs(fn.c_str(), 1);
-    if (!cs.ok()) {
-        LOGINF("dmcacheRestore: could not read metadata from " << fn << endl);
+    ifstream input;
+    input.open(fn, ios::in);
+    if (!input.is_open()) {
+        LOGERR("dmcacheRestore: could not open " << fn << endl);
         return false;
     }
 
-    vector<string> names = cs.getNames("");
-    for (auto &name : names) {
-        string value;
-        if (!cs.get(name, value)) {
-            // ??
-            LOGDEB("dmcacheRestore: no data for found name " << name << endl);
-            continue;
+    char cline[LL];
+    for (;;) {
+	input.getline(cline, LL-1, '\n');
+        if (input.eof())
+            break;
+        if (!input.good()) {
+            LOGERR("dmcacheRestore: read error on " << fn << endl);
+            return false;
         }
-        eqtoggle(name);
-        name = base64_decode(name); 
-        value = base64_decode(value);
-        LOGDEB("dmcacheRestore: " << name << " -> " << 
-               value.substr(0, 20) << endl);
-        cache[name] = value;
+        char *cp = strchr(cline, '=');
+        if (cp == 0) {
+            LOGERR("dmcacheRestore: no = in line !" << endl);
+            return false;
+        }
+        *cp = 0;
+        cache[decode(cline)] = decode(cp+1);
     }
     return true;
 }
-
