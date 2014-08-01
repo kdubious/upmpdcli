@@ -74,7 +74,7 @@ upmpdcli_SOURCES = \
      upmpd/base64.hxx \
      upmpd/base64.cxx
                            
-upmpdcli_LDADD = libupnpp.la -lmpdclient 
+upmpdcli_LDADD = libupnpp.la -lmpdclient -lpthread
 
 dist_pkgdata_DATA = upmpd/description.xml upmpd/AVTransport.xml \
                   upmpd/RenderingControl.xml upmpd/ConnectionManager.xml \

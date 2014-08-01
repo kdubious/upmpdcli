@@ -100,7 +100,11 @@ OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl)
     dev->m_mpdcli->consume(false);
     
     if ((dev->m_options & UpMpd::upmpdOhMetaPersist)) {
-        dmcacheRestore(dev->getMetaCacheFn().c_str(), m_metacache);
+        if (!dmcacheRestore(dev->getMetaCacheFn(), m_metacache)) {
+            LOGERR("ohPlaylist: cache restore failed" << endl);
+        } else {
+            LOGDEB("ohPlaylist: cache restore done" << endl);
+        }
     }
 }
 
@@ -208,7 +212,7 @@ bool OHPlaylist::makeIdArray(string& out)
     if ((m_dev->m_options & UpMpd::upmpdOhMetaPersist) &&
         (!m_metacache.empty() || m_cachedirty)) {
         LOGDEB("OHPlaylist::makeIdArray: saving metacache" << endl);
-        dmcacheSave(m_dev->getMetaCacheFn().c_str(), nmeta);
+        dmcacheSave(m_dev->getMetaCacheFn(), nmeta);
         m_cachedirty = false;
     }
     m_metacache = nmeta;

@@ -23,8 +23,20 @@ using namespace std;
 
 #include "ohmetacache.hxx"
 #include "conftree.hxx"
+#include "libupnpp/workqueue.hxx"
 #include "libupnpp/log.hxx"
 #include "base64.hxx"
+
+class SaveCacheTask {
+public:
+    SaveCacheTask(const string& fn, const mcache_type& cache)
+        : m_fn(fn), m_cache(cache)
+        {}
+
+    string m_fn;
+    mcache_type m_cache;
+};
+static WorkQueue<SaveCacheTask*> saveQueue("SaveQueue");
 
 // We use base64 to encode names and value, and need to replace the '='
 static const char eqesc = '*';
@@ -43,33 +55,72 @@ static void eqtoggle(string& nm)
     }
 }
 
-bool dmcacheSave(const char *fn, const mcache_type& cache)
+bool dmcacheSave(const string& fn, const mcache_type& cache)
 {
-    ConfSimple cs(fn);
-    if (cs.getStatus() != ConfSimple::STATUS_RW) {
-        LOGERR("dmcacheSave: could not open " << fn << " for writing" << endl);
-        return false;
-    }
-    cs.clear();
-    cs.holdWrites(true);
-    for (mcache_type::const_iterator it = cache.begin();
-         it != cache.end(); it++) {
-        //LOGDEB("dmcacheSave: " << it->first << " -> " << it->second << endl);
-        string name = base64_encode(it->first);
-        eqtoggle(name);
-        cs.set(name, base64_encode(it->second));
-    }
-    
-    if (!cs.holdWrites(false)) {
-        LOGERR("dmcacheSave: write error while saving to " << fn << endl);
+    SaveCacheTask *tsk = new SaveCacheTask(fn, cache);
+
+    // Use the flush option to put() so that only the latest version
+    // stays on the queue, possibly saving writes.
+    if (!saveQueue.put(tsk, true)) {
+        LOGERR("dmcacheSave: can't queue save task" << endl);
         return false;
     }
     return true;
 }
 
-bool dmcacheRestore(const char *fn, mcache_type& cache)
+static void *dmcacheSaveWorker(void *)
 {
-    ConfSimple cs(fn, 1);
+    for (;;) {
+        SaveCacheTask *tsk = 0;
+        size_t qsz;
+        if (!saveQueue.take(&tsk, &qsz)) {
+            LOGERR("dmcacheSaveWorker: can't get task from queue" << endl);
+            saveQueue.workerExit();
+            return (void*)1;
+        }
+        LOGDEB("dmcacheSave: got save task: " << tsk->m_cache.size() << 
+               " entries to " << tsk->m_fn << endl);
+
+        // Beware that calling the constructor with a std::string
+        // would result in a memory-based object...
+        ConfSimple cs(tsk->m_fn.c_str());
+        cs.clear();
+        if (cs.getStatus() != ConfSimple::STATUS_RW) {
+            LOGERR("dmcacheSave: could not open " << tsk->m_fn 
+                   << " for writing" << endl);
+            delete tsk;
+            continue;
+        }
+        cs.holdWrites(true);
+        for (mcache_type::const_iterator it = tsk->m_cache.begin();
+             it != tsk->m_cache.end(); it++) {
+            string name = base64_encode(it->first);
+            eqtoggle(name);
+            string value = base64_encode(it->second);
+            //LOGDEB("dmcacheSave: " << name << " -> " << value << endl);
+            cs.set(name, value);
+        }
+    
+        if (!cs.holdWrites(false)) {
+            LOGERR("dmcacheSave: write error while saving to " << 
+                   tsk->m_fn << endl);
+        }
+        delete tsk;
+    }
+}
+
+bool dmcacheRestore(const string& fn, mcache_type& cache)
+{
+    // Restore is called once at startup, so seize the opportunity to start the
+    // save thread
+    if (!saveQueue.start(1, dmcacheSaveWorker, 0)) {
+        LOGERR("dmcacheRestore: could not start save thread" << endl);
+        return false;
+    }
+
+    // Beware that calling the constructor with a std::string
+    // would result in a memory-based object...
+    ConfSimple cs(fn.c_str(), 1);
     if (!cs.ok()) {
         LOGINF("dmcacheRestore: could not read metadata from " << fn << endl);
         return false;
