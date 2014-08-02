@@ -72,6 +72,11 @@ public:
      */
     void loopWakeup(); // To trigger an early event
 
+    /**
+     * To be called to get the event loop to return
+     */
+    void shouldExit();
+
     /** Check status */
     bool ok() {return m_lib != 0;}
 
@@ -86,7 +91,7 @@ private:
     std::unordered_map<std::string, UpnpService*> m_servicemap;
     std::vector<std::string> m_serviceids;
     std::unordered_map<std::string, soapfun> m_calls;
-
+    bool m_needExit;
     static unordered_map<std::string, UpnpDevice *> o_devices;
 
     /* Static callback for libupnp. This looks up the appropriate

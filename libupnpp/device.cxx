@@ -57,7 +57,7 @@ static const int expiretime = 3600;
 
 UpnpDevice::UpnpDevice(const string& deviceId, 
                        const unordered_map<string, string>& xmlfiles)
-    : m_deviceId(deviceId)
+    : m_deviceId(deviceId), m_needExit(false)
 {
     //LOGDEB("UpnpDevice::UpnpDevice(" << m_deviceId << ")" << endl);
 
@@ -352,7 +352,9 @@ void UpnpDevice::eventloop()
         PTMutexLocker lock(cblock);
         int err = pthread_cond_timedwait(&evloopcond, lock.getMutex(), 
                                          &wkuptime);
-        if (err && err != ETIMEDOUT) {
+        if (m_needExit) {
+            break;
+        } else if (err && err != ETIMEDOUT) {
             LOGINF("UpnpDevice:eventloop: wait errno " << errno << endl);
             break;
         } else if (err == 0) {
@@ -400,6 +402,12 @@ void UpnpDevice::eventloop()
 
 void UpnpDevice::loopWakeup()
 {
+    pthread_cond_broadcast(&evloopcond);
+}
+
+void UpnpDevice::shouldExit()
+{
+    m_needExit = true;
     pthread_cond_broadcast(&evloopcond);
 }
 
