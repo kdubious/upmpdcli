@@ -31,7 +31,7 @@ using namespace std;
 
 class UPnPDeviceParser : public expatmm::inputRefXMLParser {
 public:
-	UPnPDeviceParser(const string& input, UPnPDevice& device)
+	UPnPDeviceParser(const string& input, UPnPDeviceDesc& device)
 		: expatmm::inputRefXMLParser(input), m_device(device)
 		{}
 
@@ -99,16 +99,16 @@ protected:
 	}
 
 private:
-	UPnPDevice& m_device;
+	UPnPDeviceDesc& m_device;
 	string m_tabs;
 	std::vector<std::string> m_path;
-	UPnPService m_tservice;
+	UPnPServiceDesc m_tservice;
 };
 
-UPnPDevice::UPnPDevice(const string& url, const string& description)
+UPnPDeviceDesc::UPnPDeviceDesc(const string& url, const string& description)
 	: ok(false)
 {
-	//cerr << "UPnPDevice::UPnPDevice: url: " << url << endl;
+	//cerr << "UPnPDeviceDesc::UPnPDeviceDesc: url: " << url << endl;
 	//cerr << " description " << endl << description << endl;
 
 	UPnPDeviceParser mparser(description, *this);

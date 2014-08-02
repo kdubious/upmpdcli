@@ -29,7 +29,7 @@ namespace upnppdebug {
         std::ostream& getstream() {
             return m_tocerr ? std::cerr : m_stream;
         }
-        enum LogLevel {LLNON, LLFAT, LLERR, LLINF, LLDEB};
+        enum LogLevel {LLNON, LLFAT, LLERR, LLINF, LLDEB, LLDEB1};
         void setLogLevel(LogLevel level) {
             m_loglevel = level;
         }
@@ -50,31 +50,39 @@ namespace upnppdebug {
 }
 
 #define DEBOUT (upnppdebug::Logger::getTheLog("")->getstream())
-#define LOGLEVEL (upnppdebug::Logger::getTheLog("")->getloglevel())
+#define LOCAL_LOGINC 0
+#define LOGLEVEL (upnppdebug::Logger::getTheLog("")->getloglevel()+LOCAL_LOGINC)
+
+#define LOGDEB1(X) {                                                    \
+        if (LOGLEVEL >= upnppdebug::Logger::LLDEB1)                     \
+        {                                                               \
+            DEBOUT << __FILE__ << ":" << __LINE__<< "::"; DEBOUT << X;  \
+        }                                                               \
+    }
 
 #define LOGDEB(X) {                                                     \
-        if (LOGLEVEL >= upnppdebug::Logger::LLDEB) \
+        if (LOGLEVEL >= upnppdebug::Logger::LLDEB)                      \
         {                                                               \
             DEBOUT << __FILE__ << ":" << __LINE__<< "::"; DEBOUT << X;  \
         }                                                               \
     }
 
 #define LOGINF(X) {                                                     \
-        if (LOGLEVEL >= upnppdebug::Logger::LLINF)                  \
+        if (LOGLEVEL >= upnppdebug::Logger::LLINF)                      \
         {                                                               \
             DEBOUT << __FILE__ << ":" << __LINE__<< "::"; DEBOUT << X;  \
         }                                                               \
     }                                                                   
 
 #define LOGERR(X) {                                                     \
-        if (LOGLEVEL >= upnppdebug::Logger::LLERR)                  \
+        if (LOGLEVEL >= upnppdebug::Logger::LLERR)                      \
         {                                                               \
             DEBOUT << __FILE__ << ":" << __LINE__<< "::"; DEBOUT << X;  \
         }                                                               \
     }
 
 #define LOGFAT(X) {                                                     \
-        if (LOGLEVEL >= upnppdebug::Logger::LLFAT)                  \
+        if (LOGLEVEL >= upnppdebug::Logger::LLFAT)                      \
         {                                                               \
             DEBOUT << __FILE__ << ":" << __LINE__<< "::"; DEBOUT << X;  \
         }                                                               \
