@@ -53,6 +53,8 @@ static bool vectorstoargslists(const vector<string>& names,
     return true;
 }
 
+static const int expiretime = 3600;
+
 UpnpDevice::UpnpDevice(const string& deviceId, 
                        const unordered_map<string, string>& xmlfiles)
     : m_deviceId(deviceId)
@@ -101,7 +103,14 @@ UpnpDevice::UpnpDevice(const string& deviceId,
     // Start up the web server for sending out description files
     m_lib->setupWebServer(description);
 
+    UpnpSendAdvertisement(m_lib->getdvh(), expiretime);
+
     o_devices[m_deviceId] = this;
+}
+
+UpnpDevice::~UpnpDevice()
+{
+    UpnpUnRegisterRootDevice (m_lib->getdvh());
 }
 
 static PTMutexInit cblock;
@@ -322,11 +331,19 @@ void UpnpDevice::eventloop()
     int count = 0;
     const int loopwait_ms = 1000; // Polling the services every 1 S
     const int nloopstofull = 10;  // Full state every 10 S
-    struct timespec wkuptime, earlytime;
+    struct timespec wkuptime, earlytime, lastadvert;
     bool didearly = false;
+
+    clock_gettime(CLOCK_REALTIME, &lastadvert);
 
     for (;;) {
         clock_gettime(CLOCK_REALTIME, &wkuptime);
+
+        if (wkuptime.tv_sec - lastadvert.tv_sec > (expiretime / 3)) {
+            UpnpSendAdvertisement (m_lib->getdvh(), expiretime);
+            lastadvert = wkuptime;
+        }
+
         timespec_addnanos(&wkuptime, loopwait_ms * 1000 * 1000);
 
         //LOGDEB("eventloop: now " << time(0) << " wkup at "<< 

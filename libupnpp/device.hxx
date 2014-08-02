@@ -33,6 +33,7 @@ class UpnpDevice {
 public:
     UpnpDevice(const std::string& deviceId, 
                const std::unordered_map<std::string, std::string>& xmlfiles);
+    ~UpnpDevice();
 
     void addService(UpnpService *, const std::string& serviceId);
 
