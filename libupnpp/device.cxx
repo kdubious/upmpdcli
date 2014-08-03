@@ -324,25 +324,18 @@ int clock_gettime(int /*clk_id*/, struct timespec* t) {
 #endif // ! CLOCK_REALTIME
 
 // Loop on services, and poll each for changed data. Generate event
-// only if changed data exists. Every 3 S we generate an artificial
-// event with all the current state.
+// only if changed data exists. Every now and then, we generate an
+// artificial event with all the current state.
 void UpnpDevice::eventloop()
 {
     int count = 0;
     const int loopwait_ms = 1000; // Polling the services every 1 S
     const int nloopstofull = 10;  // Full state every 10 S
-    struct timespec wkuptime, earlytime, lastadvert;
+    struct timespec wkuptime, earlytime;
     bool didearly = false;
-
-    clock_gettime(CLOCK_REALTIME, &lastadvert);
 
     for (;;) {
         clock_gettime(CLOCK_REALTIME, &wkuptime);
-
-        if (wkuptime.tv_sec - lastadvert.tv_sec > (expiretime / 3)) {
-            UpnpSendAdvertisement (m_lib->getdvh(), expiretime);
-            lastadvert = wkuptime;
-        }
 
         timespec_addnanos(&wkuptime, loopwait_ms * 1000 * 1000);
 
