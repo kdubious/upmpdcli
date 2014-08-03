@@ -550,6 +550,7 @@ int OHPlaylist::insert(const SoapArgs& sc, SoapData& data)
             m_mpdqvers = -1;
             data.addarg("NewId", SoapArgs::i2s(id));
         }
+        LOGDEB("OHPlaylist::insert: new id: " << id << endl);
     }
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
