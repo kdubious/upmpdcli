@@ -18,6 +18,8 @@
 #ifndef _UPMPD_H_X_INCLUDED_
 #define _UPMPD_H_X_INCLUDED_
 
+using namespace UPnPProvider;
+
 class MPDCli;
 class MpdStatus;
 

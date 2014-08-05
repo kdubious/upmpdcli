@@ -27,6 +27,8 @@ using namespace std;
 #include "device.hxx"
 #include "log.hxx"
 
+namespace UPnPProvider {
+
 unordered_map<std::string, UpnpDevice *> UpnpDevice::o_devices;
 
 static bool vectorstoargslists(const vector<string>& names, 
@@ -404,3 +406,4 @@ void UpnpDevice::shouldExit()
     pthread_cond_broadcast(&evloopcond);
 }
 
+}// End namespace UPnPProvider

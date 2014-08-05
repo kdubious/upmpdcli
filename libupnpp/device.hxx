@@ -22,6 +22,8 @@
 
 #include "soaphelp.hxx"
 
+namespace UPnPProvider {
+
 class UpnpService;
 
 typedef function<int (const SoapArgs&, SoapData&)> soapfun;
@@ -144,5 +146,7 @@ protected:
     const std::string m_serviceType;
     const std::string m_serviceId;
 };
+
+} // End namespace UPnPProvider
 
 #endif /* _DEVICE_H_X_INCLUDED_ */
