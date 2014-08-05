@@ -22,7 +22,9 @@
 
 #include <iostream>
 #include <map>
+#include <functional>
 using namespace std;
+using namespace std::placeholders;
 
 #include "upnpp_p.hxx"
 
@@ -33,36 +35,13 @@ using namespace std;
 #include "expatmm.hxx"
 #include "upnpplib.hxx"
 #include "description.hxx"
-#include "cdirectory.hxx"
 #include "discovery.hxx"
 #include "log.hxx"
 
-#undef LOCAL_LOGINC
-#define LOCAL_LOGINC 0
+namespace UPnPClient {
 
-// The service type string for Content Directories:
-static const string
-ContentDirectorySType("urn:schemas-upnp-org:service:ContentDirectory:1");
-
-// We don't include a version in comparisons, as we are satisfied with
-// version 1
-static bool isCDService(const string& st)
-{
-    const string::size_type sz(ContentDirectorySType.size()-2);
-    return !ContentDirectorySType.compare(0, sz, st, 0, sz);
-}
-
-// The device type string for Media Servers
-static const string
-MediaServerDType("urn:schemas-upnp-org:device:MediaServer:1") ;
-
-#if 0
-static bool isMSDevice(const string& st)
-{
-    const string::size_type sz(MediaServerDType.size()-2);
-    return !MediaServerDType.compare(0, sz, st, 0, sz);
-}
-#endif
+//#undef LOCAL_LOGINC
+//#define LOCAL_LOGINC 3
 
 static string cluDiscoveryToStr(const struct Upnp_Discovery *disco)
 {
@@ -100,8 +79,60 @@ public:
 };
 static WorkQueue<DiscoveredTask*> discoveredQueue("DiscoveredQueue");
 
-// Descriptor for one device having a Content Directory service found
-// on the network.
+// This gets called in a libupnp thread context for all asynchronous
+// events which we asked for.
+// Example: ContentDirectories appearing and disappearing from the network
+// We queue a task for our worker thread(s)
+// It seems that this can get called by several threads. We have a
+// mutex just for clarifying the message printing, the workqueue is
+// mt-safe of course.
+static PTMutexInit cblock;
+static int cluCallBack(Upnp_EventType et, void* evp, void*)
+{
+    PTMutexLocker lock(cblock);
+    LOGDEB1("discovery:cluCallBack: " << LibUPnP::evTypeAsString(et) << endl);
+
+    switch (et) {
+    case UPNP_DISCOVERY_SEARCH_RESULT:
+    case UPNP_DISCOVERY_ADVERTISEMENT_ALIVE:
+    {
+        struct Upnp_Discovery *disco = (struct Upnp_Discovery *)evp;
+        // Devices send multiple messages for themselves, their subdevices and 
+        // services. AFAIK they all point to the same description.xml document,
+        // which has all the interesting data. So let's try to only process
+        // one message per device: the one which probably correspond to the 
+        // upnp "root device" message and has empty service and device types:
+        if (!disco->DeviceType[0] && !disco->ServiceType[0]) {
+            LOGDEB1("discovery:cllb:ALIVE: " << cluDiscoveryToStr(disco) 
+                    << endl);
+            DiscoveredTask *tp = new DiscoveredTask(1, disco);
+            if (discoveredQueue.put(tp)) {
+                return UPNP_E_FINISH;
+            }
+        }
+        break;
+    }
+    case UPNP_DISCOVERY_ADVERTISEMENT_BYEBYE:
+    {
+        struct Upnp_Discovery *disco = (struct Upnp_Discovery *)evp;
+        //LOGDEB("discovery:cllB:BYEBYE: " << cluDiscoveryToStr(disco) << endl);
+        DiscoveredTask *tp = new DiscoveredTask(0, disco);
+        if (discoveredQueue.put(tp)) {
+            return UPNP_E_FINISH;
+        }
+        break;
+    }
+    default:
+        // Ignore other events for now
+        LOGDEB("discovery:cluCallBack: unprocessed evt type: [" << 
+               LibUPnP::evTypeAsString(et) << "]"  << endl);
+        break;
+    }
+
+    return UPNP_E_SUCCESS;
+}
+
+// Descriptor for one device found on the network.
 class DeviceDescriptor {
 public:
     DeviceDescriptor(const string& url, const string& description,
@@ -139,8 +170,9 @@ static void *discoExplorer(void *)
             discoveredQueue.workerExit();
             return (void*)1;
         }
-        PLOGDEB("discoExplorer: alive %d deviceId [%s] URL [%s]\n",
-                tsk->alive, tsk->deviceId.c_str(), tsk->url.c_str());
+        LOGDEB1("discoExplorer: got task: alive " << tsk->alive << " deviceId ["
+                << tsk->deviceId << " URL [" << tsk->url << "]" << endl);
+
         if (!tsk->alive) {
             // Device signals it is going off.
             PTMutexLocker lock(o_pool.m_mutex);
@@ -165,8 +197,8 @@ static void *discoExplorer(void *)
             string sdesc(buf);
             free(buf);
                         
-            //LOGDEB("discoExplorer: downloaded description document of " <<
-            //   sdesc.size() << " bytes" << endl);
+            LOGDEB1("discoExplorer: downloaded description document of " <<
+                    sdesc.size() << " bytes" << endl);
 
             // Update or insert the device
             DeviceDescriptor d(tsk->url, sdesc, time(0), tsk->expires);
@@ -177,57 +209,12 @@ static void *discoExplorer(void *)
                 continue;
             }
             PTMutexLocker lock(o_pool.m_mutex);
-            //LOGDEB("discoExplorer: inserting device id "<< tsk->deviceId << 
-            //       " description: " << endl << d.device.dump() << endl);
+            //LOGDEB1("discoExplorer: inserting device id "<< tsk->deviceId << 
+            //        " description: " << endl << d.device.dump() << endl);
             o_pool.m_devices[tsk->deviceId] = d;
         }
         delete tsk;
     }
-}
-
-// This gets called in a libupnp thread context for all asynchronous
-// events which we asked for.
-// Example: ContentDirectories appearing and disappearing from the network
-// We queue a task for our worker thread(s)
-// It seems that this can get called by several threads. We have a
-// mutex just for clarifying the message printing, the workqueue is
-// mt-safe of course.
-static PTMutexInit cblock;
-static int cluCallBack(Upnp_EventType et, void* evp, void*)
-{
-    PTMutexLocker lock(cblock);
-    //LOGDEB("discovery:cluCallBack: " << LibUPnP::evTypeAsString(et) << endl);
-
-    switch (et) {
-    case UPNP_DISCOVERY_SEARCH_RESULT:
-    case UPNP_DISCOVERY_ADVERTISEMENT_ALIVE:
-    {
-        struct Upnp_Discovery *disco = (struct Upnp_Discovery *)evp;
-        //LOGDEB("discovery:cllb:ALIVE: " << cluDiscoveryToStr(disco) << endl);
-        DiscoveredTask *tp = new DiscoveredTask(1, disco);
-        if (discoveredQueue.put(tp)) {
-            return UPNP_E_FINISH;
-        }
-        break;
-    }
-    case UPNP_DISCOVERY_ADVERTISEMENT_BYEBYE:
-    {
-        struct Upnp_Discovery *disco = (struct Upnp_Discovery *)evp;
-        //LOGDEB("discovery:cllB:BYEBYE: " << cluDiscoveryToStr(disco) << endl);
-        DiscoveredTask *tp = new DiscoveredTask(0, disco);
-        if (discoveredQueue.put(tp)) {
-            return UPNP_E_FINISH;
-        }
-        break;
-    }
-    default:
-        // Ignore other events for now
-        LOGDEB("discovery:cluCallBack: unprocessed evt type: [" << 
-               LibUPnP::evTypeAsString(et) << "]"  << endl);
-        break;
-    }
-
-    return UPNP_E_SUCCESS;
 }
 
 // Look at the devices and get rid of those which have not been seen
@@ -241,6 +228,8 @@ void UPnPDeviceDirectory::expireDevices()
 
     for (DevPoolIt it = o_pool.m_devices.begin();
          it != o_pool.m_devices.end();) {
+        LOGDEB1("Dev in pool: type: " << it->second.device.deviceType <<
+                " friendlyName " << it->second.device.friendlyName << endl);
         if (now - it->second.last_seen > it->second.expires) {
             //LOGDEB("expireDevices: deleting " <<  it->first.c_str() << " " << 
             //   it->second.device.friendlyName.c_str() << endl);
@@ -266,6 +255,7 @@ UPnPDeviceDirectory::UPnPDeviceDirectory(time_t search_window)
         m_reason = "Discover work queue start failed";
         return;
     }
+    pthread_yield();
     LibUPnP *lib = LibUPnP::getLibUPnP();
     if (lib == 0) {
         m_reason = "Can't get lib";
@@ -282,7 +272,7 @@ UPnPDeviceDirectory::UPnPDeviceDirectory(time_t search_window)
 
 bool UPnPDeviceDirectory::search()
 {
-    PLOGDEB("UPnPDeviceDirectory::search\n");
+    LOGDEB1("UPnPDeviceDirectory::search" << endl);
     if (time(0) - m_lastSearch < 10)
         return true;
 
@@ -292,19 +282,15 @@ bool UPnPDeviceDirectory::search()
         return false;
     }
 
-    // We search both for device and service just in case.
-    int code1 = UpnpSearchAsync(lib->getclh(), m_searchTimeout,
-                                ContentDirectorySType.c_str(), lib);
+    LOGDEB1("UPnPDeviceDirectory::search: calling upnpsearchasync"<<endl);
+    //const char *cp = "ssdp:all";
+    const char *cp = "upnp:rootdevice";
+    int code1 = UpnpSearchAsync(lib->getclh(), m_searchTimeout, cp, lib);
     if (code1 != UPNP_E_SUCCESS) {
         m_reason = LibUPnP::errAsString("UpnpSearchAsync", code1);
+        LOGERR("UPnPDeviceDirectory::search: UpnpSearchAsync failed: " <<
+               m_reason << endl);
     }
-    int code2 = UpnpSearchAsync(lib->getclh(), m_searchTimeout,
-                                MediaServerDType.c_str(), lib);
-    if (code2 != UPNP_E_SUCCESS) {
-        m_reason = LibUPnP::errAsString("UpnpSearchAsync", code2);
-    }
-    if (code1 != UPNP_E_SUCCESS && code2 != UPNP_E_SUCCESS)
-        return false;
     m_lastSearch = time(0);
     return true;
 }
@@ -327,14 +313,14 @@ void UPnPDeviceDirectory::terminate()
 time_t UPnPDeviceDirectory::getRemainingDelay()
 {
     time_t now = time(0);
-    if (now - m_lastSearch >= m_searchTimeout)
+    if (now - m_lastSearch >= m_searchTimeout+1)
         return 0;
     return  m_searchTimeout - (now - m_lastSearch);
 }
 
-bool UPnPDeviceDirectory::getDirServices(vector<ContentDirectoryService>& out)
+bool UPnPDeviceDirectory::traverse(UPnPDeviceDirectory::Visitor visit)
 {
-    //LOGDEB("UPnPDeviceDirectory::getDirServices" << endl);
+    //LOGDEB("UPnPDeviceDirectory::traverse" << endl);
     if (m_ok == false)
         return false;
 
@@ -346,38 +332,14 @@ bool UPnPDeviceDirectory::getDirServices(vector<ContentDirectoryService>& out)
 
     PTMutexLocker lock(o_pool.m_mutex);
 
-    for (DevPoolIt dit = o_pool.m_devices.begin();
-         dit != o_pool.m_devices.end(); dit++) {
-        for (DevServIt sit = dit->second.device.services.begin();
-             sit != dit->second.device.services.end(); sit++) {
-            if (isCDService(sit->serviceType)) {
-                out.push_back(ContentDirectoryService(dit->second.device,
-                                                      *sit));
-            }
+    for (auto& dde : o_pool.m_devices) {
+        for (auto& service : dde.second.device.services) {
+            if (!visit(dde.second.device, service))
+                return false;
         }
     }
-
     return true;
 }
 
-// Get server by friendly name. It's a bit wasteful to copy all
-// servers for this, we could directly walk the list. Otoh there isn't
-// going to be millions...
-bool UPnPDeviceDirectory::getServer(const string& friendlyName,
-                                    ContentDirectoryService& server)
-{
-    vector<ContentDirectoryService> ds;
-    if (!getDirServices(ds)) {
-        PLOGDEB("UPnPDeviceDirectory::getServer: no servers?\n");
-        return false;
-    }
-    for (vector<ContentDirectoryService>::const_iterator it = ds.begin();
-         it != ds.end(); it++) {
-        if (!friendlyName.compare(it->getFriendlyName())) {
-            server = *it;
-            return true;
-        }
-    }
-    return false;
-}
+} // namespace UPnPClient
 

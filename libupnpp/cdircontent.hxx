@@ -73,7 +73,7 @@ public:
      * @param[out] value
      * @return true if found.
      */
-    bool getprop(const string& name, string& value) const
+    bool getprop(const std::string& name, std::string& value) const
     {
         std::map<std::string, std::string>::const_iterator it =
             m_props.find(name);

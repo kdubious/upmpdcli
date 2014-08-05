@@ -28,12 +28,15 @@ using namespace std;
 #include "libupnpp/upnpplib.hxx"
 #include "libupnpp/discovery.hxx"
 #include "libupnpp/cdirectory.hxx"
+#include "libupnpp/description.hxx"
 
-void listServers(LibUPnP *lib, UPnPDeviceDirectory *superdir)
+using namespace UPnPClient;
+
+void listServers(LibUPnP *lib)
 {
 	cerr << "Servers:" << endl;
 	vector<ContentDirectoryService> dirservices;
-	if (!superdir->getDirServices(dirservices)) {
+	if (!ContentDirectoryService::getServices(dirservices)) {
 		cerr << "listDirServices failed" << endl;
 		return;
 	}
@@ -43,13 +46,11 @@ void listServers(LibUPnP *lib, UPnPDeviceDirectory *superdir)
 	}
 }
 
-void readdir(LibUPnP *lib, UPnPDeviceDirectory *superdir,
-			 const string& friendlyName,
-			 const string& cid)
+void readdir(LibUPnP *lib, const string& friendlyName, const string& cid)
 {
 	cerr << "readdir: [" << friendlyName << "] [" << cid << "]" << endl;
 	ContentDirectoryService server;
-	if (!superdir->getServer(friendlyName, server)) {
+	if (!ContentDirectoryService::getServerByName(friendlyName, server)) {
 		cerr << "Server not found" << endl;
 		return;
 	}
@@ -69,13 +70,11 @@ void readdir(LibUPnP *lib, UPnPDeviceDirectory *superdir,
 	}
 }
 
-void getMetadata(LibUPnP *lib, UPnPDeviceDirectory *superdir,
-				 const string& friendlyName,
-				 const string& cid)
+void getMetadata(LibUPnP *lib, const string& friendlyName, const string& cid)
 {
 	cerr << "getMeta: [" << friendlyName << "] [" << cid << "]" << endl;
 	ContentDirectoryService server;
-	if (!superdir->getServer(friendlyName, server)) {
+	if (!ContentDirectoryService::getServerByName(friendlyName, server)) {
 		cerr << "Server not found" << endl;
 		return;
 	}
@@ -95,12 +94,11 @@ void getMetadata(LibUPnP *lib, UPnPDeviceDirectory *superdir,
 	}
 }
 
-void search(LibUPnP *lib, UPnPDeviceDirectory *superdir,
-			const string& friendlyName, const string& ss)
+void search(LibUPnP *lib, const string& friendlyName, const string& ss)
 {
 	cerr << "search: [" << friendlyName << "] [" << ss << "]" << endl;
 	ContentDirectoryService server;
-	if (!superdir->getServer(friendlyName, server)) {
+	if (!ContentDirectoryService::getServerByName(friendlyName, server)) {
 		cerr << "Server not found" << endl;
 		return;
 	}
@@ -121,12 +119,11 @@ void search(LibUPnP *lib, UPnPDeviceDirectory *superdir,
 	}
 }
 
-void getSearchCaps(LibUPnP *lib, UPnPDeviceDirectory *superdir,
-				   const string& friendlyName)
+void getSearchCaps(LibUPnP *lib, const string& friendlyName)
 {
 	cerr << "getSearchCaps: [" << friendlyName << "]" << endl;
 	ContentDirectoryService server;
-	if (!superdir->getServer(friendlyName, server)) {
+	if (!ContentDirectoryService::getServerByName(friendlyName, server)) {
 		cerr << "Server not found" << endl;
 		return;
 	}
@@ -228,17 +225,17 @@ int main(int argc, char *argv[])
 
 	if ((op_flags & OPT_l)) {
 		while (true) {
-			listServers(mylib, superdir);
+			listServers(mylib);
 			sleep(5);
 		}
 	} else if ((op_flags & OPT_m)) {
-		getMetadata(mylib, superdir, fname, arg);
+		getMetadata(mylib, fname, arg);
 	} else if ((op_flags & OPT_r)) {
-		readdir(mylib, superdir, fname, arg);
+		readdir(mylib, fname, arg);
 	} else if ((op_flags & OPT_s)) {
-		search(mylib, superdir, fname, arg);
+		search(mylib, fname, arg);
 	} else if ((op_flags & OPT_c)) {
-		getSearchCaps(mylib, superdir, fname);
+		getSearchCaps(mylib, fname);
 	} else {
 		Usage();
 	}

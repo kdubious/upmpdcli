@@ -21,7 +21,10 @@
 #include <set>
 
 #include "description.hxx"
+#include "service.hxx"
 #include "cdircontent.hxx"
+
+namespace UPnPClient {
 
 /**
  * Content Directory Service client class.
@@ -39,7 +42,7 @@
  * The value chosen may affect by the UpnpSetMaxContentLength
  * (2000*1024) done during initialization, but this should be ample
  */
-class ContentDirectoryService {
+class ContentDirectoryService : public Service {
 public:
     /** Construct by copying data from device and service objects.
      *
@@ -48,13 +51,7 @@ public:
      */
     ContentDirectoryService(const UPnPDeviceDesc& device,
                             const UPnPServiceDesc& service)
-        : m_actionURL(caturl(device.URLBase, service.controlURL)),
-          m_serviceType(service.serviceType),
-          m_deviceId(device.UDN),
-          m_friendlyName(device.friendlyName),
-          m_manufacturer(device.manufacturer),
-          m_modelName(device.modelName),
-          m_rdreqcnt(200)
+        : Service(device, service), m_rdreqcnt(200)
         {
             if (!m_modelName.compare("MediaTomb")) {
                 // Readdir by 200 entries is good for most, but MediaTomb likes
@@ -66,7 +63,17 @@ public:
     /** An empty one */
     ContentDirectoryService() {}
 
-    /** Read a container's children list into dirbuf.
+    /** Test service type from discovery message */
+    static bool isCDService(const std::string& st);
+
+    /** Retrieve the directory services currently seen on the network */
+    static bool getServices(std::vector<ContentDirectoryService>&);
+
+    /** Retrieve specific service designated by its friendlyName */
+    static bool getServerByName(const string& friendlyName, 
+                                ContentDirectoryService& server);
+
+    /** Read a full container's children list 
      *
      * @param objectId the UPnP object Id for the container. Root has Id "0"
      * @param[out] dirbuf stores the entries we read.
@@ -74,9 +81,27 @@ public:
      */
     int readDir(const std::string& objectId, UPnPDirContent& dirbuf);
 
-    int readDirSlice(const string& objectId, int offset,
+    /** Read a partial slice of a container's children list
+     *
+     * The entries read are concatenated to the input dirbuf.
+     *
+     * @param objectId the UPnP object Id for the container. Root has Id "0"
+     * @param offset the offset of the first entry to read
+     * @param count the maximum number of entries to read
+     * @param[out] dirbuf a place to store the entries we read. They are 
+     *        appended to the existing ones.
+     * @param[out] didread number of entries actually read.
+     * @param[out] total total number of children.
+     * @return UPNP_E_SUCCESS for success, else libupnp error code.
+     */
+    int readDirSlice(const std::string& objectId, int offset,
                      int count, UPnPDirContent& dirbuf,
                      int *didread, int *total);
+
+    int goodSliceSize()
+    {
+        return m_rdreqcnt;
+    }
 
     /** Search the content directory service.
      *
@@ -109,18 +134,13 @@ public:
      */
     int getSearchCapabilities(std::set<std::string>& result);
 
-    /** Retrieve the "friendly name" for this server, useful for display. */
-    std::string getFriendlyName() const {return m_friendlyName;}
+    // The service type string for Content Directories:
+    static const string SType;
 
 private:
-    std::string m_actionURL;
-    std::string m_serviceType;
-    std::string m_deviceId;
-    std::string m_friendlyName;
-    std::string m_manufacturer;
-    std::string m_modelName;
-
     int m_rdreqcnt; // Slice size to use when reading
 };
+
+}
 
 #endif /* _UPNPDIR_HXX_INCLUDED_ */

@@ -34,6 +34,7 @@ public:
     UPnPDirParser(UPnPDirContent& dir, const string& input)
         : inputRefXMLParser(input), m_dir(dir)
     {
+        //LOGDEB("UPnPDirParser: input: " << input << endl);
         m_okitems["object.item.audioItem.musicTrack"] =
             UPnPDirObject::audioItem_musicTrack;
         m_okitems["object.item.playlistItem"] =
@@ -101,7 +102,7 @@ protected:
         if (!ok) {
             LOGINF("checkobjok:skip: id ["<< m_tobj.m_id<<"] pid ["<<
                    m_tobj.m_pid << "] clss [" << m_tobj.m_props["upnp:class"]
-                   << "] tt [" << m_tobj.m_title << endl);
+                   << "] tt [" << m_tobj.m_title << "]" << endl);
         }
         return ok;
     }
@@ -115,7 +116,7 @@ protected:
             parentname = m_path[m_path.size()-2].name;
         }
         //LOGDEB("Closing element " << name << " inside element " << 
-        // parentname << endl);
+        //    parentname << " data " << m_path.back().data << endl);
         if (!strcmp(name, "container")) {
             if (checkobjok()) {
                 m_dir.m_containers.push_back(m_tobj);
@@ -124,7 +125,8 @@ protected:
             if (checkobjok()) {
                 m_dir.m_items.push_back(m_tobj);
             }
-        } else if (!parentname.compare("item")) {
+        } else if (!parentname.compare("item") || 
+                   !parentname.compare("container")) {
             switch (name[0]) {
             case 'd':
                 if (!strcmp(name, "dc:title"))

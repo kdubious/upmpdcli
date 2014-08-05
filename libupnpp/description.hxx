@@ -26,8 +26,6 @@
 #include <string>
 #include <sstream>
 
-#include "upnpp_p.hxx"
-
 /**
  * Data holder for a UPnP service, parsed from the XML description
  * downloaded after discovery yielded its URL.
@@ -44,24 +42,24 @@ public:
 
     void clear()
     {
-		serviceType.clear();
-		serviceId.clear();
-		SCPDURL.clear();
-		controlURL.clear();
-		eventSubURL.clear();
-	}
+        serviceType.clear();
+        serviceId.clear();
+        SCPDURL.clear();
+        controlURL.clear();
+        eventSubURL.clear();
+    }
 
     std::string dump() const
     {
-		std::ostringstream os;
-		os << "SERVICE {serviceType [" << serviceType <<
-			"] serviceId [" << serviceId <<
-			"] SCPDURL [" << SCPDURL <<
-			"] controlURL [" << controlURL <<
-			"] eventSubURL [" << eventSubURL <<
-			"] }" << std::endl;
-		return os.str();
-	}
+        std::ostringstream os;
+        os << "SERVICE {serviceType [" << serviceType <<
+            "] serviceId [" << serviceId <<
+            "] SCPDURL [" << SCPDURL <<
+            "] controlURL [" << controlURL <<
+            "] eventSubURL [" << eventSubURL <<
+            "] }" << std::endl;
+        return os.str();
+    }
 };
 
 /**
@@ -76,7 +74,7 @@ public:
      * @param url where the description came from
      * @param description the xml device description
      */
-    UPnPDeviceDesc(const string& url, const string& description);
+    UPnPDeviceDesc(const std::string& url, const std::string& description);
 
     UPnPDeviceDesc() : ok(false) {}
 
@@ -94,22 +92,23 @@ public:
     std::string manufacturer;
     // Model name: e.g. MediaTomb, DNS-327L ("modelName")
     std::string modelName;
+
     // Services provided by this device.
     std::vector<UPnPServiceDesc> services;
 
     std::string dump() const
     {
-		std::ostringstream os;
-		os << "DEVICE " << " {deviceType [" << deviceType <<
-			"] friendlyName [" << friendlyName <<
-			"] UDN [" << UDN <<
-			"] URLBase [" << URLBase << "] Services:" << std::endl;
-		for (auto& serv: services) {
-			os << "    " << serv.dump();
-		}
-		os << "}" << std::endl;
-		return os.str();
-	}
+        std::ostringstream os;
+        os << "DEVICE " << " {deviceType [" << deviceType <<
+            "] friendlyName [" << friendlyName <<
+            "] UDN [" << UDN <<
+            "] URLBase [" << URLBase << "] Services:" << std::endl;
+        for (auto& serv: services) {
+            os << "    " << serv.dump();
+        }
+        os << "}" << std::endl;
+        return os.str();
+    }
 };
 
 typedef std::vector<UPnPServiceDesc>::iterator DevServIt;

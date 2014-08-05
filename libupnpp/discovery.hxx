@@ -18,8 +18,11 @@
 #define _UPNPPDISC_H_X_INCLUDED_
 
 #include <vector>
+#include <functional>
 
-#include "cdirectory.hxx"
+#include "description.hxx"
+
+namespace UPnPClient {
 
 /**
  * Manage UPnP discovery and maintain a directory of active devices. Singleton.
@@ -52,10 +55,11 @@ public:
     /** Clean up before exit. Do call this.*/
     static void terminate();
 
-    /** Retrieve the directory services currently seen on the network */
-    bool getDirServices(std::vector<ContentDirectoryService>&);
-    /** Retrieve specific service designated by its friendlyName */
-    bool getServer(const string& friendlyName, ContentDirectoryService& server);
+    typedef std::function<bool (const UPnPDeviceDesc&, 
+                                const UPnPServiceDesc&)> Visitor;
+
+    /** Traverse the directory and call Visitor for each device/service pair */
+    bool traverse(Visitor);
 
     /** My health */
     bool ok() {return m_ok;}
@@ -78,5 +82,6 @@ private:
     time_t m_lastSearch;
 };
 
+} // namespace UPnPClient
 
 #endif /* _UPNPPDISC_H_X_INCLUDED_ */
