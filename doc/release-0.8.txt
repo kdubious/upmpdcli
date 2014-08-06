@@ -1,0 +1,24 @@
+= Notes for upmpdcli 0.8 release series
+
+== Changes in upmpdcli 0.8.0
+
+The main changes in release 0.8 deal with better handling of the OpenHome
+playlist, in addition to a number of small bug fixes, and efficiency
+improvements.
+
+- OpenHome playlist: metadata from tracks directly added to the MPD queue
+  through an MPD client (such as, e.g. MPDroid, gmpc...) is now remembered
+  by *upmpdcli* and will be displayed in the UPnP control point.
+- OpenHome playlist: the metadata for the playlist is now saved to disk so
+  that it survives restarts (like the MPD playlist does). The previous
+  situation was that the current playing queue was still active after a
+  player restart, but no metadata (titles, artists, etc.) was displayed.
+- Actually advertise on the network when starting up and dying. An
+  oversight in previous versions resulted in the fact that *upmpdcli* could
+  only be discovered by a search (when the control point started), but,
+  when *upmpdcli* was started, it would not appear in a running control point
+  device list. 
+- Do not advertise support for raw PCM strings (audio/Lxx), as we can't
+  actually play them. It is better to give accurate information to the
+  control point, so that it can choose an alternate format such as Wav if
+  it is available. 
