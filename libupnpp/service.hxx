@@ -59,7 +59,7 @@ protected:
     std::string m_modelName;
 };
 
-extern Service *service_factory(const string& servicetype,
+extern Service *service_factory(const std::string& servicetype,
                                 const UPnPDeviceDesc& device,
                                 const UPnPServiceDesc& service);
 

@@ -33,13 +33,4 @@ extern std::string path_getfather(const std::string &s);
 extern std::string path_getsimple(const std::string &s);
 template <class T> bool csvToStrings(const std::string& s, T &tokens);
 
-#if defined(HAVE_UPNPSETLOGLEVEL)
-#include <upnp/upnpdebug.h>
-#define PLOGINF(...) UpnpPrintf(UPNP_INFO, API, __FILE__, __LINE__, __VA_ARGS__)
-#define PLOGDEB(...) UpnpPrintf(UPNP_INFO,API, __FILE__, __LINE__, __VA_ARGS__)
-#else
-#define PLOGINF(...)
-#define PLOGDEB(...)
-#endif
-
 #endif /* _UPNPP_H_X_INCLUDED_ */

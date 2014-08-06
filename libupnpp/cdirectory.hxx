@@ -70,7 +70,7 @@ public:
     static bool getServices(std::vector<ContentDirectoryService>&);
 
     /** Retrieve specific service designated by its friendlyName */
-    static bool getServerByName(const string& friendlyName, 
+    static bool getServerByName(const std::string& friendlyName, 
                                 ContentDirectoryService& server);
 
     /** Read a full container's children list 
@@ -135,7 +135,7 @@ public:
     int getSearchCapabilities(std::set<std::string>& result);
 
     // The service type string for Content Directories:
-    static const string SType;
+    static const std::string SType;
 
 private:
     int m_rdreqcnt; // Slice size to use when reading

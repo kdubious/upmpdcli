@@ -117,11 +117,12 @@ int ContentDirectoryService::readDirSlice(const string& objectId, int offset,
                                           int count, UPnPDirContent& dirbuf,
                                           int *didreadp, int *totalp)
 {
-    PLOGDEB("CDService::readDirSlice: objId [%s] offset %d count %d\n",
-            objectId.c_str(), offset, count);
+    LOGDEB("CDService::readDirSlice: objId ["<< objectId << "] offset " << 
+           offset << " count " << count << endl);
+
     LibUPnP* lib = LibUPnP::getLibUPnP();
     if (lib == 0) {
-        PLOGINF("CDService::readDir: no lib\n");
+        LOGINF("CDService::readDir: no lib" << endl);
         return UPNP_E_OUTOF_MEMORY;
     }
     UpnpClient_Handle hdl = lib->getclh();
@@ -145,7 +146,7 @@ int ContentDirectoryService::readDirSlice(const string& objectId, int offset,
                              "RequestedCount", cntbuf,
                              NULL, NULL);
     if (request == 0) {
-        PLOGINF("CDService::readDir: UpnpMakeAction failed\n");
+        LOGINF("CDService::readDir: UpnpMakeAction failed" << endl);
         return  UPNP_E_OUTOF_MEMORY;
     }
 
@@ -155,8 +156,8 @@ int ContentDirectoryService::readDirSlice(const string& objectId, int offset,
                              0 /*devUDN*/, request, &response);
 
     if (ret != UPNP_E_SUCCESS) {
-        PLOGINF("CDService::readDir: UpnpSendAction failed: %s\n",
-                UpnpGetErrorMessage(ret));
+        LOGINF("CDService::readDir: UpnpSendAction failed: " <<
+               UpnpGetErrorMessage(ret) << endl);
         return ret;
     }
 
@@ -166,7 +167,7 @@ int ContentDirectoryService::readDirSlice(const string& objectId, int offset,
         didread = atoi(tbuf.c_str());
 
     if (count == -1 || count == 0) {
-        PLOGINF("CDService::readDir: got -1 or 0 entries\n");
+        LOGINF("CDService::readDir: got -1 or 0 entries" << endl);
         return UPNP_E_BAD_RESPONSE;
     }
 
@@ -192,9 +193,9 @@ int ContentDirectoryService::readDirSlice(const string& objectId, int offset,
 int ContentDirectoryService::readDir(const string& objectId,
                                      UPnPDirContent& dirbuf)
 {
-    PLOGDEB("CDService::readDir: url [%s] type [%s] udn [%s] objId [%s]\n",
-            m_actionURL.c_str(), m_serviceType.c_str(), m_deviceId.c_str(),
-            objectId.c_str());
+    LOGDEB("CDService::readDir: url [" << m_actionURL << "] type [" <<
+           m_serviceType << "] udn [" << m_deviceId << "] objId [" <<
+           objectId << endl);
 
     int offset = 0;
     int total = 1000;// Updated on first read.
@@ -216,14 +217,13 @@ int ContentDirectoryService::search(const string& objectId,
                                     const string& ss,
                                     UPnPDirContent& dirbuf)
 {
-    PLOGDEB("CDService::search: url [%s] type [%s] udn [%s] objid [%s] "
-            "search [%s]\n",
-            m_actionURL.c_str(), m_serviceType.c_str(), m_deviceId.c_str(),
-            objectId.c_str(), ss.c_str());
+    LOGDEB("CDService::search: url [" << m_actionURL << "] type [" << 
+           m_serviceType << "] udn [" << m_deviceId << "] objid [" << 
+           objectId <<  "] search [" << ss << "]" << endl;
 
     LibUPnP* lib = LibUPnP::getLibUPnP();
     if (lib == 0) {
-        PLOGINF("CDService::search: no lib\n");
+        LOGINF("CDService::search: no lib" << endl);
         return UPNP_E_OUTOF_MEMORY;
     }
     UpnpClient_Handle hdl = lib->getclh();
@@ -251,7 +251,7 @@ int ContentDirectoryService::search(const string& objectId,
             "RequestedCount", "0", // Setting a value here gets twonky into fits
             NULL, NULL);
         if (request == 0) {
-            PLOGINF("CDService::search: UpnpMakeAction failed\n");
+            LOGINF("CDService::search: UpnpMakeAction failed" << endl);
             return  UPNP_E_OUTOF_MEMORY;
         }
 
@@ -261,8 +261,8 @@ int ContentDirectoryService::search(const string& objectId,
                              0 /*devUDN*/, request, &response);
 
         if (ret != UPNP_E_SUCCESS) {
-            PLOGINF("CDService::search: UpnpSendAction failed: %s\n",
-                    UpnpGetErrorMessage(ret));
+            LOGINF("CDService::search: UpnpSendAction failed: " <<
+                   UpnpGetErrorMessage(ret) << endl);
             return ret;
         }
 
@@ -273,7 +273,7 @@ int ContentDirectoryService::search(const string& objectId,
             count = atoi(tbuf.c_str());
 
         if (count == -1 || count == 0) {
-            PLOGINF("CDService::search: got -1 or 0 entries\n");
+            LOGINF("CDService::search: got -1 or 0 entries" << endl);
             return count == -1 ? UPNP_E_BAD_RESPONSE : UPNP_E_SUCCESS;
         }
         offset += count;
@@ -299,10 +299,10 @@ int ContentDirectoryService::search(const string& objectId,
 
 int ContentDirectoryService::getSearchCapabilities(set<string>& result)
 {
-    PLOGDEB("CDService::getSearchCapabilities:\n");
+    LOGDEB("CDService::getSearchCapabilities:" << endl);
     LibUPnP* lib = LibUPnP::getLibUPnP();
     if (lib == 0) {
-        PLOGINF("CDService::getSearchCapabilities: no lib\n");
+        LOGINF("CDService::getSearchCapabilities: no lib" << endl);
         return UPNP_E_OUTOF_MEMORY;
     }
     UpnpClient_Handle hdl = lib->getclh();
@@ -316,7 +316,7 @@ int ContentDirectoryService::getSearchCapabilities(set<string>& result)
                              NULL, NULL);
 
     if (request == 0) {
-        PLOGINF("CDService::getSearchCapa: UpnpMakeAction failed\n");
+        LOGINF("CDService::getSearchCapa: UpnpMakeAction failed" << endl);
         return  UPNP_E_OUTOF_MEMORY;
     }
 
@@ -326,8 +326,8 @@ int ContentDirectoryService::getSearchCapabilities(set<string>& result)
                          0 /*devUDN*/, request, &response);
 
     if (ret != UPNP_E_SUCCESS) {
-        PLOGINF("CDService::getSearchCapa: UpnpSendAction failed: %s\n",
-                UpnpGetErrorMessage(ret));
+        LOGINF("CDService::getSearchCapa: UpnpSendAction failed: " << 
+               UpnpGetErrorMessage(ret) << endl);
         return ret;
     }
     //cerr << "getSearchCapa: response xml: [" << ixmlPrintDocument(response)
@@ -351,13 +351,13 @@ int ContentDirectoryService::getSearchCapabilities(set<string>& result)
 int ContentDirectoryService::getMetadata(const string& objectId,
                                          UPnPDirContent& dirbuf)
 {
-    PLOGDEB("CDService::getMetadata: url [%s] type [%s] udn [%s] objId [%s]\n",
-            m_actionURL.c_str(), m_serviceType.c_str(), m_deviceId.c_str(),
-            objectId.c_str());
+    LOGDEB("CDService::getMetadata: url [" << m_actionURL << "] type [" <<
+           m_serviceType << "] udn [" << m_deviceId << "] objId [" <<
+           objectId << "]" << endl);
 
     LibUPnP* lib = LibUPnP::getLibUPnP();
     if (lib == 0) {
-        PLOGINF("CDService::getMetadata: no lib\n");
+        LOGINF("CDService::getMetadata: no lib" << endl);
         return UPNP_E_OUTOF_MEMORY;
     }
     UpnpClient_Handle hdl = lib->getclh();
@@ -378,7 +378,7 @@ int ContentDirectoryService::getMetadata(const string& objectId,
                              "RequestedCount", "1",
                              NULL, NULL);
     if (request == 0) {
-        PLOGINF("CDService::getmetadata: UpnpMakeAction failed\n");
+        LOGINF("CDService::getmetadata: UpnpMakeAction failed" << endl);
         return  UPNP_E_OUTOF_MEMORY;
     }
 
@@ -388,8 +388,8 @@ int ContentDirectoryService::getMetadata(const string& objectId,
                          0 /*devUDN*/, request, &response);
 
     if (ret != UPNP_E_SUCCESS) {
-        PLOGINF("CDService::getmetadata: UpnpSendAction failed: %s\n",
-                UpnpGetErrorMessage(ret));
+        LOGINF("CDService::getmetadata: UpnpSendAction failed: " << 
+               UpnpGetErrorMessage(ret) << endl);
         return ret;
     }
     string tbuf = ixmlwrap::getFirstElementValue(response, "Result");
