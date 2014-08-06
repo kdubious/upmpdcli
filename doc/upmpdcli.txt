@@ -2,8 +2,7 @@
 
 
 *upmpdcli* is an UPnP Media Renderer front-end to *MPD*, the Music Player
-Daemon. The last version supports both pure UPnP and the OpenHome ohMedia
-services.
+Daemon. It supports both pure UPnP and the OpenHome ohMedia services.
 
 [[upmpdcli.security]]
 == Security
@@ -28,11 +27,11 @@ The configuration file has a simple `name = value` format.
 The configuration parameters can be set from the command line, a
 configuration file, or the environment in this order of priority. It would
 be rather confusing to use a mix of methods, so you should probably chose
-one. 
+one. Some less common parameters can only be set in the configuration file.
 
 All parameters have defaults, and a typical installation needs no
 modification of the configuration file. If several instances of *upmpdcli*
-run on the same network, it may be useful to give them distinct names
+run on the same network, you will want to give them distinct names
 (_friendlyname_ parameter). The other parameters are only useful in special
 situations.
 
@@ -53,17 +52,21 @@ The following parameters can be set:
 |UPnP IP address (if interface not set)|||upnpip
 |UPnP port|-p port|$UPMPD_UPNPPORT|upnpport
 |OpenHome support switch|-O 0/1||openhome
+|OpenHome playlist disk persistence (default 1)|||ohmetapersist
 |===========================    
 
 [[upmpdcli.openhome]]
 == OpenHome ohMedia services
 
 The support for ohMedia services (play queue managed by the player instead
-of on the control point) is set to _off_ by default in the software, and
-_on_ in the configuration file (which normally does not
-overwrite the previous one during an upgrade). If you are upgrading to a
-version supporting OpenHome and you want to enable the services, you need
-to set the option in the configuration file.
+of on the control point) is activated by default as of release 0.8.0, only
+an explicit option will turn it off.
+
+The previous version default was set to _off_ in the software, and _on_ in
+the configuration file. As the configuration file is not usually
+overwritten during an upgrade, if you are upgrading to 0.7.x from an
+earlier version and you want to enable the services, you need to set the
+option in the configuration file.
 
 [[upmpdcli.boot]]
 == Boot time startup

@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.9" />
-<title>Upmpdcli: MPD UPnP Renderer Front-End</title>
+<title>Notes for upmpdcli 0.8 release series</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -733,197 +733,56 @@ asciidoc.install();
 </head>
 <body class="article">
 <div id="header">
-<h1>Upmpdcli: MPD UPnP Renderer Front-End</h1>
+<h1>Notes for upmpdcli 0.8 release series</h1>
 </div>
 <div id="content">
-<div id="preamble">
-<div class="sectionbody">
-<div class="paragraph"><p><strong>upmpdcli</strong> is an UPnP Media Renderer front-end to <strong>MPD</strong>, the Music Player
-Daemon. It supports both pure UPnP and the OpenHome ohMedia services.</p></div>
-</div>
-</div>
 <div class="sect1">
-<h2 id="upmpdcli.security">Security</h2>
+<h2 id="_changes_in_upmpdcli_0_8_0">Changes in upmpdcli 0.8.0</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>upmpdcli</strong> is not audited for security issues, and, as far as I
-know, it may be full of exploitable bugs. Do not run it on an
-Internet-facing host.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="upmpdcli.config">Configuration</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>See the man page for command line details. In most situations, <strong>upmpdcli</strong>
-will be run as follows:</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><code>upmpdcli -D -c /etc/upmpdcli.conf</code></pre>
-</div></div>
-<div class="paragraph"><p>The <code>-D</code> option tells <strong>upmpdcli</strong> to fork and run in background. The <code>-c</code>
-option specifies a configuration file.</p></div>
-<div class="paragraph"><p>The configuration file has a simple <code>name = value</code> format.</p></div>
-<div class="paragraph"><p>The configuration parameters can be set from the command line, a
-configuration file, or the environment in this order of priority. It would
-be rather confusing to use a mix of methods, so you should probably chose
-one. Some less common parameters can only be set in the configuration file.</p></div>
-<div class="paragraph"><p>All parameters have defaults, and a typical installation needs no
-modification of the configuration file. If several instances of <strong>upmpdcli</strong>
-run on the same network, you will want to give them distinct names
-(<em>friendlyname</em> parameter). The other parameters are only useful in special
-situations.</p></div>
-<div class="paragraph"><p>The following parameters can be set:</p></div>
-<div class="tableblock">
-<table rules="all"
-width="100%"
-frame="border"
-cellspacing="0" cellpadding="4">
-<col width="25%" />
-<col width="25%" />
-<col width="25%" />
-<col width="25%" />
-<tbody>
-<tr>
-<td align="left" valign="top"><p class="table">What</p></td>
-<td align="left" valign="top"><p class="table">Command line</p></td>
-<td align="left" valign="top"><p class="table">Environment</p></td>
-<td align="left" valign="top"><p class="table">Config variable</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">Configuration file name</p></td>
-<td align="left" valign="top"><p class="table">-c config</p></td>
-<td align="left" valign="top"><p class="table">$UPMPD_CONFIG</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">Host name or IP address where <strong>MPD</strong> runs</p></td>
-<td align="left" valign="top"><p class="table">-h mpdhost</p></td>
-<td align="left" valign="top"><p class="table">$UPMPD_HOST</p></td>
-<td align="left" valign="top"><p class="table">mpdhost</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">TCP port for <strong>MPD</strong></p></td>
-<td align="left" valign="top"><p class="table">-p mpdport</p></td>
-<td align="left" valign="top"><p class="table">$UPMPD_PORT</p></td>
-<td align="left" valign="top"><p class="table">mpdport</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table"><strong>MPD</strong> password</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">mpdpassword</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">Do we own the <strong>MPD</strong> queue and fearlessly clear it</p></td>
-<td align="left" valign="top"><p class="table">-o 0/1</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">ownqueue</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">UPnP "friendly name" for the device. This gets displayed in network search
-  results.</p></td>
-<td align="left" valign="top"><p class="table">-f friendlyname</p></td>
-<td align="left" valign="top"><p class="table">$UPMPD_FRIENDLYNAME</p></td>
-<td align="left" valign="top"><p class="table">friendlyname</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">Log file name. Leave empty for stderr</p></td>
-<td align="left" valign="top"><p class="table">-d logfilename</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">logfilename</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">Verbosity level (0-4)</p></td>
-<td align="left" valign="top"><p class="table">-l loglevel</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">loglevel</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">UPnP network interface</p></td>
-<td align="left" valign="top"><p class="table">-i iface</p></td>
-<td align="left" valign="top"><p class="table">$UPMPD_UPNPIFACE</p></td>
-<td align="left" valign="top"><p class="table">upnpiface</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">UPnP IP address (if interface not set)</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">upnpip</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">UPnP port</p></td>
-<td align="left" valign="top"><p class="table">-p port</p></td>
-<td align="left" valign="top"><p class="table">$UPMPD_UPNPPORT</p></td>
-<td align="left" valign="top"><p class="table">upnpport</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">OpenHome support switch</p></td>
-<td align="left" valign="top"><p class="table">-O 0/1</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">openhome</p></td>
-</tr>
-<tr>
-<td align="left" valign="top"><p class="table">OpenHome playlist disk persistence (default 1)</p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table"></p></td>
-<td align="left" valign="top"><p class="table">ohmetapersist</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="upmpdcli.openhome">OpenHome ohMedia services</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>The support for ohMedia services (play queue managed by the player instead
-of on the control point) is activated by default as of release 0.8.0, only
-an explicit option will turn it off.</p></div>
-<div class="paragraph"><p>The previous version default was set to <em>off</em> in the software, and <em>on</em> in
-the configuration file. As the configuration file is not usually
-overwritten during an upgrade, if you are upgrading to 0.7.x from an
-earlier version and you want to enable the services, you need to set the
-option in the configuration file.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="upmpdcli.boot">Boot time startup</h2>
-<div class="sectionbody">
-<div class="paragraph"><p><strong>upmpdcli</strong> will try to change its <code>uid</code> to user <code>upmpdcli</code> if it is
-started by root. It will refuse to run if the user does not exist.</p></div>
-<div class="paragraph"><p>If started by <code>root</code>, <strong>upmpdcli</strong> will also write its process id to
-<code>/var/run/upmpdcli.pid</code>.</p></div>
-<div class="paragraph"><p>There are boot-time startup scripts in the <code>debian/</code> directory inside the
-source tree (for Debian/Ubuntu/Mint/Raspbian etc.). There is also a systemd
-service file under <code>systemd/</code> (for Fedora et al.).</p></div>
-<div class="paragraph"><p>The boot scripts are installed by the pre-built packages, so will just have
-to edit the configuration file after installing them, all the rest should
-just work.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="upmpdcli.building">Building</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>For building from source, you will need a recent <code>C++</code> compiler (<code>C++11</code>),
-and the development packages for <strong>libupnp</strong> version 1.6, <strong>libmpdclient</strong>, and
-<strong>libexpat</strong>.</p></div>
-<div class="paragraph"><p>If you are using the source from Github, you will also need the
-autoconf/automake/libtool trio. Use the <code>autogen.sh</code> script to set things
-up.</p></div>
-<div class="paragraph"><p>Otherwise, the procedure is standard and there are currently no specific
-configure options:</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><code>configure --prefix=/usr
-make
-sudo make install</code></pre>
-</div></div>
+<div class="paragraph"><p>The main changes in release 0.8 deal with better handling of the OpenHome
+playlist, in addition to a number of small bug fixes, and efficiency
+improvements.</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+OpenHome playlist: metadata from tracks directly added to the MPD queue
+  through an MPD client (such as, e.g. MPDroid, gmpc&#8230;) is now remembered
+  by <strong>upmpdcli</strong> and will be displayed in the UPnP control point.
+</p>
+</li>
+<li>
+<p>
+OpenHome playlist: the metadata for the playlist is now saved to disk so
+  that it survives restarts (like the MPD playlist does). The previous
+  situation was that the current playing queue was still active after a
+  player restart, but no metadata (titles, artists, etc.) was displayed.
+</p>
+</li>
+<li>
+<p>
+Actually advertise on the network when starting up and dying. An
+  oversight in previous versions resulted in the fact that <strong>upmpdcli</strong> could
+  only be discovered by a search (when the control point started), but,
+  when <strong>upmpdcli</strong> was started, it would not appear in a running control point
+  device list.
+</p>
+</li>
+<li>
+<p>
+Do not advertise support for raw PCM strings (audio/Lxx), as we can&#8217;t
+  actually play them. It is better to give accurate information to the
+  control point, so that it can choose an alternate format such as Wav if
+  it is available.
+</p>
+</li>
+</ul></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-08-06 10:11:55 CEST
+Last updated 2014-08-06 09:56:53 CEST
 </div>
 </div>
 </body>
