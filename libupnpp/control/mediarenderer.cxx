@@ -23,6 +23,7 @@ using namespace std;
 using namespace std::placeholders;
 
 #include "libupnpp/discovery.hxx"
+#include "libupnpp/log.hxx"
 #include "libupnpp/control/mediarenderer.hxx"
 #include "libupnpp/control/renderingcontrol.hxx"
 
@@ -40,20 +41,28 @@ bool MediaRenderer::isMRDevice(const string& st)
 }
 
 static bool MDAccum(unordered_map<string, UPnPDeviceDesc>* out,
+                    const string& friendlyName,
                     const UPnPDeviceDesc& device, 
                     const UPnPServiceDesc& service)
 {
-    if (RenderingControl::isRDCService(service.serviceType)) {
+    LOGDEB("MDAccum: friendlyname: " << friendlyName << 
+           " dev friendlyName " << device.friendlyName << endl);
+    if (RenderingControl::isRDCService(service.serviceType) &&
+        (friendlyName.empty() ? true : 
+         !friendlyName.compare(device.friendlyName))) {
+        LOGDEB("MDAccum setting " << device.UDN << endl);
         (*out)[device.UDN] = device;
     }
     return true;
 }
 
-bool MediaRenderer::getDeviceDescs(vector<UPnPDeviceDesc>& devices)
+bool MediaRenderer::getDeviceDescs(vector<UPnPDeviceDesc>& devices, 
+                                   const string& friendlyName)
 {
     unordered_map<string, UPnPDeviceDesc> mydevs;
 
-    UPnPDeviceDirectory::Visitor visitor = bind(MDAccum, &mydevs, _1, _2);
+    UPnPDeviceDirectory::Visitor visitor = bind(MDAccum, &mydevs, friendlyName,
+                                                _1, _2);
     UPnPDeviceDirectory::getTheDir()->traverse(visitor);
     for (auto& entry : mydevs)
         devices.push_back(entry.second);

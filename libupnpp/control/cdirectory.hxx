@@ -46,8 +46,6 @@ class ContentDirectoryService : public Service {
 public:
     /** Construct by copying data from device and service objects.
      *
-     * To be used by the discovery service. 
-     * External users must call getDirServices() instead
      */
     ContentDirectoryService(const UPnPDeviceDesc& device,
                             const UPnPServiceDesc& service)

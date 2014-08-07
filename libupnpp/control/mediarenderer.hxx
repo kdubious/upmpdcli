@@ -28,7 +28,8 @@ public:
 
 class MediaRenderer : public Device {
 public:
-    static bool getDeviceDescs(std::vector<UPnPDeviceDesc>& devices);
+    static bool getDeviceDescs(std::vector<UPnPDeviceDesc>& devices,
+        const string& friendlyName = "");
     static bool hasOpenHome(const UPnPDeviceDesc& device);
     static bool isMRDevice(const string& devicetype);
 

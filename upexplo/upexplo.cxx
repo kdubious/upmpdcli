@@ -31,6 +31,7 @@ using namespace std;
 #include "libupnpp/description.hxx"
 #include "libupnpp/control/cdirectory.hxx"
 #include "libupnpp/control/mediarenderer.hxx"
+#include "libupnpp/control/renderingcontrol.hxx"
 
 using namespace UPnPClient;
 
@@ -61,6 +62,47 @@ void listPlayers()
         cout << entry.friendlyName << endl;
     }
     cout << endl;
+}
+
+void getsetVolume(const string& friendlyName, int volume = -1)
+{
+    vector<UPnPDeviceDesc> vdds;
+    if (!MediaRenderer::getDeviceDescs(vdds, friendlyName)) {
+        cerr << "MediaRenderer::getDeviceDescs" << endl;
+        return;
+    }
+
+    if (vdds.size() == 0) {
+        cerr << "Player not found" <<endl;
+        return;
+    } else if (vdds.size() > 1) {
+        cerr << "Multiple players found" << endl;
+        return;
+    }
+
+    UPnPDeviceDesc& dev = vdds[0];
+    RenderingControl ctl;
+    bool found = false;
+    for (auto& entry : dev.services) {
+        if (RenderingControl::isRDCService(entry.serviceType)) {
+            ctl = RenderingControl(dev, entry);
+            found = true;
+        }
+    }
+    if (!found) {
+        cerr << "Rendering control service not found in device" << endl;
+        return;
+    }
+    if (volume == -1) {
+        volume = ctl.getVolume();
+        cout << "Current volume: " << volume << endl;
+        return;
+    } else {
+        if ((volume = ctl.setVolume(volume)) != 0) {
+            cerr << "Error setting volume: " << volume << endl;
+            return;
+        }
+    }
 }
 
 void readdir(LibUPnP *lib, const string& friendlyName, const string& cid)
@@ -168,6 +210,8 @@ static char usage [] =
             " -s <server> <searchstring> search for string\n"
             " -m <server> <objid> : list object metadata\n"
             " -c <server> get search capabilities\n"
+            " -v <renderer> get volume\n"
+            " -V <renderer> <volume> set volume\n"
             "  \n\n"
             ;
 static void
@@ -183,11 +227,14 @@ static int	   op_flags;
 #define OPT_c	  0x8
 #define OPT_s	  0x10
 #define OPT_m	  0x20
+#define OPT_v	  0x40
+#define OPT_V	  0x80
 
 int main(int argc, char *argv[])
 {
     string fname;
     string arg;
+    int volume = -1;
 
     thisprog = argv[0];
     argc--; argv++;
@@ -215,6 +262,14 @@ int main(int argc, char *argv[])
                 fname = *(++argv);argc--;
                 arg = *(++argv);argc--;
                 goto b1;
+            case 'V':	op_flags |= OPT_V; if (argc < 3)  Usage();
+                fname = *(++argv);argc--;
+                volume = atoi(*(++argv));argc--;
+                goto b1;
+            case 'v':	op_flags |= OPT_v; if (argc < 2)  Usage();
+                fname = *(++argv);argc--;
+                goto b1;
+
             default: Usage();	break;
             }
     b1: argc--; argv++;
@@ -259,6 +314,10 @@ int main(int argc, char *argv[])
         search(mylib, fname, arg);
     } else if ((op_flags & OPT_c)) {
         getSearchCaps(mylib, fname);
+    } else if ((op_flags & OPT_V)) {
+        getsetVolume(fname, volume);
+    } else if ((op_flags & OPT_v)) {
+        getsetVolume(fname);
     } else {
         Usage();
     }

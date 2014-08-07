@@ -18,6 +18,10 @@
 #include <string>
 using namespace std;
 
+#include <upnp/upnp.h>
+
+#include "libupnpp/soaphelp.hxx"
+#include "libupnpp/log.hxx"
 #include "libupnpp/control/renderingcontrol.hxx"
 
 namespace UPnPClient {
@@ -34,4 +38,45 @@ bool RenderingControl::isRDCService(const string& st)
 }
 
 
-};
+
+int RenderingControl::setVolume(int volume, const string& channel)
+{
+    SoapEncodeInput args(m_serviceType, "SetVolume");
+    args("Channel", channel)("DesiredVolume", SoapEncodeInput::i2s(volume));
+    SoapDecodeOutput data;
+    int ret = runAction(args, data);
+    if (ret != UPNP_E_SUCCESS) {
+        return ret;
+    }
+    return 0;
+}
+
+int RenderingControl::getVolume(const string& channel)
+{
+    SoapEncodeInput args(m_serviceType, "GetVolume");
+    args("Channel", channel);
+    SoapDecodeOutput data;
+    int ret = runAction(args, data);
+    if (ret != UPNP_E_SUCCESS) {
+        return ret;
+    }
+    int volume;
+    if (!data.getInt("CurrentVolume", &volume)) {
+        LOGERR("RenderingControl:getVolume: missing CurrentVolume in response" 
+        << endl);
+        return UPNP_E_BAD_RESPONSE;
+    }
+    return volume;
+}
+
+
+
+
+
+
+
+
+
+
+} // End namespace UPnPClient
+
