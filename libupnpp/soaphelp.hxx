@@ -24,7 +24,7 @@
 #include <upnp/ixml.h>
 
 /** Store returned values after decoding the arguments in a SOAP Call */
-class SoapArgs {
+class SoapDecodeOutput {
 public:
     std::string name;
     std::map<std::string, std::string> args;
@@ -48,7 +48,7 @@ public:
  * @return true for success, false if a decoding error occurred.
  */
 extern bool decodeSoapBody(const char *name, IXML_Document *actReq, 
-                           SoapArgs *res);
+                           SoapDecodeOutput *res);
 
 /** Store the values to be encoded in a SOAP response. 
  *
@@ -57,17 +57,32 @@ extern bool decodeSoapBody(const char *name, IXML_Document *actReq,
  * The generic UpnpDevice callback fills up name and service type, the
  * device call only needs to fill the data vector.
  */
-class SoapData {
+class SoapEncodeInput {
 public:
-    std::string name;
-    std::string serviceType;
-    std::vector<std::pair<std::string, std::string> > data;
-    void addarg(const std::string& k, const std::string& v) {
+    SoapEncodeInput() {}
+    SoapEncodeInput(const std::string& st, const std::string& nm)
+        : serviceType(st), name(nm) {}
+    SoapEncodeInput& addarg(const std::string& k, const std::string& v) {
         data.push_back(pair<string,string>(k, v));
+        return *this;
     }
+    SoapEncodeInput& operator() (const std::string& k, const std::string& v) {
+        data.push_back(pair<string,string>(k, v));
+        return *this;
+    }
+    static std::string i2s(int val);
+
+    std::string serviceType;
+    std::string name;
+    std::vector<std::pair<std::string, std::string> > data;
 };
 
+// Until we can fix the device code.
+typedef SoapEncodeInput SoapData;
+typedef SoapDecodeOutput SoapArgs;
+
 /** Build a SOAP response data XML document from a list of values */
-extern IXML_Document *buildSoapBody(SoapData& data);
+extern IXML_Document *buildSoapBody(const SoapEncodeInput& data, 
+                                    bool isResp = true);
 
 #endif /* _SOAPHELP_H_X_INCLUDED_ */

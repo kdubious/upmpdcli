@@ -50,7 +50,7 @@ public:
      * calls to libupnp, and this must not be done from the libupnp
      * thread context which reported the initial message.
      */
-    static UPnPDeviceDirectory *getTheDir(time_t search_window = 1);
+    static UPnPDeviceDirectory *getTheDir(time_t search_window = 3);
 
     /** Clean up before exit. Do call this.*/
     static void terminate();

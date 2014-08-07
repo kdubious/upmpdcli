@@ -19,7 +19,11 @@
 
 #include <string>
 
-#include "upnpp_p.hxx"
+#include <upnp/ixml.h>
+
+#include "libupnpp/soaphelp.hxx"
+#include "libupnpp/upnpp_p.hxx"
+#include "libupnpp/description.hxx"
 
 namespace UPnPClient {
 
@@ -32,6 +36,7 @@ public:
     Service(const UPnPDeviceDesc& device,
             const UPnPServiceDesc& service)
         : m_actionURL(caturl(device.URLBase, service.controlURL)),
+          m_eventURL(caturl(device.URLBase, service.eventSubURL)),
           m_serviceType(service.serviceType),
           m_deviceId(device.UDN),
           m_friendlyName(device.friendlyName),
@@ -50,8 +55,12 @@ public:
     /** Return my root device id */
     std::string getDeviceId() const {return m_deviceId;}
 
+    int runAction(const SoapEncodeInput& args, SoapDecodeOutput& data);
+
 protected:
+
     std::string m_actionURL;
+    std::string m_eventURL;
     std::string m_serviceType;
     std::string m_deviceId;
     std::string m_friendlyName;

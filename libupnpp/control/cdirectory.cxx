@@ -37,6 +37,8 @@ using namespace std::placeholders;
 #include "cdirectory.hxx"
 #include "cdircontent.hxx"
 #include "discovery.hxx"
+#include "soaphelp.hxx"
+#include "log.hxx"
 
 namespace UPnPClient {
 
@@ -98,84 +100,62 @@ bool ContentDirectoryService::getServerByName(const string& friendlyName,
 }
 
 
-class DirBResFree {
-public:
-    IXML_Document **rqpp, **rspp;
-    DirBResFree(IXML_Document** _rqpp, IXML_Document **_rspp)
-        :rqpp(_rqpp), rspp(_rspp)
-        {}
-    ~DirBResFree()
-        {
-            if (*rqpp)
-                ixmlDocument_free(*rqpp);
-            if (*rspp)
-                ixmlDocument_free(*rspp);
-        }
-};
+#if 0
+static int asyncReaddirCB(Upnp_EventType et, void *vev, void *cookie)
+{
+    LOGDEB("asyncReaddirCB: " << LibUPnP::evTypeAsString(et) << endl);
+    struct Upnp_Action_Complete *act = (struct Upnp_Action_Complete*)vev;
+
+    LOGDEB("asyncReaddirCB: errcode " << act->ErrCode << 
+           " cturl " <<  UpnpString_get_String(act->CtrlUrl) << 
+           " actionrequest " << endl << 
+           ixmlPrintDocument(act->ActionRequest) << endl <<
+           " actionresult " << ixmlPrintDocument(act->ActionResult) << endl);
+    return 0;
+}
+    int ret = 
+        UpnpSendActionAsync(hdl, m_actionURL.c_str(), m_serviceType.c_str(),
+        0 /*devUDN*/, request, asyncReaddirCB, 0);
+    sleep(10);
+    return -1;
+#endif
+
 
 int ContentDirectoryService::readDirSlice(const string& objectId, int offset,
                                           int count, UPnPDirContent& dirbuf,
                                           int *didreadp, int *totalp)
 {
-    LOGDEB("CDService::readDirSlice: objId ["<< objectId << "] offset " << 
+    LOGDEB("CDService::readDirSlice: objId [" << objectId << "] offset " << 
            offset << " count " << count << endl);
 
-    LibUPnP* lib = LibUPnP::getLibUPnP();
-    if (lib == 0) {
-        LOGINF("CDService::readDir: no lib" << endl);
-        return UPNP_E_OUTOF_MEMORY;
-    }
-    UpnpClient_Handle hdl = lib->getclh();
-
-    IXML_Document *request(0);
-    IXML_Document *response(0);
-    DirBResFree cleaner(&request, &response);
-
     // Create request
-    char ofbuf[100], cntbuf[100];
-    sprintf(ofbuf, "%d", offset);
-    sprintf(cntbuf, "%d", count);
-    int argcnt = 6;
     // Some devices require an empty SortCriteria, else bad params
-    request = UpnpMakeAction("Browse", m_serviceType.c_str(), argcnt,
-                             "ObjectID", objectId.c_str(),
-                             "BrowseFlag", "BrowseDirectChildren",
-                             "Filter", "*",
-                             "SortCriteria", "",
-                             "StartingIndex", ofbuf,
-                             "RequestedCount", cntbuf,
-                             NULL, NULL);
-    if (request == 0) {
-        LOGINF("CDService::readDir: UpnpMakeAction failed" << endl);
-        return  UPNP_E_OUTOF_MEMORY;
-    }
+    SoapData args(m_serviceType, "Browse");
+    args("ObjectID", objectId)
+        ("BrowseFlag", "BrowseDirectChildren")
+        ("Filter", "*")
+        ("SortCriteria", "")
+        ("StartingIndex", SoapEncodeInput::i2s(offset))
+        ("RequestedCount", SoapEncodeInput::i2s(count));
 
-    //cerr << "Action xml: [" << ixmlPrintDocument(request) << "]" << endl;
-
-    int ret = UpnpSendAction(hdl, m_actionURL.c_str(), m_serviceType.c_str(),
-                             0 /*devUDN*/, request, &response);
-
+    SoapArgs data;
+    int ret = runAction(args, data);
     if (ret != UPNP_E_SUCCESS) {
-        LOGINF("CDService::readDir: UpnpSendAction failed: " <<
-               UpnpGetErrorMessage(ret) << endl);
         return ret;
     }
-
-    int didread = -1;
-    string tbuf = ixmlwrap::getFirstElementValue(response, "NumberReturned");
-    if (!tbuf.empty())
-        didread = atoi(tbuf.c_str());
-
-    if (count == -1 || count == 0) {
-        LOGINF("CDService::readDir: got -1 or 0 entries" << endl);
+    int didread;
+    string tbuf;
+    if (!data.getInt("NumberReturned", &didread) ||
+        !data.getInt("TotalMatches", totalp) ||
+        !data.getString("Result", &tbuf)) {
+        LOGERR("CDService::readDir: missing elts in response" << endl);
         return UPNP_E_BAD_RESPONSE;
     }
 
-    tbuf = ixmlwrap::getFirstElementValue(response, "TotalMatches");
-    if (!tbuf.empty())
-        *totalp = atoi(tbuf.c_str());
-
-    tbuf = ixmlwrap::getFirstElementValue(response, "Result");
+    if (didread <= 0) {
+        LOGINF("CDService::readDir: got -1 or 0 entries" << endl);
+        return UPNP_E_BAD_RESPONSE;
+    }
 
 #if 0
     cerr << "CDService::readDirSlice: count " << count <<
@@ -186,9 +166,9 @@ int ContentDirectoryService::readDirSlice(const string& objectId, int offset,
 
     dirbuf.parse(tbuf);
     *didreadp = didread;
+
     return UPNP_E_SUCCESS;
 }
-
 
 int ContentDirectoryService::readDir(const string& objectId,
                                      UPnPDirContent& dirbuf)
@@ -219,46 +199,23 @@ int ContentDirectoryService::search(const string& objectId,
 {
     LOGDEB("CDService::search: url [" << m_actionURL << "] type [" << 
            m_serviceType << "] udn [" << m_deviceId << "] objid [" << 
-           objectId <<  "] search [" << ss << "]" << endl;
-
-    LibUPnP* lib = LibUPnP::getLibUPnP();
-    if (lib == 0) {
-        LOGINF("CDService::search: no lib" << endl);
-        return UPNP_E_OUTOF_MEMORY;
-    }
-    UpnpClient_Handle hdl = lib->getclh();
-
-    int ret = UPNP_E_SUCCESS;
-    IXML_Document *request(0);
-    IXML_Document *response(0);
+           objectId <<  "] search [" << ss << "]" << endl);
 
     int offset = 0;
     int total = 1000;// Updated on first read.
 
     while (offset < total) {
-        DirBResFree cleaner(&request, &response);
-        char ofbuf[100];
-        sprintf(ofbuf, "%d", offset);
         // Create request
-        int argcnt = 6;
-        request = UpnpMakeAction(
-            "Search", m_serviceType.c_str(), argcnt,
-            "ContainerID", objectId.c_str(),
-            "SearchCriteria", ss.c_str(),
-            "Filter", "*",
-            "SortCriteria", "",
-            "StartingIndex", ofbuf,
-            "RequestedCount", "0", // Setting a value here gets twonky into fits
-            NULL, NULL);
-        if (request == 0) {
-            LOGINF("CDService::search: UpnpMakeAction failed" << endl);
-            return  UPNP_E_OUTOF_MEMORY;
-        }
+        SoapData args(m_serviceType, "Search");
+        args("ContainerID", objectId)
+            ("SearchCriteria", ss)
+            ("Filter", "*")
+            ("SortCriteria", "")
+            ("StartingIndex", SoapEncodeInput::i2s(offset))
+            ("RequestedCount", "10"); 
 
-        // cerr << "Action xml: [" << ixmlPrintDocument(request) << "]" << endl;
-
-        ret = UpnpSendAction(hdl, m_actionURL.c_str(), m_serviceType.c_str(),
-                             0 /*devUDN*/, request, &response);
+        SoapArgs data;
+        int ret = runAction(args, data);
 
         if (ret != UPNP_E_SUCCESS) {
             LOGINF("CDService::search: UpnpSendAction failed: " <<
@@ -267,29 +224,18 @@ int ContentDirectoryService::search(const string& objectId,
         }
 
         int count = -1;
-        string tbuf =
-            ixmlwrap::getFirstElementValue(response, "NumberReturned");
-        if (!tbuf.empty())
-            count = atoi(tbuf.c_str());
-
-        if (count == -1 || count == 0) {
+        string tbuf;
+        if (!data.getInt("NumberReturned", &count) ||
+            !data.getInt("TotalMatches", &total) ||
+            !data.getString("Result", &tbuf)) {
+            LOGERR("CDService::search: missing elts in response" << endl);
+            return UPNP_E_BAD_RESPONSE;
+        }
+        if (count <=  0) {
             LOGINF("CDService::search: got -1 or 0 entries" << endl);
-            return count == -1 ? UPNP_E_BAD_RESPONSE : UPNP_E_SUCCESS;
+            return count < 0 ? UPNP_E_BAD_RESPONSE : UPNP_E_SUCCESS;
         }
         offset += count;
-
-        tbuf = ixmlwrap::getFirstElementValue(response, "TotalMatches");
-        if (!tbuf.empty())
-            total = atoi(tbuf.c_str());
-
-        tbuf = ixmlwrap::getFirstElementValue(response, "Result");
-
-#if 0
-        cerr << "CDService::search: count " << count <<
-            " offset " << offset <<
-            " total " << total << endl;
-        cerr << " result " << tbuf << endl;
-#endif
 
         dirbuf.parse(tbuf);
     }
@@ -300,41 +246,21 @@ int ContentDirectoryService::search(const string& objectId,
 int ContentDirectoryService::getSearchCapabilities(set<string>& result)
 {
     LOGDEB("CDService::getSearchCapabilities:" << endl);
-    LibUPnP* lib = LibUPnP::getLibUPnP();
-    if (lib == 0) {
-        LOGINF("CDService::getSearchCapabilities: no lib" << endl);
-        return UPNP_E_OUTOF_MEMORY;
-    }
-    UpnpClient_Handle hdl = lib->getclh();
 
-    int ret = UPNP_E_SUCCESS;
-    IXML_Document *request(0);
-    IXML_Document *response(0);
-
-    request = UpnpMakeAction("GetSearchCapabilities", m_serviceType.c_str(),
-                             0,
-                             NULL, NULL);
-
-    if (request == 0) {
-        LOGINF("CDService::getSearchCapa: UpnpMakeAction failed" << endl);
-        return  UPNP_E_OUTOF_MEMORY;
-    }
-
-    //cerr << "Action xml: [" << ixmlPrintDocument(request) << "]" << endl;
-
-    ret = UpnpSendAction(hdl, m_actionURL.c_str(), m_serviceType.c_str(),
-                         0 /*devUDN*/, request, &response);
-
+    SoapData args(m_serviceType, "GetSearchCapabilities");
+    SoapArgs data;
+    int ret = runAction(args, data);
     if (ret != UPNP_E_SUCCESS) {
         LOGINF("CDService::getSearchCapa: UpnpSendAction failed: " << 
                UpnpGetErrorMessage(ret) << endl);
         return ret;
     }
-    //cerr << "getSearchCapa: response xml: [" << ixmlPrintDocument(response)
-    // << "]" << endl;
-
-    string tbuf = ixmlwrap::getFirstElementValue(response, "SearchCaps");
-    // cerr << "getSearchCapa: capa: [" << tbuf << "]" << endl;
+    string tbuf;
+    if (!data.getString("SearchCaps", &tbuf)) {
+        LOGERR("CDService::getSearchCaps: missing Result in response" << endl);
+        cerr << tbuf << endl;
+        return UPNP_E_BAD_RESPONSE;
+    }
 
     result.clear();
     if (!tbuf.compare("*")) {
@@ -355,44 +281,26 @@ int ContentDirectoryService::getMetadata(const string& objectId,
            m_serviceType << "] udn [" << m_deviceId << "] objId [" <<
            objectId << "]" << endl);
 
-    LibUPnP* lib = LibUPnP::getLibUPnP();
-    if (lib == 0) {
-        LOGINF("CDService::getMetadata: no lib" << endl);
-        return UPNP_E_OUTOF_MEMORY;
-    }
-    UpnpClient_Handle hdl = lib->getclh();
-
-    int ret = UPNP_E_SUCCESS;
-    IXML_Document *request(0);
-    IXML_Document *response(0);
-
-    DirBResFree cleaner(&request, &response);
-    // Create request
-    int argcnt = 6;
-    request = UpnpMakeAction("Browse", m_serviceType.c_str(), argcnt,
-                             "ObjectID", objectId.c_str(),
-                             "BrowseFlag", "BrowseMetadata",
-                             "Filter", "*",
-                             "SortCriteria", "",
-                             "StartingIndex", "0",
-                             "RequestedCount", "1",
-                             NULL, NULL);
-    if (request == 0) {
-        LOGINF("CDService::getmetadata: UpnpMakeAction failed" << endl);
-        return  UPNP_E_OUTOF_MEMORY;
-    }
-
-    //cerr << "Action xml: [" << ixmlPrintDocument(request) << "]" << endl;
-
-    ret = UpnpSendAction(hdl, m_actionURL.c_str(), m_serviceType.c_str(),
-                         0 /*devUDN*/, request, &response);
-
+    SoapData args(m_serviceType, "Browse");
+    SoapArgs data;
+    args("ObjectID", objectId)
+        ("BrowseFlag", "BrowseMetadata")
+        ("Filter", "*")
+        ("SortCriteria", "")
+        ("StartingIndex", "0")
+        ("RequestedCount", "1");
+    int ret = runAction(args, data);
     if (ret != UPNP_E_SUCCESS) {
         LOGINF("CDService::getmetadata: UpnpSendAction failed: " << 
                UpnpGetErrorMessage(ret) << endl);
         return ret;
     }
-    string tbuf = ixmlwrap::getFirstElementValue(response, "Result");
+    string tbuf;
+    if (!data.getString("Result", &tbuf)) {
+        LOGERR("CDService::getmetadata: missing Result in response" << endl);
+        return UPNP_E_BAD_RESPONSE;
+    }
+
     if (dirbuf.parse(tbuf))
         return UPNP_E_SUCCESS;
     else

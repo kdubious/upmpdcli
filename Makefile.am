@@ -6,11 +6,19 @@ AM_CXXFLAGS = -std=c++0x
 
 lib_LTLIBRARIES = libupnpp.la
 
+#    libupnpp/control/service.cxx 
+
 libupnpp_la_SOURCES = \
-    libupnpp/cdircontent.cxx \
-    libupnpp/cdircontent.hxx \
-    libupnpp/cdirectory.cxx \
-    libupnpp/cdirectory.hxx \
+    libupnpp/control/cdircontent.cxx \
+    libupnpp/control/cdircontent.hxx \
+    libupnpp/control/cdirectory.cxx \
+    libupnpp/control/cdirectory.hxx \
+    libupnpp/control/mediarenderer.cxx \
+    libupnpp/control/mediarenderer.hxx \
+    libupnpp/control/renderingcontrol.cxx \
+    libupnpp/control/renderingcontrol.hxx \
+    libupnpp/control/service.cxx \
+    libupnpp/control/service.hxx \
     libupnpp/description.cxx \
     libupnpp/description.hxx \
     libupnpp/device.cxx \
@@ -39,10 +47,10 @@ libupnpp_la_SOURCES = \
 libupnpp_la_LDFLAGS = -release $(VERSION)
 libupnpp_la_LIBADD = $(LIBUPNPP_LIBS)
 
-bin_PROGRAMS = upmpdcli #upexplorer 
+bin_PROGRAMS = upmpdcli upexplorer 
 
-#upexplorer_SOURCES = upexplo/upexplo.cxx
-#upexplorer_LDADD = libupnpp.la
+upexplorer_SOURCES = upexplo/upexplo.cxx
+upexplorer_LDADD = libupnpp.la
 
 upmpdcli_SOURCES = \
      upmpd/conftree.cxx \

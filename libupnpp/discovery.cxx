@@ -313,7 +313,7 @@ void UPnPDeviceDirectory::terminate()
 time_t UPnPDeviceDirectory::getRemainingDelay()
 {
     time_t now = time(0);
-    if (now - m_lastSearch >= m_searchTimeout+1)
+    if (now - m_lastSearch >= m_searchTimeout)
         return 0;
     return  m_searchTimeout - (now - m_lastSearch);
 }

@@ -14,23 +14,27 @@
  *       Free Software Foundation, Inc.,
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
+#ifndef _RENDERINGCONTROL_HXX_INCLUDED_
+#define _RENDERINGCONTROL_HXX_INCLUDED_
 
-#include "service.h"
-#include "cdirectory.h"
-#include "log.h"
+#include <string>
+
+#include "service.hxx"
 
 namespace UPnPClient {
 
-Service *service_factory(const string& servicetype,
-                         const UPnPDeviceDesc& device,
-                         const UPnPServiceDesc& service)
-{
-    if (ContentDirectoryService::isCDService(servicetype)) {
-        return new ContentDirectoryService(device, service);
-    } else {
-        LOGERR("service_factory: unknown service type " << servicetype << endl);
-        return 0;
-    }
-}
+/**
+ * RenderingControl Service client class.
+ *
+ */
+class RenderingControl : public Service {
+public:
+    /** Test service type from discovery message */
+    static bool isRDCService(const std::string& st);
+protected:
+    static const string SType;
+};
 
-}
+} // namespace UPnPClient
+
+#endif /* _RENDERINGCONTROL_HXX_INCLUDED_ */

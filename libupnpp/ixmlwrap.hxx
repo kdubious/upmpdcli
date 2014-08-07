@@ -18,18 +18,13 @@
 #define _IXMLWRAP_H_INCLUDED_
 
 #include <string>
+
 namespace ixmlwrap {
 
-	/** Retrieve the text content for the first element of given name.
-	 * Returns an empty string if the element does not contain a text node */
-	std::string getFirstElementValue(IXML_Document *doc, const string& name);
+    /** Retrieve the text content for the first element of given name.
+     * Returns an empty string if the element does not contain a text node */
+    std::string getFirstElementValue(IXML_Document *doc, const string& name);
 
-};
+}
 
 #endif /* _IXMLWRAP_H_INCLUDED_ */
-/* Local Variables: */
-/* mode: c++ */
-/* c-basic-offset: 4 */
-/* tab-width: 4 */
-/* indent-tabs-mode: t */
-/* End: */

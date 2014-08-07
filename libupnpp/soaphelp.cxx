@@ -33,7 +33,7 @@ using namespace std;
    action name passed in the libupnp action callback.
 */
 bool decodeSoapBody(const char *callnm, IXML_Document *actReq, 
-                    SoapArgs *res)
+                    SoapDecodeOutput *res)
 {
     bool ret = false;
     IXML_NodeList* nl = 0;
@@ -92,7 +92,7 @@ out:
     return ret;
 }
 
-bool SoapArgs::getBool(const char *nm, bool *value) const
+bool SoapDecodeOutput::getBool(const char *nm, bool *value) const
 {
     map<string, string>::const_iterator it = args.find(nm);
     if (it == args.end() || it->second.empty()) {
@@ -112,7 +112,7 @@ bool SoapArgs::getBool(const char *nm, bool *value) const
     return true;
 }
 
-bool SoapArgs::getInt(const char *nm, int *value) const
+bool SoapDecodeOutput::getInt(const char *nm, int *value) const
 {
     map<string, string>::const_iterator it = args.find(nm);
     if (it == args.end() || it->second.empty()) {
@@ -122,7 +122,7 @@ bool SoapArgs::getInt(const char *nm, int *value) const
     return true;
 }
 
-bool SoapArgs::getString(const char *nm, string *value) const
+bool SoapDecodeOutput::getString(const char *nm, string *value) const
 {
     map<string, string>::const_iterator it = args.find(nm);
     if (it == args.end() || it->second.empty()) {
@@ -132,7 +132,7 @@ bool SoapArgs::getString(const char *nm, string *value) const
     return true;
 }
 
-string SoapArgs::xmlQuote(const string& in)
+string SoapDecodeOutput::xmlQuote(const string& in)
 {
     string out;
     for (unsigned int i = 0; i < in.size(); i++) {
@@ -149,21 +149,30 @@ string SoapArgs::xmlQuote(const string& in)
 }
 
 // Yes inefficient. whatever...
-string SoapArgs::i2s(int val)
+string SoapDecodeOutput::i2s(int val)
+{
+    char cbuf[30];
+    sprintf(cbuf, "%d", val);
+    return string(cbuf);
+}
+string SoapEncodeInput::i2s(int val)
 {
     char cbuf[30];
     sprintf(cbuf, "%d", val);
     return string(cbuf);
 }
 
-IXML_Document *buildSoapBody(SoapData& data)
+IXML_Document *buildSoapBody(const SoapEncodeInput& data, bool isResponse)
 {
     IXML_Document *doc = ixmlDocument_createDocument();
     if (doc == 0) {
         cerr << "buildSoapResponse: out of memory" << endl;
         return 0;
     }
-    string topname = string("u:") + data.name + "Response";
+    string topname = string("u:") + data.name;
+    if (isResponse)
+        topname += "Response";
+
     IXML_Element *top =  
         ixmlDocument_createElementNS(doc, data.serviceType.c_str(), 
                                      topname.c_str());
