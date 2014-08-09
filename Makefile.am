@@ -11,6 +11,8 @@ lib_LTLIBRARIES = libupnpp.la
 libupnpp_la_SOURCES = \
     libupnpp/control/avlastchg.cxx \
     libupnpp/control/avlastchg.hxx \
+    libupnpp/control/avtransport.cxx \
+    libupnpp/control/avtransport.hxx \
     libupnpp/control/cdircontent.cxx \
     libupnpp/control/cdircontent.hxx \
     libupnpp/control/cdirectory.cxx \
