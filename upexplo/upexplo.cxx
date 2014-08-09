@@ -96,6 +96,8 @@ void getsetVolume(const string& friendlyName, int volume = -1)
     if (volume == -1) {
         volume = ctl.getVolume();
         cout << "Current volume: " << volume << endl;
+#warning remove
+    sleep(200);
         return;
     } else {
         if ((volume = ctl.setVolume(volume)) != 0) {

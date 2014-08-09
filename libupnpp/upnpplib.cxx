@@ -404,3 +404,17 @@ template <class T> bool csvToStrings(const string &s, T &tokens)
 //template bool csvToStrings<list<string> >(const string &, list<string> &);
 template bool csvToStrings<vector<string> >(const string &, vector<string> &);
 template bool csvToStrings<set<string> >(const string &, set<string> &);
+
+
+bool stringToBool(const string& s, bool *value)
+{
+    if (s[0] == 'F' ||s[0] == 'f' ||s[0] == 'N' || s[0] == 'n' ||s[0] == '0') {
+        *value = false;
+    } else if (s[0] == 'T'|| s[0] == 't' ||s[0] == 'Y' ||s[0] == 'y' || 
+               s[0] == '1') {
+        *value = true;
+    } else {
+        return false;
+    }
+    return true;
+}

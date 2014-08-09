@@ -31,105 +31,98 @@ using namespace std;
 
 class UPnPDeviceParser : public expatmm::inputRefXMLParser {
 public:
-	UPnPDeviceParser(const string& input, UPnPDeviceDesc& device)
-		: expatmm::inputRefXMLParser(input), m_device(device)
-		{}
+    UPnPDeviceParser(const string& input, UPnPDeviceDesc& device)
+        : expatmm::inputRefXMLParser(input), m_device(device)
+        {}
 
 protected:
-	virtual void StartElement(const XML_Char *name, const XML_Char **)
+    virtual void StartElement(const XML_Char *name, const XML_Char **)
 	{
-		m_tabs.push_back('\t');
-		m_path.push_back(name);
+            m_tabs.push_back('\t');
+            m_path.push_back(name);
 	}
-	virtual void EndElement(const XML_Char *name)
+    virtual void EndElement(const XML_Char *name)
 	{
-		if (!strcmp(name, "service")) {
-			m_device.services.push_back(m_tservice);
-			m_tservice.clear();
-		}
-		if (m_tabs.size())
-			m_tabs.erase(m_tabs.size()-1);
-		m_path.pop_back();
+            if (!strcmp(name, "service")) {
+                m_device.services.push_back(m_tservice);
+                m_tservice.clear();
+            }
+            if (m_tabs.size())
+                m_tabs.erase(m_tabs.size()-1);
+            m_path.pop_back();
 	}
-	virtual void CharacterData(const XML_Char *s, int len)
+    virtual void CharacterData(const XML_Char *s, int len)
 	{
-		if (s == 0 || *s == 0)
-			return;
-		string str(s, len);
-		trimstring(str);
-		switch (m_path.back()[0]) {
-		case 'c':
-			if (!m_path.back().compare("controlURL"))
-				m_tservice.controlURL += str;
-			break;
-		case 'd':
-			if (!m_path.back().compare("deviceType"))
-				m_device.deviceType += str;
-			break;
-		case 'e':
-			if (!m_path.back().compare("eventSubURL"))
-				m_tservice.eventSubURL += str;
-			break;
-		case 'f':
-			if (!m_path.back().compare("friendlyName"))
-				m_device.friendlyName += str;
-			break;
-		case 'm':
-			if (!m_path.back().compare("manufacturer"))
-				m_device.manufacturer += str;
-			else if (!m_path.back().compare("modelName"))
-				m_device.modelName += str;
-			break;
-		case 's':
-			if (!m_path.back().compare("serviceType"))
-				m_tservice.serviceType = str;
-			else if (!m_path.back().compare("serviceId"))
-				m_tservice.serviceId += str;
-		case 'S':
-			if (!m_path.back().compare("SCPDURL"))
-				m_tservice.SCPDURL = str;
-			break;
-		case 'U':
-			if (!m_path.back().compare("UDN"))
-				m_device.UDN = str;
-			else if (!m_path.back().compare("URLBase"))
-				m_device.URLBase += str;
-			break;
-		}
+            if (s == 0 || *s == 0)
+                return;
+            string str(s, len);
+            trimstring(str);
+            switch (m_path.back()[0]) {
+            case 'c':
+                if (!m_path.back().compare("controlURL"))
+                    m_tservice.controlURL += str;
+                break;
+            case 'd':
+                if (!m_path.back().compare("deviceType"))
+                    m_device.deviceType += str;
+                break;
+            case 'e':
+                if (!m_path.back().compare("eventSubURL"))
+                    m_tservice.eventSubURL += str;
+                break;
+            case 'f':
+                if (!m_path.back().compare("friendlyName"))
+                    m_device.friendlyName += str;
+                break;
+            case 'm':
+                if (!m_path.back().compare("manufacturer"))
+                    m_device.manufacturer += str;
+                else if (!m_path.back().compare("modelName"))
+                    m_device.modelName += str;
+                break;
+            case 's':
+                if (!m_path.back().compare("serviceType"))
+                    m_tservice.serviceType = str;
+                else if (!m_path.back().compare("serviceId"))
+                    m_tservice.serviceId += str;
+            case 'S':
+                if (!m_path.back().compare("SCPDURL"))
+                    m_tservice.SCPDURL = str;
+                break;
+            case 'U':
+                if (!m_path.back().compare("UDN"))
+                    m_device.UDN = str;
+                else if (!m_path.back().compare("URLBase"))
+                    m_device.URLBase += str;
+                break;
+            }
 	}
 
 private:
-	UPnPDeviceDesc& m_device;
-	string m_tabs;
-	std::vector<std::string> m_path;
-	UPnPServiceDesc m_tservice;
+    UPnPDeviceDesc& m_device;
+    string m_tabs;
+    std::vector<std::string> m_path;
+    UPnPServiceDesc m_tservice;
 };
 
 UPnPDeviceDesc::UPnPDeviceDesc(const string& url, const string& description)
-	: ok(false)
+    : ok(false)
 {
-	//cerr << "UPnPDeviceDesc::UPnPDeviceDesc: url: " << url << endl;
-	//cerr << " description " << endl << description << endl;
+    //cerr << "UPnPDeviceDesc::UPnPDeviceDesc: url: " << url << endl;
+    //cerr << " description " << endl << description << endl;
 
-	UPnPDeviceParser mparser(description, *this);
-	if (!mparser.Parse())
-		return;
-	if (URLBase.empty()) {
-		// The standard says that if the URLBase value is empty, we
-		// should use the url the description was retrieved
-		// from. However this is sometimes something like
-		// http://host/desc.xml, sometimes something like http://host/
-		// (rare, but e.g. sent by the server on a dlink nas).
-		URLBase = baseurl(url);
-	}
-	ok = true;
-	//cerr << "URLBase: [" << URLBase << "]" << endl;
-	//cerr << dump() << endl;
+    UPnPDeviceParser mparser(description, *this);
+    if (!mparser.Parse())
+        return;
+    if (URLBase.empty()) {
+        // The standard says that if the URLBase value is empty, we
+        // should use the url the description was retrieved
+        // from. However this is sometimes something like
+        // http://host/desc.xml, sometimes something like http://host/
+        // (rare, but e.g. sent by the server on a dlink nas).
+        URLBase = baseurl(url);
+    }
+    ok = true;
+    //cerr << "URLBase: [" << URLBase << "]" << endl;
+    //cerr << dump() << endl;
 }
-
-/* Local Variables: */
-/* mode: c++ */
-/* c-basic-offset: 4 */
-/* tab-width: 4 */
-/* indent-tabs-mode: t */
-/* End: */

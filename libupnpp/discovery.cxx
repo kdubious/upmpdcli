@@ -32,7 +32,6 @@ using namespace std::placeholders;
 #include <upnp/upnptools.h>
 
 #include "workqueue.hxx"
-#include "expatmm.hxx"
 #include "upnpplib.hxx"
 #include "description.hxx"
 #include "discovery.hxx"

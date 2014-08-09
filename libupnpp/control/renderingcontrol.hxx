@@ -34,9 +34,11 @@ public:
      *
      */
     RenderingControl(const UPnPDeviceDesc& device,
-                            const UPnPServiceDesc& service)
-        : Service(device, service)
-        {}
+                     const UPnPServiceDesc& service)
+        : Service(device, service), m_volume(0), m_mute(false)
+        {
+            registerCallback();
+        }
 
     RenderingControl() {}
 
@@ -46,9 +48,18 @@ public:
     /** @ret 0 for success, upnp error else */
     int setVolume(int volume, const string& channel = "Master");
     int getVolume(const string& channel = "Master");
+    int setMute(bool mute, const string& channel = "Master");
+    bool getMute(const string& channel = "Master");
 
 protected:
     static const string SType;
+
+private:
+    void evtCallback(const std::unordered_map<std::string, std::string>&);
+    void registerCallback();
+
+    int  m_volume;
+    bool m_mute;
 };
 
 } // namespace UPnPClient

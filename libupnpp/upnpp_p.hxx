@@ -33,4 +33,8 @@ extern std::string path_getfather(const std::string &s);
 extern std::string path_getsimple(const std::string &s);
 template <class T> bool csvToStrings(const std::string& s, T &tokens);
 
+// @return false if s does not look like a bool at all (does not begin
+// with [FfNnYyTt01]
+extern bool stringToBool(const std::string& s, bool *v);
+
 #endif /* _UPNPP_H_X_INCLUDED_ */

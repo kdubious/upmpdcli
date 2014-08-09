@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <unordered_map>
 
 #include <upnp/ixml.h>
 
@@ -33,8 +34,6 @@ public:
     bool getBool(const char *nm, bool *value) const;
     bool getInt(const char *nm, int *value) const;
     bool getString(const char *nm, std::string *value) const;
-    static std::string xmlQuote(const std::string& in);
-    static std::string i2s(int val);
 };
 
 /** Decode the XML in a Soap call and return the arguments in a SoapArgs 
@@ -84,5 +83,26 @@ typedef SoapDecodeOutput SoapArgs;
 /** Build a SOAP response data XML document from a list of values */
 extern IXML_Document *buildSoapBody(const SoapEncodeInput& data, 
                                     bool isResp = true);
+
+namespace SoapHelp {
+    std::string xmlQuote(const std::string& in);
+    std::string xmlUnquote(const std::string& in);
+    std::string i2s(int val);
+}
+
+/** Decode UPnP Event data. This is not soap, but it's quite close to
+ *  the other code in here so whatever...
+ *
+ * The variable values are contained in a propertyset XML document:
+ *     <?xml version="1.0"?>
+ *     <e:propertyset xmlns:e="urn:schemas-upnp-org:event-1-0">
+ *       <e:property>
+ *         <variableName>new value</variableName>
+ *       </e:property>
+ *       <!-- Other variable names and values (if any) go here. -->
+ *     </e:propertyset>
+ */
+extern bool decodePropertySet(IXML_Document *doc, 
+                       std::unordered_map<std::string,std::string>& out);
 
 #endif /* _SOAPHELP_H_X_INCLUDED_ */

@@ -48,7 +48,7 @@ static bool vectorstoargslists(const vector<string>& names,
     cvalues.reserve(values.size());
     for (unsigned int i = 0; i < values.size(); i++) {
         cnames.push_back(names[i].c_str());
-        qvalues.push_back(SoapArgs::xmlQuote(values[i]));
+        qvalues.push_back(SoapHelp::xmlQuote(values[i]));
         cvalues.push_back(qvalues[i].c_str());
         //LOGDEB("Edata: " << cnames[i] << " -> " << cvalues[i] << endl);
     }

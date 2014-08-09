@@ -27,18 +27,18 @@ using namespace std;
 #include <functional>
 using namespace std::placeholders;
 
-#include "upnpp_p.hxx"
 
 #include <upnp/upnp.h>
 #include <upnp/upnptools.h>
 
-#include "upnpplib.hxx"
-#include "ixmlwrap.hxx"
-#include "cdirectory.hxx"
-#include "cdircontent.hxx"
-#include "discovery.hxx"
-#include "soaphelp.hxx"
-#include "log.hxx"
+#include "libupnpp/upnpp_p.hxx"
+#include "libupnpp/upnpplib.hxx"
+#include "libupnpp/ixmlwrap.hxx"
+#include "libupnpp/control/cdirectory.hxx"
+#include "libupnpp/control/cdircontent.hxx"
+#include "libupnpp/discovery.hxx"
+#include "libupnpp/soaphelp.hxx"
+#include "libupnpp/log.hxx"
 
 namespace UPnPClient {
 
@@ -135,8 +135,8 @@ int ContentDirectoryService::readDirSlice(const string& objectId, int offset,
         ("BrowseFlag", "BrowseDirectChildren")
         ("Filter", "*")
         ("SortCriteria", "")
-        ("StartingIndex", SoapEncodeInput::i2s(offset))
-        ("RequestedCount", SoapEncodeInput::i2s(count));
+        ("StartingIndex", SoapHelp::i2s(offset))
+        ("RequestedCount", SoapHelp::i2s(count));
 
     SoapArgs data;
     int ret = runAction(args, data);
@@ -211,7 +211,7 @@ int ContentDirectoryService::search(const string& objectId,
             ("SearchCriteria", ss)
             ("Filter", "*")
             ("SortCriteria", "")
-            ("StartingIndex", SoapEncodeInput::i2s(offset))
+            ("StartingIndex", SoapHelp::i2s(offset))
             ("RequestedCount", "10"); 
 
         SoapArgs data;

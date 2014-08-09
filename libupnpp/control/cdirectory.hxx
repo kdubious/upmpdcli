@@ -20,9 +20,9 @@
 #include <string>
 #include <set>
 
-#include "description.hxx"
-#include "service.hxx"
-#include "cdircontent.hxx"
+#include "libupnpp/description.hxx"
+#include "libupnpp/control/service.hxx"
+#include "libupnpp/control/cdircontent.hxx"
 
 namespace UPnPClient {
 

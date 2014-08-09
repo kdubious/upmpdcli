@@ -23,10 +23,10 @@
 
 using namespace std;
 
-#include "expatmm.hxx"
-#include "upnpp_p.hxx"
-#include "cdircontent.hxx"
-#include "log.hxx"
+#include "libupnpp/expatmm.hxx"
+#include "libupnpp/upnpp_p.hxx"
+#include "libupnpp/control/cdircontent.hxx"
+#include "libupnpp/log.hxx"
 
 // An XML parser which builds directory contents from DIDL-lite input.
 class UPnPDirParser : public expatmm::inputRefXMLParser {

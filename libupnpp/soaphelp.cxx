@@ -19,7 +19,9 @@
 #include <iostream>
 using namespace std;
 
-#include "soaphelp.hxx"
+#include "libupnpp/log.hxx"
+#include "libupnpp/upnpp_p.hxx"
+#include "libupnpp/soaphelp.hxx"
 
 
 /* Example Soap XML doc passed by libupnp is like: 
@@ -98,18 +100,7 @@ bool SoapDecodeOutput::getBool(const char *nm, bool *value) const
     if (it == args.end() || it->second.empty()) {
         return false;
     }
-    if (it->second[0] == 'F' || it->second[0] == 'f' || 
-        it->second[0] == 'N' || it->second[0] == 'n' || 
-        it->second[0] == '0') {
-        *value = false;
-    } else if (it->second[0] == 'T' || it->second[0] == 't' || 
-               it->second[0] == 'Y' || it->second[0] == 'y' || 
-               it->second[0] == '1') {
-        *value = true;
-    } else {
-        return false;
-    }
-    return true;
+    return stringToBool(it->second, value);
 }
 
 bool SoapDecodeOutput::getInt(const char *nm, int *value) const
@@ -132,7 +123,8 @@ bool SoapDecodeOutput::getString(const char *nm, string *value) const
     return true;
 }
 
-string SoapDecodeOutput::xmlQuote(const string& in)
+namespace SoapHelp {
+string xmlQuote(const string& in)
 {
     string out;
     for (unsigned int i = 0; i < in.size(); i++) {
@@ -148,18 +140,51 @@ string SoapDecodeOutput::xmlQuote(const string& in)
     return out;
 }
 
+string xmlUnquote(const string& in)
+{
+    string out;
+    for (unsigned int i = 0; i < in.size(); i++) {
+        if (in[i] == '&') {
+            unsigned int j;
+            for (j = i; j < in.size(); j++) {
+                if (in[j] == ';')
+                    break;
+            }
+            if (in[j] != ';') {
+                out += in.substr(i);
+                return out;
+            }
+            string entname = in.substr(i+1, j-i-1);
+            cout << "entname [" << entname << "]" << endl;
+            if (!entname.compare("quot")) {
+                out += '"';
+            } else if (!entname.compare("amp")) {
+                out += '&';
+            } else if (!entname.compare("lt")) {
+                out += '<';
+            } else if (!entname.compare("gt")) {
+                out += '>';
+            } else if (!entname.compare("apos")) {
+                out += '\'';
+            } else {
+                out += in.substr(i, j-i+1);
+            }
+            i = j;
+        } else {
+            out += in[i];
+        }
+    }
+    return out;
+}
+
 // Yes inefficient. whatever...
-string SoapDecodeOutput::i2s(int val)
+string i2s(int val)
 {
     char cbuf[30];
     sprintf(cbuf, "%d", val);
     return string(cbuf);
 }
-string SoapEncodeInput::i2s(int val)
-{
-    char cbuf[30];
-    sprintf(cbuf, "%d", val);
-    return string(cbuf);
+
 }
 
 IXML_Document *buildSoapBody(const SoapEncodeInput& data, bool isResponse)
@@ -192,3 +217,76 @@ IXML_Document *buildSoapBody(const SoapEncodeInput& data, bool isResponse)
     return doc;
 }
 
+// Decoding UPnP Event data. The variable values are contained in a
+// propertyset XML document:
+//     <?xml version="1.0"?>
+//     <e:propertyset xmlns:e="urn:schemas-upnp-org:event-1-0">
+//       <e:property>
+//         <variableName>new value</variableName>
+//       </e:property>
+//       <!-- Other variable names and values (if any) go here. -->
+//     </e:propertyset>
+
+bool decodePropertySet(IXML_Document *doc, 
+                       unordered_map<string,string>& out)
+{
+    bool ret = false;
+    IXML_Node* topNode = ixmlNode_getFirstChild((IXML_Node *)doc);
+    if (topNode == 0) {
+        LOGERR("decodePropertySet: (no topNode) ??" << endl);
+        return false;
+    }
+    //LOGDEB("decodePropertySet: topnode name: " << 
+    //       ixmlNode_getNodeName(topNode) << endl);
+
+    IXML_NodeList* nl = ixmlNode_getChildNodes(topNode);
+    if (nl == 0) {
+        LOGDEB("decodePropertySet: empty list" << endl);
+        return true;
+    }
+    for (unsigned long i = 0; i <  ixmlNodeList_length(nl); i++) {
+        IXML_Node *cld = ixmlNodeList_item(nl, i);
+        if (cld == 0) {
+            LOGDEB("decodePropertySet: got null node  from nlist at index " <<
+                   i << " ??" << endl);
+            // Seems to happen with empty arg list?? This looks like a bug, 
+            // should we not get an empty node instead?
+            if (i == 0) {
+                ret = true;
+            }
+            goto out;
+        }
+        const char *name = ixmlNode_getNodeName(cld);
+        //LOGDEB("decodePropertySet: got node name:     " << 
+        //   ixmlNode_getNodeName(cld) << endl);
+        if (cld == 0) {
+            DOMString pnode = ixmlPrintNode(cld);
+            //LOGDEB("decodePropertySet: got null name ??:" << pnode << endl);
+            ixmlFreeDOMString(pnode);
+            goto out;
+        }
+        IXML_Node *subnode = ixmlNode_getFirstChild(cld);
+        name = ixmlNode_getNodeName(subnode);
+        //LOGDEB("decodePropertySet: got subnode name:         " << 
+        //   name << endl);
+        
+        IXML_Node *txtnode = ixmlNode_getFirstChild(subnode);
+        //LOGDEB("decodePropertySet: got txtnode name:             " << 
+        //   ixmlNode_getNodeName(txtnode) << endl);
+        
+        const char *value = "";
+        if (txtnode != 0) {
+            value = ixmlNode_getNodeValue(txtnode);
+        }
+        // Can we get an empty value here ?
+        if (value == 0)
+            value = "";
+        out[name] = SoapHelp::xmlUnquote(value);
+    }
+
+    ret = true;
+out:
+    if (nl)
+        ixmlNodeList_free(nl);
+    return ret;
+}

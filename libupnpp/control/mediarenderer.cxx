@@ -45,12 +45,12 @@ static bool MDAccum(unordered_map<string, UPnPDeviceDesc>* out,
                     const UPnPDeviceDesc& device, 
                     const UPnPServiceDesc& service)
 {
-    LOGDEB("MDAccum: friendlyname: " << friendlyName << 
-           " dev friendlyName " << device.friendlyName << endl);
+    //LOGDEB("MDAccum: friendlyname: " << friendlyName << 
+    //    " dev friendlyName " << device.friendlyName << endl);
     if (RenderingControl::isRDCService(service.serviceType) &&
         (friendlyName.empty() ? true : 
          !friendlyName.compare(device.friendlyName))) {
-        LOGDEB("MDAccum setting " << device.UDN << endl);
+        //LOGDEB("MDAccum setting " << device.UDN << endl);
         (*out)[device.UDN] = device;
     }
     return true;

@@ -18,14 +18,20 @@
 #define _SERVICE_H_X_INCLUDED_
 
 #include <string>
+#include <functional>
+#include <unordered_map>
 
-#include <upnp/ixml.h>
+#include <upnp/upnp.h>
 
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/upnpp_p.hxx"
 #include "libupnpp/description.hxx"
 
 namespace UPnPClient {
+
+typedef 
+std::function<void (const std::unordered_map<std::string, std::string>&)> 
+evtCBFunc;
 
 class Service {
 public:
@@ -42,7 +48,10 @@ public:
           m_friendlyName(device.friendlyName),
           m_manufacturer(device.manufacturer),
           m_modelName(device.modelName)
-    { }
+    { 
+        initEvents();
+        subscribe();
+    }
 
     /** An empty one */
     Service() {}
@@ -55,9 +64,15 @@ public:
     /** Return my root device id */
     std::string getDeviceId() const {return m_deviceId;}
 
-    int runAction(const SoapEncodeInput& args, SoapDecodeOutput& data);
+    virtual int runAction(const SoapEncodeInput& args, SoapDecodeOutput& data);
 
 protected:
+
+    /** Registered callbacks for our derived classes */
+    static std::unordered_map<std::string, evtCBFunc> o_calls;
+
+    /** Used by derived class to register its callback method */
+    void registerCallback(evtCBFunc c);
 
     std::string m_actionURL;
     std::string m_eventURL;
@@ -66,6 +81,17 @@ protected:
     std::string m_friendlyName;
     std::string m_manufacturer;
     std::string m_modelName;
+
+private:
+    /** Only actually does something on the first call, to register our
+        library callback */
+    static bool initEvents();
+    /** The event callback given to libupnp */
+    static int srvCB(Upnp_EventType et, void* vevp, void*);
+    /* Tell the UPnP device that we want to receive its events */
+    virtual bool subscribe();
+
+    Upnp_SID    m_SID; /* Subscription Id */
 };
 
 extern Service *service_factory(const std::string& servicetype,
