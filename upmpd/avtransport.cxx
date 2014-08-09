@@ -257,7 +257,7 @@ bool UpMpdAVTransport::getEventData(bool all, std::vector<std::string>& names,
         chgdata += "<";
         chgdata += it->first;
         chgdata += " val=\"";
-        chgdata += SoapArgs::xmlQuote(it->second);
+        chgdata += SoapHelp::xmlQuote(it->second);
         chgdata += "\"/>\n";
     }
     chgdata += "</InstanceID>\n</Event>\n";
@@ -410,7 +410,7 @@ int UpMpdAVTransport::getPositionInfo(const SoapArgs& sc, SoapData& data)
 
     const string& uri = mpds.currentsong.uri;
     if (is_song && !uri.empty()) {
-        data.addarg("TrackURI", SoapArgs::xmlQuote(uri));
+        data.addarg("TrackURI", SoapHelp::xmlQuote(uri));
     } else {
         data.addarg("TrackURI", "");
     }
@@ -474,7 +474,7 @@ int UpMpdAVTransport::getMediaInfo(const SoapArgs& sc, SoapData& data)
 
     const string& thisuri = mpds.currentsong.uri;
     if (is_song && !thisuri.empty()) {
-        data.addarg("CurrentURI", SoapArgs::xmlQuote(thisuri));
+        data.addarg("CurrentURI", SoapHelp::xmlQuote(thisuri));
     } else {
         data.addarg("CurrentURI", "");
     }

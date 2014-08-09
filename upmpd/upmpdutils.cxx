@@ -360,7 +360,7 @@ string didlmake(const UpSong& song)
        << "<item restricted=\"1\">";
 
     {   const string& val = song.title;
-        ss << "<dc:title>" << SoapArgs::xmlQuote(val) << "</dc:title>";
+        ss << "<dc:title>" << SoapHelp::xmlQuote(val) << "</dc:title>";
     }
 	
     // TBD Playlists etc?
@@ -368,7 +368,7 @@ string didlmake(const UpSong& song)
 
     {   const string& val = song.artist;
         if (!val.empty()) {
-            string a = SoapArgs::xmlQuote(val);
+            string a = SoapHelp::xmlQuote(val);
             ss << "<dc:creator>" << a << "</dc:creator>" << 
                 "<upnp:artist>" << a << "</upnp:artist>";
         }
@@ -376,13 +376,13 @@ string didlmake(const UpSong& song)
 
     {   const string& val = song.album;
         if (!val.empty()) {
-            ss << "<upnp:album>" << SoapArgs::xmlQuote(val) << "</upnp:album>";
+            ss << "<upnp:album>" << SoapHelp::xmlQuote(val) << "</upnp:album>";
         }
     }
 
     {   const string& val = song.genre;
         if (!val.empty()) {
-            ss << "<upnp:genre>" << SoapArgs::xmlQuote(val) << "</upnp:genre>";
+            ss << "<upnp:genre>" << SoapHelp::xmlQuote(val) << "</upnp:genre>";
         }
     }
 
@@ -406,7 +406,7 @@ string didlmake(const UpSong& song)
        << "sampleFrequency=\"44100\" audioChannels=\"2\" "
        << "protocolInfo=\"http-get:*:audio/mpeg:DLNA.ORG_PN=MP3;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000\""
        << ">"
-       << SoapArgs::xmlQuote(song.uri) 
+       << SoapHelp::xmlQuote(song.uri) 
        << "</res>"
        << "</item></DIDL-Lite>";
     return ss.str();

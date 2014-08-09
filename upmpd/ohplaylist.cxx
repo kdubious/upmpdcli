@@ -140,7 +140,7 @@ static string translateIdArray(const vector<UpSong>& in)
             out1 += (unsigned char) ((val & 0x0000ff00) >> 8);
             out1 += (unsigned char) ((val & 0x000000ff));
         }
-        sdeb += SoapArgs::i2s(val) + " ";
+        sdeb += SoapHelp::i2s(val) + " ";
     }
     LOGDEB("OHPlaylist: current ids: " << sdeb << endl);
     return base64_encode(out1);
@@ -227,10 +227,10 @@ bool OHPlaylist::makestate(unordered_map<string, string> &st)
     const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
 
     st["TransportState"] =  mpdstatusToTransportState(mpds.state);
-    st["Repeat"] = SoapArgs::i2s(mpds.rept);
-    st["Shuffle"] = SoapArgs::i2s(mpds.random);
-    st["Id"] = SoapArgs::i2s(mpds.songid);
-    st["TracksMax"] = SoapArgs::i2s(tracksmax);
+    st["Repeat"] = SoapHelp::i2s(mpds.rept);
+    st["Shuffle"] = SoapHelp::i2s(mpds.random);
+    st["Id"] = SoapHelp::i2s(mpds.songid);
+    st["TracksMax"] = SoapHelp::i2s(tracksmax);
     st["ProtocolInfo"] = upmpdProtocolInfo;
     makeIdArray(st["IdArray"]);
 
@@ -432,7 +432,7 @@ int OHPlaylist::id(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::id" << endl);
     const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
-    data.addarg("Value", SoapArgs::i2s(mpds.songid));
+    data.addarg("Value", SoapHelp::i2s(mpds.songid));
     return UPNP_E_SUCCESS;
 }
 
@@ -451,12 +451,12 @@ int OHPlaylist::ohread(const SoapArgs& sc, SoapData& data)
         auto cached = m_metacache.find(song.uri);
         string metadata;
         if (cached != m_metacache.end()) {
-            metadata = SoapArgs::xmlQuote(cached->second);
+            metadata = SoapHelp::xmlQuote(cached->second);
         } else {
             metadata = didlmake(song);
             m_metacache[song.uri] = metadata;
             m_cachedirty = true;
-            metadata = SoapArgs::xmlQuote(metadata);
+            metadata = SoapHelp::xmlQuote(metadata);
         }
         data.addarg("Uri", song.uri);
         data.addarg("Metadata", metadata);
@@ -500,14 +500,14 @@ int OHPlaylist::readList(const SoapArgs& sc, SoapData& data)
             if (mit != m_metacache.end()) {
                 //LOGDEB("readList: metadata for songid " << id << " uri " 
                 // << song.uri << " found in cache " << endl);
-                metadata = SoapArgs::xmlQuote(mit->second);
+                metadata = SoapHelp::xmlQuote(mit->second);
             } else {
                 //LOGDEB("readList: metadata for songid " << id << " uri " 
                 // << song.uri << " not found " << endl);
                 metadata = didlmake(song);
                 m_metacache[song.uri] = metadata;
                 m_cachedirty = true;
-                metadata = SoapArgs::xmlQuote(metadata);
+                metadata = SoapHelp::xmlQuote(metadata);
             }
             out += "<Entry><Id>";
             out += sid.c_str();
@@ -548,7 +548,7 @@ int OHPlaylist::insert(const SoapArgs& sc, SoapData& data)
             m_metacache[uri] = metadata;
             m_cachedirty = true;
             m_mpdqvers = -1;
-            data.addarg("NewId", SoapArgs::i2s(id));
+            data.addarg("NewId", SoapHelp::i2s(id));
         }
         LOGDEB("OHPlaylist::insert: new id: " << id << endl);
     }
@@ -581,7 +581,7 @@ int OHPlaylist::deleteAll(const SoapArgs& sc, SoapData& data)
 int OHPlaylist::tracksMax(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::tracksMax" << endl);
-    data.addarg("Value", SoapArgs::i2s(tracksmax));
+    data.addarg("Value", SoapHelp::i2s(tracksmax));
     return UPNP_E_SUCCESS;
 }
 
@@ -594,7 +594,7 @@ int OHPlaylist::idArray(const SoapArgs& sc, SoapData& data)
     if (makeIdArray(idarray)) {
         const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
         LOGDEB("OHPlaylist::idArray: qvers " << mpds.qvers << endl);
-        data.addarg("Token", SoapArgs::i2s(mpds.qvers));
+        data.addarg("Token", SoapHelp::i2s(mpds.qvers));
         data.addarg("Array", idarray);
         return UPNP_E_SUCCESS;
     }
@@ -614,7 +614,7 @@ int OHPlaylist::idArrayChanged(const SoapArgs& sc, SoapData& data)
 
     // Bool indicating if array changed
     int val = mpds.qvers == qvers;
-    data.addarg("Value", SoapArgs::i2s(val));
+    data.addarg("Value", SoapHelp::i2s(val));
 
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }

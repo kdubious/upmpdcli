@@ -80,10 +80,10 @@ void OHInfo::makedetails(string &duration, string& bitrate,
         (mpds.state == MpdStatus::MPDS_PAUSE);
 
     if (is_song) {
-        duration = SoapArgs::i2s(mpds.songlenms / 1000);
-        bitrate = SoapArgs::i2s(mpds.kbrate * 1000);
-        bitdepth = SoapArgs::i2s(mpds.bitdepth);
-        samplerate = SoapArgs::i2s(mpds.sample_rate);
+        duration = SoapHelp::i2s(mpds.songlenms / 1000);
+        bitrate = SoapHelp::i2s(mpds.kbrate * 1000);
+        bitdepth = SoapHelp::i2s(mpds.bitdepth);
+        samplerate = SoapHelp::i2s(mpds.sample_rate);
     } else {
         duration = bitrate = bitdepth = samplerate = "0";
     }
@@ -93,9 +93,9 @@ bool OHInfo::makestate(unordered_map<string, string> &st)
 {
     st.clear();
 
-    st["TrackCount"] = SoapArgs::i2s(m_dev->m_mpds ? 
+    st["TrackCount"] = SoapHelp::i2s(m_dev->m_mpds ? 
                                      m_dev->m_mpds->trackcounter : 0);
-    st["DetailsCount"] = SoapArgs::i2s(m_dev->m_mpds ? 
+    st["DetailsCount"] = SoapHelp::i2s(m_dev->m_mpds ? 
                                        m_dev->m_mpds->detailscounter : 0);
     st["MetatextCount"] = "0";
     string uri, metadata;
@@ -135,9 +135,9 @@ int OHInfo::counters(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHInfo::counters" << endl);
     
-    data.addarg("TrackCount", SoapArgs::i2s(m_dev->m_mpds ?
+    data.addarg("TrackCount", SoapHelp::i2s(m_dev->m_mpds ?
                                             m_dev->m_mpds->trackcounter : 0));
-    data.addarg("DetailsCount", SoapArgs::i2s(m_dev->m_mpds ?
+    data.addarg("DetailsCount", SoapHelp::i2s(m_dev->m_mpds ?
                                               m_dev->m_mpds->detailscounter:0));
     data.addarg("MetatextCount", "0");
     return UPNP_E_SUCCESS;

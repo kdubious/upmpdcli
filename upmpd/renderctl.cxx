@@ -88,8 +88,8 @@ bool UpMpdRenderCtl::rdstateMToU(unordered_map<string, string>& status)
     int volume = m_desiredvolume >= 0 ? m_desiredvolume : mpds.volume;
     if (volume < 0)
         volume = 0;
-    status["Volume"] = SoapArgs::i2s(volume);
-    //status["VolumeDB"] =  SoapArgs::i2s(percentodbvalue(volume));
+    status["Volume"] = SoapHelp::i2s(volume);
+    //status["VolumeDB"] =  SoapHelp::i2s(percentodbvalue(volume));
     status["Mute"] =  volume == 0 ? "1" : "0";
     return true;
 }
@@ -126,7 +126,7 @@ bool UpMpdRenderCtl::getEventData(bool all, std::vector<std::string>& names,
         chgdata += "<";
         chgdata += it->first;
         chgdata += " val=\"";
-        chgdata += SoapArgs::xmlQuote(it->second);
+        chgdata += SoapHelp::xmlQuote(it->second);
         chgdata += "\"/>\n";
     }
     chgdata += "</InstanceID>\n</Event>\n";
@@ -288,7 +288,7 @@ int UpMpdRenderCtl::getVolume(const SoapArgs& sc, SoapData& data, bool isDb)
     if (isDb) {
         volume = percentodbvalue(volume);
     }
-    data.addarg("CurrentVolume", SoapArgs::i2s(volume));
+    data.addarg("CurrentVolume", SoapHelp::i2s(volume));
     return UPNP_E_SUCCESS;
 }
 

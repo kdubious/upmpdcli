@@ -55,13 +55,13 @@ void OHTime::getdata(string& trackcount, string &duration,
     // We're relying on AVTransport to have updated the status for us
     const MpdStatus& mpds =  m_dev->getMpdStatusNoUpdate();
 
-    trackcount = SoapArgs::i2s(mpds.trackcounter);
+    trackcount = SoapHelp::i2s(mpds.trackcounter);
 
     bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
         (mpds.state == MpdStatus::MPDS_PAUSE);
     if (is_song) {
-        duration = SoapArgs::i2s(mpds.songlenms / 1000);
-        seconds = SoapArgs::i2s(mpds.songelapsedms / 1000);
+        duration = SoapHelp::i2s(mpds.songlenms / 1000);
+        seconds = SoapHelp::i2s(mpds.songelapsedms / 1000);
     } else {
         duration = "0";
         seconds = "0";
