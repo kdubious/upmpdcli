@@ -44,6 +44,7 @@ using namespace std;
 #include "upmpdutils.hxx"
 #include "libupnpp/log.hxx"
 #include "libupnpp/soaphelp.hxx"
+#include "libupnpp/upnpavutils.hxx"
 
 // Append system error string to input string
 void catstrerror(string *reason, const char *what, int _errno)
@@ -290,35 +291,6 @@ int dbvaluetopercent(int dbvalue)
     if (percent < 0)	percent = 0;
     if (percent > 100)	percent = 100;
     return percent;
-}
-// Format duration in milliseconds into UPnP duration format
-string upnpduration(int ms)
-{
-    int hours = ms / (3600 * 1000);
-    ms -= hours * 3600 * 1000;
-    int minutes = ms / (60 * 1000);
-    ms -= minutes * 60 * 1000;
-    int secs = ms / 1000;
-    ms -= secs * 1000;
-
-    char cbuf[100];
-
-    // This is the format from the ref doc, but it appears that the
-    // decimal part in the seconds field is an issue with some control
-    // points. So drop it...
-    //  sprintf(cbuf, "%d:%02d:%02d.%03d", hours, minutes, secs, ms);
-    sprintf(cbuf, "%d:%02d:%02d", hours, minutes, secs);
-    return cbuf;
-}
-
-// H:M:S to seconds
-int upnpdurationtos(const string& dur)
-{
-    int hours, minutes, seconds;
-    if (sscanf(dur.c_str(), "%d:%d:%d", &hours, &minutes, &seconds) != 3) {
-	return 0;
-    }
-    return 3600 * hours + 60 * minutes + seconds;
 }
 
 // Get from ssl unordered_map, return empty string for non-existing
