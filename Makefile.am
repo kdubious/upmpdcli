@@ -41,6 +41,8 @@ libupnpp_la_SOURCES = \
     libupnpp/ptmutex.hxx \
     libupnpp/soaphelp.cxx \
     libupnpp/soaphelp.hxx \
+    libupnpp/upnpavutils.hxx \
+    libupnpp/upnpavutils.cxx \
     libupnpp/upnpp_p.hxx \
     libupnpp/upnpplib.cxx \
     libupnpp/upnpplib.hxx \
