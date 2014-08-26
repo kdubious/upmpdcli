@@ -418,3 +418,34 @@ bool stringToBool(const string& s, bool *value)
     }
     return true;
 }
+
+#include <ctype.h>
+
+//  s1 is already uppercase
+int stringuppercmp(const string & s1, const string& s2) 
+{
+    string::const_iterator it1 = s1.begin();
+    string::const_iterator it2 = s2.begin();
+    int size1 = s1.length(), size2 = s2.length();
+    char c2;
+
+    if (size1 > size2) {
+	while (it1 != s1.end()) { 
+	    c2 = ::toupper(*it2);
+	    if (*it1 != c2) {
+		return *it1 > c2 ? 1 : -1;
+	    }
+	    ++it1; ++it2;
+	}
+	return size1 == size2 ? 0 : 1;
+    } else {
+	while (it2 != s2.end()) { 
+	    c2 = ::toupper(*it2);
+	    if (*it1 != c2) {
+		return *it1 > c2 ? 1 : -1;
+	    }
+	    ++it1; ++it2;
+	}
+	return size1 == size2 ? 0 : -1;
+    }
+}

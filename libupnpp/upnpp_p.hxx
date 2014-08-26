@@ -37,4 +37,7 @@ template <class T> bool csvToStrings(const std::string& s, T &tokens);
 // with [FfNnYyTt01]
 extern bool stringToBool(const std::string& s, bool *v);
 
+// Case-insensitive ascii string compare where s1 is already upper-case
+int stringuppercmp(const std::string &s1, const std::string& s2);
+
 #endif /* _UPNPP_H_X_INCLUDED_ */
