@@ -155,7 +155,7 @@ string xmlUnquote(const string& in)
                 return out;
             }
             string entname = in.substr(i+1, j-i-1);
-            cout << "entname [" << entname << "]" << endl;
+            //cerr << "entname [" << entname << "]" << endl;
             if (!entname.compare("quot")) {
                 out += '"';
             } else if (!entname.compare("amp")) {
@@ -281,7 +281,8 @@ bool decodePropertySet(IXML_Document *doc,
         // Can we get an empty value here ?
         if (value == 0)
             value = "";
-        out[name] = SoapHelp::xmlUnquote(value);
+        // ixml does the unquoting. Don't call xmlUnquote here
+        out[name] = value; 
     }
 
     ret = true;
