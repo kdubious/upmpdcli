@@ -34,6 +34,7 @@ using namespace std::placeholders;
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/device.hxx"
 #include "libupnpp/log.hxx"
+#include "libupnpp/upnpavutils.hxx"
 
 #include "upmpd.hxx"
 #include "avtransport.hxx"
