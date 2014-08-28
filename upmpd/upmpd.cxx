@@ -90,14 +90,18 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
     // update the mpd status for OHInfo
     UpMpdRenderCtl *rdctl = new UpMpdRenderCtl(this);
     m_services.push_back(rdctl);
-    m_services.push_back(new UpMpdAVTransport(this));
+    UpMpdAVTransport* avt = new UpMpdAVTransport(this);
+    m_services.push_back(avt);
     m_services.push_back(new UpMpdConMan(this));
     if (m_options & upmpdDoOH) {
         m_services.push_back(new OHProduct(this, friendlyname));
         m_services.push_back(new OHInfo(this));
         m_services.push_back(new OHTime(this));
         m_services.push_back(new OHVolume(this, rdctl));
-        m_services.push_back(new OHPlaylist(this, rdctl));
+        OHPlaylist *ohp = new OHPlaylist(this, rdctl);
+        m_services.push_back(ohp);
+        if (avt)
+            avt->setOHP(ohp);
     }
 }
 

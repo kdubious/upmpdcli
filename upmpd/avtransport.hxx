@@ -22,6 +22,7 @@
 #include "libupnpp/device.hxx"
 
 class UpMpd;
+class OHPlaylist;
 
 class UpMpdAVTransport : public UpnpService {
 public:
@@ -29,6 +30,11 @@ public:
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
+
+    void setOHP(OHPlaylist *ohp) 
+    {
+        m_ohp = ohp;
+    }
 
 private:
     int setAVTransportURI(const SoapArgs& sc, SoapData& data, bool setnext);
@@ -46,8 +52,11 @@ private:
     bool tpstateMToU(unordered_map<string, string>& state);
 
     UpMpd *m_dev;
+    OHPlaylist *m_ohp;
+
     // State variable storage
     unordered_map<string, string> m_tpstate;
+    string m_uri;
     string m_curMetadata;
     string m_nextUri;
     string m_nextMetadata;

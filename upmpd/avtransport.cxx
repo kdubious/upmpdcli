@@ -40,12 +40,13 @@ using namespace std::placeholders;
 #include "avtransport.hxx"
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
+#include "ohplaylist.hxx"
 
 static const string sIdTransport("urn:upnp-org:serviceId:AVTransport");
 static const string sTpTransport("urn:schemas-upnp-org:service:AVTransport:1");
 
 UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev)
-    : UpnpService(sTpTransport, sIdTransport, dev), m_dev(dev)
+    : UpnpService(sTpTransport, sIdTransport, dev), m_dev(dev), m_ohp(0)
 {
     m_dev->addActionMapping(this,"SetAVTransportURI", 
                             bind(&UpMpdAVTransport::setAVTransportURI, 
@@ -174,6 +175,24 @@ bool UpMpdAVTransport::tpstateMToU(unordered_map<string, string>& status)
     status["TransportPlaySpeed"] = "1";
 
     const string& uri = mpds.currentsong.uri;
+
+    // MPD may have switched to the next track, or may be playing
+    // something else altogether if some other client told it to
+    if (!uri.compare(m_nextUri)) {
+        m_uri = m_nextUri;
+        m_curMetadata = m_nextMetadata;
+        m_nextUri.clear();
+        m_nextMetadata.clear();
+    } else if (uri.compare(m_uri)) {
+        // Someone else is controlling mpd. Maybe our own ohplaylist.
+        m_nextMetadata.clear();
+        m_nextUri.clear();
+        m_uri = uri;
+        if (!m_ohp || !m_ohp->cacheFind(uri, m_curMetadata)) {
+            m_curMetadata = didlmake(mpds.currentsong);
+        }
+    }
+
     status["CurrentTrack"] = "1";
     status["CurrentTrackURI"] = uri;
 
@@ -331,6 +350,7 @@ int UpMpdAVTransport::setAVTransportURI(const SoapArgs& sc, SoapData& data,
         m_nextUri = uri;
         m_nextMetadata = metadata;
     } else {
+        m_uri = uri;
         m_curMetadata = metadata;
         m_nextUri = "";
         m_nextMetadata = "";

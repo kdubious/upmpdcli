@@ -436,6 +436,16 @@ int OHPlaylist::id(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
+bool OHPlaylist::cacheFind(const string& uri, string& meta)
+{
+    auto cached = m_metacache.find(uri);
+    if (cached != m_metacache.end()) {
+        meta = cached->second;
+        return true;
+    }
+    return false;
+}
+
 // Report the uri and metadata for a given track id. 
 // Returns a 800 fault code if the given id is not in the playlist. 
 int OHPlaylist::ohread(const SoapArgs& sc, SoapData& data)

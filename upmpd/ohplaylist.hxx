@@ -30,6 +30,8 @@ public:
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
+    virtual bool cacheFind(const std::string& uri, std:: string& meta);
+
 private:
     int play(const SoapArgs& sc, SoapData& data);
     int pause(const SoapArgs& sc, SoapData& data);
