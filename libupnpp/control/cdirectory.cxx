@@ -53,18 +53,17 @@ bool ContentDirectoryService::isCDService(const string& st)
     return !SType.compare(0, sz, st, 0, sz);
 }
 
-
-static bool DSAccum(vector<ContentDirectoryService>* out,
+static bool DSAccum(vector<CDSH>* out,
                     const UPnPDeviceDesc& device, 
                     const UPnPServiceDesc& service)
 {
     if (ContentDirectoryService::isCDService(service.serviceType)) {
-        out->push_back(ContentDirectoryService(device, service));
+        out->push_back(CDSH(new ContentDirectoryService(device, service)));
     }
     return true;
 }
 
-bool ContentDirectoryService::getServices(vector<ContentDirectoryService>& vds)
+bool ContentDirectoryService::getServices(vector<CDSH>& vds)
 {
     //LOGDEB("UPnPDeviceDirectory::getDirServices" << endl);
     UPnPDeviceDirectory::Visitor visitor = bind(DSAccum, &vds, _1, _2);
@@ -74,13 +73,13 @@ bool ContentDirectoryService::getServices(vector<ContentDirectoryService>& vds)
 
 static bool DSFriendlySelect(const string& friendlyName,
                              bool  *found,
-                             ContentDirectoryService *out,
+                             CDSH *out,
                              const UPnPDeviceDesc& device, 
                              const UPnPServiceDesc& service)
 {
     if (ContentDirectoryService::isCDService(service.serviceType)) {
         if (!friendlyName.compare(device.friendlyName)) {
-            *out = ContentDirectoryService(device, service);
+            *out = CDSH(new ContentDirectoryService(device, service));
             *found = true;
             return false;
         }
@@ -90,7 +89,7 @@ static bool DSFriendlySelect(const string& friendlyName,
 
 // Get server by friendly name. 
 bool ContentDirectoryService::getServerByName(const string& friendlyName,
-											  ContentDirectoryService& server)
+                                              CDSH& server)
 {
     bool found = false;
     UPnPDeviceDirectory::Visitor visitor = 
@@ -120,6 +119,15 @@ static int asyncReaddirCB(Upnp_EventType et, void *vev, void *cookie)
     return -1;
 #endif
 
+void ContentDirectoryService::evtCallback(const unordered_map<string, string>&)
+{
+}
+
+void ContentDirectoryService::registerCallback()
+{
+    Service::registerCallback(bind(&ContentDirectoryService::evtCallback, 
+                                   this, _1));
+}
 
 int ContentDirectoryService::readDirSlice(const string& objectId, int offset,
                                           int count, UPnPDirContent& dirbuf,

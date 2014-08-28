@@ -23,11 +23,29 @@
 
 #include <upnp/upnp.h>
 
+#include "libupnpp/log.hxx"
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/upnpp_p.hxx"
 #include "libupnpp/description.hxx"
+#include "libupnpp/control/cdircontent.hxx"
+
 
 namespace UPnPClient {
+
+/** To be implemented by upper-level client code for event
+ * reporting. Runs in an event thread. This could for example be
+ * implemented by a Qt Object to generate events for the GUI.
+ */
+class VarEventReporter {
+public:
+    virtual ~VarEventReporter() {};
+    // Using char * to avoid any issue with strings and concurrency
+    virtual void changed(const char *nm, int val)  = 0;
+    virtual void changed(const char *nm, const char *val) = 0;
+    // Used for track metadata (parsed as content directory entry). Not always
+    // needed.
+    virtual void changed(const char *nm, UPnPDirContent meta) {};
+};
 
 typedef 
 std::function<void (const std::unordered_map<std::string, std::string>&)> 
@@ -36,12 +54,11 @@ evtCBFunc;
 class Service {
 public:
     /** Construct by copying data from device and service objects.
-     *
-     * Mostly used by the discovery service. 
      */
     Service(const UPnPDeviceDesc& device,
             const UPnPServiceDesc& service)
-        : m_actionURL(caturl(device.URLBase, service.controlURL)),
+        : m_reporter(0), 
+          m_actionURL(caturl(device.URLBase, service.controlURL)),
           m_eventURL(caturl(device.URLBase, service.eventSubURL)),
           m_serviceType(service.serviceType),
           m_deviceId(device.UDN),
@@ -54,7 +71,7 @@ public:
     }
 
     /** An empty one */
-    Service() {}
+    Service() : m_reporter(0) {}
 
     virtual ~Service() {}
 
@@ -66,13 +83,40 @@ public:
 
     virtual int runAction(const SoapEncodeInput& args, SoapDecodeOutput& data);
 
+    virtual VarEventReporter *getReporter()
+    {
+        return m_reporter;
+    }
+
+    virtual void installReporter(VarEventReporter* reporter)
+    {
+        m_reporter = reporter;
+        LOGDEB("Reporter now " << m_reporter << endl);
+    }
+
+    // Can't copy these because this does not make sense for the
+    // member function callback.
+    Service(Service const&) = delete;
+    Service& operator=(Service const&) = delete;
+
 protected:
 
-    /** Registered callbacks for our derived classes */
+    /** Registered callbacks for the service objects. The map is
+     * indexed by m_SID, the subscription id which was obtained by
+     * each object when subscribing to receive the events for its
+     * device. The map allows the static function registered with
+     * libupnp to call the appropriate object method when it receives
+     * an event. */
     static std::unordered_map<std::string, evtCBFunc> o_calls;
 
-    /** Used by derived class to register its callback method */
+    /** Used by a derived class to register its callback method. This
+     * creates an entry in the static map, using m_SID, which was
+     * obtained by subscribe() during construction 
+     */
     void registerCallback(evtCBFunc c);
+
+    /** Upper level client code event callbacks */
+    VarEventReporter *m_reporter;
 
     std::string m_actionURL;
     std::string m_eventURL;
@@ -84,19 +128,16 @@ protected:
 
 private:
     /** Only actually does something on the first call, to register our
-        library callback */
+     * (static) library callback */
     static bool initEvents();
-    /** The event callback given to libupnp */
+    /** The static event callback given to libupnp */
     static int srvCB(Upnp_EventType et, void* vevp, void*);
-    /* Tell the UPnP device that we want to receive its events */
+    /* Tell the UPnP device (through libupnp) that we want to receive
+       its events. This is called during construction and sets m_SID */
     virtual bool subscribe();
 
     Upnp_SID    m_SID; /* Subscription Id */
 };
-
-extern Service *service_factory(const std::string& servicetype,
-                                const UPnPDeviceDesc& device,
-                                const UPnPServiceDesc& service);
 
 } // namespace UPnPClient
 

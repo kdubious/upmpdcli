@@ -84,6 +84,10 @@ protected:
 
     virtual bool checkobjok()
     {
+        // I don't see the point of this checking any more. Let the caller deal
+        // with filtering entries.
+        return true;
+
         bool ok =  !m_tobj.m_id.empty() && !m_tobj.m_pid.empty() &&
             !m_tobj.m_title.empty();
 

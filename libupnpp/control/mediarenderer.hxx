@@ -17,7 +17,13 @@
 #ifndef _MEDIARENDERER_HXX_INCLUDED_
 #define _MEDIARENDERER_HXX_INCLUDED_
 
+#include <memory>
+#include <string>
+
 #include "libupnpp/description.hxx"
+#include "libupnpp/control/renderingcontrol.hxx"
+#include "libupnpp/control/avtransport.hxx"
+
 
 namespace UPnPClient {
 
@@ -26,14 +32,25 @@ public:
     /* Something may get there one day... */
 };
 
+class MediaRenderer;
+typedef std::shared_ptr<MediaRenderer> MRDH;
+
 class MediaRenderer : public Device {
 public:
+    MediaRenderer(const UPnPDeviceDesc& desc);
+
+    RDCH rdc() {return m_rdc;}
+    AVTH avt() {return m_avt;}
+
     static bool getDeviceDescs(std::vector<UPnPDeviceDesc>& devices,
-        const string& friendlyName = "");
+                               const std::string& friendlyName = "");
     static bool hasOpenHome(const UPnPDeviceDesc& device);
-    static bool isMRDevice(const string& devicetype);
+    static bool isMRDevice(const std::string& devicetype);
 
 protected:
+    RDCH m_rdc;
+    AVTH m_avt;
+
     static const std::string DType;
 };
 

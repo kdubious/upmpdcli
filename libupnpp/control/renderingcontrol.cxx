@@ -45,7 +45,7 @@ bool RenderingControl::isRDCService(const string& st)
 void RenderingControl::evtCallback(
     const std::unordered_map<std::string, std::string>& props)
 {
-    //LOGDEB("RenderingControl::evtCallback:" << endl);
+    LOGDEB("RenderingControl::evtCallback: m_reporter " << m_reporter << endl);
     for (auto& entry: props) {
         if (!entry.first.compare("LastChange")) {
             std::unordered_map<std::string, std::string> props1;
@@ -55,12 +55,17 @@ void RenderingControl::evtCallback(
                 return;
             }
             for (auto& entry1: props1) {
-                //LOGDEB("    " << entry1.first << " -> " << 
-                //       entry1.second << endl);
+                LOGDEB1("    " << entry1.first << " -> " << 
+                        entry1.second << endl);
                 if (!entry1.first.compare("Volume")) {
-                    m_volume = atoi(entry1.second.c_str());
+                    if (m_reporter) {
+                        m_reporter->changed(entry1.first.c_str(),
+                                            atoi(entry1.second.c_str()));
+                    }
                 } else if (!entry1.first.compare("Mute")) {
-                    stringToBool(entry1.second, &m_mute);
+                    bool mute;
+                    if (m_reporter && stringToBool(entry1.second, &mute))
+                        m_reporter->changed(entry1.first.c_str(), mute);
                 }
             }
         } else {
@@ -68,8 +73,6 @@ void RenderingControl::evtCallback(
                    << entry.first << " -> " << entry.second << endl;);
         }
     }
-    LOGDEB("RenderingControl::evtCallback: m_volume " << m_volume << 
-           " m_mute " << m_mute << endl);
 }
 
 void RenderingControl::registerCallback()
@@ -82,11 +85,7 @@ int RenderingControl::setVolume(int volume, const string& channel)
     SoapEncodeInput args(m_serviceType, "SetVolume");
     args("Channel", channel)("DesiredVolume", SoapHelp::i2s(volume));
     SoapDecodeOutput data;
-    int ret = runAction(args, data);
-    if (ret != UPNP_E_SUCCESS) {
-        return ret;
-    }
-    return 0;
+    return runAction(args, data);
 }
 
 int RenderingControl::getVolume(const string& channel)
@@ -111,11 +110,7 @@ int RenderingControl::setMute(bool mute, const string& channel)
     SoapEncodeInput args(m_serviceType, "SetMute");
     args("Channel", channel)("DesiredMute", SoapHelp::i2s(mute?1:0));
     SoapDecodeOutput data;
-    int ret = runAction(args, data);
-    if (ret != UPNP_E_SUCCESS) {
-        return ret;
-    }
-    return 0;
+    return runAction(args, data);
 }
 
 bool RenderingControl::getMute(const string& channel)

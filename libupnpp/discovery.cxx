@@ -103,7 +103,7 @@ static int cluCallBack(Upnp_EventType et, void* evp, void*)
         // upnp "root device" message and has empty service and device types:
         if (!disco->DeviceType[0] && !disco->ServiceType[0]) {
             LOGDEB1("discovery:cllb:ALIVE: " << cluDiscoveryToStr(disco) 
-                    << endl);
+                   << endl);
             DiscoveredTask *tp = new DiscoveredTask(1, disco);
             if (discoveredQueue.put(tp)) {
                 return UPNP_E_FINISH;
@@ -207,6 +207,9 @@ static void *discoExplorer(void *)
                 delete tsk;
                 continue;
             }
+            LOGDEB1("discoExplorer: found id [" << tsk->deviceId  << "]" 
+                    << " name " << d.device.friendlyName 
+                    << " devtype " << d.device.deviceType << endl);
             PTMutexLocker lock(o_pool.m_mutex);
             //LOGDEB1("discoExplorer: inserting device id "<< tsk->deviceId << 
             //        " description: " << endl << d.device.dump() << endl);

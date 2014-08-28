@@ -64,6 +64,8 @@ public:
     // The map keys are the XML tag names
     std::map<std::string, std::string> m_props;
 
+    // Resource URIs: there may be several, for example for different
+    // audio formats of the same track
     std::vector<UPnPResource> m_resources;
 
     /** Get named property
@@ -127,6 +129,12 @@ class UPnPDirContent {
 public:
     std::vector<UPnPDirObject> m_containers;
     std::vector<UPnPDirObject> m_items;
+
+    void clear() 
+    { 
+        m_containers.clear();
+        m_items.clear();
+    }
 
     /**
      * Parse from DIDL-Lite XML data.

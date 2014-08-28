@@ -18,10 +18,14 @@
 #define _RENDERINGCONTROL_HXX_INCLUDED_
 
 #include <string>
+#include <memory>
 
 #include "service.hxx"
 
 namespace UPnPClient {
+
+class RenderingControl;
+typedef std::shared_ptr<RenderingControl> RDCH;
 
 /**
  * RenderingControl Service client class.
@@ -35,7 +39,7 @@ public:
      */
     RenderingControl(const UPnPDeviceDesc& device,
                      const UPnPServiceDesc& service)
-        : Service(device, service), m_volume(0), m_mute(false)
+        : Service(device, service)
         {
             registerCallback();
         }
@@ -57,9 +61,6 @@ protected:
 private:
     void evtCallback(const std::unordered_map<std::string, std::string>&);
     void registerCallback();
-
-    int  m_volume;
-    bool m_mute;
 };
 
 } // namespace UPnPClient

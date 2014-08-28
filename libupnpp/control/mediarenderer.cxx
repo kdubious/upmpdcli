@@ -69,6 +69,36 @@ bool MediaRenderer::getDeviceDescs(vector<UPnPDeviceDesc>& devices,
     return !devices.empty();
 }
 
+MediaRenderer::MediaRenderer(const UPnPDeviceDesc& desc)
+{
+    bool found = false;
+    for (auto& entry : desc.services) {
+        if (RenderingControl::isRDCService(entry.serviceType)) {
+            m_rdc = RDCH(new RenderingControl(desc, entry));
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        LOGERR("MediaRenderer::MediaRenderer: RenderingControl service not "
+               "found in device" << endl);
+    }
+
+    found = false;
+    for (auto& entry : desc.services) {
+        if (AVTransport::isAVTService(entry.serviceType)) {
+            m_avt = AVTH(new AVTransport(desc, entry));
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        LOGERR("MediaRenderer::MediaRenderer: AVTransport service not "
+               "found in device" << endl);
+    }
+
+}
+
 bool MediaRenderer::hasOpenHome(const UPnPDeviceDesc& device)
 {
     return false;

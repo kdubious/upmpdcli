@@ -19,12 +19,16 @@
 
 #include <string>
 #include <set>
+#include <memory>
 
 #include "libupnpp/description.hxx"
 #include "libupnpp/control/service.hxx"
 #include "libupnpp/control/cdircontent.hxx"
 
 namespace UPnPClient {
+
+class ContentDirectoryService;
+typedef std::shared_ptr<ContentDirectoryService> CDSH;
 
 /**
  * Content Directory Service client class.
@@ -56,6 +60,7 @@ public:
                 // them really big. Actually 1000 is better but I don't dare
                 m_rdreqcnt = 500;
             }
+            registerCallback();
         }
 
     /** An empty one */
@@ -65,11 +70,11 @@ public:
     static bool isCDService(const std::string& st);
 
     /** Retrieve the directory services currently seen on the network */
-    static bool getServices(std::vector<ContentDirectoryService>&);
+    static bool getServices(std::vector<CDSH>&);
 
     /** Retrieve specific service designated by its friendlyName */
     static bool getServerByName(const std::string& friendlyName, 
-                                ContentDirectoryService& server);
+                                CDSH& server);
 
     /** Read a full container's children list 
      *
@@ -137,6 +142,8 @@ public:
 
 private:
     int m_rdreqcnt; // Slice size to use when reading
+    void evtCallback(const std::unordered_map<std::string, std::string>&);
+    void registerCallback();
 };
 
 }

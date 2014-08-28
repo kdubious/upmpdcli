@@ -31,18 +31,6 @@ using namespace std::placeholders;
 
 namespace UPnPClient {
 
-Service *service_factory(const string& servicetype,
-                         const UPnPDeviceDesc& device,
-                         const UPnPServiceDesc& service)
-{
-    if (ContentDirectoryService::isCDService(servicetype)) {
-        return new ContentDirectoryService(device, service);
-    } else {
-        LOGERR("service_factory: unknown service type " << servicetype << endl);
-        return 0;
-    }
-}
-
 // A small helper class for the functions which perform
 // UpnpSendAction calls: get rid of IXML docs when done.
 class IxmlCleaner {
@@ -118,9 +106,8 @@ int Service::srvCB(Upnp_EventType et, void* vevp, void*)
     {
         struct Upnp_Event *evp = (struct Upnp_Event *)vevp;
         LOGDEB1("Service:srvCB: var change event: Sid: " <<
-               evp->Sid << " EventKey " << evp->EventKey << 
-               " changed: " << ixmlPrintDocument(evp->ChangedVariables)<< endl);
-
+                evp->Sid << " EventKey " << evp->EventKey << 
+                " changed " << ixmlPrintDocument(evp->ChangedVariables)<< endl);
         
         unordered_map<string, string> props;
         if (!decodePropertySet(evp->ChangedVariables, props)) {
@@ -128,15 +115,15 @@ int Service::srvCB(Upnp_EventType et, void* vevp, void*)
             return UPNP_E_BAD_RESPONSE;
         }
         //for (auto& entry: props) {
-        //LOGDEB(entry.first << " -> " << entry.second << endl;);
+        //LOGDEB("srvCB: " << entry.first << " -> " << entry.second << endl);
         //}
+
         std::unordered_map<std::string, evtCBFunc>::iterator it = 
             o_calls.find(evp->Sid);
-
         if (it!= o_calls.end()) {
             (it->second)(props);
         } else {
-            LOGINF("Service::srvCB: no callback found for " << evp->Sid << 
+            LOGINF("Service::srvCB: no callback found for sid " << evp->Sid << 
                    endl);
         }
         break;
@@ -197,7 +184,7 @@ bool Service::subscribe()
                UpnpGetErrorMessage(ret) << endl);
         return false;
     } 
-    LOGDEB("Service::subscribe: sid: " << m_SID << endl);
+    //LOGDEB("Service::subscribe: sid: " << m_SID << endl);
     return true;
 }
 

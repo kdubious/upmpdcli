@@ -29,6 +29,7 @@ using namespace std;
 #include "libupnpp/upnpplib.hxx"
 #include "libupnpp/discovery.hxx"
 #include "libupnpp/description.hxx"
+#include "libupnpp/control/service.hxx"
 #include "libupnpp/control/cdirectory.hxx"
 #include "libupnpp/control/mediarenderer.hxx"
 #include "libupnpp/control/renderingcontrol.hxx"
@@ -38,14 +39,14 @@ using namespace UPnPClient;
 void listServers()
 {
     cout << "Content Directories:" << endl;
-    vector<ContentDirectoryService> dirservices;
+    vector<CDSH> dirservices;
     if (!ContentDirectoryService::getServices(dirservices)) {
         cerr << "listDirServices failed" << endl;
         return;
     }
-    for (vector<ContentDirectoryService>::iterator it = dirservices.begin();
+    for (vector<CDSH>::iterator it = dirservices.begin();
          it != dirservices.end(); it++) {
-        cout << it->getFriendlyName() << endl;
+        cout << (*it)->getFriendlyName() << endl;
     }
     cout << endl;
 }
@@ -64,59 +65,125 @@ void listPlayers()
     cout << endl;
 }
 
-void getsetVolume(const string& friendlyName, int volume = -1)
+class MReporter : public UPnPClient::VarEventReporter {
+public:
+    void changed(const char *nm, int value)
+        {
+            cout << "Changed: " << nm << " : " << value << endl;
+        }
+    void changed(const char *nm, const char *value)
+        {
+            cout << "Changed: " << nm << " : " << value << endl;
+        }
+
+    void changed(const char *nm, UPnPDirContent meta)
+        {
+            string s("NO CONTENT");
+            if (meta.m_items.size() > 0) {
+                s = meta.m_items[0].dump();
+            }
+            cout << "Changed: " << nm << " : " << s << endl;
+        }
+
+};
+
+MRDH getRenderer(const string& friendlyName)
 {
+    MRDH rdr;
     vector<UPnPDeviceDesc> vdds;
     if (!MediaRenderer::getDeviceDescs(vdds, friendlyName)) {
         cerr << "MediaRenderer::getDeviceDescs" << endl;
-        return;
+        return rdr;
     }
 
     if (vdds.size() == 0) {
-        cerr << "Player not found" <<endl;
-        return;
+        cerr << "Player not found" << endl;
+        return rdr;
     } else if (vdds.size() > 1) {
         cerr << "Multiple players found" << endl;
-        return;
+        return rdr;
     }
 
     UPnPDeviceDesc& dev = vdds[0];
-    RenderingControl ctl;
-    bool found = false;
-    for (auto& entry : dev.services) {
-        if (RenderingControl::isRDCService(entry.serviceType)) {
-            ctl = RenderingControl(dev, entry);
-            found = true;
-        }
-    }
-    if (!found) {
-        cerr << "Rendering control service not found in device" << endl;
+    return MRDH(new MediaRenderer(dev));
+}
+
+void getsetVolume(const string& friendlyName, int volume = -1)
+{
+    MRDH rdr = getRenderer(friendlyName);
+    if (!rdr) {
         return;
     }
+
+    RDCH rdc = rdr->rdc();
+    if (!rdc) {
+        cerr << "Device has no RenderingControl service" << endl;
+        return;
+    }
+
+    MReporter reporter;
+    rdc->installReporter(&reporter);
+
     if (volume == -1) {
-        volume = ctl.getVolume();
-        cout << "Current volume: " << volume << endl;
+        volume = rdc->getVolume();
+        cout << "Current volume: " << volume << " reporter " << 
+            rdc->getReporter() << endl;
 #warning remove
-    sleep(200);
+        while (true)
+            sleep(20);
         return;
     } else {
-        if ((volume = ctl.setVolume(volume)) != 0) {
+        if ((volume = rdc->setVolume(volume)) != 0) {
             cerr << "Error setting volume: " << volume << endl;
             return;
         }
     }
 }
 
+void tpPlayStop(const string& friendlyName, bool doplay)
+{
+    MRDH rdr = getRenderer(friendlyName);
+    if (!rdr) {
+        return;
+    }
+    AVTH avt = rdr->avt();
+    if (!avt) {
+        cerr << "Device has no AVTransport service" << endl;
+        return;
+    }
+    MReporter reporter;
+    avt->installReporter(&reporter);
+    int ret;
+    if (doplay) {
+        ret = avt->play();
+    } else {
+        ret = avt->stop();
+    }
+    if (ret != 0) {
+        cerr << "Operation failed: code: " << ret << endl;
+    }
+#warning remove
+    while (true) {
+        AVTransport::PositionInfo info;
+        if (avt->getPositionInfo(info)) {
+            cerr << "getPositionInfo failed. Code " << ret << endl;
+        } else {
+            cout << info.trackmeta.m_title << " reltime " << info.reltime << endl;
+        }
+        sleep(2);
+    }
+}
+
 void readdir(LibUPnP *lib, const string& friendlyName, const string& cid)
 {
     cout << "readdir: [" << friendlyName << "] [" << cid << "]" << endl;
-    ContentDirectoryService server;
+    CDSH server;
     if (!ContentDirectoryService::getServerByName(friendlyName, server)) {
         cerr << "Server not found" << endl;
         return;
     }
     UPnPDirContent dirbuf;
-    int code = server.readDir(cid, dirbuf);
+    int code = server->readDir(cid, dirbuf);
     if (code) {
         cerr << LibUPnP::errAsString("readdir", code) << endl;
         return;
@@ -134,13 +201,13 @@ void readdir(LibUPnP *lib, const string& friendlyName, const string& cid)
 void getMetadata(LibUPnP *lib, const string& friendlyName, const string& cid)
 {
     cout << "getMeta: [" << friendlyName << "] [" << cid << "]" << endl;
-    ContentDirectoryService server;
+    CDSH server;
     if (!ContentDirectoryService::getServerByName(friendlyName, server)) {
         cerr << "Server not found" << endl;
         return;
     }
     UPnPDirContent dirbuf;
-    int code = server.getMetadata(cid, dirbuf);
+    int code = server->getMetadata(cid, dirbuf);
     if (code) {
         cerr << LibUPnP::errAsString("readdir", code) << endl;
         return;
@@ -158,14 +225,14 @@ void getMetadata(LibUPnP *lib, const string& friendlyName, const string& cid)
 void search(LibUPnP *lib, const string& friendlyName, const string& ss)
 {
     cout << "search: [" << friendlyName << "] [" << ss << "]" << endl;
-    ContentDirectoryService server;
+    CDSH server;
     if (!ContentDirectoryService::getServerByName(friendlyName, server)) {
         cerr << "Server not found" << endl;
         return;
     }
     UPnPDirContent dirbuf;
     string cid("0");
-    int code = server.search(cid, ss, dirbuf);
+    int code = server->search(cid, ss, dirbuf);
     if (code) {
         cerr << LibUPnP::errAsString("search", code) << endl;
         return;
@@ -183,13 +250,13 @@ void search(LibUPnP *lib, const string& friendlyName, const string& ss)
 void getSearchCaps(LibUPnP *lib, const string& friendlyName)
 {
     cout << "getSearchCaps: [" << friendlyName << "]" << endl;
-    ContentDirectoryService server;
+    CDSH server;
     if (!ContentDirectoryService::getServerByName(friendlyName, server)) {
         cerr << "Server not found" << endl;
         return;
     }
     set<string> capa;
-    int code = server.getSearchCapabilities(capa);
+    int code = server->getSearchCapabilities(capa);
     if (code) {
         cerr << LibUPnP::errAsString("readdir", code) << endl;
         return;
@@ -214,6 +281,7 @@ static char usage [] =
             " -c <server> get search capabilities\n"
             " -v <renderer> get volume\n"
             " -V <renderer> <volume> set volume\n"
+            " -p <renderer> 1|0 play/stop\n"
             "  \n\n"
             ;
 static void
@@ -231,12 +299,14 @@ static int	   op_flags;
 #define OPT_m	  0x20
 #define OPT_v	  0x40
 #define OPT_V	  0x80
+#define OPT_p	  0x100
 
 int main(int argc, char *argv[])
 {
     string fname;
     string arg;
     int volume = -1;
+    int iarg = 0;
 
     thisprog = argv[0];
     argc--; argv++;
@@ -255,6 +325,10 @@ int main(int argc, char *argv[])
             case 'm':	op_flags |= OPT_m; if (argc < 3)  Usage();
                 fname = *(++argv);argc--;
                 arg = *(++argv);argc--;
+                goto b1;
+            case 'p':	op_flags |= OPT_p; if (argc < 3)  Usage();
+                fname = *(++argv);argc--;
+                iarg = atoi(*(++argv)); argc--;
                 goto b1;
             case 'r':	op_flags |= OPT_r; if (argc < 3)  Usage();
                 fname = *(++argv);argc--;
@@ -320,6 +394,8 @@ int main(int argc, char *argv[])
         getsetVolume(fname, volume);
     } else if ((op_flags & OPT_v)) {
         getsetVolume(fname);
+    } else if ((op_flags & OPT_p)) {
+        tpPlayStop(fname, iarg);
     } else {
         Usage();
     }
