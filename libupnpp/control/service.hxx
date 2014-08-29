@@ -23,12 +23,9 @@
 
 #include <upnp/upnp.h>
 
-#include "libupnpp/log.hxx"
 #include "libupnpp/soaphelp.hxx"
-#include "libupnpp/upnpp_p.hxx"
 #include "libupnpp/control/description.hxx"
 #include "libupnpp/control/cdircontent.hxx"
-
 
 namespace UPnPClient {
 
@@ -56,19 +53,7 @@ public:
     /** Construct by copying data from device and service objects.
      */
     Service(const UPnPDeviceDesc& device,
-            const UPnPServiceDesc& service)
-        : m_reporter(0), 
-          m_actionURL(caturl(device.URLBase, service.controlURL)),
-          m_eventURL(caturl(device.URLBase, service.eventSubURL)),
-          m_serviceType(service.serviceType),
-          m_deviceId(device.UDN),
-          m_friendlyName(device.friendlyName),
-          m_manufacturer(device.manufacturer),
-          m_modelName(device.modelName)
-    { 
-        initEvents();
-        subscribe();
-    }
+            const UPnPServiceDesc& service);
 
     /** An empty one */
     Service() : m_reporter(0) {}
@@ -94,7 +79,6 @@ public:
     virtual void installReporter(VarEventReporter* reporter)
     {
         m_reporter = reporter;
-        LOGDEB("Reporter now " << m_reporter << endl);
     }
 
     // Can't copy these because this does not make sense for the

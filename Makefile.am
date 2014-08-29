@@ -48,6 +48,22 @@ libupnpp_la_SOURCES = \
     libupnpp/upnpplib.hxx \
     libupnpp/workqueue.hxx
 
+nobase_include_HEADERS = \
+    libupnpp/control/avtransport.hxx \
+    libupnpp/control/cdircontent.hxx \
+    libupnpp/control/cdirectory.hxx \
+    libupnpp/control/description.hxx \
+    libupnpp/control/discovery.hxx \
+    libupnpp/control/mediarenderer.hxx \
+    libupnpp/control/renderingcontrol.hxx \
+    libupnpp/control/service.hxx \
+    libupnpp/device/device.hxx \
+    libupnpp/log.hxx \
+    libupnpp/ptmutex.hxx \
+    libupnpp/soaphelp.hxx \
+    libupnpp/upnpavutils.hxx \
+    libupnpp/upnpplib.hxx
+
 libupnpp_la_LDFLAGS = -release $(VERSION)
 libupnpp_la_LIBADD = $(LIBUPNPP_LIBS)
 

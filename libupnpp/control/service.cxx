@@ -24,6 +24,7 @@ using namespace std::placeholders;
 
 #include "libupnpp/log.hxx"
 #include "libupnpp/ptmutex.hxx"
+#include "libupnpp/upnpp_p.hxx"
 #include "libupnpp/upnpplib.hxx"
 #include "libupnpp/control/service.hxx"
 #include "libupnpp/control/cdirectory.hxx"
@@ -44,6 +45,21 @@ public:
          if (*rspp) ixmlDocument_free(*rspp);
      }
 };
+
+Service::Service(const UPnPDeviceDesc& device,
+                 const UPnPServiceDesc& service)
+    : m_reporter(0), 
+      m_actionURL(caturl(device.URLBase, service.controlURL)),
+      m_eventURL(caturl(device.URLBase, service.eventSubURL)),
+      m_serviceType(service.serviceType),
+      m_deviceId(device.UDN),
+      m_friendlyName(device.friendlyName),
+      m_manufacturer(device.manufacturer),
+      m_modelName(device.modelName)
+{ 
+    initEvents();
+    subscribe();
+}
 
 int Service::runAction(const SoapEncodeInput& args, SoapDecodeOutput& data)
 {
