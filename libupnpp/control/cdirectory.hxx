@@ -27,8 +27,8 @@
 
 namespace UPnPClient {
 
-class ContentDirectoryService;
-typedef std::shared_ptr<ContentDirectoryService> CDSH;
+class ContentDirectory;
+typedef std::shared_ptr<ContentDirectory> CDSH;
 
 /**
  * Content Directory Service client class.
@@ -46,12 +46,12 @@ typedef std::shared_ptr<ContentDirectoryService> CDSH;
  * The value chosen may affect by the UpnpSetMaxContentLength
  * (2000*1024) done during initialization, but this should be ample
  */
-class ContentDirectoryService : public Service {
+class ContentDirectory : public Service {
 public:
     /** Construct by copying data from device and service objects.
      *
      */
-    ContentDirectoryService(const UPnPDeviceDesc& device,
+    ContentDirectory(const UPnPDeviceDesc& device,
                             const UPnPServiceDesc& service)
         : Service(device, service), m_rdreqcnt(200)
         {
@@ -64,7 +64,7 @@ public:
         }
 
     /** An empty one */
-    ContentDirectoryService() {}
+    ContentDirectory() {}
 
     /** Test service type from discovery message */
     static bool isCDService(const std::string& st);

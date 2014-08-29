@@ -139,7 +139,7 @@ public:
     /**
      * Parse from DIDL-Lite XML data.
      *
-     * Normally only used by ContentDirectoryService::readDir()
+     * Normally only used by ContentDirectory::readDir()
      * This is cumulative: in general, the XML data is obtained in
      * several documents corresponding to (offset,count) slices of the
      * directory (container). parse() can be called repeatedly with

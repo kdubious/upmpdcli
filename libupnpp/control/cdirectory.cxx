@@ -43,11 +43,11 @@ using namespace std::placeholders;
 namespace UPnPClient {
 
 // The service type string for Content Directories:
-const string ContentDirectoryService::SType("urn:schemas-upnp-org:service:ContentDirectory:1");
+const string ContentDirectory::SType("urn:schemas-upnp-org:service:ContentDirectory:1");
 
 // We don't include a version in comparisons, as we are satisfied with
 // version 1
-bool ContentDirectoryService::isCDService(const string& st)
+bool ContentDirectory::isCDService(const string& st)
 {
     const string::size_type sz(SType.size()-2);
     return !SType.compare(0, sz, st, 0, sz);
@@ -57,13 +57,13 @@ static bool DSAccum(vector<CDSH>* out,
                     const UPnPDeviceDesc& device, 
                     const UPnPServiceDesc& service)
 {
-    if (ContentDirectoryService::isCDService(service.serviceType)) {
-        out->push_back(CDSH(new ContentDirectoryService(device, service)));
+    if (ContentDirectory::isCDService(service.serviceType)) {
+        out->push_back(CDSH(new ContentDirectory(device, service)));
     }
     return true;
 }
 
-bool ContentDirectoryService::getServices(vector<CDSH>& vds)
+bool ContentDirectory::getServices(vector<CDSH>& vds)
 {
     //LOGDEB("UPnPDeviceDirectory::getDirServices" << endl);
     UPnPDeviceDirectory::Visitor visitor = bind(DSAccum, &vds, _1, _2);
@@ -77,9 +77,9 @@ static bool DSFriendlySelect(const string& friendlyName,
                              const UPnPDeviceDesc& device, 
                              const UPnPServiceDesc& service)
 {
-    if (ContentDirectoryService::isCDService(service.serviceType)) {
+    if (ContentDirectory::isCDService(service.serviceType)) {
         if (!friendlyName.compare(device.friendlyName)) {
-            *out = CDSH(new ContentDirectoryService(device, service));
+            *out = CDSH(new ContentDirectory(device, service));
             *found = true;
             return false;
         }
@@ -88,7 +88,7 @@ static bool DSFriendlySelect(const string& friendlyName,
 }
 
 // Get server by friendly name. 
-bool ContentDirectoryService::getServerByName(const string& friendlyName,
+bool ContentDirectory::getServerByName(const string& friendlyName,
                                               CDSH& server)
 {
     bool found = false;
@@ -119,17 +119,17 @@ static int asyncReaddirCB(Upnp_EventType et, void *vev, void *cookie)
     return -1;
 #endif
 
-void ContentDirectoryService::evtCallback(const unordered_map<string, string>&)
+void ContentDirectory::evtCallback(const unordered_map<string, string>&)
 {
 }
 
-void ContentDirectoryService::registerCallback()
+void ContentDirectory::registerCallback()
 {
-    Service::registerCallback(bind(&ContentDirectoryService::evtCallback, 
+    Service::registerCallback(bind(&ContentDirectory::evtCallback, 
                                    this, _1));
 }
 
-int ContentDirectoryService::readDirSlice(const string& objectId, int offset,
+int ContentDirectory::readDirSlice(const string& objectId, int offset,
                                           int count, UPnPDirContent& dirbuf,
                                           int *didreadp, int *totalp)
 {
@@ -178,7 +178,7 @@ int ContentDirectoryService::readDirSlice(const string& objectId, int offset,
     return UPNP_E_SUCCESS;
 }
 
-int ContentDirectoryService::readDir(const string& objectId,
+int ContentDirectory::readDir(const string& objectId,
                                      UPnPDirContent& dirbuf)
 {
     LOGDEB("CDService::readDir: url [" << m_actionURL << "] type [" <<
@@ -201,7 +201,7 @@ int ContentDirectoryService::readDir(const string& objectId,
     return UPNP_E_SUCCESS;
 }
 
-int ContentDirectoryService::search(const string& objectId,
+int ContentDirectory::search(const string& objectId,
                                     const string& ss,
                                     UPnPDirContent& dirbuf)
 {
@@ -251,7 +251,7 @@ int ContentDirectoryService::search(const string& objectId,
     return UPNP_E_SUCCESS;
 }
 
-int ContentDirectoryService::getSearchCapabilities(set<string>& result)
+int ContentDirectory::getSearchCapabilities(set<string>& result)
 {
     LOGDEB("CDService::getSearchCapabilities:" << endl);
 
@@ -282,7 +282,7 @@ int ContentDirectoryService::getSearchCapabilities(set<string>& result)
     return UPNP_E_SUCCESS;
 }
 
-int ContentDirectoryService::getMetadata(const string& objectId,
+int ContentDirectory::getMetadata(const string& objectId,
                                          UPnPDirContent& dirbuf)
 {
     LOGDEB("CDService::getMetadata: url [" << m_actionURL << "] type [" <<

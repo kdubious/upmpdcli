@@ -27,8 +27,6 @@ using namespace std;
 
 #include "libupnpp/log.hxx"
 #include "libupnpp/upnpplib.hxx"
-#include "libupnpp/control/discovery.hxx"
-#include "libupnpp/control/description.hxx"
 #include "libupnpp/control/service.hxx"
 #include "libupnpp/control/cdirectory.hxx"
 #include "libupnpp/control/mediarenderer.hxx"
@@ -40,7 +38,7 @@ void listServers()
 {
     cout << "Content Directories:" << endl;
     vector<CDSH> dirservices;
-    if (!ContentDirectoryService::getServices(dirservices)) {
+    if (!ContentDirectory::getServices(dirservices)) {
         cerr << "listDirServices failed" << endl;
         return;
     }
@@ -174,11 +172,11 @@ void tpPlayStop(const string& friendlyName, bool doplay)
     }
 }
 
-void readdir(LibUPnP *lib, const string& friendlyName, const string& cid)
+void readdir(const string& friendlyName, const string& cid)
 {
     cout << "readdir: [" << friendlyName << "] [" << cid << "]" << endl;
     CDSH server;
-    if (!ContentDirectoryService::getServerByName(friendlyName, server)) {
+    if (!ContentDirectory::getServerByName(friendlyName, server)) {
         cerr << "Server not found" << endl;
         return;
     }
@@ -198,11 +196,11 @@ void readdir(LibUPnP *lib, const string& friendlyName, const string& cid)
     }
 }
 
-void getMetadata(LibUPnP *lib, const string& friendlyName, const string& cid)
+void getMetadata(const string& friendlyName, const string& cid)
 {
     cout << "getMeta: [" << friendlyName << "] [" << cid << "]" << endl;
     CDSH server;
-    if (!ContentDirectoryService::getServerByName(friendlyName, server)) {
+    if (!ContentDirectory::getServerByName(friendlyName, server)) {
         cerr << "Server not found" << endl;
         return;
     }
@@ -222,11 +220,11 @@ void getMetadata(LibUPnP *lib, const string& friendlyName, const string& cid)
     }
 }
 
-void search(LibUPnP *lib, const string& friendlyName, const string& ss)
+void search(const string& friendlyName, const string& ss)
 {
     cout << "search: [" << friendlyName << "] [" << ss << "]" << endl;
     CDSH server;
-    if (!ContentDirectoryService::getServerByName(friendlyName, server)) {
+    if (!ContentDirectory::getServerByName(friendlyName, server)) {
         cerr << "Server not found" << endl;
         return;
     }
@@ -247,11 +245,11 @@ void search(LibUPnP *lib, const string& friendlyName, const string& ss)
     }
 }
 
-void getSearchCaps(LibUPnP *lib, const string& friendlyName)
+void getSearchCaps(const string& friendlyName)
 {
     cout << "getSearchCaps: [" << friendlyName << "]" << endl;
     CDSH server;
-    if (!ContentDirectoryService::getServerByName(friendlyName, server)) {
+    if (!ContentDirectory::getServerByName(friendlyName, server)) {
         cerr << "Server not found" << endl;
         return;
     }
@@ -370,11 +368,6 @@ int main(int argc, char *argv[])
         return 1;
     }
     mylib->setLogFileName("/tmp/libupnp.log");
-    UPnPDeviceDirectory *superdir = UPnPDeviceDirectory::getTheDir();
-    if (!superdir || !superdir->ok()) {
-        cerr << "Discovery services startup failed" << endl;
-        return 1;
-    }
 
     if ((op_flags & OPT_l)) {
         while (true) {
@@ -383,13 +376,13 @@ int main(int argc, char *argv[])
             sleep(5);
         }
     } else if ((op_flags & OPT_m)) {
-        getMetadata(mylib, fname, arg);
+        getMetadata(fname, arg);
     } else if ((op_flags & OPT_r)) {
-        readdir(mylib, fname, arg);
+        readdir(fname, arg);
     } else if ((op_flags & OPT_s)) {
-        search(mylib, fname, arg);
+        search(fname, arg);
     } else if ((op_flags & OPT_c)) {
-        getSearchCaps(mylib, fname);
+        getSearchCaps(fname);
     } else if ((op_flags & OPT_V)) {
         getsetVolume(fname, volume);
     } else if ((op_flags & OPT_v)) {
@@ -399,6 +392,6 @@ int main(int argc, char *argv[])
     } else {
         Usage();
     }
-    superdir->terminate();
+
     return 0;
 }
