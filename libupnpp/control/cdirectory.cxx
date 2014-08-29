@@ -34,11 +34,11 @@ using namespace std::placeholders;
 #include "libupnpp/upnpp_p.hxx"
 #include "libupnpp/upnpplib.hxx"
 #include "libupnpp/ixmlwrap.hxx"
-#include "libupnpp/control/cdirectory.hxx"
-#include "libupnpp/control/cdircontent.hxx"
-#include "libupnpp/discovery.hxx"
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/log.hxx"
+#include "libupnpp/control/cdirectory.hxx"
+#include "libupnpp/control/cdircontent.hxx"
+#include "libupnpp/control/discovery.hxx"
 
 namespace UPnPClient {
 

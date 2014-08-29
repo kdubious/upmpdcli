@@ -20,7 +20,7 @@
 #include <string>
 #include <memory>
 
-#include "service.hxx"
+#include "libupnpp/control/service.hxx"
 
 namespace UPnPClient {
 

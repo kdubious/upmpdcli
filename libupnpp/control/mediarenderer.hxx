@@ -20,10 +20,9 @@
 #include <memory>
 #include <string>
 
-#include "libupnpp/description.hxx"
+#include "libupnpp/control/description.hxx"
 #include "libupnpp/control/renderingcontrol.hxx"
 #include "libupnpp/control/avtransport.hxx"
-
 
 namespace UPnPClient {
 

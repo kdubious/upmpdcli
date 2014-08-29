@@ -26,7 +26,7 @@
 #include "libupnpp/log.hxx"
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/upnpp_p.hxx"
-#include "libupnpp/description.hxx"
+#include "libupnpp/control/description.hxx"
 #include "libupnpp/control/cdircontent.hxx"
 
 

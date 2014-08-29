@@ -6,8 +6,6 @@ AM_CXXFLAGS = -std=c++0x
 
 lib_LTLIBRARIES = libupnpp.la
 
-#    libupnpp/control/service.cxx 
-
 libupnpp_la_SOURCES = \
     libupnpp/control/avlastchg.cxx \
     libupnpp/control/avlastchg.hxx \
@@ -17,18 +15,20 @@ libupnpp_la_SOURCES = \
     libupnpp/control/cdircontent.hxx \
     libupnpp/control/cdirectory.cxx \
     libupnpp/control/cdirectory.hxx \
+    libupnpp/control/description.cxx \
+    libupnpp/control/description.hxx \
+    libupnpp/control/discovery.cxx \
+    libupnpp/control/discovery.hxx \
     libupnpp/control/mediarenderer.cxx \
     libupnpp/control/mediarenderer.hxx \
     libupnpp/control/renderingcontrol.cxx \
     libupnpp/control/renderingcontrol.hxx \
     libupnpp/control/service.cxx \
     libupnpp/control/service.hxx \
-    libupnpp/description.cxx \
-    libupnpp/description.hxx \
-    libupnpp/device.cxx \
-    libupnpp/device.hxx \
-    libupnpp/discovery.cxx \
-    libupnpp/discovery.hxx \
+    libupnpp/device/device.cxx \
+    libupnpp/device/device.hxx \
+    libupnpp/device/vdir.cxx \
+    libupnpp/device/vdir.hxx \
     libupnpp/expatmm.hxx \
     libupnpp/getsyshwaddr.c \
     libupnpp/getsyshwaddr.h \
@@ -41,13 +41,11 @@ libupnpp_la_SOURCES = \
     libupnpp/ptmutex.hxx \
     libupnpp/soaphelp.cxx \
     libupnpp/soaphelp.hxx \
-    libupnpp/upnpavutils.hxx \
     libupnpp/upnpavutils.cxx \
+    libupnpp/upnpavutils.hxx \
     libupnpp/upnpp_p.hxx \
     libupnpp/upnpplib.cxx \
     libupnpp/upnpplib.hxx \
-    libupnpp/vdir.cxx \
-    libupnpp/vdir.hxx \
     libupnpp/workqueue.hxx
 
 libupnpp_la_LDFLAGS = -release $(VERSION)

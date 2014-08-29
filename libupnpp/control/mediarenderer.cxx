@@ -22,8 +22,8 @@
 using namespace std;
 using namespace std::placeholders;
 
-#include "libupnpp/discovery.hxx"
 #include "libupnpp/log.hxx"
+#include "libupnpp/control/discovery.hxx"
 #include "libupnpp/control/mediarenderer.hxx"
 #include "libupnpp/control/renderingcontrol.hxx"
 

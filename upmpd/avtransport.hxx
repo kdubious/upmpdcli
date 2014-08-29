@@ -19,7 +19,7 @@
 
 #include <string>
 
-#include "libupnpp/device.hxx"
+#include "libupnpp/device/device.hxx"
 
 class UpMpd;
 class OHPlaylist;

@@ -27,8 +27,8 @@ using namespace std;
 
 #include "libupnpp/log.hxx"
 #include "libupnpp/upnpplib.hxx"
-#include "libupnpp/discovery.hxx"
-#include "libupnpp/description.hxx"
+#include "libupnpp/control/discovery.hxx"
+#include "libupnpp/control/description.hxx"
 #include "libupnpp/control/service.hxx"
 #include "libupnpp/control/cdirectory.hxx"
 #include "libupnpp/control/mediarenderer.hxx"

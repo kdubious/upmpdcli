@@ -21,7 +21,7 @@
 #include <set>
 #include <memory>
 
-#include "libupnpp/description.hxx"
+#include "libupnpp/control/description.hxx"
 #include "libupnpp/control/service.hxx"
 #include "libupnpp/control/cdircontent.hxx"
 

@@ -32,7 +32,7 @@ using namespace std::placeholders;
 
 #include "libupnpp/upnpplib.hxx"
 #include "libupnpp/soaphelp.hxx"
-#include "libupnpp/device.hxx"
+#include "libupnpp/device/device.hxx"
 #include "libupnpp/log.hxx"
 
 #include "upmpd.hxx"
