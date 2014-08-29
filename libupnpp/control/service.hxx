@@ -73,7 +73,10 @@ public:
     /** An empty one */
     Service() : m_reporter(0) {}
 
-    virtual ~Service() {}
+    virtual ~Service() 
+    {
+        o_calls.erase(m_SID);
+    }
 
     /** Retrieve my root device "friendly name". */
     std::string getFriendlyName() const {return m_friendlyName;}
