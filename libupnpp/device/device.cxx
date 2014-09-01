@@ -22,10 +22,10 @@
 #include <iostream>
 using namespace std;
 
-#include "upnpplib.hxx"
+#include "libupnpp/upnpplib.hxx"
+#include "libupnpp/log.hxx"
 #include "vdir.hxx"
 #include "device.hxx"
-#include "log.hxx"
 
 namespace UPnPProvider {
 

@@ -22,9 +22,9 @@
 
 #include <upnp/upnp.h>
 
-#include "upnpp_p.hxx"
+#include "libupnpp/upnpp_p.hxx"
+#include "libupnpp/log.hxx"
 #include "vdir.hxx"
-#include "log.hxx"
 
 using namespace std;
 

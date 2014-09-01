@@ -67,7 +67,7 @@ bool ContentDirectory::getServices(vector<CDSH>& vds)
 {
     //LOGDEB("UPnPDeviceDirectory::getDirServices" << endl);
     UPnPDeviceDirectory::Visitor visitor = bind(DSAccum, &vds, _1, _2);
-	UPnPDeviceDirectory::getTheDir()->traverse(visitor);
+    UPnPDeviceDirectory::getTheDir()->traverse(visitor);
     return !vds.empty();
 }
 
@@ -94,7 +94,7 @@ bool ContentDirectory::getServerByName(const string& friendlyName,
     bool found = false;
     UPnPDeviceDirectory::Visitor visitor = 
         bind(DSFriendlySelect, friendlyName, &found, &server, _1, _2);
-	UPnPDeviceDirectory::getTheDir()->traverse(visitor);
+    UPnPDeviceDirectory::getTheDir()->traverse(visitor);
     return found;
 }
 

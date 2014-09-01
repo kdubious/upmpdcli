@@ -27,28 +27,32 @@ namespace UPnPClient {
 /**
  * Manage UPnP discovery and maintain a directory of active devices. Singleton.
  *
+ *
+ * The service is initialize on the first call, starting
+ * the message-handling thread, registering our message handlers, 
+ * and initiating an asynchronous UPnP device search. 
+ *
+ * The search implies a timeout period (the specified interval
+ * over which the servers will send replies at random points). Any
+ * subsequent traverse() call will block until the timeout
+ * is expired. Use getRemainingDelay() to know the current
+ * remaining delay, and use it to do something else.
+ *
+ * We need a separate thread to process the messages coming up
+ * from libupnp, because some of them will in turn trigger other
+ * calls to libupnp, and this must not be done from the libupnp
+ * thread context which reported the initial message.
+ * So there are three threads in action:
+ *  - the reporting thread from libupnp.
+ *  - the discovery service processing thread, which also runs the callbacks.
+ *  - the user thread (typically the main thread), which calls traverse.
  */
 class UPnPDeviceDirectory {
 public:
     /** Retrieve the singleton object for the discovery service,
-     * and possibly start it up if this is the first call.
-     *
-     * This initializes the discovery service on first call, starting
-     * the message-handling thread, registering our message handlers, 
-     * and initiating an asynchronous UPnP device search. 
-     *
-     * The search implies a timeout period (the specified interval
-     * over which the servers will send replies at random points). Any
-     * subsequent getDirServices() call will block until the timeout
-     * is expired, so that the client can choose to do something else
-     * to use the time before getDirServices() can be hoped to return
-     * immediate results. Use getRemainingDelay() to know the current
-     * state of things.
-     *
-     * We need a separate thread to process the messages coming up
-     * from libupnp, because some of them will in turn trigger other
-     * calls to libupnp, and this must not be done from the libupnp
-     * thread context which reported the initial message.
+     * and possibly start it up if this is the first call. This does not wait
+     * significantly, a subsequent traverse() will wait until the
+     * initial delay is consumed.
      */
     static UPnPDeviceDirectory *getTheDir(time_t search_window = 3);
 
@@ -61,18 +65,18 @@ public:
     /** Traverse the directory and call Visitor for each device/service pair */
     bool traverse(Visitor);
 
+    /** Remaining time until current search complete */
+    time_t getRemainingDelay();
+
     /** My health */
     bool ok() {return m_ok;}
     /** My diagnostic if health is bad */
     const std::string getReason() {return m_reason;}
 
-    /** Remaining time until current search complete */
-    time_t getRemainingDelay();
-
 private:
     UPnPDeviceDirectory(time_t search_window);
-    UPnPDeviceDirectory(const UPnPDeviceDirectory &);
-    UPnPDeviceDirectory& operator=(const UPnPDeviceDirectory &);
+    UPnPDeviceDirectory(const UPnPDeviceDirectory &) = delete;
+    UPnPDeviceDirectory& operator=(const UPnPDeviceDirectory &) = delete;
     bool search();
     void expireDevices();
 

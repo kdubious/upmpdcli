@@ -26,16 +26,15 @@
 using namespace std;
 using namespace std::placeholders;
 
-#include "upnpp_p.hxx"
-
 #include <upnp/upnp.h>
 #include <upnp/upnptools.h>
 
-#include "workqueue.hxx"
-#include "upnpplib.hxx"
+#include "libupnpp/upnpp_p.hxx"
+#include "libupnpp/workqueue.hxx"
+#include "libupnpp/upnpplib.hxx"
+#include "libupnpp/log.hxx"
 #include "description.hxx"
 #include "discovery.hxx"
-#include "log.hxx"
 
 namespace UPnPClient {
 
@@ -298,6 +297,7 @@ bool UPnPDeviceDirectory::search()
 }
 
 static UPnPDeviceDirectory *theDevDir;
+
 UPnPDeviceDirectory *UPnPDeviceDirectory::getTheDir(time_t search_window)
 {
     if (theDevDir == 0)

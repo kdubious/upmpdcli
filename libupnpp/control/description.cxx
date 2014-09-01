@@ -25,8 +25,8 @@
 #include <map>
 using namespace std;
 
-#include "upnpp_p.hxx"
-#include "expatmm.hxx"
+#include "libupnpp/upnpp_p.hxx"
+#include "libupnpp/expatmm.hxx"
 #include "description.hxx"
 
 class UPnPDeviceParser : public expatmm::inputRefXMLParser {

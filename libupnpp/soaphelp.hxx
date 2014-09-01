@@ -62,11 +62,11 @@ public:
     SoapEncodeInput(const std::string& st, const std::string& nm)
         : serviceType(st), name(nm) {}
     SoapEncodeInput& addarg(const std::string& k, const std::string& v) {
-        data.push_back(pair<string,string>(k, v));
+        data.push_back(std::pair<std::string, std::string>(k, v));
         return *this;
     }
     SoapEncodeInput& operator() (const std::string& k, const std::string& v) {
-        data.push_back(pair<string,string>(k, v));
+        data.push_back(std::pair<std::string, std::string>(k, v));
         return *this;
     }
     static std::string i2s(int val);

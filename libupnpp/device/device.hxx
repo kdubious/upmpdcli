@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include <functional>
 
-#include "soaphelp.hxx"
+#include "libupnpp/soaphelp.hxx"
 
 namespace UPnPProvider {
 

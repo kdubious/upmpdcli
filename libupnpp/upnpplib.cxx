@@ -265,6 +265,7 @@ string LibUPnP::evTypeAsString(Upnp_EventType et)
 }
 
 /////////////////////// Small global helpers
+
 /** Get rid of white space at both ends */
 void trimstring(string &s, const char *ws)
 {
@@ -279,6 +280,7 @@ void trimstring(string &s, const char *ws)
     if (pos != string::npos && pos != s.length()-1)
         s.replace(pos+1, string::npos, string());
 }
+
 string caturl(const string& s1, const string& s2)
 {
     string out(s1);
