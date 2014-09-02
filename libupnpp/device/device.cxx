@@ -23,9 +23,12 @@
 using namespace std;
 
 #include "libupnpp/upnpplib.hxx"
+#include "libupnpp/upnpputils.hxx"
 #include "libupnpp/log.hxx"
 #include "vdir.hxx"
 #include "device.hxx"
+
+using namespace UPnPP;
 
 namespace UPnPProvider {
 
@@ -296,15 +299,6 @@ void UpnpDevice::notifyEvent(const string& serviceId,
 
 static pthread_cond_t evloopcond = PTHREAD_COND_INITIALIZER;
 
-static void timespec_addnanos(struct timespec *ts, int nanos)
-{
-    ts->tv_nsec += nanos;
-    if (ts->tv_nsec > 1000 * 1000 * 1000) {
-        int secs = ts->tv_nsec / (1000 * 1000 * 1000);
-        ts->tv_sec += secs;
-        ts->tv_nsec -= secs * (1000 * 1000 * 1000);
-    } 
-}
 int timespec_diffms(const struct timespec& old, const struct timespec& recent)
 {
     return (recent.tv_sec - old.tv_sec) * 1000 + 

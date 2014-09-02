@@ -62,7 +62,8 @@ nobase_include_HEADERS = \
     libupnpp/ptmutex.hxx \
     libupnpp/soaphelp.hxx \
     libupnpp/upnpavutils.hxx \
-    libupnpp/upnpplib.hxx
+    libupnpp/upnpplib.hxx \
+    libupnpp/upnpputils.hxx
 
 libupnpp_la_LDFLAGS = -release $(VERSION)
 libupnpp_la_LIBADD = $(LIBUPNPP_LIBS)

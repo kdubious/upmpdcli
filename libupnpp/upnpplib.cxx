@@ -451,3 +451,23 @@ int stringuppercmp(const string & s1, const string& s2)
 	return size1 == size2 ? 0 : -1;
     }
 }
+
+#include "upnpputils.hxx"
+
+namespace UPnPP {
+
+static const long long BILLION = 1000 * 1000 * 1000;
+
+void timespec_addnanos(struct timespec *ts, long long nanos)
+{
+    nanos = nanos + ts->tv_nsec;
+    int secs = 0;
+    if (nanos > BILLION) {
+        secs = nanos / BILLION;
+        nanos -= secs * BILLION;
+    } 
+    ts->tv_sec += secs;
+    ts->tv_nsec = nanos;
+}
+
+}

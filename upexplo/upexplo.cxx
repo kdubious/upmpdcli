@@ -23,16 +23,109 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 using namespace std;
 
 #include "libupnpp/log.hxx"
 #include "libupnpp/upnpplib.hxx"
+#include "libupnpp/upnpputils.hxx"
+#include "libupnpp/upnpputils.hxx"
+#include "libupnpp/ptmutex.hxx"
 #include "libupnpp/control/service.hxx"
 #include "libupnpp/control/cdirectory.hxx"
 #include "libupnpp/control/mediarenderer.hxx"
 #include "libupnpp/control/renderingcontrol.hxx"
+#include "libupnpp/control/discovery.hxx"
 
 using namespace UPnPClient;
+
+UPnPDeviceDirectory *superdir;
+
+PTMutexInit reporterLock;
+static pthread_cond_t evloopcond = PTHREAD_COND_INITIALIZER;
+
+vector<string> deviceFNs;
+vector<string> deviceUDNs;
+vector<string> deviceTypes;
+static void clearDevices() {
+    deviceFNs.clear();
+    deviceUDNs.clear();
+    deviceTypes.clear();
+}
+
+static bool 
+reporter(const UPnPDeviceDesc& device, const UPnPServiceDesc&)
+{
+    PTMutexLocker lock(reporterLock);
+    //cerr << "reporter: " << device.friendlyName << " s " << 
+    // device.deviceType << endl;
+    if (find(deviceUDNs.begin(), deviceUDNs.end(), device.UDN)
+        == deviceUDNs.end()) {
+        deviceFNs.push_back(device.friendlyName);
+        deviceUDNs.push_back(device.UDN);
+        deviceTypes.push_back(device.deviceType);
+        pthread_cond_broadcast(&evloopcond);
+    }
+    return true;
+}
+
+static bool traverser(const UPnPDeviceDesc& device, const UPnPServiceDesc& srv)
+{
+    if (find(deviceUDNs.begin(), deviceUDNs.end(), device.UDN)
+        == deviceUDNs.end()) {
+        cout << device.friendlyName <<" ("<< device.deviceType << ")" << endl;
+        deviceUDNs.push_back(device.UDN);
+    }        
+    return true;
+}
+
+void listDevices()
+{
+    cout << "UPnP devices:" << endl;
+    static int cbindex = -1;
+    if (cbindex == -1) {
+        cbindex = UPnPDeviceDirectory::addCallback(reporter);
+    }
+
+    struct timespec wkuptime;
+    
+    long long nanos = 0;
+    unsigned int ndevices = 0;
+    do {
+        PTMutexLocker lock(reporterLock);
+        if (superdir == 0) {
+            // First time. Use the event reporting to list the devices
+            // as soon as they are discovered
+            superdir = UPnPDeviceDirectory::getTheDir();
+            nanos = superdir->getRemainingDelay() * 1000*1000*1000;
+        }
+        if (nanos > 0) {
+            clock_gettime(CLOCK_REALTIME, &wkuptime);
+            UPnPP::timespec_addnanos(&wkuptime, nanos);
+            pthread_cond_timedwait(&evloopcond, lock.getMutex(), &wkuptime);
+            if (deviceFNs.size() > ndevices) {
+                for (unsigned int i = ndevices; i < deviceFNs.size(); i++) {
+                    cout << deviceFNs[i] <<" ("<< deviceTypes[i] << ")" << endl;
+                }
+                ndevices = deviceFNs.size();
+            }
+        }
+    } while (superdir->getRemainingDelay() > 0);
+
+    if (nanos == 0) {
+        if (cbindex >= 0) {
+            UPnPDeviceDirectory::delCallback(cbindex);
+            cbindex = -2;
+        }
+        // Not the first time: just list the device pool.
+        if (superdir == 0) {
+            cerr << "nanos and superdir both zero" << endl;
+            exit(1);
+        }
+        clearDevices();
+        superdir->traverse(traverser);
+    }
+}
 
 void listServers()
 {
@@ -87,23 +180,16 @@ public:
 
 MRDH getRenderer(const string& friendlyName)
 {
-    MRDH rdr;
-    vector<UPnPDeviceDesc> vdds;
-    if (!MediaRenderer::getDeviceDescs(vdds, friendlyName)) {
-        cerr << "MediaRenderer::getDeviceDescs" << endl;
-        return rdr;
+    if (superdir == 0) {
+        superdir = UPnPDeviceDirectory::getTheDir();
     }
 
-    if (vdds.size() == 0) {
-        cerr << "Player not found" << endl;
-        return rdr;
-    } else if (vdds.size() > 1) {
-        cerr << "Multiple players found" << endl;
-        return rdr;
+    UPnPDeviceDesc ddesc;
+    if (superdir->getDevByFName(friendlyName, ddesc)) {
+        return MRDH(new MediaRenderer(ddesc));
     }
-
-    UPnPDeviceDesc& dev = vdds[0];
-    return MRDH(new MediaRenderer(dev));
+    cerr << "getDevByFname failed" << endl;
+    return MRDH();
 }
 
 void getsetVolume(const string& friendlyName, int volume = -1)
@@ -371,8 +457,7 @@ int main(int argc, char *argv[])
 
     if ((op_flags & OPT_l)) {
         while (true) {
-            listServers();
-            listPlayers();
+            listDevices();
             sleep(5);
         }
     } else if ((op_flags & OPT_m)) {

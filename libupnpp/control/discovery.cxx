@@ -30,6 +30,7 @@ using namespace std::placeholders;
 #include <upnp/upnptools.h>
 
 #include "libupnpp/upnpp_p.hxx"
+#include "libupnpp/upnpputils.hxx"
 #include "libupnpp/workqueue.hxx"
 #include "libupnpp/upnpplib.hxx"
 #include "libupnpp/log.hxx"
@@ -37,6 +38,8 @@ using namespace std::placeholders;
 #include "discovery.hxx"
 
 namespace UPnPClient {
+
+static UPnPDeviceDirectory *theDevDir;
 
 //#undef LOCAL_LOGINC
 //#define LOCAL_LOGINC 3
@@ -75,6 +78,10 @@ public:
     string deviceId;
     int expires; // Seconds valid
 };
+
+// The workqueue on which callbacks from libupnp (cluCallBack()) queue
+// discovered object descriptors for processing by our dedicated
+// thread.
 static WorkQueue<DiscoveredTask*> discoveredQueue("DiscoveredQueue");
 
 // This gets called in a libupnp thread context for all asynchronous
@@ -84,9 +91,9 @@ static WorkQueue<DiscoveredTask*> discoveredQueue("DiscoveredQueue");
 // It seems that this can get called by several threads. We have a
 // mutex just for clarifying the message printing, the workqueue is
 // mt-safe of course.
-static PTMutexInit cblock;
 static int cluCallBack(Upnp_EventType et, void* evp, void*)
 {
+    static PTMutexInit cblock;
     PTMutexLocker lock(cblock);
     LOGDEB1("discovery:cluCallBack: " << LibUPnP::evTypeAsString(et) << endl);
 
@@ -130,7 +137,28 @@ static int cluCallBack(Upnp_EventType et, void* evp, void*)
     return UPNP_E_SUCCESS;
 }
 
-// Descriptor for one device found on the network.
+// Our client can set up functions to be called when we process a new device.
+// This is used during startup, when the pool is not yet complete, to enable
+// finding and listing devices as soon as they appear.
+static vector<UPnPDeviceDirectory::Visitor> o_callbacks;
+static PTMutexInit o_callbacks_mutex;
+
+unsigned int UPnPDeviceDirectory::addCallback(UPnPDeviceDirectory::Visitor v)
+{
+    PTMutexLocker lock(o_callbacks_mutex);
+    o_callbacks.push_back(v);
+    return o_callbacks.size() - 1;
+}
+
+void UPnPDeviceDirectory::delCallback(unsigned int idx)
+{
+    PTMutexLocker lock(o_callbacks_mutex);
+    if (idx >= o_callbacks.size())
+        return;
+    o_callbacks.erase(o_callbacks.begin() + idx);
+}
+
+// Descriptor kept in the device pool for each device found on the network.
 class DeviceDescriptor {
 public:
     DeviceDescriptor(const string& url, const string& description,
@@ -209,10 +237,18 @@ static void *discoExplorer(void *)
             LOGDEB1("discoExplorer: found id [" << tsk->deviceId  << "]" 
                     << " name " << d.device.friendlyName 
                     << " devtype " << d.device.deviceType << endl);
-            PTMutexLocker lock(o_pool.m_mutex);
-            //LOGDEB1("discoExplorer: inserting device id "<< tsk->deviceId << 
-            //        " description: " << endl << d.device.dump() << endl);
-            o_pool.m_devices[tsk->deviceId] = d;
+            {
+                PTMutexLocker lock(o_pool.m_mutex);
+                //LOGDEB1("discoExplorer: inserting device id "<< tsk->deviceId
+                // <<  " description: " << endl << d.device.dump() << endl);
+                o_pool.m_devices[tsk->deviceId] = d;
+            }
+            {
+                PTMutexLocker lock(o_callbacks_mutex);
+                for (auto& cb: o_callbacks) {
+                    cb(d.device, UPnPServiceDesc());
+                }
+            }
         }
         delete tsk;
     }
@@ -252,6 +288,8 @@ void UPnPDeviceDirectory::expireDevices()
 UPnPDeviceDirectory::UPnPDeviceDirectory(time_t search_window)
     : m_ok(false), m_searchTimeout(search_window), m_lastSearch(0)
 {
+    addCallback(std::bind(&UPnPDeviceDirectory::deviceFound, this, _1, _2));
+
     if (!discoveredQueue.start(1, discoExplorer, 0)) {
         m_reason = "Discover work queue start failed";
         return;
@@ -296,8 +334,6 @@ bool UPnPDeviceDirectory::search()
     return true;
 }
 
-static UPnPDeviceDirectory *theDevDir;
-
 UPnPDeviceDirectory *UPnPDeviceDirectory::getTheDir(time_t search_window)
 {
     if (theDevDir == 0)
@@ -325,9 +361,9 @@ bool UPnPDeviceDirectory::traverse(UPnPDeviceDirectory::Visitor visit)
     //LOGDEB("UPnPDeviceDirectory::traverse" << endl);
     if (m_ok == false)
         return false;
-
-    if (getRemainingDelay() > 0)
-        sleep(getRemainingDelay());
+    int secs = getRemainingDelay();
+    if (secs > 0)
+        sleep(secs);
 
     // Has locking, do it before our own lock
     expireDevices();
@@ -342,6 +378,72 @@ bool UPnPDeviceDirectory::traverse(UPnPDeviceDirectory::Visitor visit)
     }
     return true;
 }
+
+static PTMutexInit devWaitLock;
+static pthread_cond_t devWaitCond = PTHREAD_COND_INITIALIZER;
+
+bool UPnPDeviceDirectory::deviceFound(const UPnPDeviceDesc&, 
+                                      const UPnPServiceDesc&)
+{
+    PTMutexLocker lock(devWaitLock);
+    pthread_cond_broadcast(&devWaitCond);
+    return true;
+}
+
+bool UPnPDeviceDirectory::getDevBySelector(bool cmp(const UPnPDeviceDesc& ddesc,
+                                                    const string&), 
+                                           const string& value,
+                                           UPnPDeviceDesc& ddesc)
+{
+    // Has locking, do it before our own lock
+    expireDevices();
+
+    struct timespec wkuptime;
+    long long nanos = getRemainingDelay() * 1000*1000*1000;
+    clock_gettime(CLOCK_REALTIME, &wkuptime);
+    UPnPP::timespec_addnanos(&wkuptime, nanos);
+    do {
+        PTMutexLocker lock(devWaitLock);
+        {
+            PTMutexLocker lock(o_pool.m_mutex);
+            for (auto& dde : o_pool.m_devices) {
+                if (!cmp(dde.second.device, value)) {
+                    ddesc = dde.second.device;
+                    return true;
+                }
+            }
+        }
+
+        if (nanos > 0) {
+            pthread_cond_timedwait(&devWaitCond, lock.getMutex(), &wkuptime);
+        }
+    } while (getRemainingDelay() > 0);
+    return false;
+}
+
+static bool cmpFName(const UPnPDeviceDesc& ddesc, const string& fname)
+{
+    return ddesc.friendlyName.compare(fname);
+}
+
+bool UPnPDeviceDirectory::getDevByFName(const string& fname, 
+                                        UPnPDeviceDesc& ddesc)
+{
+    return getDevBySelector(cmpFName, fname, ddesc);
+}
+
+static bool cmpUDN(const UPnPDeviceDesc& ddesc, const string& value)
+{
+    return ddesc.UDN.compare(value);
+}
+
+bool UPnPDeviceDirectory::getDevByUDN(const string& value, 
+                                      UPnPDeviceDesc& ddesc)
+{
+    return getDevBySelector(cmpUDN, value, ddesc);
+}
+
+
 
 } // namespace UPnPClient
 

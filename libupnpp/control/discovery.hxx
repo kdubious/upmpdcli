@@ -24,6 +24,8 @@
 
 namespace UPnPClient {
 
+static void *discoExplorer(void *);
+
 /**
  * Manage UPnP discovery and maintain a directory of active devices. Singleton.
  *
@@ -68,6 +70,20 @@ public:
     /** Remaining time until current search complete */
     time_t getRemainingDelay();
 
+    /** Set a callback to be called when devices report their existence 
+     *  The visitor will be called once per device, with an empty service.
+     */
+    static unsigned int addCallback(Visitor v);
+    static void delCallback(unsigned int idx);
+
+    /** Find device by friendlyName or UDN. Unlike traverse, this does
+     * not necessarily wait for the initial timeout, it returns as
+     * soon as a device with this name reports (or the timeout expires). 
+     * Note that "friendly names" are not necessarily unique.
+     */
+    bool getDevByFName(const std::string& fname, UPnPDeviceDesc& ddesc);
+    bool getDevByUDN(const std::string& udn, UPnPDeviceDesc& ddesc);
+
     /** My health */
     bool ok() {return m_ok;}
     /** My diagnostic if health is bad */
@@ -77,8 +93,23 @@ private:
     UPnPDeviceDirectory(time_t search_window);
     UPnPDeviceDirectory(const UPnPDeviceDirectory &) = delete;
     UPnPDeviceDirectory& operator=(const UPnPDeviceDirectory &) = delete;
+
+    // Start UPnP search and record start of timeout
     bool search();
+    // Look at the current pool and remove expired entries
     void expireDevices();
+
+    // This is called by the thread which processes the device events
+    // when a new device appears. It wakes up any thread waiting for a
+    // device.
+    bool deviceFound(const UPnPDeviceDesc&, const UPnPServiceDesc&);
+
+    // Lookup a device in the pool. If not found and a search is active, 
+    // use a cond_wait to wait for device events (awaken by deviceFound).
+    bool getDevBySelector(bool cmp(const UPnPDeviceDesc&, const std::string&), 
+                          const std::string& value, UPnPDeviceDesc& ddesc);
+
+    friend void *discoExplorer(void *);
 
     bool m_ok;
     std::string m_reason;
