@@ -115,14 +115,14 @@ LibUPnP::LibUPnP(bool serveronly, string* hwaddr,
     ixmlRelaxParser(1);
 }
 
-int LibUPnP::setupWebServer(const string& description)
+int LibUPnP::setupWebServer(const string& description, UpnpDevice_Handle *dvh)
 {
     int res = UpnpRegisterRootDevice2(
         UPNPREG_BUF_DESC,
         description.c_str(), 
         description.size(), /* Desc filename len, ignored */
         1, /* URLBase*/
-        o_callback, (void *)this, &m_dvh);
+        o_callback, (void *)this, dvh);
 
     if (res != UPNP_E_SUCCESS) {
         LOGERR(errAsString("UpnpRegisterRootDevice2", m_init_error) << endl);

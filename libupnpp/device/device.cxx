@@ -106,16 +106,21 @@ UpnpDevice::UpnpDevice(const string& deviceId,
     }
 
     // Start up the web server for sending out description files
-    m_lib->setupWebServer(description);
+    int ret;
+    if ((ret = m_lib->setupWebServer(description, &m_dvh)) != 0) {
+        LOGFAT("UpnpDevice: libupnp can't start service. Err " << ret << endl);
+    }
 
-    UpnpSendAdvertisement(m_lib->getdvh(), expiretime);
+    if ((ret = UpnpSendAdvertisement(m_dvh, expiretime)) != 0) {
+        LOGERR("UpnpDevice: UpnpSendAdvertisement error: " << ret << endl);
+    }
 
     o_devices[m_deviceId] = this;
 }
 
 UpnpDevice::~UpnpDevice()
 {
-    UpnpUnRegisterRootDevice (m_lib->getdvh());
+    UpnpUnRegisterRootDevice(m_dvh);
 }
 
 static PTMutexInit cblock;
@@ -243,7 +248,7 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
         vector<const char *> cnames, cvalues;
         vectorstoargslists(names, values, qvalues, cnames, cvalues);
         int ret = 
-            UpnpAcceptSubscription(m_lib->getdvh(), act->UDN, act->ServiceId,
+            UpnpAcceptSubscription(m_dvh, act->UDN, act->ServiceId,
                                    &cnames[0], &cvalues[0],
                                    int(cnames.size()), act->Sid);
         if (ret != UPNP_E_SUCCESS) {
@@ -289,7 +294,7 @@ void UpnpDevice::notifyEvent(const string& serviceId,
     vector<string> qvalues;
     vectorstoargslists(names, values, qvalues, cnames, cvalues);
 
-    int ret = UpnpNotify(m_lib->getdvh(), m_deviceId.c_str(), 
+    int ret = UpnpNotify(m_dvh, m_deviceId.c_str(), 
                          serviceId.c_str(), &cnames[0], &cvalues[0],
                          int(cnames.size()));
     if (ret != UPNP_E_SUCCESS) {

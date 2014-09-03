@@ -97,15 +97,11 @@ public:
     /** Translate libupnp event type as string */
     static std::string evTypeAsString(Upnp_EventType);
 
-    int setupWebServer(const std::string& description);
+    int setupWebServer(const std::string& description, UpnpDevice_Handle *dvh);
 
     UpnpClient_Handle getclh()
     {
         return m_clh;
-    }
-    UpnpDevice_Handle getdvh()
-    {
-        return m_dvh;
     }
 private:
 
@@ -133,9 +129,6 @@ private:
     bool m_ok;
     int  m_init_error;
     UpnpClient_Handle m_clh;
-    // !TBD: there should be one handle per device if we ever want to have 
-    // several devices in the same process.
-    UpnpDevice_Handle m_dvh;
     PTMutexInit m_mutex;
     std::map<Upnp_EventType, Handler> m_handlers;
 };

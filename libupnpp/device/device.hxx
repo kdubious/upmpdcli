@@ -103,6 +103,9 @@ private:
 
     /* Gets called when something needs doing */
     int callBack(Upnp_EventType et, void* evp);
+
+    /* My device handle */
+    UpnpDevice_Handle m_dvh;
 };
 
 /**
