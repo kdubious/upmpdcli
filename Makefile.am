@@ -68,10 +68,7 @@ nobase_include_HEADERS = \
 libupnpp_la_LDFLAGS = -release $(VERSION)
 libupnpp_la_LIBADD = $(LIBUPNPP_LIBS)
 
-bin_PROGRAMS = upmpdcli upexplorer 
-
-upexplorer_SOURCES = upexplo/upexplo.cxx
-upexplorer_LDADD = libupnpp.la
+bin_PROGRAMS = upmpdcli
 
 upmpdcli_SOURCES = \
      upmpd/conftree.cxx \
@@ -103,7 +100,7 @@ upmpdcli_SOURCES = \
      upmpd/base64.hxx \
      upmpd/base64.cxx
                            
-upmpdcli_LDADD = libupnpp.la -lmpdclient -lpthread
+upmpdcli_LDADD = libupnpp.la -lmpdclient -lpthread -lrt
 
 dist_pkgdata_DATA = upmpd/description.xml upmpd/AVTransport.xml \
                   upmpd/RenderingControl.xml upmpd/ConnectionManager.xml \
