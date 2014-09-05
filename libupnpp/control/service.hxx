@@ -58,10 +58,7 @@ public:
     /** An empty one */
     Service() : m_reporter(0) {}
 
-    virtual ~Service() 
-    {
-        o_calls.erase(m_SID);
-    }
+    virtual ~Service();
 
     /** Retrieve my root device "friendly name". */
     std::string getFriendlyName() const {return m_friendlyName;}
@@ -122,6 +119,7 @@ private:
     /* Tell the UPnP device (through libupnp) that we want to receive
        its events. This is called during construction and sets m_SID */
     virtual bool subscribe();
+    virtual bool unSubscribe();
 
     Upnp_SID    m_SID; /* Subscription Id */
 };

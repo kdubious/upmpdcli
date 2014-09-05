@@ -60,6 +60,12 @@ Service::Service(const UPnPDeviceDesc& device,
     initEvents();
     subscribe();
 }
+Service::~Service()
+{
+    LOGDEB("Service::~Service: unregister " << m_SID << endl);
+    unSubscribe();
+    o_calls.erase(m_SID);
+}
 
 int Service::runAction(const SoapEncodeInput& args, SoapDecodeOutput& data)
 {
@@ -189,7 +195,7 @@ bool Service::subscribe()
     //LOGDEB("Service::subscribe" << endl);
     LibUPnP* lib = LibUPnP::getLibUPnP();
     if (lib == 0) {
-        LOGINF("Service::runAction: no lib" << endl);
+        LOGINF("Service::subscribe: no lib" << endl);
         return UPNP_E_OUTOF_MEMORY;
     }
     int timeout = 1800;
@@ -204,9 +210,27 @@ bool Service::subscribe()
     return true;
 }
 
+bool Service::unSubscribe()
+{
+    //LOGDEB("Service::unSubscribe" << endl);
+    LibUPnP* lib = LibUPnP::getLibUPnP();
+    if (lib == 0) {
+        LOGINF("Service::unSubscribe: no lib" << endl);
+        return UPNP_E_OUTOF_MEMORY;
+    }
+    int ret = UpnpUnSubscribe(lib->getclh(), m_SID);
+    if (ret != UPNP_E_SUCCESS) {
+        LOGERR("Service:unSubscribe: failed: " << 
+               UpnpGetErrorMessage(ret) << endl);
+        return false;
+    } 
+    return true;
+}
+
 void Service::registerCallback(evtCBFunc c)
 {
     PTMutexLocker lock(cblock);
+    LOGDEB("Service::registerCallback: " << m_SID << endl);
     o_calls[m_SID] = c;
 }
 
