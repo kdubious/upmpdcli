@@ -52,7 +52,7 @@ public:
      *
      */
     ContentDirectory(const UPnPDeviceDesc& device,
-                            const UPnPServiceDesc& service)
+                     const UPnPServiceDesc& service)
         : Service(device, service), m_rdreqcnt(200)
         {
             if (!m_modelName.compare("MediaTomb")) {

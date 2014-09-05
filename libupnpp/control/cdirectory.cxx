@@ -71,33 +71,24 @@ bool ContentDirectory::getServices(vector<CDSH>& vds)
     return !vds.empty();
 }
 
-static bool DSFriendlySelect(const string& friendlyName,
-                             bool  *found,
-                             CDSH *out,
-                             const UPnPDeviceDesc& device, 
-                             const UPnPServiceDesc& service)
+// Get server by friendly name. 
+bool ContentDirectory::getServerByName(const string& fname, CDSH& server)
 {
-    if (ContentDirectory::isCDService(service.serviceType)) {
-        if (!friendlyName.compare(device.friendlyName)) {
-            *out = CDSH(new ContentDirectory(device, service));
-            *found = true;
-            return false;
+    UPnPDeviceDesc ddesc;
+    bool found = UPnPDeviceDirectory::getTheDir()->getDevByFName(fname, ddesc);
+    if (!found)
+        return false;
+
+    found = false;
+    for (auto it = ddesc.services.begin(); it != ddesc.services.end(); it++) {
+        if (isCDService(it->serviceType)) {
+            server = CDSH(new ContentDirectory(ddesc, *it));
+            found = true;
+            break;
         }
     }
-    return true;
-}
-
-// Get server by friendly name. 
-bool ContentDirectory::getServerByName(const string& friendlyName,
-                                              CDSH& server)
-{
-    bool found = false;
-    UPnPDeviceDirectory::Visitor visitor = 
-        bind(DSFriendlySelect, friendlyName, &found, &server, _1, _2);
-    UPnPDeviceDirectory::getTheDir()->traverse(visitor);
     return found;
 }
-
 
 #if 0
 static int asyncReaddirCB(Upnp_EventType et, void *vev, void *cookie)
@@ -125,6 +116,7 @@ void ContentDirectory::evtCallback(const unordered_map<string, string>&)
 
 void ContentDirectory::registerCallback()
 {
+    LOGDEB("ContentDirectory::registerCallback"<< endl);
     Service::registerCallback(bind(&ContentDirectory::evtCallback, 
                                    this, _1));
 }
