@@ -50,13 +50,13 @@ public:
     static bool isRDCService(const std::string& st);
 
     /** @ret 0 for success, upnp error else */
-    int setVolume(int volume, const string& channel = "Master");
-    int getVolume(const string& channel = "Master");
-    int setMute(bool mute, const string& channel = "Master");
-    bool getMute(const string& channel = "Master");
+    int setVolume(int volume, const std::string& channel = "Master");
+    int getVolume(const std::string& channel = "Master");
+    int setMute(bool mute, const std::string& channel = "Master");
+    bool getMute(const std::string& channel = "Master");
 
 protected:
-    static const string SType;
+    static const std::string SType;
 
 private:
     void evtCallback(const std::unordered_map<std::string, std::string>&);
