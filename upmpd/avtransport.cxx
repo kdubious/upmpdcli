@@ -311,8 +311,8 @@ int UpMpdAVTransport::setAVTransportURI(const SoapArgs& sc, SoapData& data,
         sc.args.find("CurrentURIMetaData");
     if (it != sc.args.end())
         metadata = it->second;
-    //cerr << "SetTransport: setnext " << setnext << " metadata[" << metadata <<
-    // "]" << endl;
+    LOGDEB("Set(next)AVTransportURI: next " << setnext <<  " uri " << uri <<
+           " metadata[" << metadata << "]" << endl);
 
     if ((m_dev->m_options & UpMpd::upmpdOwnQueue) && !setnext) {
         // If we own the queue, just clear it before setting the
@@ -326,9 +326,9 @@ int UpMpdAVTransport::setAVTransportURI(const SoapArgs& sc, SoapData& data,
     bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
         (mpds.state == MpdStatus::MPDS_PAUSE);
     int curpos = mpds.songpos;
-    LOGDEB("UpMpdAVTransport::set" << (setnext?"Next":"") << 
-           "AVTransportURI: curpos: " <<
-           curpos << " is_song " << is_song << " qlen " << mpds.qlen << endl);
+    LOGDEB1("UpMpdAVTransport::set" << (setnext?"Next":"") << 
+            "AVTransportURI: curpos: " <<
+            curpos << " is_song " << is_song << " qlen " << mpds.qlen << endl);
 
     // curpos == -1 means that the playlist was cleared or we just started. A
     // play will use position 0, so it's actually equivalent to curpos == 0
