@@ -14,41 +14,37 @@
  *       Free Software Foundation, Inc.,
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#ifndef _MEDIARENDERER_HXX_INCLUDED_
-#define _MEDIARENDERER_HXX_INCLUDED_
+#ifndef _MEDIASERVER_HXX_INCLUDED_
+#define _MEDIASERVER_HXX_INCLUDED_
 
 #include <memory>
 #include <string>
 
 #include "libupnpp/control/device.hxx"
 #include "libupnpp/control/description.hxx"
-#include "libupnpp/control/renderingcontrol.hxx"
-#include "libupnpp/control/avtransport.hxx"
+#include "libupnpp/control/cdirectory.hxx"
 
 namespace UPnPClient {
 
-class MediaRenderer;
-typedef std::shared_ptr<MediaRenderer> MRDH;
+class MediaServer;
+typedef std::shared_ptr<MediaServer> MSRH;
 
-class MediaRenderer : public Device {
+class MediaServer : public Device {
 public:
-    MediaRenderer(const UPnPDeviceDesc& desc);
+    MediaServer(const UPnPDeviceDesc& desc);
 
-    RDCH rdc() {return m_rdc;}
-    AVTH avt() {return m_avt;}
+    CDSH cds() {return m_cds;}
 
     static bool getDeviceDescs(std::vector<UPnPDeviceDesc>& devices,
                                const std::string& friendlyName = "");
-    static bool hasOpenHome(const UPnPDeviceDesc& device);
-    static bool isMRDevice(const std::string& devicetype);
+    static bool isMSDevice(const std::string& devicetype);
 
 protected:
-    RDCH m_rdc;
-    AVTH m_avt;
+    CDSH m_cds;
 
     static const std::string DType;
 };
 
 }
 
-#endif /* _MEDIARENDERER_HXX_INCLUDED_ */
+#endif /* _MEDIASERVER_HXX_INCLUDED_ */

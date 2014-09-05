@@ -17,10 +17,13 @@ libupnpp_la_SOURCES = \
     libupnpp/control/cdirectory.hxx \
     libupnpp/control/description.cxx \
     libupnpp/control/description.hxx \
+    libupnpp/control/device.hxx \
     libupnpp/control/discovery.cxx \
     libupnpp/control/discovery.hxx \
     libupnpp/control/mediarenderer.cxx \
     libupnpp/control/mediarenderer.hxx \
+    libupnpp/control/mediaserver.cxx \
+    libupnpp/control/mediaserver.hxx \
     libupnpp/control/renderingcontrol.cxx \
     libupnpp/control/renderingcontrol.hxx \
     libupnpp/control/service.cxx \
@@ -53,8 +56,10 @@ nobase_include_HEADERS = \
     libupnpp/control/cdircontent.hxx \
     libupnpp/control/cdirectory.hxx \
     libupnpp/control/description.hxx \
+    libupnpp/control/device.hxx \
     libupnpp/control/discovery.hxx \
     libupnpp/control/mediarenderer.hxx \
+    libupnpp/control/mediaserver.hxx \
     libupnpp/control/renderingcontrol.hxx \
     libupnpp/control/service.hxx \
     libupnpp/device/device.hxx \
