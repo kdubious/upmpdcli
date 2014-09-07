@@ -169,12 +169,13 @@ void AVTransport::evtCallback(
                     LOGERR("AVTransport event: bad metadata: [" <<
                            entry1.second << "]" << endl);
                 } else {
-                    LOGDEB1("AVTransport event: metadata: " << 
-                           meta.m_items.size() << " items " << endl);
+                    LOGDEB1("AVTransport event: good metadata: [" <<
+                            entry1.second << "]" << endl);
+                    if (meta.m_items.size() > 0) {
+                        m_reporter->changed(entry1.first.c_str(), 
+                                            meta.m_items[0]);
+                    }
                 }
-                
-                m_reporter->changed(entry1.first.c_str(), meta);
-
             } else if (!entry1.first.compare("PlaybackStorageMedium") ||
                        !entry1.first.compare("PossiblePlaybackStorageMedium") ||
                        !entry1.first.compare("RecordStorageMedium") ||
@@ -294,11 +295,10 @@ int AVTransport::getPositionInfo(PositionInfo& info, int instanceID)
     meta.parse(s);
     if (meta.m_items.size() > 0) {
         info.trackmeta = meta.m_items[0];
-            LOGDEB("AVTransport::getPositionInfo: size " << 
-           meta.m_items.size() << " current title: " << meta.m_items[0].m_title
-           << endl);
+        LOGDEB("AVTransport::getPositionInfo: size " << 
+               meta.m_items.size() << " current title: " 
+               << meta.m_items[0].m_title << endl);
     }
-    meta.clear();
     data.getString("TrackURI", &info.trackuri);
     data.getString("RelTime", &s);
     info.reltime = upnpdurationtos(s);
@@ -381,10 +381,11 @@ int AVTransport::play(int speed, int instanceID)
 int AVTransport::seek(SeekMode mode, int target, int instanceID)
 {
     string sm;
+    string value = SoapHelp::i2s(target);
     switch (mode) {
     case SEEK_TRACK_NR: sm = "TRACK_NR"; break;
-    case SEEK_ABS_TIME: sm = "ABS_TIME"; break;
-    case SEEK_REL_TIME: sm = "REL_TIME"; break;
+    case SEEK_ABS_TIME: sm = "ABS_TIME";value = upnpduration(target*1000);break;
+    case SEEK_REL_TIME: sm = "REL_TIME";value = upnpduration(target*1000);break;
     case SEEK_ABS_COUNT: sm = "ABS_COUNT"; break;
     case SEEK_REL_COUNT: sm = "REL_COUNT"; break;
     case SEEK_CHANNEL_FREQ: sm = "CHANNEL_FREQ"; break;
@@ -394,10 +395,10 @@ int AVTransport::seek(SeekMode mode, int target, int instanceID)
         return UPNP_E_INVALID_PARAM;
     }
 
-    SoapEncodeInput args(m_serviceType, "Play");
+    SoapEncodeInput args(m_serviceType, "Seek");
     args("InstanceID", SoapHelp::i2s(instanceID))
         ("Unit", sm)
-        ("Target", SoapHelp::i2s(target));
+        ("Target", value);
     SoapDecodeOutput data;
     return runAction(args, data);
 }

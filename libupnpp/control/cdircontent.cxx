@@ -47,15 +47,18 @@ protected:
     public:
         StackEl(const string& nm) : name(nm) {}
         string name;
+        XML_Size sta;
         map<string,string> attributes;
         string data;
     };
 
     virtual void StartElement(const XML_Char *name, const XML_Char **attrs)
     {
-        //LOGDEB("startElement: name [" << name << "]" << endl);
+        //LOGDEB("startElement: name [" << name << "]" << " bpos " <<
+        //             XML_GetCurrentByteIndex(expat_parser) << endl);
 
         m_path.push_back(StackEl(name));
+        m_path.back().sta = XML_GetCurrentByteIndex(expat_parser);
         for (int i = 0; attrs[i] != 0; i += 2) {
             m_path.back().attributes[attrs[i]] = attrs[i+1];
         }
@@ -120,13 +123,17 @@ protected:
             parentname = m_path[m_path.size()-2].name;
         }
         //LOGDEB("Closing element " << name << " inside element " << 
-        //    parentname << " data " << m_path.back().data << endl);
+        //       parentname << " data " << m_path.back().data << endl);
         if (!strcmp(name, "container")) {
             if (checkobjok()) {
                 m_dir.m_containers.push_back(m_tobj);
             }
         } else if (!strcmp(name, "item")) {
             if (checkobjok()) {
+                unsigned int len = XML_GetCurrentByteIndex(expat_parser) - 
+                    m_path.back().sta;
+                m_tobj.m_didlfrag = m_input.substr(m_path.back().sta, len)
+                    + "</item></DIDL-Lite>";
                 m_dir.m_items.push_back(m_tobj);
             }
         } else if (!parentname.compare("item") || 
@@ -178,4 +185,18 @@ bool UPnPDirContent::parse(const std::string& input)
 {
     UPnPDirParser parser(*this, input);
     return parser.Parse();
+}
+
+static const string didl_header(
+"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+"<DIDL-Lite xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\""
+" xmlns:dc=\"http://purl.org/dc/elements/1.1/\""
+" xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\""
+" xmlns:dlna=\"urn:schemas-dlna-org:metadata-1-0/\">");
+
+// Maybe we'll do something about building didl from scratch if this
+// proves necessary.
+string UPnPDirObject::getdidl()
+{
+    return didl_header + m_didlfrag;
 }

@@ -22,6 +22,8 @@
 #include <map>
 #include <sstream>
 
+#include "libupnpp/upnpavutils.hxx"
+
 /** 
  * UPnP resource. A resource describes one of the entities associated with 
  * a directory entry. This would be typically the audio file URI, and
@@ -36,6 +38,8 @@ public:
     // Attributes
     std::map<std::string, std::string> m_props;
 };
+
+class UPnPDirParser;
 
 /**
  * UPnP Media Server directory entry, converted from XML data.
@@ -64,8 +68,8 @@ public:
     // The map keys are the XML tag names
     std::map<std::string, std::string> m_props;
 
-    // Resource URIs: there may be several, for example for different
-    // audio formats of the same track
+    // Resources: there may be several, for example for different
+    // audio formats of the same track, each with an URI and descriptor fields
     std::vector<UPnPResource> m_resources;
 
     /** Get named property
@@ -84,7 +88,43 @@ public:
         value = it->second;
         return true;
     }
-    
+
+    /** Get named property for resource 
+     * Field names: "bitrate", "duration" (H:mm:ss.ms), "nrAudioChannels",
+     * "protocolInfo", "sampleFrequency" (Hz), "size" (bytes)
+     */
+    bool getrprop(unsigned int ridx, const std::string& nm, std::string& val) 
+    const
+    {
+        if (ridx >= m_resources.size())
+            return false;
+        std::map<std::string, std::string>::const_iterator it =
+            m_resources[ridx].m_props.find(nm);
+        if (it == m_resources[ridx].m_props.end())
+            return false;
+        val = it->second;
+        return true;
+
+    }
+
+    int getDurationSeconds(unsigned ridx = 0)
+    {
+        std::string sdur;
+        if (!getrprop(ridx, "duration", sdur)) {
+            //?? Avoid returning 0, who knows...
+            return 1;
+        }
+        return upnpdurationtos(sdur);
+    }
+
+    /** 
+     * Get a DIDL document suitable for sending to a mediaserver. Only
+     * works for items, not containers. The idea is that we may have
+     * missed useful stuff while parsing the data from the content
+     * directory, so we send the original if we can.
+     */
+    std::string getdidl();
+
     void clear()
     {
         m_id.clear();
@@ -94,6 +134,7 @@ public:
         m_iclass = (ItemClass)-1;
         m_props.clear();
         m_resources.clear();
+        m_didlfrag.clear();
     }
 
     std::string dump()
@@ -119,6 +160,11 @@ public:
         os << std::endl;
         return os.str();
     }
+
+private:
+    friend class UPnPDirParser;
+    // didl text for element, sans header
+    std::string m_didlfrag;
 };
 
 /**

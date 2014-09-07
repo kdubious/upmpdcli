@@ -121,6 +121,9 @@ public:
                    SEEK_TAPE_INDEX, SEEK_FRAME};
     // Target in seconds for times.
     int seek(SeekMode mode, int target, int instanceID=0); 
+
+    // These are for multitrack medium like a CD. No meaning for electronic
+    // tracks where set(next)AVTransportURI() is used
     int next(int instanceID=0);
     int previous(int instanceID=0);
 

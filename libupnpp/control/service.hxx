@@ -41,7 +41,7 @@ public:
     virtual void changed(const char *nm, const char *val) = 0;
     // Used for track metadata (parsed as content directory entry). Not always
     // needed.
-    virtual void changed(const char *nm, UPnPDirContent meta) {};
+    virtual void changed(const char *nm, UPnPDirObject meta) {};
 };
 
 typedef 
