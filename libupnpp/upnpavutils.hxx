@@ -17,9 +17,11 @@
 #ifndef _UPNPAVUTILS_HXX_INCLUDED_
 #define _UPNPAVUTILS_HXX_INCLUDED_
 
+#include <string>
+
 // Format milliseconds into H+:MM:SS
 extern std::string upnpduration(int ms);
 // hms to seconds
-extern int upnpdurationtos(const string& dur);
+extern int upnpdurationtos(const std::string& dur);
 
 #endif /* _UPNPAVUTILS_HXX_INCLUDED_ */
