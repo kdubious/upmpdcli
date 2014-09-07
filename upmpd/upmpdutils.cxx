@@ -325,7 +325,8 @@ diffmaps(const unordered_map<string, string>& old,
 string didlmake(const UpSong& song)
 {
     ostringstream ss;
-    ss << "<DIDL-Lite xmlns:dc=\"http://purl.org/dc/elements/1.1/\" "
+    ss << "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+        "<DIDL-Lite xmlns:dc=\"http://purl.org/dc/elements/1.1/\" "
         "xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\" "
         "xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" "
         "xmlns:dlna=\"urn:schemas-dlna-org:metadata-1-0/\">"

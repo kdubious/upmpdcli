@@ -269,8 +269,8 @@ bool UpMpdAVTransport::getEventData(bool all, std::vector<std::string>& names,
 
         if (it->first.compare("RelativeTimePosition") && 
             it->first.compare("AbsoluteTimePosition")) {
-            //DEBOUT << "Transport state update for " << it->first << 
-            // " oldvalue [" << oldvalue << "] -> [" << it->second << endl;
+            //LOGDEB("AVTransport: state update for " << it->first << 
+            // " oldvalue [" << oldvalue << "] -> [" << it->second << endl);
             changefound = true;
         }
 
@@ -283,7 +283,7 @@ bool UpMpdAVTransport::getEventData(bool all, std::vector<std::string>& names,
     chgdata += "</InstanceID>\n</Event>\n";
 
     if (!changefound) {
-        // DEBOUT << "UpMpdAVTransport::getEventDataTransport: no updates" << endl;
+        LOGDEB1("UpMpdAVTransport::getEventDataTransport: no updates" << endl);
         return true;
     }
 
@@ -291,7 +291,7 @@ bool UpMpdAVTransport::getEventData(bool all, std::vector<std::string>& names,
     values.push_back(chgdata);
 
     m_tpstate = newtpstate;
-    // DEBOUT << "UpMpdAVTransport::getEventDataTransport: " << chgdata << endl;
+    LOGDEB1("UpMpdAVTransport::getEventDataTransport: " << chgdata << endl);
     return true;
 }
 
@@ -345,15 +345,12 @@ int UpMpdAVTransport::setAVTransportURI(const SoapArgs& sc, SoapData& data,
         return UPNP_E_INTERNAL_ERROR;
     }
 
-    metadata = regsub1("<\\?xml.*\\?>", metadata, "");
     if (setnext) {
         m_nextUri = uri;
         m_nextMetadata = metadata;
     } else {
         m_uri = uri;
         m_curMetadata = metadata;
-        m_nextUri = "";
-        m_nextMetadata = "";
     }
 
     if (!setnext) {
