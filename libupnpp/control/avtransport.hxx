@@ -54,19 +54,20 @@ public:
                    PM_RepeatAll, PM_Random, PM_Direct1};
 
 
-    int setAVTransportURI(const string& uri, const string& metadata,
+    int setAVTransportURI(const std::string& uri, const std::string& metadata,
                           int instanceID=0)
     {
         return setURI(uri, metadata, instanceID, false);
     }
 
-    int setNextAVTransportURI(const string& uri, const string& metadata,
+    int setNextAVTransportURI(const std::string& uri, const std::string& md,
                               int instanceID=0)
     {
-        return setURI(uri, metadata, instanceID, true);
+        return setURI(uri, md, instanceID, true);
     }
 
     int setPlayMode(PlayMode pm, int instanceID=0);
+
     struct MediaInfo {
         int nrtracks;
         int mduration; // seconds
@@ -115,6 +116,7 @@ public:
     int stop(int instanceID=0);
     int pause(int instanceID=0);
     int play(int speed = 1, int instanceID = 0);
+
     enum SeekMode {SEEK_TRACK_NR, SEEK_ABS_TIME,
                    SEEK_REL_TIME, SEEK_ABS_COUNT,
                    SEEK_REL_COUNT, SEEK_CHANNEL_FREQ, 
@@ -133,8 +135,8 @@ public:
     static bool isAVTService(const std::string& st);
 
 protected:
-    static const string SType;
-    int setURI(const string& uri, const string& metadata,
+    static const std::string SType;
+    int setURI(const std::string& uri, const std::string& metadata,
                int instanceID, bool next);
 private:
     void evtCallback(const std::unordered_map<std::string, std::string>&);
