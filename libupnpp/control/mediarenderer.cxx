@@ -70,6 +70,7 @@ bool MediaRenderer::getDeviceDescs(vector<UPnPDeviceDesc>& devices,
 }
 
 MediaRenderer::MediaRenderer(const UPnPDeviceDesc& desc)
+    : Device(desc)
 {
     bool found = false;
     for (auto& entry : desc.services) {
