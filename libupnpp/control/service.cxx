@@ -47,7 +47,7 @@ public:
 };
 
 Service::Service(const UPnPDeviceDesc& device,
-                 const UPnPServiceDesc& service)
+                 const UPnPServiceDesc& service, bool doSubscribe)
     : m_reporter(0), 
       m_actionURL(caturl(device.URLBase, service.controlURL)),
       m_eventURL(caturl(device.URLBase, service.eventSubURL)),
@@ -57,9 +57,12 @@ Service::Service(const UPnPDeviceDesc& device,
       m_manufacturer(device.manufacturer),
       m_modelName(device.modelName)
 { 
+    // Only does anything the first time
     initEvents();
-    subscribe();
+    if (doSubscribe)
+        subscribe();
 }
+
 Service::~Service()
 {
     LOGDEB("Service::~Service: unregister " << m_SID << endl);
@@ -161,6 +164,7 @@ int Service::srvCB(Upnp_EventType et, void* vevp, void*)
     return UPNP_E_SUCCESS;
 }
 
+// This is called once per process.
 bool Service::initEvents()
 {
     LOGDEB("Service::initEvents" << endl);

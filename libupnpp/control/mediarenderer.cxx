@@ -98,11 +98,24 @@ MediaRenderer::MediaRenderer(const UPnPDeviceDesc& desc)
                "found in device" << endl);
     }
 
+    found = false;
+    for (auto& entry : desc.services) {
+        if (OHProduct::isOHPrService(entry.serviceType)) {
+            m_ohpr = OHPRH(new OHProduct(desc, entry));
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        LOGINF("MediaRenderer::MediaRenderer: OHProduct service not " <<
+               "found in device" << endl);
+    }
+
 }
 
-bool MediaRenderer::hasOpenHome(const UPnPDeviceDesc& device)
+bool MediaRenderer::hasOpenHome()
 {
-    return false;
+    return m_ohpr ? true : false;
 }
 
 }

@@ -14,56 +14,52 @@
  *       Free Software Foundation, Inc.,
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#ifndef _RENDERINGCONTROL_HXX_INCLUDED_
-#define _RENDERINGCONTROL_HXX_INCLUDED_
+#ifndef _OHPRODUCT_HXX_INCLUDED_
+#define _OHPRODUCT_HXX_INCLUDED_
 
 #include <string>
 #include <memory>
+#include <vector>
 
 #include "service.hxx"
 
 namespace UPnPClient {
 
-class RenderingControl;
-typedef std::shared_ptr<RenderingControl> RDCH;
+class OHProduct;
+typedef std::shared_ptr<OHProduct> OHPRH;
 
 /**
- * RenderingControl Service client class.
+ * OHProduct Service client class.
  *
  */
-class RenderingControl : public Service {
+class OHProduct : public Service {
 public:
 
-    /** Construct by copying data from device and service objects.
-     *
-     */
-    RenderingControl(const UPnPDeviceDesc& device,
-                     const UPnPServiceDesc& service)
-        : Service(device, service)
-        {
-            registerCallback();
-        }
+    OHProduct(const UPnPDeviceDesc& device, const UPnPServiceDesc& service)
+        : Service(device, service, false) {
+    }
 
-    RenderingControl() {}
+    OHProduct() {}
 
     /** Test service type from discovery message */
-    static bool isRDCService(const std::string& st);
+    static bool isOHPrService(const std::string& st);
+
+    struct Source {
+        std::string name;
+        std::string type;
+        bool visible;
+        Source() : visible(false) {}
+        void clear() {name.clear(); type.clear(); visible = false;}
+    };
 
     /** @ret 0 for success, upnp error else */
-    int setVolume(int volume, const std::string& channel = "Master");
-    int getVolume(const std::string& channel = "Master");
-    int setMute(bool mute, const std::string& channel = "Master");
-    bool getMute(const std::string& channel = "Master");
+    int getSources(std::vector<Source>& sources);
 
 protected:
     /* My service type string */
     static const std::string SType;
-
-private:
-    void evtCallback(const std::unordered_map<std::string, std::string>&);
-    void registerCallback();
 };
 
 } // namespace UPnPClient
 
-#endif /* _RENDERINGCONTROL_HXX_INCLUDED_ */
+#endif /* _OHPRODUCT_HXX_INCLUDED_ */

@@ -24,6 +24,10 @@ libupnpp_la_SOURCES = \
     libupnpp/control/mediarenderer.hxx \
     libupnpp/control/mediaserver.cxx \
     libupnpp/control/mediaserver.hxx \
+    libupnpp/control/ohplaylist.cxx \
+    libupnpp/control/ohplaylist.hxx \
+    libupnpp/control/ohproduct.cxx \
+    libupnpp/control/ohproduct.hxx \
     libupnpp/control/renderingcontrol.cxx \
     libupnpp/control/renderingcontrol.hxx \
     libupnpp/control/service.cxx \
@@ -60,6 +64,8 @@ nobase_include_HEADERS = \
     libupnpp/control/discovery.hxx \
     libupnpp/control/mediarenderer.hxx \
     libupnpp/control/mediaserver.hxx \
+    libupnpp/control/ohproduct.hxx \
+    libupnpp/control/ohplaylist.hxx \
     libupnpp/control/renderingcontrol.hxx \
     libupnpp/control/service.hxx \
     libupnpp/device/device.hxx \

@@ -135,7 +135,9 @@ public:
     static bool isAVTService(const std::string& st);
 
 protected:
+    /* My service type string */
     static const std::string SType;
+
     int setURI(const std::string& uri, const std::string& metadata,
                int instanceID, bool next);
     int CTAStringToBits(const std::string& actions, int& iacts);

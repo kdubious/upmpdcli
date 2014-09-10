@@ -1,0 +1,107 @@
+/* Copyright (C) 2014 J.F.Dockes
+ *       This program is free software; you can redistribute it and/or modify
+ *       it under the terms of the GNU General Public License as published by
+ *       the Free Software Foundation; either version 2 of the License, or
+ *       (at your option) any later version.
+ *
+ *       This program is distributed in the hope that it will be useful,
+ *       but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *       GNU General Public License for more details.
+ *
+ *       You should have received a copy of the GNU General Public License
+ *       along with this program; if not, write to the
+ *       Free Software Foundation, Inc.,
+ *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
+
+#include <string>
+#include <vector>
+
+using namespace std;
+
+#include <upnp/upnp.h>
+
+#include "libupnpp/soaphelp.hxx"
+#include "libupnpp/upnpp_p.hxx"
+#include "libupnpp/log.hxx"
+#include "libupnpp/expatmm.hxx"
+#include "libupnpp/control/ohproduct.hxx"
+
+namespace UPnPClient {
+class OHSourceParser : public expatmm::inputRefXMLParser {
+public:
+    OHSourceParser(const string& input, vector<OHProduct::Source>& sources)
+        : expatmm::inputRefXMLParser(input), m_sources(sources)
+        {}
+
+protected:
+    virtual void StartElement(const XML_Char *name, const XML_Char **) {
+        m_path.push_back(name);
+    }
+    virtual void EndElement(const XML_Char *name) {
+        if (!strcmp(name, "Source")) {
+            m_sources.push_back(m_tsrc);
+            m_tsrc.clear();
+        }
+        m_path.pop_back();
+    }
+    virtual void CharacterData(const XML_Char *s, int len) {
+        if (s == 0 || *s == 0)
+            return;
+        string str(s, len);
+        trimstring(str);
+        switch (m_path.back()[0]) {
+        case 'N':
+            if (!m_path.back().compare("Name"))
+                m_tsrc.name = str;
+            break;
+        case 'T':
+            if (!m_path.back().compare("Type"))
+                m_tsrc.type = str;
+            break;
+        case 'V':
+            if (!m_path.back().compare("Visible"))
+                stringToBool(str, &m_tsrc.visible);
+            break;
+        }
+    }
+
+private:
+    vector<OHProduct::Source>& m_sources;
+    std::vector<std::string> m_path;
+    OHProduct::Source m_tsrc;
+};
+
+const string OHProduct::SType("urn:av-openhome-org:service:Product:1");
+
+// Check serviceType string (while walking the descriptions. We don't
+// include a version in comparisons, as we are satisfied with version1
+bool OHProduct::isOHPrService(const string& st)
+{
+    const string::size_type sz(SType.size()-2);
+    return !SType.compare(0, sz, st, 0, sz);
+}
+
+int OHProduct::getSources(vector<Source>& sources)
+{
+    SoapEncodeInput args(m_serviceType, "SourceXml");
+    SoapDecodeOutput data;
+    int ret = runAction(args, data);
+    if (ret != UPNP_E_SUCCESS) {
+        return ret;
+    }
+    string sxml;
+    if (!data.getString("Value", &sxml)) {
+        LOGERR("OHProduct:getSources: missing Value in response" << endl);
+        return UPNP_E_BAD_RESPONSE;
+    }
+    OHSourceParser mparser(sxml, sources);
+    if (!mparser.Parse())
+        return UPNP_E_BAD_RESPONSE;
+
+    return UPNP_E_SUCCESS;
+}
+
+} // End namespace UPnPClient
+

@@ -137,7 +137,8 @@ public:
      */
     int getSearchCapabilities(std::set<std::string>& result);
 
-    // The service type string for Content Directories:
+protected:
+    /* My service type string */
     static const std::string SType;
 
 private:

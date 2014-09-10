@@ -24,6 +24,7 @@
 #include "libupnpp/control/description.hxx"
 #include "libupnpp/control/renderingcontrol.hxx"
 #include "libupnpp/control/avtransport.hxx"
+#include "libupnpp/control/ohproduct.hxx"
 
 namespace UPnPClient {
 
@@ -36,15 +37,18 @@ public:
 
     RDCH rdc() {return m_rdc;}
     AVTH avt() {return m_avt;}
+    OHPRH ohpr() {return m_ohpr;}
+
+    bool hasOpenHome();
 
     static bool getDeviceDescs(std::vector<UPnPDeviceDesc>& devices,
                                const std::string& friendlyName = "");
-    static bool hasOpenHome(const UPnPDeviceDesc& device);
     static bool isMRDevice(const std::string& devicetype);
 
 protected:
     RDCH m_rdc;
     AVTH m_avt;
+    OHPRH m_ohpr;
 
     static const std::string DType;
 };

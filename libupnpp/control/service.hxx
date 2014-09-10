@@ -53,7 +53,7 @@ public:
     /** Construct by copying data from device and service objects.
      */
     Service(const UPnPDeviceDesc& device,
-            const UPnPServiceDesc& service);
+            const UPnPServiceDesc& service, bool doSubscribe = true);
 
     /** An empty one */
     Service() : m_reporter(0) {}
