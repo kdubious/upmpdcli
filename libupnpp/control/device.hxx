@@ -18,11 +18,21 @@
 #ifndef _DEVICE_H_X_INCLUDED_
 #define _DEVICE_H_X_INCLUDED_
 
+#include "libupnpp/control/description.hxx"
+
 namespace UPnPClient {
 
 class Device {
 public:
-    /* Something may get there one day... */
+    Device() {}
+    Device(const UPnPDeviceDesc& desc)
+    : m_desc(desc)
+        {
+        }
+
+    UPnPDeviceDesc m_desc;
 };
+
 }
+
 #endif /* _DEVICE_H_X_INCLUDED_ */
