@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <map>
+#include <unordered_map>
 
 using namespace std;
 
@@ -48,7 +48,7 @@ protected:
         StackEl(const string& nm) : name(nm) {}
         string name;
         XML_Size sta;
-        map<string,string> attributes;
+        unordered_map<string,string> attributes;
         string data;
     };
 
