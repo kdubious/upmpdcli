@@ -138,8 +138,12 @@ void AVTransport::evtCallback(
                 m_reporter->changed(entry1.first.c_str(), 
                                     stringToPlayMode(entry1.second));
 
-            } else if (!entry1.first.compare("CurrentTransportActions") ||
-                       !entry1.first.compare("CurrentTrackURI") ||
+            } else if (!entry1.first.compare("CurrentTransportActions")) {
+                int iacts;
+                if (!CTAStringToBits(entry1.second, iacts))
+                    m_reporter->changed(entry1.first.c_str(), iacts);
+
+            } else if (!entry1.first.compare("CurrentTrackURI") ||
                        !entry1.first.compare("AVTransportURI") ||
                        !entry1.first.compare("NextAVTransportURI")) {
                 m_reporter->changed(entry1.first.c_str(), 
@@ -340,7 +344,7 @@ int AVTransport::getTransportSettings(TransportSettings& info, int instanceID)
     return 0;
 }
 
-int AVTransport::getCurrentTransportActions(std::string& actions, int iID)
+int AVTransport::getCurrentTransportActions(int& iacts, int iID)
 {
     SoapEncodeInput args(m_serviceType, "GetCurrentTransportActions");
     args("InstanceID", SoapHelp::i2s(iID));
@@ -349,7 +353,43 @@ int AVTransport::getCurrentTransportActions(std::string& actions, int iID)
     if (ret != UPNP_E_SUCCESS) {
         return ret;
     }
-    data.getString("Actions", &actions);
+    string actions;
+    if (!data.getString("Actions", &actions)) {
+        LOGERR("AVTransport:getCurrentTransportActions: no actions in answer"
+               << endl);
+        return UPNP_E_BAD_RESPONSE;
+    }
+    return CTAStringToBits(actions, iacts);
+}
+
+int AVTransport::CTAStringToBits(const string& actions, int& iacts)
+{
+    vector<string> sacts;
+    if (!csvToStrings(actions, sacts)) {
+        LOGERR("AVTransport::CTAStringToBits: bad actions string:"
+               << actions << endl);
+        return UPNP_E_BAD_RESPONSE;
+    }
+    iacts = 0;
+    for (auto it = sacts.begin(); it != sacts.end(); it++) {
+        trimstring(*it);
+        if (!it->compare("Next")) {
+            iacts |= TPA_Next;
+        } else if (!it->compare("Pause")) {
+            iacts |= TPA_Pause;
+        } else if (!it->compare("Play")) {
+            iacts |= TPA_Play;
+        } else if (!it->compare("Previous")) {
+            iacts |= TPA_Previous;
+        } else if (!it->compare("Seek")) {
+            iacts |= TPA_Seek;
+        } else if (!it->compare("Stop")) {
+            iacts |= TPA_Stop;
+        } else {
+            LOGERR("AVTransport::CTAStringToBits: unknown action "
+                   << *it << endl);
+        }
+    }
     return 0;
 }
 
