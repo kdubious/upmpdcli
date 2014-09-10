@@ -25,6 +25,7 @@
 #include "libupnpp/control/renderingcontrol.hxx"
 #include "libupnpp/control/avtransport.hxx"
 #include "libupnpp/control/ohproduct.hxx"
+#include "libupnpp/control/ohplaylist.hxx"
 
 namespace UPnPClient {
 
@@ -38,6 +39,7 @@ public:
     RDCH rdc() {return m_rdc;}
     AVTH avt() {return m_avt;}
     OHPRH ohpr() {return m_ohpr;}
+    OHPLH ohpl() {return m_ohpl;}
 
     bool hasOpenHome();
 
@@ -49,6 +51,7 @@ protected:
     RDCH m_rdc;
     AVTH m_avt;
     OHPRH m_ohpr;
+    OHPLH m_ohpl;
 
     static const std::string DType;
 };

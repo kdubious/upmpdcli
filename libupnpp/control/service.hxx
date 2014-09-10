@@ -23,6 +23,7 @@
 
 #include <upnp/upnp.h>
 
+#include "libupnpp/log.hxx"
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/control/description.hxx"
 #include "libupnpp/control/cdircontent.hxx"
@@ -109,6 +110,37 @@ protected:
     std::string m_friendlyName;
     std::string m_manufacturer;
     std::string m_modelName;
+
+    int runTrivialAction(const std::string& nm) {
+        SoapEncodeInput args(m_serviceType, nm);
+        SoapDecodeOutput data;
+        return runAction(args, data);
+    }
+
+    template <class T> int runSimpleGet(const std::string& actnm, 
+                                        const std::string& valnm,
+                                        T *valuep) {
+        SoapEncodeInput args(m_serviceType, actnm);
+        SoapDecodeOutput data;
+        int ret = runAction(args, data);
+        if (ret != UPNP_E_SUCCESS) {
+            return ret;
+        }
+        if (!data.get(valnm.c_str(), valuep)) {
+            LOGERR("Service::runSimpleAction: " << actnm << 
+                   " missing " << valnm << " in response" << endl);
+            return UPNP_E_BAD_RESPONSE;
+        }
+        return 0;
+    }
+    template <class T> int runSimpleAction(const std::string& actnm, 
+                                           const std::string& valnm,
+                                           T value) {
+        SoapEncodeInput args(m_serviceType, actnm);
+        args(valnm, SoapHelp::val2s(value));
+        SoapDecodeOutput data;
+        return runAction(args, data);
+    }
 
 private:
     /** Only actually does something on the first call, to register our

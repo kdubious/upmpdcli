@@ -94,8 +94,8 @@ int Service::runAction(const SoapEncodeInput& args, SoapDecodeOutput& data)
                              0 /*devUDN*/, request, &response);
 
     if (ret != UPNP_E_SUCCESS) {
-        LOGINF("Service::runAction: UpnpSendAction failed: " <<
-               UpnpGetErrorMessage(ret) << endl);
+        LOGINF("Service::runAction: UpnpSendAction failed: " << ret << 
+               " : " << UpnpGetErrorMessage(ret) << endl);
         return ret;
     }
     LOGDEB("Service::runAction: Result xml: [" << ixmlPrintDocument(response) << "]" << endl);
@@ -206,7 +206,7 @@ bool Service::subscribe()
     int ret = UpnpSubscribe(lib->getclh(), m_eventURL.c_str(),
                             &timeout, m_SID);
     if (ret != UPNP_E_SUCCESS) {
-        LOGERR("Service:subscribe: failed: " << 
+        LOGERR("Service:subscribe: failed: " << ret << " : " <<
                UpnpGetErrorMessage(ret) << endl);
         return false;
     } 
@@ -224,7 +224,7 @@ bool Service::unSubscribe()
     }
     int ret = UpnpUnSubscribe(lib->getclh(), m_SID);
     if (ret != UPNP_E_SUCCESS) {
-        LOGERR("Service:unSubscribe: failed: " << 
+        LOGERR("Service:unSubscribe: failed: " << ret << " : " <<
                UpnpGetErrorMessage(ret) << endl);
         return false;
     } 

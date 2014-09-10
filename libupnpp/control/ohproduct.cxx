@@ -28,6 +28,24 @@ using namespace std;
 #include "libupnpp/expatmm.hxx"
 #include "libupnpp/control/ohproduct.hxx"
 
+// SourceList XML format
+// <SourceList>
+//    <Source>
+//        <Name>[user name for source]</Name>
+//        <Type>[Type of the source from closed list of Supported types]</Type>
+//        <Visible>[Boolean.]</Visible>
+//    </sourcetag>
+// </SourceList>
+// - Playlist - the av.openhome.org:Playlist:1 service must be available
+// - Radio - the av.openhome.org:Radio:1 service must be available
+// - Receiver - the av.openhome.org:Receiver:1 service must be available
+// - UpnpAv - the upnp.org:MediaRenderer:1 device must be available
+// - NetAux - Specifies 3rd party, non OpenHome controllable, network
+//   protocols such as AirPlay
+// - Analog - Specifies an analog external input
+// - Digital - Specifies a digital external input
+// - Hdmi - Specifies a HDMI external input
+
 namespace UPnPClient {
 class OHSourceParser : public expatmm::inputRefXMLParser {
 public:

@@ -34,6 +34,9 @@ public:
     bool getBool(const char *nm, bool *value) const;
     bool getInt(const char *nm, int *value) const;
     bool getString(const char *nm, std::string *value) const;
+    bool get(const char *nm, bool *value) const {return getBool(nm, value);}
+    bool get(const char *nm, int *value) const {return getInt(nm, value);}
+    bool get(const char *nm, std::string *value) const {return getString(nm, value);}
 };
 
 /** Decode the XML in a Soap call and return the arguments in a SoapArgs 
@@ -70,7 +73,6 @@ public:
         return *this;
     }
     static std::string i2s(int val);
-
     std::string serviceType;
     std::string name;
     std::vector<std::pair<std::string, std::string> > data;
@@ -88,7 +90,10 @@ namespace SoapHelp {
     std::string xmlQuote(const std::string& in);
     std::string xmlUnquote(const std::string& in);
     std::string i2s(int val);
-}
+    inline std::string val2s(const std::string& val) {return val;}
+    inline std::string val2s(int val) {return i2s(val);}
+    inline std::string val2s(bool val) {return i2s(int(val));}
+};
 
 /** Decode UPnP Event data. This is not soap, but it's quite close to
  *  the other code in here so whatever...

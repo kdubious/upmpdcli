@@ -111,6 +111,19 @@ MediaRenderer::MediaRenderer(const UPnPDeviceDesc& desc)
                "found in device" << endl);
     }
 
+    found = false;
+    for (auto& entry : desc.services) {
+        if (OHPlaylist::isOHPlService(entry.serviceType)) {
+            m_ohpl = OHPLH(new OHPlaylist(desc, entry));
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        LOGINF("MediaRenderer::MediaRenderer: OHPlaylist service not " <<
+               "found in device" << endl);
+    }
+
 }
 
 bool MediaRenderer::hasOpenHome()

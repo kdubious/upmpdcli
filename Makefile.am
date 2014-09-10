@@ -36,6 +36,8 @@ libupnpp_la_SOURCES = \
     libupnpp/device/device.hxx \
     libupnpp/device/vdir.cxx \
     libupnpp/device/vdir.hxx \
+    libupnpp/base64.hxx \
+    libupnpp/base64.cxx \
     libupnpp/expatmm.hxx \
     libupnpp/getsyshwaddr.c \
     libupnpp/getsyshwaddr.h \
@@ -69,6 +71,7 @@ nobase_include_HEADERS = \
     libupnpp/control/renderingcontrol.hxx \
     libupnpp/control/service.hxx \
     libupnpp/device/device.hxx \
+    libupnpp/base64.hxx \
     libupnpp/log.hxx \
     libupnpp/ptmutex.hxx \
     libupnpp/soaphelp.hxx \
@@ -107,9 +110,7 @@ upmpdcli_SOURCES = \
      upmpd/ohvolume.hxx \
      upmpd/ohvolume.cxx \
      upmpd/ohplaylist.hxx \
-     upmpd/ohplaylist.cxx \
-     upmpd/base64.hxx \
-     upmpd/base64.cxx
+     upmpd/ohplaylist.cxx
                            
 upmpdcli_LDADD = libupnpp.la -lmpdclient -lpthread -lrt
 

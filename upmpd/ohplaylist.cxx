@@ -33,6 +33,7 @@ using namespace std::placeholders;
 #include "libupnpp/upnpplib.hxx"
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/log.hxx"
+#include "libupnpp/base64.hxx"
 #include "libupnpp/device/device.hxx"
 
 #include "upmpd.hxx"
@@ -40,7 +41,6 @@ using namespace std::placeholders;
 #include "ohmetacache.hxx"
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
-#include "base64.hxx"
 
 static const string sTpProduct("urn:av-openhome-org:service:Playlist:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Playlist");
