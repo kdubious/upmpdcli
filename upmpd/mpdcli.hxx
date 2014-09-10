@@ -107,6 +107,8 @@ public:
     // Insert after given id. Returns new id or -1
     int insertAfterId(const std::string& uri, int id);
     bool deleteId(int id);
+    // start included, end excluded
+    bool deletePosRange(unsigned int start, unsigned int end);
     bool statId(int id);
     int curpos();
     bool getQueueData(std::vector<UpSong>& vdata);

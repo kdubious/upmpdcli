@@ -300,7 +300,10 @@ int UpMpdAVTransport::setAVTransportURI(const SoapArgs& sc, SoapData& data,
                                         bool setnext)
 {
     map<string, string>::const_iterator it;
-		
+
+    // pretend not to support setnext:
+    //if (setnext) return UPNP_E_INVALID_PARAM;
+
     it = setnext? sc.args.find("NextURI") : sc.args.find("CurrentURI");
     if (it == sc.args.end() || it->second.empty()) {
         return UPNP_E_INVALID_PARAM;
@@ -336,10 +339,25 @@ int UpMpdAVTransport::setAVTransportURI(const SoapArgs& sc, SoapData& data,
         curpos = 0;
     }
 
-    if (mpds.qlen == 0 && setnext) {
-        LOGDEB("setNextAVTransportURI invoked but empty queue!" << endl);
-        return UPNP_E_INVALID_PARAM;
+    if (setnext) {
+        if (mpds.qlen == 0) {
+            LOGDEB("setNextAVTransportURI invoked but empty queue!" << endl);
+            return UPNP_E_INVALID_PARAM;
+        }
+        if ((m_dev->m_options & UpMpd::upmpdOwnQueue) && mpds.qlen > 1) {
+            // If we own the queue, make sure we only keep 2 songs in it:
+            // guard against multiple setnext calls.
+            int posend;
+            for (posend = curpos + 1;; posend++) {
+                UpSong nsong;
+                if (!m_dev->m_mpdcli->statSong(nsong, posend))
+                    break;
+            }
+            if (posend > curpos+1)
+                m_dev->m_mpdcli->deletePosRange(curpos + 1, posend);
+        }
     }
+
     int songid;
     if ((songid = m_dev->m_mpdcli->insert(uri, setnext?curpos+1:curpos)) < 0) {
         return UPNP_E_INTERNAL_ERROR;
@@ -351,12 +369,14 @@ int UpMpdAVTransport::setAVTransportURI(const SoapArgs& sc, SoapData& data,
     } else {
         m_uri = uri;
         m_curMetadata = metadata;
+        m_nextUri.clear();
+        m_nextMetadata.clear();
     }
 
     if (!setnext) {
         MpdStatus::State st = mpds.state;
         // Have to tell mpd which track to play, else it will keep on
-        // the previous despite of the insertion. The UPnP docs say
+        // the previous despite the insertion. The UPnP docs say
         // that setAVTransportURI should not change the transport
         // state (pause/stop stay pause/stop) but it seems that some clients
         // expect that the track will start playing.

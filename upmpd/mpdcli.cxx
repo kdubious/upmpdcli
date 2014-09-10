@@ -483,6 +483,17 @@ bool MPDCli::deleteId(int id)
     return true;
 }
 
+bool MPDCli::deletePosRange(unsigned int start, unsigned int end)
+{
+    LOGDEB("MPDCli::deletePosRange [" << start << ", " << end << "[" << endl);
+    if (!ok())
+        return -1;
+
+    RETRY_CMD(mpd_run_delete_range(M_CONN, start, end));
+    return true;
+}
+
+
 bool MPDCli::statId(int id)
 {
     LOGDEB("MPDCli::statId " << id << endl);
