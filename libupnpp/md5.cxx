@@ -32,7 +32,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <string>
+using namespace std;
+
 #include "md5.hxx"
+
+namespace UPnPP {
 
 typedef unsigned int md5uint32;
 
@@ -363,4 +368,6 @@ string& MD5HexScan(const string& xdigest, string& digest)
 	digest.append(1, (unsigned char)val);
     }
     return digest;
+}
+
 }

@@ -26,7 +26,7 @@ namespace UPnPProvider {
 
 class UpnpService;
 
-typedef function<int (const SoapArgs&, SoapData&)> soapfun;
+typedef function<int (const UPnPP::SoapArgs&, UPnPP::SoapData&)> soapfun;
 
 /** Define a virtual interface to link libupnp operations to a device 
  * implementation 
@@ -85,7 +85,7 @@ public:
 private:
     const std::string& serviceType(const std::string& serviceId);
             
-    LibUPnP *m_lib;
+    UPnPP::LibUPnP *m_lib;
     std::string m_deviceId;
     // We keep the services in a map for easy access from id and in a
     // vector for ordered walking while fetching status. Order is

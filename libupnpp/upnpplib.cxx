@@ -17,6 +17,7 @@
 #include "config.h"
 
 #include <string.h>
+#include <ctype.h>
 
 #include <string>
 #include <iostream>
@@ -35,6 +36,9 @@ extern "C" {
 }
 #include "md5.hxx"
 #include "log.hxx"
+#include "upnpputils.hxx"
+
+namespace UPnPP {
 
 static LibUPnP *theLib;
 
@@ -421,8 +425,6 @@ bool stringToBool(const string& s, bool *value)
     return true;
 }
 
-#include <ctype.h>
-
 //  s1 is already uppercase
 int stringuppercmp(const string & s1, const string& s2) 
 {
@@ -451,10 +453,6 @@ int stringuppercmp(const string & s1, const string& s2)
 	return size1 == size2 ? 0 : -1;
     }
 }
-
-#include "upnpputils.hxx"
-
-namespace UPnPP {
 
 static const long long BILLION = 1000 * 1000 * 1000;
 

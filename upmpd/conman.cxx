@@ -40,6 +40,8 @@ using namespace std::placeholders;
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
 
+using namespace UPnPP;
+
 static const string sTpCM("urn:schemas-upnp-org:service:ConnectionManager:1");
 static const string sIdCM("urn:upnp-org:serviceId:ConnectionManager");
 

@@ -19,7 +19,7 @@
 
 #include <string>
 
-namespace ixmlwrap {
+namespace UPnPP {
 
     /** Retrieve the text content for the first element of given name.
      * Returns an empty string if the element does not contain a text node */

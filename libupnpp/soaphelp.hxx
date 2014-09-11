@@ -24,6 +24,8 @@
 
 #include <upnp/ixml.h>
 
+namespace UPnPP {
+
 /** Store returned values after decoding the arguments in a SOAP Call */
 class SoapDecodeOutput {
 public:
@@ -109,5 +111,8 @@ namespace SoapHelp {
  */
 extern bool decodePropertySet(IXML_Document *doc, 
                        std::unordered_map<std::string,std::string>& out);
+
+
+} // namespace UPnPP
 
 #endif /* _SOAPHELP_H_X_INCLUDED_ */

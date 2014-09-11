@@ -23,13 +23,15 @@ using namespace std;
 #include "libupnpp/log.hxx"
 #include "libupnpp/control/avlastchg.hxx"
 
+using namespace UPnPP;
+
 namespace UPnPClient {
 
 
-class LastchangeParser : public expatmm::inputRefXMLParser {
+class LastchangeParser : public inputRefXMLParser {
 public:
     LastchangeParser(const string& input, unordered_map<string,string>& props)
-        : expatmm::inputRefXMLParser(input), m_props(props)
+        : inputRefXMLParser(input), m_props(props)
         {}
 
 protected:

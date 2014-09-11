@@ -30,6 +30,8 @@ using namespace std;
 #include "libupnpp/expatmm.hxx"
 #include "libupnpp/control/ohplaylist.hxx"
 
+using namespace UPnPP;
+
 namespace UPnPClient {
 
 const string OHPlaylist::SType("urn:av-openhome-org:service:Playlist:1");
@@ -169,11 +171,11 @@ int OHPlaylist::read(int id, std::string* urip, UPnPDirObject *dirent)
 // </TrackList>
 
 
-class OHTrackListParser : public expatmm::inputRefXMLParser {
+class OHTrackListParser : public inputRefXMLParser {
 public:
     OHTrackListParser(const string& input, 
                       vector<OHPlaylist::TrackListEntry>* vp)
-        : expatmm::inputRefXMLParser(input), m_v(vp)
+        : inputRefXMLParser(input), m_v(vp)
         {}
 
 protected:

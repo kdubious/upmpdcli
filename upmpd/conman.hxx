@@ -21,6 +21,8 @@
 
 #include "libupnpp/device/device.hxx"
 
+using namespace UPnPP;
+
 class UpMpd;
 
 class UpMpdConMan : public UpnpService {

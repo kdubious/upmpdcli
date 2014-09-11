@@ -49,6 +49,8 @@ using namespace std::placeholders;
 #include "ohvolume.hxx"
 #include "ohplaylist.hxx"
 
+using namespace UPnPP;
+
 static const string dfltFriendlyName("UpMpd");
 string upmpdProtocolInfo;
 
@@ -223,7 +225,7 @@ int main(int argc, char *argv[])
     int mpdport = 6600;
     string mpdpassword;
     string logfilename;
-    int loglevel(upnppdebug::Logger::LLINF);
+    int loglevel(Logger::LLINF);
     string configfile;
     string friendlyname(dfltFriendlyName);
     bool ownqueue = true;
@@ -332,11 +334,11 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (upnppdebug::Logger::getTheLog(logfilename) == 0) {
+    if (Logger::getTheLog(logfilename) == 0) {
         cerr << "Can't initialize log" << endl;
         return 1;
     }
-    upnppdebug::Logger::getTheLog("")->setLogLevel(upnppdebug::Logger::LogLevel(loglevel));
+    Logger::getTheLog("")->setLogLevel(Logger::LogLevel(loglevel));
 
     Pidfile pidfile(pidfilename);
 

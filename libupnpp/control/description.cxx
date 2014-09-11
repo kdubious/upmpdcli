@@ -29,10 +29,14 @@ using namespace std;
 #include "libupnpp/expatmm.hxx"
 #include "description.hxx"
 
-class UPnPDeviceParser : public expatmm::inputRefXMLParser {
+using namespace UPnPP;
+
+namespace UPnPClient {
+
+class UPnPDeviceParser : public inputRefXMLParser {
 public:
     UPnPDeviceParser(const string& input, UPnPDeviceDesc& device)
-        : expatmm::inputRefXMLParser(input), m_device(device)
+        : inputRefXMLParser(input), m_device(device)
         {}
 
 protected:
@@ -126,3 +130,5 @@ UPnPDeviceDesc::UPnPDeviceDesc(const string& url, const string& description)
     //cerr << "URLBase: [" << URLBase << "]" << endl;
     //cerr << dump() << endl;
 }
+
+} // namespace

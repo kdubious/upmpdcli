@@ -24,6 +24,8 @@
 
 #include "libupnpp/upnpavutils.hxx"
 
+namespace UPnPClient {
+
 /** 
  * UPnP resource. A resource describes one of the entities associated with 
  * a directory entry. This would be typically the audio file URI, and
@@ -114,7 +116,7 @@ public:
             //?? Avoid returning 0, who knows...
             return 1;
         }
-        return upnpdurationtos(sdur);
+        return UPnPP::upnpdurationtos(sdur);
     }
 
     /** 
@@ -197,5 +199,7 @@ public:
      */
     bool parse(const std::string& didltext);
 };
+
+} // namespace
 
 #endif /* _UPNPDIRCONTENT_H_X_INCLUDED_ */

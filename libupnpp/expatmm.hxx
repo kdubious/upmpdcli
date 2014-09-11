@@ -26,7 +26,8 @@
 #include <string.h>
 #include <expat.h>
 
-namespace expatmm {
+namespace UPnPP {
+
 class ExpatXMLParser {
 public:
 
@@ -306,6 +307,6 @@ protected:
     const std::string& m_input;
 };
 
-}; // End namespace expatmm
+}; // End namespace 
 
 #endif /* _EXPATMM_EXPATXMLPARSER_H */

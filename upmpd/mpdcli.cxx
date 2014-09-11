@@ -24,6 +24,7 @@
 #include "mpdcli.hxx"
 
 using namespace std;
+using namespace UPnPP;
 
 #define M_CONN ((struct mpd_connection *)m_conn)
 

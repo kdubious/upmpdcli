@@ -26,6 +26,8 @@ using namespace std;
 #include "libupnpp/workqueue.hxx"
 #include "libupnpp/log.hxx"
 
+using namespace UPnPP;
+
 class SaveCacheTask {
 public:
     SaveCacheTask(const string& fn, const mcache_type& cache)

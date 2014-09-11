@@ -24,6 +24,8 @@
 
 #include <string>
 
+namespace UPnPP {
+
 // Concatenate paths. Caller should make sure it makes sense.
 extern std::string caturl(const std::string& s1, const std::string& s2);
 // Return the scheme://host:port[/] part of input, or input if it is weird
@@ -39,5 +41,7 @@ extern bool stringToBool(const std::string& s, bool *v);
 
 // Case-insensitive ascii string compare where s1 is already upper-case
 int stringuppercmp(const std::string &s1, const std::string& s2);
+
+} // namespace
 
 #endif /* _UPNPP_H_X_INCLUDED_ */

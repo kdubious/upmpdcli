@@ -22,7 +22,7 @@
 
 using namespace std;
 
-namespace upnppdebug {
+namespace UPnPP {
 
 Logger::Logger(const std::string& fn) 
     : m_tocerr(false), m_loglevel(LLDEB)

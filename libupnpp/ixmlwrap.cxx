@@ -23,7 +23,7 @@ using std::string;
 
 #include "libupnpp/ixmlwrap.hxx"
 
-namespace ixmlwrap {
+namespace UPnPP {
 
 // Get the value for the first element in the document with the given name.
 // There should be only one such element for this to make any sense.

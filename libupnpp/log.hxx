@@ -21,7 +21,7 @@
 #include <fstream>
 #include <string>
 
-namespace upnppdebug {
+namespace UPnPP {
 
     class Logger {
     public:
@@ -47,46 +47,46 @@ namespace upnppdebug {
 	Logger& operator=(const Logger &);
     };
         
-}
-
-#define DEBOUT (upnppdebug::Logger::getTheLog("")->getstream())
+#define DEBOUT (Logger::getTheLog("")->getstream())
 #define LOCAL_LOGINC 0
-#define LOGLEVEL (upnppdebug::Logger::getTheLog("")->getloglevel()+LOCAL_LOGINC)
+#define LOGLEVEL (Logger::getTheLog("")->getloglevel()+LOCAL_LOGINC)
 
 #define LOGDEB1(X) {                                                    \
-        if (LOGLEVEL >= upnppdebug::Logger::LLDEB1)                     \
+        if (LOGLEVEL >= Logger::LLDEB1)                     \
         {                                                               \
             DEBOUT << __FILE__ << ":" << __LINE__<< "::"; DEBOUT << X;  \
         }                                                               \
     }
 
 #define LOGDEB(X) {                                                     \
-        if (LOGLEVEL >= upnppdebug::Logger::LLDEB)                      \
+        if (LOGLEVEL >= Logger::LLDEB)                      \
         {                                                               \
             DEBOUT << __FILE__ << ":" << __LINE__<< "::"; DEBOUT << X;  \
         }                                                               \
     }
 
 #define LOGINF(X) {                                                     \
-        if (LOGLEVEL >= upnppdebug::Logger::LLINF)                      \
+        if (LOGLEVEL >= Logger::LLINF)                      \
         {                                                               \
             DEBOUT << __FILE__ << ":" << __LINE__<< "::"; DEBOUT << X;  \
         }                                                               \
     }                                                                   
 
 #define LOGERR(X) {                                                     \
-        if (LOGLEVEL >= upnppdebug::Logger::LLERR)                      \
+        if (LOGLEVEL >= Logger::LLERR)                      \
         {                                                               \
             DEBOUT << __FILE__ << ":" << __LINE__<< "::"; DEBOUT << X;  \
         }                                                               \
     }
 
 #define LOGFAT(X) {                                                     \
-        if (LOGLEVEL >= upnppdebug::Logger::LLFAT)                      \
+        if (LOGLEVEL >= Logger::LLFAT)                      \
         {                                                               \
             DEBOUT << __FILE__ << ":" << __LINE__<< "::"; DEBOUT << X;  \
         }                                                               \
     }
+
+} // namespace UPnPP
 
 
 #endif /* _LOG_H_X_INCLUDED_ */

@@ -18,6 +18,8 @@
 #define _BASE64_H_INCLUDED_
 #include <string>
 
+namespace UPnPP {
+
 void base64_encode(const std::string& in, std::string& out);
 bool base64_decode(const std::string& in, std::string& out);
 inline std::string base64_encode(const std::string& in)
@@ -33,5 +35,7 @@ inline std::string base64_decode(const std::string& in)
 	return o;
     return std::string();
 }
+
+} // namespace
 
 #endif /* _BASE64_H_INCLUDED_ */

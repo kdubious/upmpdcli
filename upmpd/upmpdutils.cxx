@@ -46,6 +46,8 @@ using namespace std;
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/upnpavutils.hxx"
 
+using namespace UPnPP;
+
 // Append system error string to input string
 void catstrerror(string *reason, const char *what, int _errno)
 {

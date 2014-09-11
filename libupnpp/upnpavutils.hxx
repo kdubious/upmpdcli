@@ -19,9 +19,14 @@
 
 #include <string>
 
-// Format milliseconds into H+:MM:SS
+namespace UPnPP {
+
+/** Format milliseconds into H+:MM:SS */
 extern std::string upnpduration(int ms);
-// hms to seconds
+
+/** H+:MM:SS to seconds */
 extern int upnpdurationtos(const std::string& dur);
+
+}
 
 #endif /* _UPNPAVUTILS_HXX_INCLUDED_ */

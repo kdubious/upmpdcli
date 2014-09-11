@@ -28,8 +28,12 @@ using namespace std;
 #include "libupnpp/control/cdircontent.hxx"
 #include "libupnpp/log.hxx"
 
+using namespace UPnPP;
+
+namespace UPnPClient {
+
 // An XML parser which builds directory contents from DIDL-lite input.
-class UPnPDirParser : public expatmm::inputRefXMLParser {
+class UPnPDirParser : public inputRefXMLParser {
 public:
     UPnPDirParser(UPnPDirContent& dir, const string& input)
         : inputRefXMLParser(input), m_dir(dir)
@@ -200,3 +204,5 @@ string UPnPDirObject::getdidl()
 {
     return didl_header + m_didlfrag;
 }
+
+} // namespace

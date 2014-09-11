@@ -40,6 +40,8 @@ using namespace std::placeholders;
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
 
+using namespace UPnPP;
+
 static const string 
 sTpRender("urn:schemas-upnp-org:service:RenderingControl:1");
 static const string sIdRender("urn:upnp-org:serviceId:RenderingControl");

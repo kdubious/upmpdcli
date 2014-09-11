@@ -26,6 +26,10 @@ These notices must be retained in any copies of any part of this
 documentation and/or software.
  */
 
+#include <string>
+
+namespace UPnPP {
+
 /* Base functions from original file */
 /* MD5 context. */
 typedef struct MD5Context {
@@ -39,10 +43,11 @@ extern void   MD5Update (MD5_CTX *, const unsigned char *, unsigned int);
 extern void   MD5Final (unsigned char [16], MD5_CTX *);
 
 /* Convenience / utilities */
-#include <string>
-using std::string;
-extern void MD5Final(string& digest, MD5_CTX *);
-extern string& MD5String(const string& data, string& digest);
-extern string& MD5HexPrint(const string& digest, string& xdigest);
-extern string& MD5HexScan(const string& xdigest, string& digest);
+extern void MD5Final(std::string& digest, MD5_CTX *);
+extern std::string& MD5String(const std::string& data, std::string& digest);
+extern std::string& MD5HexPrint(const std::string& digest,std::string& xdigest);
+extern std::string& MD5HexScan(const std::string& xdigest, std::string& digest);
+
+} // namespace
+
 #endif /* _MD5_H_ */

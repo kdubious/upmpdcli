@@ -23,6 +23,8 @@
 
 class UpMpd;
 
+using namespace UPnPP;
+
 class UpMpdRenderCtl : public UpnpService {
 public:
     UpMpdRenderCtl(UpMpd *dev);

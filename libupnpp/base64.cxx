@@ -23,6 +23,8 @@ using std::string;
 
 #include "base64.hxx"
 
+namespace UPnPP {
+
 #undef DEBUG_BASE64 
 #ifdef DEBUG_BASE64
 #define DPRINT(X) fprintf X
@@ -266,6 +268,7 @@ void base64_encode(const string &in, string &out)
     return;
 }
 
+} // namespace
 #ifdef TEST_BASE64
 #include <stdio.h>
 #include <stdlib.h>
@@ -286,6 +289,8 @@ static int     op_flags;
 #define OPT_MOINS 0x1
 #define OPT_i	  0x2 
 #define OPT_P	  0x4 
+
+using namespace UPnPP;
 
 int main(int argc, char **argv)
 {
@@ -361,4 +366,5 @@ int main(int argc, char **argv)
 	exit(0);
     }
 }
+
 #endif

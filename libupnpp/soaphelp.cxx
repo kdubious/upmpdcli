@@ -24,6 +24,8 @@ using namespace std;
 #include "libupnpp/soaphelp.hxx"
 
 
+namespace UPnPP {
+
 /* Example Soap XML doc passed by libupnp is like: 
    <ns0:SetMute>
      <InstanceID>0</InstanceID>
@@ -291,3 +293,5 @@ out:
         ixmlNodeList_free(nl);
     return ret;
 }
+
+} // namespace

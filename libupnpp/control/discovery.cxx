@@ -37,6 +37,8 @@ using namespace std::placeholders;
 #include "description.hxx"
 #include "discovery.hxx"
 
+using namespace UPnPP;
+
 namespace UPnPClient {
 
 static UPnPDeviceDirectory *theDevDir;

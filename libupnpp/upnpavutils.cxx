@@ -19,6 +19,8 @@ using namespace std;
 
 #include "libupnpp/upnpavutils.hxx"
 
+namespace UPnPP {
+
 // Format duration in milliseconds into UPnP duration format
 string upnpduration(int ms)
 {
@@ -47,4 +49,6 @@ int upnpdurationtos(const string& dur)
 	return 0;
     }
     return 3600 * hours + 60 * minutes + seconds;
+}
+
 }

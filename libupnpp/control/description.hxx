@@ -26,6 +26,8 @@
 #include <string>
 #include <sstream>
 
+namespace UPnPClient {
+
 /**
  * Data holder for a UPnP service, parsed from the XML description
  * downloaded after discovery yielded its URL.
@@ -112,5 +114,7 @@ public:
 };
 
 typedef std::vector<UPnPServiceDesc>::iterator DevServIt;
+
+} // namespace
 
 #endif /* _UPNPDEV_HXX_INCLUDED_ */

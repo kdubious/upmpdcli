@@ -25,6 +25,8 @@
 
 #include "ptmutex.hxx"
 
+namespace UPnPP {
+
 /** Our link to libupnp. Initialize and keep the handle around */
 class LibUPnP {
 public:
@@ -132,5 +134,7 @@ private:
     PTMutexInit m_mutex;
     std::map<Upnp_EventType, Handler> m_handlers;
 };
+
+} // namespace UPnPP
 
 #endif /* _LIBUPNP.H_X_INCLUDED_ */

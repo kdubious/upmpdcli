@@ -20,6 +20,7 @@
 #include <string>
 #include <functional>
 #include <unordered_map>
+#include <iostream>
 
 #include <upnp/upnp.h>
 
@@ -27,6 +28,8 @@
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/control/description.hxx"
 #include "libupnpp/control/cdircontent.hxx"
+
+using namespace UPnPP;
 
 namespace UPnPClient {
 
@@ -128,7 +131,7 @@ protected:
         }
         if (!data.get(valnm.c_str(), valuep)) {
             LOGERR("Service::runSimpleAction: " << actnm << 
-                   " missing " << valnm << " in response" << endl);
+                   " missing " << valnm << " in response" << std::endl);
             return UPNP_E_BAD_RESPONSE;
         }
         return 0;

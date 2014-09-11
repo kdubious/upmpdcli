@@ -28,6 +28,8 @@ using namespace std;
 #include "libupnpp/expatmm.hxx"
 #include "libupnpp/control/ohproduct.hxx"
 
+using namespace UPnPP;
+
 // SourceList XML format
 // <SourceList>
 //    <Source>
@@ -47,10 +49,10 @@ using namespace std;
 // - Hdmi - Specifies a HDMI external input
 
 namespace UPnPClient {
-class OHSourceParser : public expatmm::inputRefXMLParser {
+class OHSourceParser : public inputRefXMLParser {
 public:
     OHSourceParser(const string& input, vector<OHProduct::Source>& sources)
-        : expatmm::inputRefXMLParser(input), m_sources(sources)
+        : inputRefXMLParser(input), m_sources(sources)
         {}
 
 protected:
