@@ -18,8 +18,10 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 
 using namespace std;
+using namespace std::placeholders;
 
 #include <upnp/upnp.h>
 
@@ -44,6 +46,86 @@ bool OHPlaylist::isOHPlService(const string& st)
     return !SType.compare(0, sz, st, 0, sz);
 }
 
+static int stringToTpState(const string& value, OHPlaylist::TPState *tpp)
+{
+    if (!value.compare("Buffering")) {
+        *tpp = OHPlaylist::TPS_Buffering;
+        return 0;
+    } else if (!value.compare("Paused")) {
+        *tpp = OHPlaylist::TPS_Paused;
+        return 0;
+    } else if (!value.compare("Playing")) {
+        *tpp = OHPlaylist::TPS_Playing;
+        return 0;
+    } else if (!value.compare("Stopped")) {
+        *tpp = OHPlaylist::TPS_Stopped;
+        return 0;
+    }
+    *tpp = OHPlaylist::TPS_Unknown;
+    return UPNP_E_BAD_RESPONSE;
+}
+
+// Translate IdArray: base64-encoded array of binary msb 32bits integers
+static void idArrayToVec(const string& _data, vector<int> *ids)
+{    
+    string data = base64_decode(_data);
+    const char *cp = data.c_str();
+    while (cp - data.c_str() <= int(data.size()) - 4) {
+        unsigned int *ip = (unsigned int *)cp;
+        ids->push_back(ntohl(*ip));
+        cp += 4;
+    }
+}
+
+void OHPlaylist::evtCallback(
+    const std::unordered_map<std::string, std::string>& props)
+{
+    LOGDEB("OHPlaylist::evtCallback: m_reporter: " << m_reporter << endl);
+    for (auto& entry: props) {
+        if (!m_reporter) {
+            LOGDEB1("OHPlaylist::evtCallback: " << entry.first << " -> " 
+                    << entry.second << endl);
+            continue;
+        }
+
+        if (!entry.first.compare("TransportState")) {
+            TPState tp;
+            stringToTpState(entry.second, &tp);
+            m_reporter->changed(entry.first.c_str(), int(tp));
+
+        } else if (!entry.first.compare("ProtocolInfo")) {
+            m_reporter->changed(entry.first.c_str(), 
+                                entry.second.c_str());
+
+        } else if (!entry.first.compare("Repeat") ||
+                   !entry.first.compare("Shuffle")) {
+            bool val = false;
+            stringToBool(entry.second, &val);
+            m_reporter->changed(entry.first.c_str(), val ? 1 : 0);
+
+        } else if (!entry.first.compare("Id") ||
+                   !entry.first.compare("TracksMax")) {
+            m_reporter->changed(entry.first.c_str(),
+                                atoi(entry.second.c_str()));
+            
+        } else if (!entry.first.compare("IdArray")) {
+            // Decode IdArray. See how we call the client
+            vector<int> v;
+            idArrayToVec(entry.second, &v);
+            m_reporter->changed(entry.first.c_str(), v);
+
+        } else {
+            LOGERR("OHPlaylist event: unknown variable: name [" <<
+                   entry.first << "] value [" << entry.second << endl);
+                m_reporter->changed(entry.first.c_str(), entry.second.c_str());
+        }
+    }
+}
+
+void OHPlaylist::registerCallback()
+{
+    Service::registerCallback(bind(&OHPlaylist::evtCallback, this, _1));
+}
 
 int OHPlaylist::play()
 {
@@ -100,26 +182,13 @@ int OHPlaylist::seekIndex(int value)
 
 int OHPlaylist::transportState(TPState* tpp)
 {
-    std::string value;
+    string value;
     int ret;
 
     if ((ret = runSimpleGet("TransportState", "Value", &value)))
         return ret;
-    if (!value.compare("Buffering")) {
-        *tpp = TPS_Buffering;
-        return 0;
-    } else if (!value.compare("Paused")) {
-        *tpp = TPS_Paused;
-        return 0;
-    } else if (!value.compare("Playing")) {
-        *tpp = TPS_Playing;
-        return 0;
-    } else if (!value.compare("Stopped")) {
-        *tpp = TPS_Stopped;
-        return 0;
-    }
-    *tpp = TPS_Unknown;
-    return UPNP_E_BAD_RESPONSE;
+
+    return stringToTpState(value, tpp);
 }
 
 int OHPlaylist::id(int *value)
@@ -298,14 +367,7 @@ int OHPlaylist::idArray(vector<int> *ids, int *tokp)
         LOGERR("OHPlaylist::insert: missing Array in response" << endl);
         return UPNP_E_BAD_RESPONSE;
     }
-
-    arraydata = base64_decode(arraydata);
-    const char *cp = arraydata.c_str();
-    while (cp - arraydata.c_str() < int(arraydata.size())) {
-        unsigned int *ip = (unsigned int *)cp;
-        ids->push_back(ntohl(*ip));
-        cp += 4;
-    }
+    idArrayToVec(arraydata, ids);
     return 0;
 }
 

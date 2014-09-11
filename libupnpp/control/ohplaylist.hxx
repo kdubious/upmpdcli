@@ -36,7 +36,8 @@ class OHPlaylist : public Service {
 public:
 
     OHPlaylist(const UPnPDeviceDesc& device, const UPnPServiceDesc& service)
-        : Service(device, service, false) {
+        : Service(device, service, true) {
+        registerCallback();
     }
 
     OHPlaylist() {}
@@ -72,7 +73,8 @@ public:
     int readList(const std::vector<int>& ids, 
                  std::vector<TrackListEntry>* entsp);
 
-    int insert(int afterid, const string& uri, const string& didl, int *nid);
+    int insert(int afterid, const std::string& uri, const std::string& didl, 
+               int *nid);
     int deleteId(int id);
     int deleteAll();
     int tracksMax(int *);
@@ -83,6 +85,10 @@ public:
 protected:
     /* My service type string */
     static const std::string SType;
+
+private:
+    void evtCallback(const std::unordered_map<std::string, std::string>&);
+    void registerCallback();
 };
 
 } // namespace UPnPClient

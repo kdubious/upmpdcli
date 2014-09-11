@@ -45,7 +45,9 @@ public:
     virtual void changed(const char *nm, const char *val) = 0;
     // Used for track metadata (parsed as content directory entry). Not always
     // needed.
-    virtual void changed(const char *nm, UPnPDirObject meta) {};
+    virtual void changed(const char */*nm*/, UPnPDirObject /*meta*/) {};
+    // Used by ohplaylist. Not always needed
+    virtual void changed(const char */*nm*/, std::vector<int> /*ids*/) {};
 };
 
 typedef 
