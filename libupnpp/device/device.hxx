@@ -21,6 +21,7 @@
 #include <functional>
 
 #include "libupnpp/soaphelp.hxx"
+#include "libupnpp/ptmutex.hxx"
 
 namespace UPnPProvider {
 
@@ -44,17 +45,6 @@ public:
      */
     void addActionMapping(const UpnpService*, 
                           const std::string& actName, soapfun);
-
-    /** 
-     * Generate event.
-     *
-     * To be called by the device layer when data changes and an
-     * event should happen. Use is not mandatory because the polling by 
-     * getEventData() may be sufficient.
-     */
-    void notifyEvent(const std::string& serviceId,
-                     const std::vector<std::string>& names, 
-                     const std::vector<std::string>& values);
 
     /** 
      * Main routine. To be called by main() when done with initialization. 
@@ -93,19 +83,40 @@ private:
     std::unordered_map<std::string, UpnpService*> m_servicemap;
     std::vector<std::string> m_serviceids;
     std::unordered_map<std::string, soapfun> m_calls;
+    unordered_map<string, UpnpService*>::const_iterator findService(const string& serviceid);
+
     bool m_needExit;
+    /* My device handle */
+    UpnpDevice_Handle m_dvh;
+
+    /* Lock for device operations. Held during a service callback 
+       Must not be held when using m_dvh to call into libupnp */
+    UPnPP::PTMutexInit m_lock;
+
+    pthread_cond_t m_evloopcond;
+    UPnPP::PTMutexInit m_evlooplock;
+
+    /* Gets called when something needs doing */
+    int callBack(Upnp_EventType et, void* evp);
+
+    /** 
+     * Generate event.
+     *
+     * Called by the device event loop, which polls the services.
+     * Use loopwakeup() to expedite things.
+     */
+    void notifyEvent(const std::string& serviceId,
+                     const std::vector<std::string>& names, 
+                     const std::vector<std::string>& values);
+
+
+    /** Static array of devices for dispatching */
     static unordered_map<std::string, UpnpDevice *> o_devices;
 
     /* Static callback for libupnp. This looks up the appropriate
      * device using the device ID (UDN), the calls its callback
      * method */
     static int sCallBack(Upnp_EventType et, void* evp, void*);
-
-    /* Gets called when something needs doing */
-    int callBack(Upnp_EventType et, void* evp);
-
-    /* My device handle */
-    UpnpDevice_Handle m_dvh;
 };
 
 /**
