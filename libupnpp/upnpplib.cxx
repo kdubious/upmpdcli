@@ -61,7 +61,7 @@ LibUPnP::LibUPnP(bool serveronly, string* hwaddr,
                  const string ifname, const string inip, unsigned short port)
     : m_ok(false)
 {
-    LOGDEB("LibUPnP: serveronly " << serveronly << " &hwaddr " << hwaddr <<
+    LOGDEB1("LibUPnP: serveronly " << serveronly << " &hwaddr " << hwaddr <<
            " ifname [" << ifname << "] inip [" << inip << "] port " << port 
            << endl);
 
@@ -94,7 +94,7 @@ LibUPnP::LibUPnP(bool serveronly, string* hwaddr,
     }
     setMaxContentLength(2000*1024);
 
-    LOGDEB("Using IP " << UpnpGetServerIpAddress() << " port " << 
+    LOGDEB("LibUPnP: Using IP " << UpnpGetServerIpAddress() << " port " << 
            UpnpGetServerPort() << endl);
 
 #if defined(HAVE_UPNPSETLOGLEVEL)
@@ -205,7 +205,7 @@ int LibUPnP::o_callback(Upnp_EventType et, void* evp, void* cookie)
         //cerr << "o_callback: NULL ulib!" << endl;
         ulib = theLib;
     }
-    LOGDEB("LibUPnP::o_callback: event type: " << evTypeAsString(et) << endl);
+    LOGDEB1("LibUPnP::o_callback: event type: " << evTypeAsString(et) << endl);
 
     map<Upnp_EventType, Handler>::iterator it = ulib->m_handlers.find(et);
     if (it != ulib->m_handlers.end()) {

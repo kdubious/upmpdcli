@@ -299,7 +299,7 @@ int AVTransport::getPositionInfo(PositionInfo& info, int instanceID)
     meta.parse(s);
     if (meta.m_items.size() > 0) {
         info.trackmeta = meta.m_items[0];
-        LOGDEB("AVTransport::getPositionInfo: size " << 
+        LOGDEB1("AVTransport::getPositionInfo: size " << 
                meta.m_items.size() << " current title: " 
                << meta.m_items[0].m_title << endl);
     }

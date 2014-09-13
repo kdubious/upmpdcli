@@ -65,9 +65,11 @@ Service::Service(const UPnPDeviceDesc& device,
 
 Service::~Service()
 {
-    LOGDEB("Service::~Service: unregister " << m_SID << endl);
-    unSubscribe();
-    o_calls.erase(m_SID);
+    LOGDEB1("Service::~Service: unregister " << m_SID << endl);
+    if (m_SID[0]) {
+        unSubscribe();
+        o_calls.erase(m_SID);
+    }
 }
 
 int Service::runAction(const SoapEncodeInput& args, SoapDecodeOutput& data)
@@ -88,7 +90,8 @@ int Service::runAction(const SoapEncodeInput& args, SoapDecodeOutput& data)
         return  UPNP_E_OUTOF_MEMORY;
     }
 
-    LOGDEB("Action xml: [" << ixmlPrintDocument(request) << "]" << endl);
+    LOGDEB1("Service::runAction: rqst: [" << 
+            ixmlPrintDocument(request) << "]" << endl);
 
     int ret = UpnpSendAction(hdl, m_actionURL.c_str(), m_serviceType.c_str(),
                              0 /*devUDN*/, request, &response);
@@ -98,7 +101,8 @@ int Service::runAction(const SoapEncodeInput& args, SoapDecodeOutput& data)
                " : " << UpnpGetErrorMessage(ret) << endl);
         return ret;
     }
-    LOGDEB("Service::runAction: Result xml: [" << ixmlPrintDocument(response) << "]" << endl);
+    LOGDEB1("Service::runAction: rslt: [" << 
+            ixmlPrintDocument(response) << "]" << endl);
 
     if (!decodeSoapBody(args.name.c_str(), response, &data)) {
         LOGERR("Service::runAction: Could not decode response: " <<
@@ -114,7 +118,7 @@ int Service::srvCB(Upnp_EventType et, void* vevp, void*)
 {
     PTMutexLocker lock(cblock);
 
-    //LOGDEB("Service:srvCB: " << LibUPnP::evTypeAsString(et) << endl);
+    LOGDEB1("Service:srvCB: " << LibUPnP::evTypeAsString(et) << endl);
 
     switch (et) {
     case UPNP_EVENT_RENEWAL_COMPLETE:
@@ -123,7 +127,7 @@ int Service::srvCB(Upnp_EventType et, void* vevp, void*)
     case UPNP_EVENT_AUTORENEWAL_FAILED:
     {
         const char *ff = (const char *)vevp;
-        LOGDEB("Service:srvCB: subs event: " << ff << endl);
+        LOGDEB1("Service:srvCB: subs event: " << ff << endl);
         break;
     }
 
@@ -167,7 +171,7 @@ int Service::srvCB(Upnp_EventType et, void* vevp, void*)
 // This is called once per process.
 bool Service::initEvents()
 {
-    LOGDEB("Service::initEvents" << endl);
+    LOGDEB1("Service::initEvents" << endl);
 
     PTMutexLocker lock(cblock);
     static bool eventinit(false);
@@ -196,7 +200,7 @@ bool Service::initEvents()
 
 bool Service::subscribe()
 {
-    //LOGDEB("Service::subscribe" << endl);
+    LOGDEB1("Service::subscribe" << endl);
     LibUPnP* lib = LibUPnP::getLibUPnP();
     if (lib == 0) {
         LOGINF("Service::subscribe: no lib" << endl);
@@ -210,13 +214,13 @@ bool Service::subscribe()
                UpnpGetErrorMessage(ret) << endl);
         return false;
     } 
-    //LOGDEB("Service::subscribe: sid: " << m_SID << endl);
+    LOGDEB1("Service::subscribe: sid: " << m_SID << endl);
     return true;
 }
 
 bool Service::unSubscribe()
 {
-    //LOGDEB("Service::unSubscribe" << endl);
+    LOGDEB1("Service::unSubscribe" << endl);
     LibUPnP* lib = LibUPnP::getLibUPnP();
     if (lib == 0) {
         LOGINF("Service::unSubscribe: no lib" << endl);
@@ -234,7 +238,7 @@ bool Service::unSubscribe()
 void Service::registerCallback(evtCBFunc c)
 {
     PTMutexLocker lock(cblock);
-    LOGDEB("Service::registerCallback: " << m_SID << endl);
+    LOGDEB1("Service::registerCallback: " << m_SID << endl);
     o_calls[m_SID] = c;
 }
 
