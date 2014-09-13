@@ -24,8 +24,6 @@
 
 namespace UPnPClient {
 
-static void *discoExplorer(void *);
-
 /**
  * Manage UPnP discovery and maintain a directory of active devices. Singleton.
  *
@@ -109,7 +107,7 @@ private:
     bool getDevBySelector(bool cmp(const UPnPDeviceDesc&, const std::string&), 
                           const std::string& value, UPnPDeviceDesc& ddesc);
 
-    friend void *discoExplorer(void *);
+    static void *discoExplorer(void *);
 
     bool m_ok;
     std::string m_reason;

@@ -189,7 +189,7 @@ typedef map<string, DeviceDescriptor>::iterator DevPoolIt;
 // Worker routine for the discovery queue. Get messages about devices
 // appearing and disappearing, and update the directory pool
 // accordingly.
-static void *discoExplorer(void *)
+void *UPnPDeviceDirectory::discoExplorer(void *)
 {
     for (;;) {
         DiscoveredTask *tsk = 0;
