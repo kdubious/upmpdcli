@@ -36,10 +36,10 @@ class MediaRenderer : public Device {
 public:
     MediaRenderer(const UPnPDeviceDesc& desc);
 
-    RDCH rdc() {return m_rdc;}
-    AVTH avt() {return m_avt;}
-    OHPRH ohpr() {return m_ohpr;}
-    OHPLH ohpl() {return m_ohpl;}
+    RDCH rdc();
+    AVTH avt();
+    OHPRH ohpr();
+    OHPLH ohpl();
 
     bool hasOpenHome();
 
