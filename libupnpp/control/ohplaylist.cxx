@@ -245,7 +245,9 @@ public:
     OHTrackListParser(const string& input, 
                       vector<OHPlaylist::TrackListEntry>* vp)
         : inputRefXMLParser(input), m_v(vp)
-        {}
+        {
+            //LOGDEB("OHTrackListParser: input: " << input << endl);
+        }
 
 protected:
     virtual void StartElement(const XML_Char *name, const XML_Char **) {
@@ -254,7 +256,7 @@ protected:
     virtual void EndElement(const XML_Char *name) {
         if (!strcmp(name, "Entry")) {
             UPnPDirContent dir;
-            if (!dir.parse(SoapHelp::xmlUnquote(m_tdidl))) {
+            if (!dir.parse(m_tdidl)) {
                 LOGERR("OHPlaylist::ReadList: didl parse failed: " 
                        << m_tdidl << endl);
                 return;
