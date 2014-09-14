@@ -35,12 +35,12 @@ public:
         upmpdNone,
         // If set, the MPD queue belongs to us, we shall clear
         // it as we like.
-        upmpdOwnQueue, 
+        upmpdOwnQueue = 1, 
         // Export OpenHome services
-        upmpdDoOH,
+        upmpdDoOH = 2,
         // Save queue metadata to disk for persistence across restarts
         // (mpd does it)
-        upmpdOhMetaPersist
+        upmpdOhMetaPersist = 4
     };
     UpMpd(const string& deviceid, const string& friendlyname,
           const unordered_map<string, string>& xmlfiles,

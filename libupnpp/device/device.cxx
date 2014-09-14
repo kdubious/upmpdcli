@@ -117,7 +117,8 @@ UpnpDevice::UpnpDevice(const string& deviceId,
     }
 
     if ((ret = UpnpSendAdvertisement(m_dvh, expiretime)) != 0) {
-        LOGERR("UpnpDevice: UpnpSendAdvertisement error: " << ret << endl);
+        LOGERR(m_lib->errAsString("UpnpDevice: UpnpSendAdvertisement", ret)
+               << endl);
     }
 }
 
@@ -275,8 +276,9 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
                                    &cnames[0], &cvalues[0],
                                    int(cnames.size()), act->Sid);
         if (ret != UPNP_E_SUCCESS) {
-            LOGERR("UpnpDevice::callBack: UpnpAcceptSubscription failed: " 
-                   << ret << endl);
+            LOGERR(m_lib->errAsString(
+                       "UpnpDevice::callBack: UpnpAcceptSubscription", ret) <<
+                   endl);
         }
 
         return ret;
@@ -311,7 +313,7 @@ void UpnpDevice::notifyEvent(const string& serviceId,
                              const vector<string>& names, 
                              const vector<string>& values)
 {
-    LOGDEB("UpnpDevice::notifyEvent " << serviceId << " " <<
+    LOGDEB1("UpnpDevice::notifyEvent " << serviceId << " " <<
            (names.empty()?"Empty names??":names[0]) << endl);
     if (names.empty())
         return;
@@ -323,7 +325,7 @@ void UpnpDevice::notifyEvent(const string& serviceId,
                          serviceId.c_str(), &cnames[0], &cvalues[0],
                          int(cnames.size()));
     if (ret != UPNP_E_SUCCESS) {
-        LOGERR("UpnpDevice::notifyEvent: UpnpNotify failed: " << ret << endl);
+        LOGERR(m_lib->errAsString("UpnpDevice::notifyEvent", ret) << endl);
     }
 }
 
