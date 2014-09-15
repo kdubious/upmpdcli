@@ -384,6 +384,9 @@ int main(int argc, char *argv[])
                 if (geteuid() == 0 && chown(mcfn.c_str(), runas, -1) != 0) {
                     LOGERR("chown("<< mcfn << ") : errno : " << errno << endl);
                 }
+                if (geteuid() == 0 && chown(cachedir.c_str(), runas, -1) != 0) {
+                    LOGERR("chown("<< cachedir << ") : errno : " << errno << endl);
+                }
             }
         }
     }

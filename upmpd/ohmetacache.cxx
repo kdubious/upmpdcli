@@ -118,9 +118,10 @@ static void *dmcacheSaveWorker(void *)
         LOGDEB("dmcacheSave: got save task: " << tsk->m_cache.size() << 
                " entries to " << tsk->m_fn << endl);
 
-      	ofstream output(tsk->m_fn, ios::out | ios::trunc);
+        string tfn = tsk->m_fn + "-";
+      	ofstream output(tfn, ios::out | ios::trunc);
 	if (!output.is_open()) {
-            LOGERR("dmcacheSave: could not open " << tsk->m_fn 
+            LOGERR("dmcacheSave: could not open " << tfn 
                    << " for writing" << endl);
             delete tsk;
             continue;
@@ -131,14 +132,18 @@ static void *dmcacheSaveWorker(void *)
             output << encode(it->first) << '=' << encode(it->second) << '\n';
 	    if (!output.good()) {
                 LOGERR("dmcacheSave: write error while saving to " << 
-                       tsk->m_fn << endl);
+                       tfn << endl);
                 break;
             }
         }
         output.flush();
         if (!output.good()) {
             LOGERR("dmcacheSave: flush error while saving to " << 
-                   tsk->m_fn << endl);
+                   tfn << endl);
+        }
+        if (rename(tfn.c_str(), tsk->m_fn.c_str()) != 0) {
+            LOGERR("dmcacheSave: rename(" << tfn << ", " << tsk->m_fn << ")" <<
+                   " failed: errno: " << errno << endl);
         }
 
         delete tsk;
