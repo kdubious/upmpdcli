@@ -109,7 +109,7 @@ public:
 
     }
 
-    int getDurationSeconds(unsigned ridx = 0)
+    int getDurationSeconds(unsigned ridx = 0) const
     {
         std::string sdur;
         if (!getrprop(ridx, "duration", sdur)) {
@@ -125,7 +125,7 @@ public:
      * missed useful stuff while parsing the data from the content
      * directory, so we send the original if we can.
      */
-    std::string getdidl();
+    std::string getdidl() const;
 
     void clear()
     {
@@ -139,7 +139,7 @@ public:
         m_didlfrag.clear();
     }
 
-    std::string dump()
+    std::string dump() const
     {
         std::ostringstream os;
         os << "UPnPDirObject: " << (m_type == item ? "item" : "container") << 

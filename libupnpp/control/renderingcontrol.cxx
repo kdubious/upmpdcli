@@ -45,7 +45,7 @@ bool RenderingControl::isRDCService(const string& st)
 void RenderingControl::evtCallback(
     const std::unordered_map<std::string, std::string>& props)
 {
-    LOGDEB("RenderingControl::evtCallback: m_reporter " << m_reporter << endl);
+    LOGDEB1("RenderingControl::evtCallback: m_reporter " << m_reporter << endl);
     for (auto& entry: props) {
         if (!entry.first.compare("LastChange")) {
             std::unordered_map<std::string, std::string> props1;

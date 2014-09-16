@@ -200,7 +200,7 @@ static const string didl_header(
 
 // Maybe we'll do something about building didl from scratch if this
 // proves necessary.
-string UPnPDirObject::getdidl()
+string UPnPDirObject::getdidl() const
 {
     return didl_header + m_didlfrag;
 }

@@ -80,7 +80,7 @@ static void idArrayToVec(const string& _data, vector<int> *ids)
 void OHPlaylist::evtCallback(
     const std::unordered_map<std::string, std::string>& props)
 {
-    LOGDEB("OHPlaylist::evtCallback: m_reporter: " << m_reporter << endl);
+    LOGDEB1("OHPlaylist::evtCallback: m_reporter: " << m_reporter << endl);
     for (auto& entry: props) {
         if (!m_reporter) {
             LOGDEB1("OHPlaylist::evtCallback: " << entry.first << " -> " 
@@ -361,13 +361,13 @@ int OHPlaylist::idArray(vector<int> *ids, int *tokp)
         return ret;
     }
     if (!data.get("Token", tokp)) {
-        LOGERR("OHPlaylist::insert: missing Token in response" << endl);
+        LOGERR("OHPlaylist::idArray: missing Token in response" << endl);
         return UPNP_E_BAD_RESPONSE;
     }
     string arraydata;
     if (!data.get("Array", &arraydata)) {
-        LOGERR("OHPlaylist::insert: missing Array in response" << endl);
-        return UPNP_E_BAD_RESPONSE;
+        LOGINF("OHPlaylist::idArray: missing Array in response" << endl);
+        // We get this for an empty array ? This would need to be investigated
     }
     idArrayToVec(arraydata, ids);
     return 0;
