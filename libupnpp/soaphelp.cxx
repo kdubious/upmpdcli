@@ -35,6 +35,9 @@ namespace UPnPP {
    
    As the top node name is qualified by a namespace, it's easier to just use 
    action name passed in the libupnp action callback.
+   
+   This is used both for decoding action requests in the device and responses
+   in the control point side
 */
 bool decodeSoapBody(const char *callnm, IXML_Document *actReq, 
                     SoapDecodeOutput *res)
@@ -44,26 +47,25 @@ bool decodeSoapBody(const char *callnm, IXML_Document *actReq,
     IXML_Node* topNode = 
         ixmlNode_getFirstChild((IXML_Node *)actReq);
     if (topNode == 0) {
-        cerr << "decodeSoap: Empty Action request (no topNode) ??" << endl;
+        LOGERR("decodeSoap: Empty Action request (no topNode) ??" << endl);
         return false;
     }
-    // cerr << "decodeSoap: top node name: " << ixmlNode_getNodeName(topNode) 
-    // << endl;
+    //LOGDEB("decodeSoap: top node name: " << ixmlNode_getNodeName(topNode) 
+    //       << endl);
 
     nl = ixmlNode_getChildNodes(topNode);
     if (nl == 0) {
-        // cerr << "decodeSoap: empty Action request (no childs)" << endl;
         // Ok actually, there are no args
         return true;
     }
-    // cerr << "decodeSoap: childnodes list length: " << ixmlNodeList_length(nl)
-    // << endl;
+    //LOGDEB("decodeSoap: childnodes list length: " << ixmlNodeList_length(nl)
+    // << endl);
 
     for (unsigned long i = 0; i <  ixmlNodeList_length(nl); i++) {
         IXML_Node *cld = ixmlNodeList_item(nl, i);
         if (cld == 0) {
-            // cerr << "decodeSoap: got null node  from nodelist at index " <<
-            // i << " ??" << endl;
+            LOGDEB1("decodeSoap: got null node  from nodelist at index " <<
+                   i << " ??" << endl);
             // Seems to happen with empty arg list?? This looks like a bug, 
             // should we not get an empty node instead?
             if (i == 0) {
@@ -72,9 +74,9 @@ bool decodeSoapBody(const char *callnm, IXML_Document *actReq,
             goto out;
         }
         const char *name = ixmlNode_getNodeName(cld);
-        if (cld == 0) {
+        if (name == 0) {
             DOMString pnode = ixmlPrintNode(cld);
-            cerr << "decodeSoap: got null name ??:" << pnode << endl;
+            LOGDEB("decodeSoap: got null name ??:" << pnode << endl);
             ixmlFreeDOMString(pnode);
             goto out;
         }
@@ -118,7 +120,7 @@ bool SoapDecodeOutput::getInt(const char *nm, int *value) const
 bool SoapDecodeOutput::getString(const char *nm, string *value) const
 {
     map<string, string>::const_iterator it = args.find(nm);
-    if (it == args.end() || it->second.empty()) {
+    if (it == args.end()) {
         return false;
     }
     *value = it->second;
