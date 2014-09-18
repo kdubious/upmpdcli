@@ -210,8 +210,8 @@ bool path_makepath(const string& path, int mode)
     vector<string> vpath;
     stringToTokens(path, vpath, "/", true);
     string npath;
-    for (auto& pelt : vpath) {
-        npath += string("/") + pelt;
+    for (auto it = vpath.begin(); it != vpath.end(); it++) {
+        npath += string("/") + *it;
         if (access(npath.c_str(), 0) < 0) {
             if (mkdir(npath.c_str(), mode)) {
                 return false;

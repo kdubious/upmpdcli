@@ -91,9 +91,9 @@ bool OHTime::getEventData(bool all, std::vector<std::string>& names,
     }
     m_state = state;
 
-    for (auto& member : changed) {
-        names.push_back(member.first);
-        values.push_back(member.second);
+    for (auto it = changed.begin(); it != changed.end(); it++) {
+        names.push_back(it->first);
+        values.push_back(it->second);
     }
 
     return true;

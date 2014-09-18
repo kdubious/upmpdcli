@@ -132,8 +132,8 @@ static string translateIdArray(const vector<UpSong>& in)
 {
     string out1;
     string sdeb;
-    for (auto us : in) {
-        unsigned int val = us.mpdid;
+    for (auto us = in.begin(); us != in.end(); us++) {
+        unsigned int val = us->mpdid;
         if (val) {
             out1 += (unsigned char) ((val & 0xff000000) >> 24);
             out1 += (unsigned char) ((val & 0x00ff0000) >> 16);
@@ -182,22 +182,22 @@ bool OHPlaylist::makeIdArray(string& out)
     unordered_map<string, string> nmeta;
 
     // Walk the playlist data from MPD
-    for (auto& usong : vdata) {
-        auto inold = m_metacache.find(usong.uri);
+    for (auto usong = vdata.begin(); usong != vdata.end(); usong++) {
+        auto inold = m_metacache.find(usong->uri);
         if (inold != m_metacache.end()) {
             // Entries already in the metadata array just get
             // transferred to the new array
-            nmeta[usong.uri].swap(inold->second);
+            nmeta[usong->uri].swap(inold->second);
             m_metacache.erase(inold);
         } else {
             // Entries not in the arrays are translated from the
             // MPD data to our format. They were probably added by
             // another MPD client. 
-            if (nmeta.find(usong.uri) == nmeta.end()) {
-                nmeta[usong.uri] = didlmake(usong);
+            if (nmeta.find(usong->uri) == nmeta.end()) {
+                nmeta[usong->uri] = didlmake(*usong);
                 m_cachedirty = true;
                 LOGDEB("OHPlaylist::makeIdArray: using mpd data for " << 
-                       usong.mpdid << " uri " << usong.uri << endl);
+                       usong->mpdid << " uri " << usong->uri << endl);
             }
         }
     }
@@ -254,9 +254,9 @@ bool OHPlaylist::getEventData(bool all, std::vector<std::string>& names,
     }
     m_state = state;
 
-    for (auto& entry : changed) {
-        names.push_back(entry.first);
-        values.push_back(entry.second);
+    for (auto it = changed.begin(); it != changed.end(); it++) {
+        names.push_back(it->first);
+        values.push_back(it->second);
     }
 
     return true;
@@ -495,8 +495,8 @@ int OHPlaylist::readList(const SoapArgs& sc, SoapData& data)
     string out("<TrackList>");
     if (ok) {
         stringToTokens(sids, ids);
-        for (auto& sid : ids) {
-            int id = atoi(sid.c_str());
+        for (auto it = ids.begin(); it != ids.end(); it++) {
+            int id = atoi(it->c_str());
             if (id == -1) {
                 // Lumin does this??
                 LOGDEB("OHPlaylist::readlist: request for id -1" << endl);
@@ -520,7 +520,7 @@ int OHPlaylist::readList(const SoapArgs& sc, SoapData& data)
                 metadata = SoapHelp::xmlQuote(metadata);
             }
             out += "<Entry><Id>";
-            out += sid.c_str();
+            out += it->c_str();
             out += "</Id><Uri>";
             out += song.uri;
             out += "</Uri><Metadata>";

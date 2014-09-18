@@ -81,43 +81,43 @@ void OHPlaylist::evtCallback(
     const std::unordered_map<std::string, std::string>& props)
 {
     LOGDEB1("OHPlaylist::evtCallback: m_reporter: " << m_reporter << endl);
-    for (auto& entry: props) {
+    for (auto it = props.begin(); it != props.end(); it++) {
         if (!m_reporter) {
-            LOGDEB1("OHPlaylist::evtCallback: " << entry.first << " -> " 
-                    << entry.second << endl);
+            LOGDEB1("OHPlaylist::evtCallback: " << it->first << " -> " 
+                    << it->second << endl);
             continue;
         }
 
-        if (!entry.first.compare("TransportState")) {
+        if (!it->first.compare("TransportState")) {
             TPState tp;
-            stringToTpState(entry.second, &tp);
-            m_reporter->changed(entry.first.c_str(), int(tp));
+            stringToTpState(it->second, &tp);
+            m_reporter->changed(it->first.c_str(), int(tp));
 
-        } else if (!entry.first.compare("ProtocolInfo")) {
-            m_reporter->changed(entry.first.c_str(), 
-                                entry.second.c_str());
+        } else if (!it->first.compare("ProtocolInfo")) {
+            m_reporter->changed(it->first.c_str(), 
+                                it->second.c_str());
 
-        } else if (!entry.first.compare("Repeat") ||
-                   !entry.first.compare("Shuffle")) {
+        } else if (!it->first.compare("Repeat") ||
+                   !it->first.compare("Shuffle")) {
             bool val = false;
-            stringToBool(entry.second, &val);
-            m_reporter->changed(entry.first.c_str(), val ? 1 : 0);
+            stringToBool(it->second, &val);
+            m_reporter->changed(it->first.c_str(), val ? 1 : 0);
 
-        } else if (!entry.first.compare("Id") ||
-                   !entry.first.compare("TracksMax")) {
-            m_reporter->changed(entry.first.c_str(),
-                                atoi(entry.second.c_str()));
+        } else if (!it->first.compare("Id") ||
+                   !it->first.compare("TracksMax")) {
+            m_reporter->changed(it->first.c_str(),
+                                atoi(it->second.c_str()));
             
-        } else if (!entry.first.compare("IdArray")) {
+        } else if (!it->first.compare("IdArray")) {
             // Decode IdArray. See how we call the client
             vector<int> v;
-            idArrayToVec(entry.second, &v);
-            m_reporter->changed(entry.first.c_str(), v);
+            idArrayToVec(it->second, &v);
+            m_reporter->changed(it->first.c_str(), v);
 
         } else {
             LOGERR("OHPlaylist event: unknown variable: name [" <<
-                   entry.first << "] value [" << entry.second << endl);
-                m_reporter->changed(entry.first.c_str(), entry.second.c_str());
+                   it->first << "] value [" << it->second << endl);
+                m_reporter->changed(it->first.c_str(), it->second.c_str());
         }
     }
 }

@@ -64,17 +64,17 @@ bool MediaServer::getDeviceDescs(vector<UPnPDeviceDesc>& devices,
     UPnPDeviceDirectory::Visitor visitor = bind(MDAccum, &mydevs, friendlyName,
                                                 _1, _2);
     UPnPDeviceDirectory::getTheDir()->traverse(visitor);
-    for (auto& entry : mydevs)
-        devices.push_back(entry.second);
+    for (auto it = mydevs.begin(); it != mydevs.end(); it++)
+        devices.push_back(it->second);
     return !devices.empty();
 }
 
 MediaServer::MediaServer(const UPnPDeviceDesc& desc)
 {
     bool found = false;
-    for (auto& entry : desc.services) {
-        if (ContentDirectory::isCDService(entry.serviceType)) {
-            m_cds = CDSH(new ContentDirectory(desc, entry));
+    for (auto it = desc.services.begin(); it != desc.services.end(); it++) {
+        if (ContentDirectory::isCDService(it->serviceType)) {
+            m_cds = CDSH(new ContentDirectory(desc, *it));
             found = true;
             break;
         }

@@ -154,8 +154,9 @@ protected:
                     // sampleFrequency="44100" nrAudioChannels="2">
                     UPnPResource res;
                     res.m_uri = m_path.back().data;
-                    for (auto& entry: m_path.back().attributes) {
-                        res.m_props[entry.first] = entry.second;
+                    for (auto it =  m_path.back().attributes.begin();
+                        it !=  m_path.back().attributes.end(); it++) {
+                        res.m_props[it->first] = it->second;
                     }
                     m_tobj.m_resources.push_back(res);
                 }

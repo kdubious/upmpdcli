@@ -46,31 +46,31 @@ void RenderingControl::evtCallback(
     const std::unordered_map<std::string, std::string>& props)
 {
     LOGDEB1("RenderingControl::evtCallback: m_reporter " << m_reporter << endl);
-    for (auto& entry: props) {
-        if (!entry.first.compare("LastChange")) {
+    for (auto it = props.begin(); it != props.end(); it++) {
+        if (!it->first.compare("LastChange")) {
             std::unordered_map<std::string, std::string> props1;
-            if (!decodeAVLastChange(entry.second, props1)) {
+            if (!decodeAVLastChange(it->second, props1)) {
                 LOGERR("RenderingControl::evtCallback: bad LastChange value: "
-                       << entry.second << endl);
+                       << it->second << endl);
                 return;
             }
-            for (auto& entry1: props1) {
-                LOGDEB1("    " << entry1.first << " -> " << 
-                        entry1.second << endl);
-                if (!entry1.first.compare("Volume")) {
+            for (auto it1 = props1.begin(); it1 != props1.end(); it1++) {
+                LOGDEB1("    " << it1->first << " -> " << 
+                        it1->second << endl);
+                if (!it1->first.compare("Volume")) {
                     if (m_reporter) {
-                        m_reporter->changed(entry1.first.c_str(),
-                                            atoi(entry1.second.c_str()));
+                        m_reporter->changed(it1->first.c_str(),
+                                            atoi(it1->second.c_str()));
                     }
-                } else if (!entry1.first.compare("Mute")) {
+                } else if (!it1->first.compare("Mute")) {
                     bool mute;
-                    if (m_reporter && stringToBool(entry1.second, &mute))
-                        m_reporter->changed(entry1.first.c_str(), mute);
+                    if (m_reporter && stringToBool(it1->second, &mute))
+                        m_reporter->changed(it1->first.c_str(), mute);
                 }
             }
         } else {
             LOGINF("RenderingControl:event: var not lastchange: "
-                   << entry.first << " -> " << entry.second << endl;);
+                   << it->first << " -> " << it->second << endl;);
         }
     }
 }

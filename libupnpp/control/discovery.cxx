@@ -247,8 +247,9 @@ void *UPnPDeviceDirectory::discoExplorer(void *)
             }
             {
                 PTMutexLocker lock(o_callbacks_mutex);
-                for (auto& cb: o_callbacks) {
-                    cb(d.device, UPnPServiceDesc());
+                for (auto cbp = o_callbacks.begin(); 
+                     cbp != o_callbacks.end(); cbp++) {
+                    (*cbp)(d.device, UPnPServiceDesc());
                 }
             }
         }
@@ -372,9 +373,11 @@ bool UPnPDeviceDirectory::traverse(UPnPDeviceDirectory::Visitor visit)
 
     PTMutexLocker lock(o_pool.m_mutex);
 
-    for (auto& dde : o_pool.m_devices) {
-        for (auto& service : dde.second.device.services) {
-            if (!visit(dde.second.device, service))
+    for (auto it = o_pool.m_devices.begin(); 
+         it != o_pool.m_devices.end(); it++) {
+        for (auto it1 = it->second.device.services.begin();
+             it1 != it->second.device.services.end(); it1++) {
+            if (!visit(it->second.device, *it1))
                 return false;
         }
     }
@@ -408,9 +411,10 @@ bool UPnPDeviceDirectory::getDevBySelector(bool cmp(const UPnPDeviceDesc& ddesc,
         PTMutexLocker lock(devWaitLock);
         {
             PTMutexLocker lock(o_pool.m_mutex);
-            for (auto& dde : o_pool.m_devices) {
-                if (!cmp(dde.second.device, value)) {
-                    ddesc = dde.second.device;
+            for (auto it = o_pool.m_devices.begin(); 
+                 it != o_pool.m_devices.end(); it++) {
+                if (!cmp(it->second.device, value)) {
+                    ddesc = it->second.device;
                     return true;
                 }
             }

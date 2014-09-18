@@ -64,8 +64,8 @@ bool MediaRenderer::getDeviceDescs(vector<UPnPDeviceDesc>& devices,
     UPnPDeviceDirectory::Visitor visitor = bind(MDAccum, &mydevs, friendlyName,
                                                 _1, _2);
     UPnPDeviceDirectory::getTheDir()->traverse(visitor);
-    for (auto& entry : mydevs)
-        devices.push_back(entry.second);
+    for (auto it = mydevs.begin(); it != mydevs.end(); it++)
+        devices.push_back(it->second);
     return !devices.empty();
 }
 
@@ -82,9 +82,9 @@ bool MediaRenderer::hasOpenHome()
 
 RDCH MediaRenderer::rdc() 
 {
-    for (auto& entry : m_desc.services) {
-        if (RenderingControl::isRDCService(entry.serviceType)) {
-            m_rdc = RDCH(new RenderingControl(m_desc, entry));
+    for (auto it = m_desc.services.begin(); it != m_desc.services.end(); it++) {
+        if (RenderingControl::isRDCService(it->serviceType)) {
+            m_rdc = RDCH(new RenderingControl(m_desc, *it));
             return m_rdc;
         }
     }
@@ -94,9 +94,9 @@ RDCH MediaRenderer::rdc()
 
 AVTH MediaRenderer::avt() 
 {
-    for (auto& entry : m_desc.services) {
-        if (AVTransport::isAVTService(entry.serviceType)) {
-            return m_avt = AVTH(new AVTransport(m_desc, entry));
+    for (auto it = m_desc.services.begin(); it != m_desc.services.end(); it++) {
+        if (AVTransport::isAVTService(it->serviceType)) {
+            return m_avt = AVTH(new AVTransport(m_desc, *it));
         }
     }
     LOGERR("MediaRenderer::avt: AVTransport service not found" << endl);
@@ -105,9 +105,9 @@ AVTH MediaRenderer::avt()
 
 OHPRH MediaRenderer::ohpr() 
 {
-    for (auto& entry : m_desc.services) {
-        if (OHProduct::isOHPrService(entry.serviceType)) {
-            return m_ohpr = OHPRH(new OHProduct(m_desc, entry));
+    for (auto it = m_desc.services.begin(); it != m_desc.services.end(); it++) {
+        if (OHProduct::isOHPrService(it->serviceType)) {
+            return m_ohpr = OHPRH(new OHProduct(m_desc, *it));
         }
     }
     LOGINF("MediaRenderer::ohpr: OHProduct service not found" << endl);
@@ -116,9 +116,9 @@ OHPRH MediaRenderer::ohpr()
 
 OHPLH MediaRenderer::ohpl() 
 {
-    for (auto& entry : m_desc.services) {
-        if (OHPlaylist::isOHPlService(entry.serviceType)) {
-            return m_ohpl = OHPLH(new OHPlaylist(m_desc, entry));
+    for (auto it = m_desc.services.begin(); it != m_desc.services.end(); it++) {
+        if (OHPlaylist::isOHPlService(it->serviceType)) {
+            return m_ohpl = OHPLH(new OHPlaylist(m_desc, *it));
         }
     }
     LOGINF("MediaRenderer::ohpl: OHPlaylist service not found" << endl);

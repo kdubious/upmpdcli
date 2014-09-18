@@ -105,8 +105,8 @@ public:
             "] friendlyName [" << friendlyName <<
             "] UDN [" << UDN <<
             "] URLBase [" << URLBase << "] Services:" << std::endl;
-        for (auto& serv: services) {
-            os << "    " << serv.dump();
+        for (auto it = services.begin(); it != services.end(); it++) {
+            os << "    " << it->dump();
         }
         os << "}" << std::endl;
         return os.str();
