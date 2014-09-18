@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
-<meta name="generator" content="AsciiDoc 8.6.9" />
+<meta name="generator" content="AsciiDoc 8.6.7" />
 <title>Notes for upmpdcli 0.8 release series</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
@@ -87,15 +87,9 @@ ul, ol, li > p {
 ul > li     { color: #aaa; }
 ul > li > * { color: black; }
 
-.monospaced, code, pre {
-  font-family: "Courier New", Courier, monospace;
-  font-size: inherit;
-  color: navy;
+pre {
   padding: 0;
   margin: 0;
-}
-pre {
-  white-space: pre-wrap;
 }
 
 #author {
@@ -225,7 +219,7 @@ div.exampleblock > div.content {
 }
 
 div.imageblock div.content { padding-left: 0; }
-span.image img { border-style: none; vertical-align: text-bottom; }
+span.image img { border-style: none; }
 a.image:visited { color: white; }
 
 dl {
@@ -421,6 +415,12 @@ div.unbreakable { page-break-inside: avoid; }
  *
  * */
 
+tt {
+  font-family: "Courier New", Courier, monospace;
+  font-size: inherit;
+  color: navy;
+}
+
 div.tableblock {
   margin-top: 1.0em;
   margin-bottom: 1.5em;
@@ -453,6 +453,12 @@ div.tableblock > table[frame="vsides"] {
  * html5 specific
  *
  * */
+
+.monospaced {
+  font-family: "Courier New", Courier, monospace;
+  font-size: inherit;
+  color: navy;
+}
 
 table.tableblock {
   margin-top: 1.0em;
@@ -533,8 +539,6 @@ body.manpage div.sectionbody {
 @media print {
   body.manpage div#toc { display: none; }
 }
-
-
 </style>
 <script type="text/javascript">
 /*<![CDATA[*/
@@ -737,6 +741,57 @@ asciidoc.install();
 </div>
 <div id="content">
 <div class="sect1">
+<h2 id="_minor_releases">Minor releases</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_0_8_1">0.8.1</h3>
+<div class="paragraph"><p>0.8.1 has many changes in the library code, but almost none of them affect
+the device side, they concern support for writing a control-point, which is
+mostly disjoint. The following changes are relevant to upmpdcli, and
+consistant with a minor release:</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+When used with an non-OpenHome Control Point, multiple calls to
+   SetNextTransportURI no longer result in a lengthening of the MPD queue,
+   and a wrong playlist.
+</p>
+</li>
+<li>
+<p>
+The OpenHome Playlist metadata is now writen to a temporary file which
+  is then renamed, to avoid partial saves of big lists.
+</p>
+</li>
+<li>
+<p>
+The AVTransport service uses the OpenHome PlayList metadata cache
+  for describing the current track data to a pure AVTransport Control
+  Point. This is a very marginal improvement, and only makes sense in case
+  the AVTransport CP is used for displaying the current track.
+</p>
+</li>
+<li>
+<p>
+The OpenHome service was not completly switched off when the option was
+  off sometimes resulting in spurious error messages (and nothing more).
+</p>
+</li>
+<li>
+<p>
+Bad lock management inside the device code could result in a
+  semi-deadlock in rare situations. Upmpdcli would then mostly be gone from
+  the network, while still doing temporary appearances. This is linked to
+  design issues in libupnp, which handles quite badly a situation where a
+  subscribed Control Point responds very slowly or not at all to event
+  connections.
+</p>
+</li>
+</ul></div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_changes_in_upmpdcli_0_8_0">Changes in upmpdcli 0.8.0</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>The main changes in release 0.8 deal with better handling of the OpenHome
@@ -747,7 +802,7 @@ improvements.</p></div>
 <p>
 OpenHome playlist: metadata from tracks directly added to the MPD queue
   through an MPD client (such as, e.g. MPDroid, gmpc&#8230;) is now remembered
-  by <strong>upmpdcli</strong> and will be displayed in the UPnP control point.
+  by <strong>upmpdcli</strong> and will be displayed in the UPnP Control Point.
 </p>
 </li>
 <li>
@@ -762,8 +817,8 @@ OpenHome playlist: the metadata for the playlist is now saved to disk so
 <p>
 Actually advertise on the network when starting up and dying. An
   oversight in previous versions resulted in the fact that <strong>upmpdcli</strong> could
-  only be discovered by a search (when the control point started), but,
-  when <strong>upmpdcli</strong> was started, it would not appear in a running control point
+  only be discovered by a search (when the Control Point started), but,
+  when <strong>upmpdcli</strong> was started, it would not appear in a running Control Point
   device list.
 </p>
 </li>
@@ -771,7 +826,7 @@ Actually advertise on the network when starting up and dying. An
 <p>
 Do not advertise support for raw PCM strings (audio/Lxx), as we can&#8217;t
   actually play them. It is better to give accurate information to the
-  control point, so that it can choose an alternate format such as Wav if
+  Control Point, so that it can choose an alternate format such as Wav if
   it is available.
 </p>
 </li>
@@ -782,7 +837,7 @@ Do not advertise support for raw PCM strings (audio/Lxx), as we can&#8217;t
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-08-06 09:56:53 CEST
+Last updated 2014-09-18 05:43:29 CEST
 </div>
 </div>
 </body>
