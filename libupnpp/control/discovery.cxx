@@ -297,7 +297,7 @@ UPnPDeviceDirectory::UPnPDeviceDirectory(time_t search_window)
         m_reason = "Discover work queue start failed";
         return;
     }
-    pthread_yield();
+    sched_yield();
     LibUPnP *lib = LibUPnP::getLibUPnP();
     if (lib == 0) {
         m_reason = "Can't get lib";
