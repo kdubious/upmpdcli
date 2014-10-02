@@ -46,7 +46,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Playlist:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Playlist");
 
 OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl)
-    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), m_ctl(ctl),
+    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
       m_cachedirty(false), m_mpdqvers(-1)
 {
     dev->addActionMapping(this, "Play", 

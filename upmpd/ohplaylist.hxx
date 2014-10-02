@@ -66,7 +66,6 @@ private:
     // State variable storage
     unordered_map<string, string> m_state;
     UpMpd *m_dev;
-    UpMpdRenderCtl *m_ctl;
 
     // Storage for song metadata, indexed by URL.  This used to be
     // indexed by song id, but this does not survive MPD restarts.

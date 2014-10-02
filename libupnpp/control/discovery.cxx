@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
+#include <sched.h>
 
 #include <iostream>
 #include <map>

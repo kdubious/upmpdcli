@@ -22,6 +22,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <pwd.h>
+#include <errno.h>
 
 #include <string>
 #include <iostream>

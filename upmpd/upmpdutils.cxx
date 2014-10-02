@@ -31,6 +31,7 @@
 #include <regex.h>
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
 #ifndef O_STREAMING
 #define O_STREAMING 0
 #endif
@@ -283,6 +284,10 @@ int percentodbvalue(int value)
 #ifdef __APPLE__
 #define exp10 __exp10
 #endif
+#ifdef __UCLIBC__
+/* 10^x = 10^(log e^x) = (e^x)^log10 = e^(x * log 10) */
+#define exp10(x) (exp((x) * log(10)))
+#endif /* __UCLIBC__ */
 
 // Translate VolumeDB to MPD 0-100
 int dbvaluetopercent(int dbvalue)
