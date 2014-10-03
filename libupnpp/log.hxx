@@ -17,9 +17,9 @@
 #ifndef _LOG_H_X_INCLUDED_
 #define _LOG_H_X_INCLUDED_
 
-#include <iostream>
-#include <fstream>
-#include <string>
+#include <fstream>                      // for ofstream
+#include <iostream>                     // for cerr, ostream
+#include <string>                       // for string
 
 namespace UPnPP {
 

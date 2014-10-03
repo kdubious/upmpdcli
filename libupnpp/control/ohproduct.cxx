@@ -15,19 +15,21 @@
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <string>
-#include <vector>
-
-using namespace std;
-
-#include <upnp/upnp.h>
-
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/upnpp_p.hxx"
-#include "libupnpp/log.hxx"
-#include "libupnpp/expatmm.hxx"
 #include "libupnpp/control/ohproduct.hxx"
 
+#include <expat_external.h>             // for XML_Char
+#include <string.h>                     // for strcmp
+#include <upnp/upnp.h>                  // for UPNP_E_BAD_RESPONSE, etc
+#include <ostream>                      // for endl
+#include <string>                       // for string
+#include <vector>                       // for vector
+
+#include "libupnpp/expatmm.hxx"         // for inputRefXMLParser
+#include "libupnpp/log.hxx"             // for LOGERR
+#include "libupnpp/soaphelp.hxx"        // for SoapDecodeOutput, etc
+#include "libupnpp/upnpp_p.hxx"         // for stringToBool, trimstring
+
+using namespace std;
 using namespace UPnPP;
 
 // SourceList XML format
@@ -124,4 +126,3 @@ int OHProduct::getSources(vector<Source>& sources)
 }
 
 } // End namespace UPnPClient
-

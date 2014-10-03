@@ -15,31 +15,28 @@
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
+#include "renderctl.hxx"
 
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <functional>
-#include <set>
+#include <stdlib.h>                     // for atoi
+#include <upnp/upnp.h>                  // for UPNP_E_INVALID_PARAM, etc
+
+#include <functional>                   // for _Bind, bind, _1, _2
+#include <iostream>                     // for basic_ostream::operator<<, etc
+#include <map>                          // for _Rb_tree_const_iterator, etc
+#include <string>                       // for string, basic_string
+#include <unordered_map>                // for unordered_map, etc
+#include <utility>                      // for pair
+#include <vector>                       // for vector
+
+#include "libupnpp/log.hxx"             // for LOGDEB
+#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData, i2s, etc
+
+#include "mpdcli.hxx"                   // for MPDCli, MpdStatus
+#include "upmpd.hxx"                    // for UpMpd
+#include "upmpdutils.hxx"               // for dbvaluetopercent, mapget, etc
+
 using namespace std;
 using namespace std::placeholders;
-
-#include "libupnpp/upnpplib.hxx"
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/log.hxx"
-#include "libupnpp/device/device.hxx"
-
-#include "upmpd.hxx"
-#include "renderctl.hxx"
-#include "mpdcli.hxx"
-#include "upmpdutils.hxx"
-
 using namespace UPnPP;
 
 static const string 

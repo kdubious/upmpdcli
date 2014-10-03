@@ -17,15 +17,20 @@
 #ifndef _UPMPDUTILS_H_X_INCLUDED_
 #define _UPMPDUTILS_H_X_INCLUDED_
 
-#include <string>
-#include <unordered_map>
+#include <sys/types.h>                  // for pid_t
+
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
+#include <vector>                       // for vector
+
+class UpSong;
 
 /** Read protocol info file. This contains the connection manager protocol info data
  *
  * We strip white-space from beginning/ends of lines, and allow
  * #-started comments (on a line alone only, comments after data not allowed).
  */
-bool read_protocolinfo(const string& fn, string& out);
+bool read_protocolinfo(const std::string& fn, std::string& out);
 
 /**
  * Read file into string.
@@ -36,11 +41,11 @@ extern bool file_to_string(const std::string &filename, std::string &data,
 
 extern void path_catslash(std::string &s);
 extern std::string path_cat(const std::string &s1, const std::string &s2);
-extern void trimstring(string &s, const char *ws = " \t");
-extern string path_tildexpand(const string &s);
-extern void stringToTokens(const string &s, vector<string> &tokens, 
-			   const string &delims = " \t", bool skipinit=true);
-extern bool path_makepath(const string& path, int mode);
+extern void trimstring(std::string &s, const char *ws = " \t");
+extern std::string path_tildexpand(const std::string &s);
+extern void stringToTokens(const std::string &s, std::vector<std::string> &tokens,
+			   const std::string &delims = " \t", bool skipinit=true);
+extern bool path_makepath(const std::string& path, int mode);
 
 // Convert between db value to percent values (Get/Set Volume and VolumeDb)
 extern int percentodbvalue(int value);
@@ -55,7 +60,6 @@ extern const std::string& mapget(
     const std::string& k);
 
 // Format a didl fragment from MPD status data
-class UpSong;
 extern std::string didlmake(const UpSong& song);
 
 // Replace the first occurrence of regexp. cxx11 regex does not work

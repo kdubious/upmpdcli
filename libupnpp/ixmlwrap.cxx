@@ -14,14 +14,15 @@
  *       Free Software Foundation, Inc.,
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include "config.h"
-
-#include <string>
-using std::string;
-
-#include <upnp/ixml.h>
+//#include "config.h"
 
 #include "libupnpp/ixmlwrap.hxx"
+
+#include <upnp/ixml.h>                  // for IXML_Node, etc
+
+#include <string>                       // for string
+
+using std::string;
 
 namespace UPnPP {
 

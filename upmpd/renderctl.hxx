@@ -17,15 +17,18 @@
 #ifndef _RENDERING_H_X_INCLUDED_
 #define _RENDERING_H_X_INCLUDED_
 
-#include <string>
+#include <string>                       // for string
+#include <vector>                       // for vector
+#include <unordered_map>                // for unordered_map
 
-#include "libupnpp/device/device.hxx"
+#include "libupnpp/device/device.hxx"   // for UpnpService
+#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
 
 class UpMpd;
 
 using namespace UPnPP;
 
-class UpMpdRenderCtl : public UpnpService {
+class UpMpdRenderCtl : public UPnPProvider::UpnpService {
 public:
     UpMpdRenderCtl(UpMpd *dev);
 
@@ -35,7 +38,7 @@ public:
     void setvolume_i(int volume);
     void setmute_i(bool onoff);
 private:
-    bool rdstateMToU(unordered_map<string, string>& status);
+    bool rdstateMToU(std::unordered_map<std::string, std::string>& status);
     int setMute(const SoapArgs& sc, SoapData& data);
     int getMute(const SoapArgs& sc, SoapData& data);
     int setVolume(const SoapArgs& sc, SoapData& data, bool isDb);
@@ -48,7 +51,7 @@ private:
     // changes to avoid saturating with small requests.
     int m_desiredvolume;
     // State variable storage
-    unordered_map<string, string> m_rdstate;
+    std::unordered_map<std::string, std::string> m_rdstate;
 };
 
 #endif /* _RENDERING_H_X_INCLUDED_ */

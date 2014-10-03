@@ -15,31 +15,24 @@
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
+#include "conman.hxx"
 
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <functional>
-#include <set>
+#include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
+
+#include <functional>                   // for _Bind, bind, _1, _2
+#include <iostream>                     // for endl
+#include <map>                          // for _Rb_tree_const_iterator, etc
+#include <string>                       // for string, basic_string
+#include <utility>                      // for pair
+#include <vector>                       // for vector
+
+#include "libupnpp/log.hxx"             // for LOGDEB
+#include "libupnpp/soaphelp.hxx"        // for SoapData, SoapArgs
+
+#include "upmpd.hxx"                    // for UpMpd
+
 using namespace std;
 using namespace std::placeholders;
-
-#include "libupnpp/upnpplib.hxx"
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/device/device.hxx"
-#include "libupnpp/log.hxx"
-
-#include "upmpd.hxx"
-#include "conman.hxx"
-#include "mpdcli.hxx"
-#include "upmpdutils.hxx"
-
 using namespace UPnPP;
 
 static const string sTpCM("urn:schemas-upnp-org:service:ConnectionManager:1");

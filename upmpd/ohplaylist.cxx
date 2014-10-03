@@ -15,32 +15,29 @@
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
+#include "ohplaylist.hxx"
 
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <functional>
-#include <set>
+#include <stdlib.h>                     // for atoi
+
+#include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
+
+#include <functional>                   // for _Bind, bind, _1, _2
+#include <iostream>                     // for endl, etc
+#include <string>                       // for string, allocator, etc
+#include <utility>                      // for pair
+#include <vector>                       // for vector
+
+#include "libupnpp/base64.hxx"          // for base64_encode
+#include "libupnpp/log.hxx"             // for LOGDEB, LOGERR
+#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData, i2s, etc
+
+#include "ohmetacache.hxx"              // for dmcacheSave
+#include "mpdcli.hxx"                   // for MpdStatus, UpSong, MPDCli, etc
+#include "upmpd.hxx"                    // for UpMpd, etc
+#include "upmpdutils.hxx"               // for didlmake, diffmaps, etc
+
 using namespace std;
 using namespace std::placeholders;
-
-#include "libupnpp/upnpplib.hxx"
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/log.hxx"
-#include "libupnpp/base64.hxx"
-#include "libupnpp/device/device.hxx"
-
-#include "upmpd.hxx"
-#include "ohplaylist.hxx"
-#include "ohmetacache.hxx"
-#include "mpdcli.hxx"
-#include "upmpdutils.hxx"
 
 static const string sTpProduct("urn:av-openhome-org:service:Playlist:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Playlist");

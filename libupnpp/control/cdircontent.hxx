@@ -17,12 +17,13 @@
 #ifndef _UPNPDIRCONTENT_H_X_INCLUDED_
 #define _UPNPDIRCONTENT_H_X_INCLUDED_
 
-#include <string>
-#include <vector>
-#include <map>
-#include <sstream>
+#include <map>                          // for map, etc
+#include <sstream>                      // for operator<<, basic_ostream, etc
+#include <string>                       // for string, char_traits, etc
+#include <utility>                      // for pair
+#include <vector>                       // for vector
 
-#include "libupnpp/upnpavutils.hxx"
+#include "libupnpp/upnpavutils.hxx"     // for upnpdurationtos
 
 namespace UPnPClient {
 
@@ -40,8 +41,6 @@ public:
     // Attributes
     std::map<std::string, std::string> m_props;
 };
-
-class UPnPDirParser;
 
 /**
  * UPnP Media Server directory entry, converted from XML data.

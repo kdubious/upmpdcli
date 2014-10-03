@@ -14,32 +14,27 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include "config.h"
+#include "ohproduct.hxx"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
+#include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
 
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <functional>
-#include <set>
+#include <functional>                   // for _Bind, bind, _1, _2
+#include <iostream>                     // for endl, etc
+#include <map>                          // for _Rb_tree_const_iterator, etc
+#include <string>                       // for string, operator<<, etc
+#include <utility>                      // for pair
+#include <vector>                       // for vector
+
+#include "config.h"                     // for PACKAGE_VERSION
+
+#include "libupnpp/device/device.hxx"   // for UpnpService
+#include "libupnpp/log.hxx"             // for LOGDEB
+#include "libupnpp/soaphelp.hxx"        // for SoapData, SoapArgs
+
+#include "upmpd.hxx"                    // for UpMpd
+
 using namespace std;
 using namespace std::placeholders;
-
-#include "libupnpp/upnpplib.hxx"
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/log.hxx"
-#include "libupnpp/device/device.hxx"
-
-#include "upmpd.hxx"
-#include "ohproduct.hxx"
-#include "mpdcli.hxx"
-#include "upmpdutils.hxx"
 
 static const string sTpProduct("urn:av-openhome-org:service:Product:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Product");
@@ -247,4 +242,3 @@ int OHProduct::sourceXMLChangeCount(const SoapArgs& sc, SoapData& data)
     data.addarg("Value", "0");
     return UPNP_E_SUCCESS;
 }
-

@@ -14,11 +14,13 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include "config.h"
-
-#include <errno.h>
+//#include "config.h"
 
 #include "log.hxx"
+
+#include <errno.h>                      // for errno
+
+#include <fstream>                      // for operator<<, basic_ostream, etc
 
 using namespace std;
 
@@ -49,4 +51,3 @@ Logger *Logger::getTheLog(const string& fn)
 }
 
 }
-

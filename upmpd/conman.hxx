@@ -17,15 +17,17 @@
 #ifndef _CONMAN_H_X_INCLUDED_
 #define _CONMAN_H_X_INCLUDED_
 
-#include <string>
+#include <string>                       // for string
+#include <vector>                       // for vector
 
-#include "libupnpp/device/device.hxx"
-
-using namespace UPnPP;
+#include "libupnpp/device/device.hxx"   // for UpnpService
+#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
 
 class UpMpd;
 
-class UpMpdConMan : public UpnpService {
+using namespace UPnPP;
+
+class UpMpdConMan : public UPnPProvider::UpnpService {
 public:
     UpMpdConMan(UpMpd *dev);
 

@@ -14,21 +14,25 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include "config.h"
+//#include "config.h"
 
-#include <time.h>
-#include <errno.h>
-#include <sys/time.h>
-
-#include <iostream>
-using namespace std;
-
-#include "libupnpp/upnpplib.hxx"
-#include "libupnpp/upnpputils.hxx"
-#include "libupnpp/log.hxx"
-#include "vdir.hxx"
 #include "device.hxx"
 
+#include <errno.h>                      // for ETIMEDOUT, errno
+#include <sys/time.h>                   // for CLOCK_REALTIME
+#include <time.h>                       // for timespec, clock_gettime
+#include <upnp/ixml.h>                  // for ixmlFreeDOMString, etc
+
+#include <iostream>                     // for endl, operator<<, etc
+#include <utility>                      // for pair
+
+#include "libupnpp/log.hxx"             // for LOGERR, LOGFAT, LOGDEB, etc
+#include "libupnpp/upnpplib.hxx"        // for LibUPnP
+#include "libupnpp/upnpputils.hxx"      // for timespec_addnanos
+
+#include "vdir.hxx"                     // for VirtualDir
+
+using namespace std;
 using namespace UPnPP;
 
 namespace UPnPProvider {

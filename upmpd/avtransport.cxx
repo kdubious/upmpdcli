@@ -15,32 +15,26 @@
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
+#include "avtransport.hxx"
 
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <functional>
-#include <set>
+#include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
+
+#include <functional>                   // for _Bind, bind, _1, _2
+#include <iostream>                     // for operator<<, etc
+#include <map>                          // for map, map<>::const_iterator
+#include <utility>                      // for pair
+
+#include "libupnpp/log.hxx"             // for LOGDEB, LOGDEB1, LOGERR
+#include "libupnpp/soaphelp.hxx"        // for SoapData, SoapArgs, etc
+#include "libupnpp/upnpavutils.hxx"     // for upnpduration, etc
+
+#include "mpdcli.hxx"                   // for MpdStatus, MPDCli, etc
+#include "ohplaylist.hxx"               // for OHPlaylist
+#include "upmpd.hxx"                    // for UpMpd, etc
+#include "upmpdutils.hxx"               // for didlmake, mapget
+
 using namespace std;
 using namespace std::placeholders;
-
-#include "libupnpp/upnpplib.hxx"
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/log.hxx"
-#include "libupnpp/upnpavutils.hxx"
-#include "libupnpp/device/device.hxx"
-
-#include "upmpd.hxx"
-#include "avtransport.hxx"
-#include "mpdcli.hxx"
-#include "upmpdutils.hxx"
-#include "ohplaylist.hxx"
 
 static const string sIdTransport("urn:upnp-org:serviceId:AVTransport");
 static const string sTpTransport("urn:schemas-upnp-org:service:AVTransport:1");

@@ -14,31 +14,28 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include "config.h"
+//#include "config.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <string>
-#include <iostream>
-#include <set>
-#include <vector>
-using namespace std;
-#include <functional>
-using namespace std::placeholders;
-
-
-#include <upnp/upnp.h>
-#include <upnp/upnptools.h>
-
-#include "libupnpp/upnpp_p.hxx"
-#include "libupnpp/upnpplib.hxx"
-#include "libupnpp/ixmlwrap.hxx"
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/log.hxx"
 #include "libupnpp/control/cdirectory.hxx"
-#include "libupnpp/control/cdircontent.hxx"
-#include "libupnpp/control/discovery.hxx"
+
+#include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
+#include <upnp/upnptools.h>             // for UpnpGetErrorMessage
+
+#include <functional>                   // for _Bind, bind, _1, _2
+#include <iostream>                     // for operator<<, basic_ostream, etc
+#include <set>                          // for set
+#include <string>                       // for string, operator<<, etc
+#include <vector>                       // for vector
+
+#include "libupnpp/control/cdircontent.hxx"  // for UPnPDirContent
+#include "libupnpp/control/description.hxx"  // for UPnPDeviceDesc, etc
+#include "libupnpp/control/discovery.hxx"  // for UPnPDeviceDirectory, etc
+#include "libupnpp/log.hxx"             // for LOGDEB, LOGINF, LOGERR
+#include "libupnpp/soaphelp.hxx"        // for SoapEncodeInput, SoapArgs, etc
+#include "libupnpp/upnpp_p.hxx"         // for csvToStrings
+
+using namespace std;
+using namespace std::placeholders;
 
 namespace UPnPClient {
 

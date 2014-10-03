@@ -56,6 +56,10 @@
 
 #include "getsyshwaddr.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MACADDR_IS_ZERO(x) \
   ((x[0] == 0x00) && \
    (x[1] == 0x00) && \
@@ -185,6 +189,10 @@ int getsyshwaddr(const char *iface, char *ip, int ilen, char *buf, int hlen)
 	}
 	return ret;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 /* Local Variables: */
 /* mode: c++ */

@@ -17,16 +17,18 @@
 #ifndef _MEDIASERVER_HXX_INCLUDED_
 #define _MEDIASERVER_HXX_INCLUDED_
 
-#include <memory>
-#include <string>
+#include <memory>                       // for shared_ptr
+#include <string>                       // for string
+#include <vector>                       // for vector
 
-#include "libupnpp/control/device.hxx"
-#include "libupnpp/control/description.hxx"
-#include "libupnpp/control/cdirectory.hxx"
+#include "libupnpp/control/cdirectory.hxx"  // for CDSH
+#include "libupnpp/control/device.hxx"  // for Device
 
 namespace UPnPClient {
 
 class MediaServer;
+class UPnPDeviceDesc;
+
 typedef std::shared_ptr<MediaServer> MSRH;
 
 class MediaServer : public Device {

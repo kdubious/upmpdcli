@@ -49,26 +49,26 @@
  * (useful to have central/personal config files)
  */
 
-#include <string>
-#include <map>
-#include <vector>
-#include <algorithm>
+#include <time.h>                       // for time_t
+#include <algorithm>                    // for sort, unique
+#include <map>                          // for map, etc
+#include <string>                       // for string, operator==, etc
+#include <vector>                       // for vector, etc
 
 // rh7.3 likes iostream better...
 #if defined(__GNUC__) && __GNUC__ < 3
 #include <iostream>
 #else
-#include <istream>
-#include <ostream>
+#include <istream>                      // for istream, ostream
 #endif
+
+#include "upmpdutils.hxx"               // for path_cat
 
 using std::string;
 using std::vector;
 using std::map;
 using std::istream;
 using std::ostream;
-
-#include "upmpdutils.hxx"
 
 /** Internal class used for storing presentation information */
 class ConfLine {

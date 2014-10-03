@@ -14,29 +14,34 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include "config.h"
 
-#include <string.h>
-#include <ctype.h>
-
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <map>
-#include <vector>
-#include <set>
-using namespace std;
-
-#include <upnp/ixml.h>
-
-#include "upnpp_p.hxx"
 #include "upnpplib.hxx"
-extern "C" {
-#include "getsyshwaddr.h"
-}
-#include "md5.hxx"
-#include "log.hxx"
-#include "upnpputils.hxx"
+
+#include <ctype.h>                      // for toupper
+#include <stdio.h>                      // for sprintf
+#include <string.h>                     // for strncpy
+#include <time.h>                       // for timespec
+
+#include <upnp/ixml.h>                  // for ixmlRelaxParser
+#include <upnp/upnptools.h>             // for UpnpGetErrorMessage
+
+#include <iostream>                     // for operator<<, basic_ostream, etc
+#include <map>                          // for map, _Rb_tree_iterator, etc
+#include <set>                          // for set
+#include <sstream>                      // for ostringstream
+#include <string>                       // for string, basic_string, etc
+#include <utility>                      // for pair
+#include <vector>                       // for vector
+
+#include "config.h"                     // for HAVE_UPNPSETLOGLEVEL
+#include "getsyshwaddr.h"               // for getsyshwaddr
+
+#include "libupnpp/ptmutex.hxx"         // for PTMutexLocker
+
+#include "log.hxx"                      // for LOGERR, LOGDEB1, LOGDEB, etc
+#include "md5.hxx"                      // for MD5String
+
+using namespace std;
 
 namespace UPnPP {
 

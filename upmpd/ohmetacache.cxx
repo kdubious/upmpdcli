@@ -15,17 +15,19 @@
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <unistd.h>
-#include <fcntl.h>
-#include <string.h>
-
-#include <iostream>
-using namespace std;
-
 #include "ohmetacache.hxx"
-#include "libupnpp/workqueue.hxx"
-#include "libupnpp/log.hxx"
 
+#include <errno.h>                      // for errno
+#include <stdio.h>                      // for rename
+#include <string.h>                     // for strchr
+
+#include <iostream>                     // for basic_ostream, operator<<, etc
+#include <utility>                      // for pair
+
+#include "libupnpp/log.hxx"             // for LOGERR, LOGDEB
+#include "libupnpp/workqueue.hxx"       // for WorkQueue
+
+using namespace std;
 using namespace UPnPP;
 
 class SaveCacheTask {

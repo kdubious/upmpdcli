@@ -17,14 +17,18 @@
 #ifndef _RENDERINGCONTROL_HXX_INCLUDED_
 #define _RENDERINGCONTROL_HXX_INCLUDED_
 
-#include <string>
-#include <memory>
+#include <memory>                       // for shared_ptr
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
 
-#include "service.hxx"
+#include "service.hxx"                  // for Service
+
+namespace UPnPClient { class RenderingControl; }
+namespace UPnPClient { class UPnPDeviceDesc; }
+namespace UPnPClient { class UPnPServiceDesc; }
 
 namespace UPnPClient {
 
-class RenderingControl;
 typedef std::shared_ptr<RenderingControl> RDCH;
 
 /**

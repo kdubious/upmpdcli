@@ -21,32 +21,35 @@
 // not linking to Qt or glib just to get path-concatenating
 // functions...
 
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <math.h>
-#include <pwd.h>
-#include <regex.h>
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
+#include "upmpdutils.hxx"
+
+#include <errno.h>                      // for errno
+#include <fcntl.h>                      // for open, O_RDONLY, O_CREAT, etc
+#include <math.h>                       // for exp10, floor, log10, sqrt
+#include <pwd.h>                        // for getpwnam, getpwuid, passwd
+#include <regex.h>                      // for regmatch_t, regfree, etc
+#include <stdio.h>                      // for sprintf
+#include <stdlib.h>                     // for getenv, strtol
+#include <string.h>                     // for strerror, strerror_r
+#include <sys/file.h>                   // for flock, LOCK_EX, LOCK_NB
+#include <sys/stat.h>                   // for fstat, mkdir, stat
+#include <unistd.h>                     // for close, pid_t, ftruncate, etc
+
 #ifndef O_STREAMING
 #define O_STREAMING 0
 #endif
+#include <fstream>                      // for operator<<, basic_ostream, etc
+#include <sstream>                      // for ostringstream
+#include <utility>                      // for pair
+#include <vector>                       // for vector
 
-#include <iostream>
-#include <sstream>
-#include <fstream>
+#include "libupnpp/log.hxx"             // for LOGERR
+#include "libupnpp/soaphelp.hxx"        // for xmlQuote
+#include "libupnpp/upnpavutils.hxx"     // for upnpduration
+
+#include "mpdcli.hxx"                   // for UpSong
+
 using namespace std;
-
-#include "mpdcli.hxx"
-#include "upmpdutils.hxx"
-#include "libupnpp/log.hxx"
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/upnpavutils.hxx"
-
 using namespace UPnPP;
 
 // Append system error string to input string
@@ -537,4 +540,3 @@ int Pidfile::remove()
 {
     return unlink(m_path.c_str());
 }
-

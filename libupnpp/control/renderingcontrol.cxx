@@ -15,21 +15,24 @@
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <stdlib.h>
+#include "libupnpp/control/renderingcontrol.hxx"
 
-#include <string>
-#include <functional>
+#include <stdlib.h>                     // for atoi
+#include <upnp/upnp.h>                  // for UPNP_E_BAD_RESPONSE, etc
+
+#include <functional>                   // for _Bind, bind, _1
+#include <ostream>                      // for basic_ostream, endl, etc
+#include <string>                       // for string, operator<<, etc
+#include <utility>                      // for pair
+
+#include "libupnpp/control/avlastchg.hxx"  // for decodeAVLastChange
+#include "libupnpp/control/service.hxx"  // for VarEventReporter, Service
+#include "libupnpp/log.hxx"             // for LOGERR, LOGDEB1, LOGINF
+#include "libupnpp/soaphelp.hxx"        // for SoapEncodeInput, etc
+#include "libupnpp/upnpp_p.hxx"         // for stringToBool
 
 using namespace std;
 using namespace std::placeholders;
-
-#include <upnp/upnp.h>
-
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/upnpp_p.hxx"
-#include "libupnpp/log.hxx"
-#include "libupnpp/control/renderingcontrol.hxx"
-#include "libupnpp/control/avlastchg.hxx"
 
 namespace UPnPClient {
 
@@ -134,4 +137,3 @@ bool RenderingControl::getMute(const string& channel)
 }
 
 } // End namespace UPnPClient
-

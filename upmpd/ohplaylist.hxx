@@ -17,16 +17,19 @@
 #ifndef _OHPLAYLIST_H_X_INCLUDED_
 #define _OHPLAYLIST_H_X_INCLUDED_
 
-#include <string>
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
+#include <vector>                       // for vector
 
-#include "libupnpp/device/device.hxx"
-
-using namespace UPnPP;
+#include "libupnpp/device/device.hxx"   // for UpnpService
+#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
 
 class UpMpd;
 class UpMpdRenderCtl;
 
-class OHPlaylist : public UpnpService {
+using namespace UPnPP;
+
+class OHPlaylist : public UPnPProvider::UpnpService {
 public:
     OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl);
 
@@ -61,10 +64,10 @@ private:
     int protocolInfo(const SoapArgs& sc, SoapData& data);
 
     bool makeIdArray(std::string&);
-    bool makestate(unordered_map<string, string> &st);
+    bool makestate(std::unordered_map<std::string, std::string> &st);
     void maybeWakeUp(bool ok);
     // State variable storage
-    unordered_map<string, string> m_state;
+    std::unordered_map<std::string, std::string> m_state;
     UpMpd *m_dev;
 
     // Storage for song metadata, indexed by URL.  This used to be
@@ -76,7 +79,7 @@ private:
     // Avoid re-reading the whole MPD queue every time by using the
     // queue version.
     int m_mpdqvers;
-    string m_idArrayCached;
+    std::string m_idArrayCached;
 };
 
 #endif /* _OHPLAYLIST_H_X_INCLUDED_ */

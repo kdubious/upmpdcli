@@ -17,10 +17,13 @@
 #ifndef _UPNPPDISC_H_X_INCLUDED_
 #define _UPNPPDISC_H_X_INCLUDED_
 
-#include <vector>
-#include <functional>
+#include <time.h>                       // for time_t
 
-#include "description.hxx"
+#include <functional>                   // for function
+#include <string>                       // for string
+
+namespace UPnPClient { class UPnPDeviceDesc; }
+namespace UPnPClient { class UPnPServiceDesc; }
 
 namespace UPnPClient {
 

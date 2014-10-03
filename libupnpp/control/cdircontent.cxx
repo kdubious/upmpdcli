@@ -14,20 +14,22 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include "config.h"
 
-#include <string>
-#include <vector>
-#include <iostream>
-#include <unordered_map>
+#include "libupnpp/control/cdircontent.hxx"
+
+#include <expat.h>                      // for XML_GetCurrentByteIndex
+#include <expat_external.h>             // for XML_Char, XML_Size
+#include <string.h>                     // for strcmp
+
+#include <string>                       // for string, allocator, etc
+#include <unordered_map>                // for unordered_map, etc
+#include <vector>                       // for vector
+
+#include "libupnpp/expatmm.hxx"         // for inputRefXMLParser
+#include "libupnpp/log.hxx"             // for LOGINF
+#include "libupnpp/upnpp_p.hxx"         // for trimstring
 
 using namespace std;
-
-#include "libupnpp/expatmm.hxx"
-#include "libupnpp/upnpp_p.hxx"
-#include "libupnpp/control/cdircontent.hxx"
-#include "libupnpp/log.hxx"
-
 using namespace UPnPP;
 
 namespace UPnPClient {

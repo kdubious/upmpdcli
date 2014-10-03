@@ -14,17 +14,18 @@
  *   Free Software Foundation, Inc.,
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include "config.h"
-
-#include <sys/types.h>
-#include <memory.h>
-#include <iostream>
-
-#include <upnp/upnp.h>
-
-#include "libupnpp/upnpp_p.hxx"
-#include "libupnpp/log.hxx"
 #include "vdir.hxx"
+
+#include <string.h>                     // for memcpy
+#include <sys/types.h>                  // for off_t
+#include <upnp/ixml.h>                  // for ixmlCloneDOMString
+#include <upnp/upnp.h>                  // for File_Info, etc
+
+#include <iostream>                     // for endl, basic_ostream, etc
+#include <utility>                      // for pair
+
+#include "libupnpp/log.hxx"             // for LOGERR
+#include "libupnpp/upnpp_p.hxx"         // for path_getfather, etc
 
 using namespace std;
 using namespace UPnPP;

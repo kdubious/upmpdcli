@@ -17,12 +17,11 @@
 #ifndef _MPDCLI_H_X_INCLUDED_
 #define _MPDCLI_H_X_INCLUDED_
 
-#include <unordered_map>
-#include <string>
-#include <map>
-#include <vector>
+#include <regex.h>                      // for regex_t
+#include <string>                       // for string
+#include <vector>                       // for vector
 
-#include <regex.h>
+struct mpd_song;
 
 class UpSong {
 public:
@@ -79,8 +78,6 @@ public:
     int trackcounter;
     int detailscounter;
 };
-
-struct mpd_song;
 
 class MPDCli {
 public:

@@ -17,13 +17,15 @@
 #ifndef _IXMLWRAP_H_INCLUDED_
 #define _IXMLWRAP_H_INCLUDED_
 
-#include <string>
+#include <upnp/ixml.h>                  // for IXML_Document
+
+#include <string>                       // for string
 
 namespace UPnPP {
 
     /** Retrieve the text content for the first element of given name.
      * Returns an empty string if the element does not contain a text node */
-    std::string getFirstElementValue(IXML_Document *doc, const string& name);
+    std::string getFirstElementValue(IXML_Document *doc, const std::string& name);
 
 }
 

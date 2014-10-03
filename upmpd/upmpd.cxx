@@ -15,41 +15,39 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <pwd.h>
-#include <errno.h>
+#include "upmpd.hxx"
 
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <functional>
-#include <set>
+#include <errno.h>                      // for errno
+#include <fcntl.h>                      // for open, O_CREAT, O_RDWR
+#include <pwd.h>                        // for getpwnam, passwd
+#include <signal.h>                     // for sigaction, SIG_IGN, etc
+#include <stdio.h>                      // for fprintf, perror, stderr
+#include <stdlib.h>                     // for atoi, getenv, exit
+#include <sys/param.h>                  // for MIN
+#include <unistd.h>                     // for geteuid, chown, sleep, etc
+
+#include <iostream>                     // for basic_ostream, operator<<, etc
+#include <string>                       // for string, operator<<, etc
+#include <unordered_map>                // for unordered_map, etc
+#include <vector>                       // for vector, vector<>::iterator
+
+#include "libupnpp/device/device.hxx"   // for UpnpDevice, UpnpService
+#include "libupnpp/log.hxx"             // for LOGFAT, LOGERR, Logger, etc
+#include "libupnpp/upnpplib.hxx"        // for LibUPnP
+
+#include "avtransport.hxx"              // for UpMpdAVTransport
+#include "conman.hxx"                   // for UpMpdConMan
+#include "mpdcli.hxx"                   // for MPDCli
+#include "ohinfo.hxx"                   // for OHInfo
+#include "ohplaylist.hxx"               // for OHPlaylist
+#include "ohproduct.hxx"                // for OHProduct
+#include "ohtime.hxx"                   // for OHTime
+#include "ohvolume.hxx"                 // for OHVolume
+#include "renderctl.hxx"                // for UpMpdRenderCtl
+#include "upmpdutils.hxx"               // for path_cat, Pidfile, regsub1, etc
+
 using namespace std;
 using namespace std::placeholders;
-
-#include "libupnpp/upnpplib.hxx"
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/log.hxx"
-#include "libupnpp/device/device.hxx"
-
-#include "upmpd.hxx"
-#include "mpdcli.hxx"
-#include "upmpdutils.hxx"
-#include "renderctl.hxx"
-#include "avtransport.hxx"
-#include "conman.hxx"
-#include "ohproduct.hxx"
-#include "ohinfo.hxx"
-#include "ohtime.hxx"
-#include "ohvolume.hxx"
-#include "ohplaylist.hxx"
-
 using namespace UPnPP;
 
 static const string dfltFriendlyName("UpMpd");

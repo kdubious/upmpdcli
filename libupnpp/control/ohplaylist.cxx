@@ -14,25 +14,30 @@
  *       Free Software Foundation, Inc.,
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include <stdlib.h>
-#include <arpa/inet.h>
+#include "libupnpp/control/ohplaylist.hxx"
 
-#include <string>
-#include <vector>
-#include <functional>
+#include <expat_external.h>             // for XML_Char
+#include <netinet/in.h>                 // for ntohl
+#include <stdlib.h>                     // for atoi
+#include <string.h>                     // for strcmp
+#include <upnp/upnp.h>                  // for UPNP_E_BAD_RESPONSE, etc
+
+#include <functional>                   // for _Bind, bind, _1
+#include <ostream>                      // for endl, basic_ostream, etc
+#include <string>                       // for string, basic_string, etc
+#include <utility>                      // for pair
+#include <vector>                       // for vector
+
+#include "libupnpp/base64.hxx"          // for base64_decode
+#include "libupnpp/control/cdircontent.hxx"  // for UPnPDirContent, etc
+#include "libupnpp/control/service.hxx"  // for VarEventReporter, Service
+#include "libupnpp/expatmm.hxx"         // for inputRefXMLParser
+#include "libupnpp/log.hxx"             // for LOGERR, LOGDEB1, LOGINF
+#include "libupnpp/soaphelp.hxx"        // for SoapDecodeOutput, etc
+#include "libupnpp/upnpp_p.hxx"         // for stringToBool
 
 using namespace std;
 using namespace std::placeholders;
-
-#include <upnp/upnp.h>
-
-#include "libupnpp/base64.hxx"
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/upnpp_p.hxx"
-#include "libupnpp/log.hxx"
-#include "libupnpp/expatmm.hxx"
-#include "libupnpp/control/ohplaylist.hxx"
-
 using namespace UPnPP;
 
 namespace UPnPClient {
@@ -406,4 +411,3 @@ int OHPlaylist::protocolInfo(std::string *proto)
 }
 
 } // End namespace UPnPClient
-

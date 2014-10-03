@@ -17,16 +17,20 @@
 #ifndef _AVTRANSPORT_H_X_INCLUDED_
 #define _AVTRANSPORT_H_X_INCLUDED_
 
-#include <string>
+#include <set>                          // for set
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
+#include <vector>                       // for vector
 
-#include "libupnpp/device/device.hxx"
+#include "libupnpp/device/device.hxx"   // for UpnpService
+#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
+
+class OHPlaylist;
+class UpMpd;
 
 using namespace UPnPP;
 
-class UpMpd;
-class OHPlaylist;
-
-class UpMpdAVTransport : public UpnpService {
+class UpMpdAVTransport : public UPnPProvider::UpnpService {
 public:
     UpMpdAVTransport(UpMpd *dev);
 
@@ -51,19 +55,19 @@ private:
     int seek(const SoapArgs& sc, SoapData& data);
     int seqcontrol(const SoapArgs& sc, SoapData& data, int what);
     // Translate MPD state to AVTransport state variables.
-    bool tpstateMToU(unordered_map<string, string>& state);
+    bool tpstateMToU(std::unordered_map<std::string, std::string>& state);
 
     UpMpd *m_dev;
     OHPlaylist *m_ohp;
 
     // State variable storage
-    unordered_map<string, string> m_tpstate;
-    string m_uri;
-    string m_curMetadata;
-    string m_nextUri;
-    string m_nextMetadata;
+    std::unordered_map<std::string, std::string> m_tpstate;
+    std::string m_uri;
+    std::string m_curMetadata;
+    std::string m_nextUri;
+    std::string m_nextMetadata;
     // My track identifiers (for cleaning up)
-    set<int> m_songids;
+    std::set<int> m_songids;
 };
 
 #endif /* _AVTRANSPORT_H_X_INCLUDED_ */

@@ -17,15 +17,20 @@
 #ifndef _OHPLAYLIST_HXX_INCLUDED_
 #define _OHPLAYLIST_HXX_INCLUDED_
 
-#include <string>
-#include <memory>
+#include <memory>                       // for shared_ptr
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
+#include <vector>                       // for vector
 
-#include "service.hxx"
-#include "cdircontent.hxx"
+#include "cdircontent.hxx"              // for UPnPDirObject
+#include "service.hxx"                  // for Service
+
+namespace UPnPClient { class OHPlaylist; }
+namespace UPnPClient { class UPnPDeviceDesc; }
+namespace UPnPClient { class UPnPServiceDesc; }
 
 namespace UPnPClient {
 
-class OHPlaylist;
 typedef std::shared_ptr<OHPlaylist> OHPLH;
 
 /**

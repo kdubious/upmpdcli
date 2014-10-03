@@ -14,30 +14,33 @@
  *       Free Software Foundation, Inc.,
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include "config.h"
+//#include "config.h"
 
-#include <stdlib.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sched.h>
-
-#include <iostream>
-#include <map>
-#include <functional>
-using namespace std;
-using namespace std::placeholders;
-
-#include <upnp/upnp.h>
-#include <upnp/upnptools.h>
-
-#include "libupnpp/upnpp_p.hxx"
-#include "libupnpp/upnpputils.hxx"
-#include "libupnpp/workqueue.hxx"
-#include "libupnpp/upnpplib.hxx"
-#include "libupnpp/log.hxx"
-#include "description.hxx"
 #include "discovery.hxx"
 
+#include <pthread.h>                    // for pthread_cond_broadcast, etc
+#include <sched.h>                      // for sched_yield
+#include <stdlib.h>                     // for free
+#include <sys/time.h>                   // for CLOCK_REALTIME
+#include <unistd.h>                     // for sleep
+#include <upnp/upnp.h>                  // for Upnp_Discovery, etc
+
+#include <functional>                   // for _Bind, bind, function, _1, etc
+#include <iostream>                     // for operator<<, basic_ostream, etc
+#include <map>                          // for _Rb_tree_iterator, map, etc
+#include <utility>                      // for pair
+#include <vector>                       // for vector
+
+#include "description.hxx"              // for UPnPDeviceDesc, etc
+
+#include "libupnpp/log.hxx"             // for LOGDEB1, LOGERR, LOGDEB
+#include "libupnpp/ptmutex.hxx"         // for PTMutexLocker, PTMutexInit
+#include "libupnpp/upnpplib.hxx"        // for LibUPnP
+#include "libupnpp/upnpputils.hxx"      // for timespec_addnanos
+#include "libupnpp/workqueue.hxx"       // for WorkQueue
+
+using namespace std;
+using namespace std::placeholders;
 using namespace UPnPP;
 
 namespace UPnPClient {
@@ -453,4 +456,3 @@ bool UPnPDeviceDirectory::getDevByUDN(const string& value,
 
 
 } // namespace UPnPClient
-

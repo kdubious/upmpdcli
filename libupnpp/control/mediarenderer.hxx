@@ -17,19 +17,21 @@
 #ifndef _MEDIARENDERER_HXX_INCLUDED_
 #define _MEDIARENDERER_HXX_INCLUDED_
 
-#include <memory>
-#include <string>
+#include <memory>                       // for shared_ptr
+#include <string>                       // for string
+#include <vector>                       // for vector
 
-#include "libupnpp/control/device.hxx"
-#include "libupnpp/control/description.hxx"
-#include "libupnpp/control/renderingcontrol.hxx"
-#include "libupnpp/control/avtransport.hxx"
-#include "libupnpp/control/ohproduct.hxx"
-#include "libupnpp/control/ohplaylist.hxx"
+#include "libupnpp/control/avtransport.hxx"  // for AVTH
+#include "libupnpp/control/device.hxx"  // for Device
+#include "libupnpp/control/ohplaylist.hxx"  // for OHPLH
+#include "libupnpp/control/ohproduct.hxx"  // for OHPRH
+#include "libupnpp/control/renderingcontrol.hxx"  // for RDCH
 
 namespace UPnPClient {
 
 class MediaRenderer;
+class UPnPDeviceDesc;
+
 typedef std::shared_ptr<MediaRenderer> MRDH;
 
 class MediaRenderer : public Device {

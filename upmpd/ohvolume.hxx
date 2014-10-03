@@ -17,16 +17,19 @@
 #ifndef _OHVOLUME_H_X_INCLUDED_
 #define _OHVOLUME_H_X_INCLUDED_
 
-#include <string>
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
+#include <vector>                       // for vector
 
-#include "libupnpp/device/device.hxx"
-
-using namespace UPnPP;
+#include "libupnpp/device/device.hxx"   // for UpnpService
+#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
 
 class UpMpd;
 class UpMpdRenderCtl;
 
-class OHVolume : public UpnpService {
+using namespace UPnPP;
+
+class OHVolume : public UPnPProvider::UpnpService {
 public:
     OHVolume(UpMpd *dev, UpMpdRenderCtl *ctl);
 
@@ -42,9 +45,9 @@ private:
     int mute(const SoapArgs& sc, SoapData& data);
     int setMute(const SoapArgs& sc, SoapData& data);
 
-    bool makestate(unordered_map<string, string> &st);
+    bool makestate(std::unordered_map<std::string, std::string> &st);
     // State variable storage
-    unordered_map<string, string> m_state;
+    std::unordered_map<std::string, std::string> m_state;
     UpMpd *m_dev;
     UpMpdRenderCtl *m_ctl;
 };

@@ -17,12 +17,13 @@
 #ifndef _SOAPHELP_H_X_INCLUDED_
 #define _SOAPHELP_H_X_INCLUDED_
 
-#include <vector>
-#include <string>
-#include <map>
-#include <unordered_map>
+#include <upnp/ixml.h>                  // for IXML_Document
 
-#include <upnp/ixml.h>
+#include <map>                          // for map
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
+#include <utility>                      // for pair
+#include <vector>                       // for vector
 
 namespace UPnPP {
 

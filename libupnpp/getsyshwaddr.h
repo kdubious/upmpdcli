@@ -30,6 +30,10 @@
 #define __GETIFADDR_H__
 #include <arpa/inet.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** 
  * Retrieve hardware (ethernet) network address for this host.
  * @param iface if not null or empty, use this interface, else first found.
@@ -40,5 +44,8 @@
  */
 int getsyshwaddr(const char *iface, char *ip, int ilen, char *buf, int hlen);
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

@@ -17,15 +17,18 @@
 #ifndef _OHINFO_H_X_INCLUDED_
 #define _OHINFO_H_X_INCLUDED_
 
-#include <string>
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
+#include <vector>                       // for vector
 
-#include "libupnpp/device/device.hxx"
-
-using namespace UPnPP;
+#include "libupnpp/device/device.hxx"   // for UpnpService
+#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
 
 class UpMpd;
 
-class OHInfo : public UpnpService {
+using namespace UPnPP;
+
+class OHInfo : public UPnPProvider::UpnpService {
 public:
     OHInfo(UpMpd *dev);
 
@@ -37,13 +40,13 @@ private:
     int details(const SoapArgs& sc, SoapData& data);
     int metatext(const SoapArgs& sc, SoapData& data);
 
-    bool makestate(unordered_map<string, string>& state);
-    void urimetadata(string& uri, string& metadata);
-    void makedetails(string &duration, string& bitrate, 
-                     string& bitdepth, string& samplerate);
+    bool makestate(std::unordered_map<std::string, std::string>& state);
+    void urimetadata(std::string& uri, std::string& metadata);
+    void makedetails(std::string &duration, std::string& bitrate,
+                     std::string& bitdepth, std::string& samplerate);
 
     // State variable storage
-    unordered_map<string, string> m_state;
+    std::unordered_map<std::string, std::string> m_state;
     UpMpd *m_dev;
 };
 

@@ -15,17 +15,22 @@
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <functional>
+#include "libupnpp/control/mediaserver.hxx"
+
+#include <functional>                   // for _Bind, bind, _1, _2
+#include <ostream>                      // for endl
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map, etc
+#include <utility>                      // for pair
+#include <vector>                       // for vector
+
+#include "libupnpp/control/cdirectory.hxx"  // for ContentDirectory, CDSH
+#include "libupnpp/control/description.hxx"  // for UPnPDeviceDesc, etc
+#include "libupnpp/control/discovery.hxx"  // for UPnPDeviceDirectory, etc
+#include "libupnpp/log.hxx"             // for LOGERR
+
 using namespace std;
 using namespace std::placeholders;
-
-#include "libupnpp/log.hxx"
-#include "libupnpp/control/discovery.hxx"
-#include "libupnpp/control/mediaserver.hxx"
-#include "libupnpp/control/cdirectory.hxx"
 
 namespace UPnPClient {
 
@@ -86,4 +91,3 @@ MediaServer::MediaServer(const UPnPDeviceDesc& desc)
 }
 
 }
-

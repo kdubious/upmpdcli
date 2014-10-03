@@ -14,21 +14,25 @@
  *       Free Software Foundation, Inc.,
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include <string>
-#include <unordered_map>
-#include <functional>
+#include "libupnpp/control/service.hxx"
+
+#include <upnp/ixml.h>                  // for ixmlPrintDocument, etc
+#include <upnp/upnp.h>                  // for Upnp_Event, UPNP_E_SUCCESS, etc
+#include <upnp/upnptools.h>             // for UpnpGetErrorMessage
+
+#include <functional>                   // for function
+#include <string>                       // for string, char_traits, etc
+#include <unordered_map>                // for unordered_map, operator!=, etc
+#include <utility>                      // for pair
+
+#include "libupnpp/control/description.hxx"  // for UPnPDeviceDesc, etc
+#include "libupnpp/log.hxx"             // for LOGDEB1, LOGINF, LOGERR, etc
+#include "libupnpp/ptmutex.hxx"         // for PTMutexLocker, PTMutexInit
+#include "libupnpp/upnpp_p.hxx"         // for caturl
+#include "libupnpp/upnpplib.hxx"        // for LibUPnP
+
 using namespace std;
 using namespace std::placeholders;
-
-#include <upnp/upnp.h>
-
-#include "libupnpp/log.hxx"
-#include "libupnpp/ptmutex.hxx"
-#include "libupnpp/upnpp_p.hxx"
-#include "libupnpp/upnpplib.hxx"
-#include "libupnpp/control/service.hxx"
-#include "libupnpp/control/cdirectory.hxx"
-#include "libupnpp/control/avlastchg.hxx"
 
 namespace UPnPClient {
 

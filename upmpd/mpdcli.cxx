@@ -14,14 +14,17 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include <memory.h>
-
-#include <iostream>
+#include "mpdcli.hxx"
 
 #include <mpd/client.h>
 
-#include "libupnpp/log.hxx"
-#include "mpdcli.hxx"
+#include <stddef.h>                     // for NULL
+
+#include <iostream>                     // for endl, etc
+
+#include "libupnpp/log.hxx"             // for LOGDEB, LOGERR, LOGINF
+
+struct mpd_status;
 
 using namespace std;
 using namespace UPnPP;

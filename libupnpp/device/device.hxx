@@ -17,17 +17,23 @@
 #ifndef _DEVICE_H_X_INCLUDED_
 #define _DEVICE_H_X_INCLUDED_
 
-#include <unordered_map>
-#include <functional>
+#include <pthread.h>                    // for pthread_cond_t
+#include <upnp/upnp.h>                  // for Upnp_EventType, etc
 
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/ptmutex.hxx"
+#include <functional>                   // for function
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map, etc
+#include <vector>                       // for vector
+
+#include "libupnpp/ptmutex.hxx"         // for PTMutexInit
+#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
+
+namespace UPnPP { class LibUPnP; }
+namespace UPnPProvider { class UpnpService; }
 
 namespace UPnPProvider {
 
-class UpnpService;
-
-typedef function<int (const UPnPP::SoapArgs&, UPnPP::SoapData&)> soapfun;
+typedef std::function<int (const UPnPP::SoapArgs&, UPnPP::SoapData&)> soapfun;
 
 /** Define a virtual interface to link libupnp operations to a device 
  * implementation 
@@ -83,7 +89,7 @@ private:
     std::unordered_map<std::string, UpnpService*> m_servicemap;
     std::vector<std::string> m_serviceids;
     std::unordered_map<std::string, soapfun> m_calls;
-    unordered_map<string, UpnpService*>::const_iterator findService(const string& serviceid);
+    std::unordered_map<std::string, UpnpService*>::const_iterator findService(const std::string& serviceid);
 
     bool m_needExit;
     /* My device handle */
@@ -111,7 +117,7 @@ private:
 
 
     /** Static array of devices for dispatching */
-    static unordered_map<std::string, UpnpDevice *> o_devices;
+    static std::unordered_map<std::string, UpnpDevice *> o_devices;
 
     /* Static callback for libupnp. This looks up the appropriate
      * device using the device ID (UDN), the calls its callback

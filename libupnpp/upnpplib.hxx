@@ -17,13 +17,12 @@
 #ifndef _LIBUPNP_H_X_INCLUDED_
 #define _LIBUPNP_H_X_INCLUDED_
 
-#include <string>
-#include <map>
+#include <upnp/upnp.h>                  // for Upnp_EventType, Upnp_FunPtr, etc
 
-#include <upnp/upnp.h>
-#include <upnp/upnptools.h>
+#include <map>                          // for map
+#include <string>                       // for string
 
-#include "ptmutex.hxx"
+#include "ptmutex.hxx"                  // for PTMutexInit
 
 namespace UPnPP {
 
@@ -49,8 +48,8 @@ public:
      * @return 0 for failure.
      */
     static LibUPnP* getLibUPnP(bool serveronly = false, std::string* hwaddr = 0,
-                               const std::string ifname = string(),
-                               const std::string ip = string(),
+                               const std::string ifname = std::string(),
+                               const std::string ip = std::string(),
                                unsigned short port = 0);
 
     /** Set libupnp log file name and activate logging.

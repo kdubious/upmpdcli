@@ -14,19 +14,19 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include "config.h"
+//#include "config.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#include <iostream>
-using namespace std;
-
-#include "libupnpp/log.hxx"
-#include "libupnpp/upnpp_p.hxx"
 #include "libupnpp/soaphelp.hxx"
 
+#include <stdio.h>                      // for sprintf
+#include <stdlib.h>                     // for atoi
+
+#include <iostream>                     // for operator<<, endl, etc
+
+#include "libupnpp/log.hxx"             // for LOGDEB, LOGERR, LOGDEB1
+#include "libupnpp/upnpp_p.hxx"         // for stringToBool
+
+using namespace std;
 
 namespace UPnPP {
 

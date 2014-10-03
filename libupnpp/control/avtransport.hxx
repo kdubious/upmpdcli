@@ -17,14 +17,19 @@
 #ifndef _AVTRANSPORT_HXX_INCLUDED_
 #define _AVTRANSPORT_HXX_INCLUDED_
 
-#include <string>
-#include <memory>
+#include <memory>                       // for shared_ptr
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
 
-#include "libupnpp/control/service.hxx"
+#include "libupnpp/control/cdircontent.hxx"  // for UPnPDirObject
+#include "libupnpp/control/service.hxx"  // for Service
+
+namespace UPnPClient { class AVTransport; }
+namespace UPnPClient { class UPnPDeviceDesc; }
+namespace UPnPClient { class UPnPServiceDesc; }
 
 namespace UPnPClient {
 
-class AVTransport;
 typedef std::shared_ptr<AVTransport> AVTH;
 
 /**

@@ -17,15 +17,18 @@
 #ifndef _OHPRODUCT_HXX_INCLUDED_
 #define _OHPRODUCT_HXX_INCLUDED_
 
-#include <string>
-#include <memory>
-#include <vector>
+#include <memory>                       // for shared_ptr
+#include <string>                       // for string
+#include <vector>                       // for vector
 
-#include "service.hxx"
+#include "service.hxx"                  // for Service
+
+namespace UPnPClient { class OHProduct; }
+namespace UPnPClient { class UPnPDeviceDesc; }
+namespace UPnPClient { class UPnPServiceDesc; }
 
 namespace UPnPClient {
 
-class OHProduct;
 typedef std::shared_ptr<OHProduct> OHPRH;
 
 /**

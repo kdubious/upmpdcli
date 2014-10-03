@@ -15,14 +15,17 @@
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <string>
-#include <unordered_map>
-using namespace std;
-
-#include "libupnpp/expatmm.hxx"
-#include "libupnpp/log.hxx"
 #include "libupnpp/control/avlastchg.hxx"
 
+#include <expat_external.h>             // for XML_Char
+#include <string.h>                     // for strcmp
+
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map, etc
+
+#include "libupnpp/expatmm.hxx"         // for inputRefXMLParser
+
+using namespace std;
 using namespace UPnPP;
 
 namespace UPnPClient {

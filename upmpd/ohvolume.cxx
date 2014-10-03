@@ -15,31 +15,26 @@
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
+#include "ohvolume.hxx"
 
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <functional>
-#include <set>
+#include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
+
+#include <functional>                   // for _Bind, bind, _1, _2
+#include <iostream>                     // for endl
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map, etc
+#include <utility>                      // for pair
+#include <vector>                       // for vector
+
+#include "libupnpp/log.hxx"             // for LOGDEB
+#include "libupnpp/soaphelp.hxx"        // for SoapData, SoapArgs, i2s
+
+#include "upmpd.hxx"                    // for UpMpd
+#include "upmpdutils.hxx"               // for diffmaps
+#include "renderctl.hxx"                // for UpMpdRenderCtl
+
 using namespace std;
 using namespace std::placeholders;
-
-#include "libupnpp/upnpplib.hxx"
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/log.hxx"
-#include "libupnpp/device/device.hxx"
-
-#include "upmpd.hxx"
-#include "ohvolume.hxx"
-#include "mpdcli.hxx"
-#include "upmpdutils.hxx"
-#include "renderctl.hxx"
 
 static const string millidbperstep("500");
 

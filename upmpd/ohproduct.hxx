@@ -17,17 +17,19 @@
 #ifndef _OHPRODUCT_H_X_INCLUDED_
 #define _OHPRODUCT_H_X_INCLUDED_
 
-#include <string>
+#include <string>                       // for string
+#include <vector>                       // for vector
 
-#include "libupnpp/device/device.hxx"
-
-using namespace UPnPP;
+#include "libupnpp/device/device.hxx"   // for UpnpService
+#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
 
 class UpMpd;
 
-class OHProduct : public UpnpService {
+using namespace UPnPP;
+
+class OHProduct : public UPnPProvider::UpnpService {
 public:
-    OHProduct(UpMpd *dev, const string& friendlyname);
+    OHProduct(UpMpd *dev, const std::string& friendlyname);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
@@ -47,7 +49,7 @@ private:
     int sourceXMLChangeCount(const SoapArgs& sc, SoapData& data);
 
     UpMpd *m_dev;
-    string m_roomOrName;
+    std::string m_roomOrName;
 };
 
 #endif /* _OHPRODUCT_H_X_INCLUDED_ */

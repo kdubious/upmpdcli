@@ -16,19 +16,17 @@
  */
 // An XML parser which constructs an UPnP device object from the
 // device descriptor
-#include "config.h"
+//#include "config.h"
 
-#include <stdlib.h>
-#include <errno.h>
-
-#include <iostream>
-#include <map>
-using namespace std;
-
-#include "libupnpp/upnpp_p.hxx"
-#include "libupnpp/expatmm.hxx"
 #include "description.hxx"
 
+#include <expat_external.h>             // for XML_Char
+#include <string.h>                     // for strcmp
+
+#include "libupnpp/expatmm.hxx"         // for inputRefXMLParser
+#include "libupnpp/upnpp_p.hxx"         // for baseurl, trimstring
+
+using namespace std;
 using namespace UPnPP;
 
 namespace UPnPClient {

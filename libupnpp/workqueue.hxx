@@ -90,7 +90,7 @@ public:
 			if ((err = pthread_create(&thr, 0, workproc, arg))) {
 				return false;
 			}
-			m_worker_threads.insert(pair<pthread_t, WQTData>(thr, WQTData()));
+			m_worker_threads.insert(std::pair<pthread_t, WQTData>(thr, WQTData()));
 		}
 		return true;
 	}

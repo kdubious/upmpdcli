@@ -15,23 +15,26 @@
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <stdlib.h>
+#include "libupnpp/control/avtransport.hxx"
 
-#include <string>
-#include <functional>
+#include <stdlib.h>                     // for atoi
+#include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
+
+#include <functional>                   // for _Bind, bind, _1
+#include <ostream>                      // for basic_ostream, endl, etc
+#include <string>                       // for string, basic_string, etc
+#include <utility>                      // for pair
+#include <vector>                       // for vector
+
+#include "libupnpp/control/avlastchg.hxx"  // for decodeAVLastChange
+#include "libupnpp/control/cdircontent.hxx"  // for UPnPDirContent, etc
+#include "libupnpp/log.hxx"             // for LOGERR, LOGDEB1, LOGDEB, etc
+#include "libupnpp/soaphelp.hxx"        // for SoapDecodeOutput, etc
+#include "libupnpp/upnpavutils.hxx"     // for upnpdurationtos, etc
+#include "libupnpp/upnpp_p.hxx"         // for stringuppercmp, etc
 
 using namespace std;
 using namespace std::placeholders;
-
-#include <upnp/upnp.h>
-
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/upnpp_p.hxx"
-#include "libupnpp/log.hxx"
-#include "libupnpp/upnpavutils.hxx"
-#include "libupnpp/control/avtransport.hxx"
-#include "libupnpp/control/avlastchg.hxx"
-#include "libupnpp/control/cdircontent.hxx"
 
 namespace UPnPClient {
 
@@ -467,4 +470,3 @@ void AVTransport::registerCallback()
 }
 
 } // End namespace UPnPClient
-

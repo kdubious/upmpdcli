@@ -14,14 +14,13 @@
  *   Free Software Foundation, Inc.,
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include <stdio.h>
-
-#include <sys/types.h>
-#include <cstring>
-#include <string>
-using std::string;
-
 #include "base64.hxx"
+
+#include <ctype.h>                      // for isspace
+#include <stdio.h>                      // for fprintf, stderr
+#include <string>                       // for string
+
+using std::string;
 
 namespace UPnPP {
 

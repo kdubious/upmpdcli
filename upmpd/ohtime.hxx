@@ -17,15 +17,18 @@
 #ifndef _OHTIME_H_X_INCLUDED_
 #define _OHTIME_H_X_INCLUDED_
 
-#include <string>
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
+#include <vector>                       // for vector
 
-#include "libupnpp/device/device.hxx"
-
-using namespace UPnPP;
+#include "libupnpp/device/device.hxx"   // for UpnpService
+#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
 
 class UpMpd;
 
-class OHTime : public UpnpService {
+using namespace UPnPP;
+
+class OHTime : public UPnPProvider::UpnpService {
 public:
     OHTime(UpMpd *dev);
 
@@ -34,10 +37,10 @@ public:
 private:
     int ohtime(const SoapArgs& sc, SoapData& data);
 
-    void getdata(string& trackcount, string &duration, string& seconds);
-    bool makestate(unordered_map<string, string> &st);
+    void getdata(std::string& trackcount, std::string &duration, std::string& seconds);
+    bool makestate(std::unordered_map<std::string, std::string> &st);
     // State variable storage
-    unordered_map<string, string> m_state;
+    std::unordered_map<std::string, std::string> m_state;
     UpMpd *m_dev;
 };
 

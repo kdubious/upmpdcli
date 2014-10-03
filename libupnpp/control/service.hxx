@@ -17,17 +17,20 @@
 #ifndef _SERVICE_H_X_INCLUDED_
 #define _SERVICE_H_X_INCLUDED_
 
-#include <string>
-#include <functional>
-#include <unordered_map>
-#include <iostream>
+#include <upnp/upnp.h>                  // for UPNP_E_BAD_RESPONSE, etc
 
-#include <upnp/upnp.h>
+#include <functional>                   // for function
+#include <iostream>                     // for basic_ostream, operator<<, etc
+#include <string>                       // for string, operator<<, etc
+#include <unordered_map>                // for unordered_map
+#include <vector>                       // for vector
 
-#include "libupnpp/log.hxx"
-#include "libupnpp/soaphelp.hxx"
-#include "libupnpp/control/description.hxx"
-#include "libupnpp/control/cdircontent.hxx"
+#include "libupnpp/control/cdircontent.hxx"  // for UPnPDirObject
+#include "libupnpp/log.hxx"             // for LOGERR
+#include "libupnpp/soaphelp.hxx"        // for SoapDecodeOutput, etc
+
+namespace UPnPClient { class UPnPDeviceDesc; }
+namespace UPnPClient { class UPnPServiceDesc; }
 
 using namespace UPnPP;
 

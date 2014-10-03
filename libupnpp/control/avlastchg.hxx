@@ -17,6 +17,9 @@
 #ifndef _AVLASTCHG_H_X_INCLUDED_
 #define _AVLASTCHG_H_X_INCLUDED_
 
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
+
 namespace UPnPClient {
 /** Decoding AV LastChange data
  *    <Event xmlns="urn:schemas-upnp-org:metadata-1-0/AVT_RCS">
@@ -26,8 +29,8 @@ namespace UPnPClient {
  *      </InstanceID>
  *    </Event>
  */
-extern bool decodeAVLastChange(const string& xml, 
-                               unordered_map<string, string>& props);
+extern bool decodeAVLastChange(const std::string& xml,
+                               std::unordered_map<std::string, std::string>& props);
 
 
 } // namespace UPnPClient

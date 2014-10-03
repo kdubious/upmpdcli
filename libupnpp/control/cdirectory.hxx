@@ -17,17 +17,21 @@
 #ifndef _UPNPDIR_HXX_INCLUDED_
 #define _UPNPDIR_HXX_INCLUDED_
 
-#include <string>
-#include <set>
-#include <memory>
+#include <memory>                       // for shared_ptr
+#include <set>                          // for set
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
+#include <vector>                       // for vector
 
-#include "libupnpp/control/description.hxx"
-#include "libupnpp/control/service.hxx"
-#include "libupnpp/control/cdircontent.hxx"
+#include "libupnpp/control/service.hxx"  // for Service
+
+namespace UPnPClient { class ContentDirectory; }  // lines 30-30
+namespace UPnPClient { class UPnPDeviceDesc; }
+namespace UPnPClient { class UPnPDirContent; }
+namespace UPnPClient { class UPnPServiceDesc; }
 
 namespace UPnPClient {
 
-class ContentDirectory;
 typedef std::shared_ptr<ContentDirectory> CDSH;
 
 /**

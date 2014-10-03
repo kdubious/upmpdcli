@@ -15,17 +15,22 @@
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <functional>
+#include "libupnpp/control/mediarenderer.hxx"
+
+#include <functional>                   // for _Bind, bind, _1, _2
+#include <ostream>                      // for endl
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map, etc
+#include <utility>                      // for pair
+#include <vector>                       // for vector
+
+#include "libupnpp/control/description.hxx"  // for UPnPDeviceDesc, etc
+#include "libupnpp/control/discovery.hxx"  // for UPnPDeviceDirectory, etc
+#include "libupnpp/control/renderingcontrol.hxx"  // for RenderingControl, etc
+#include "libupnpp/log.hxx"             // for LOGERR, LOGINF
+
 using namespace std;
 using namespace std::placeholders;
-
-#include "libupnpp/log.hxx"
-#include "libupnpp/control/discovery.hxx"
-#include "libupnpp/control/mediarenderer.hxx"
-#include "libupnpp/control/renderingcontrol.hxx"
 
 namespace UPnPClient {
 
@@ -126,4 +131,3 @@ OHPLH MediaRenderer::ohpl()
 }
 
 }
-

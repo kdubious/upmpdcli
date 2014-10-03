@@ -16,21 +16,23 @@
  */
 #ifndef TEST_CONFTREE
 
-#include <unistd.h> // for access(2)
-#include <ctype.h>
-#include <fnmatch.h>
-#include <sys/stat.h>
+#include "conftree.hxx"
 
-#include <fstream>
-#include <sstream>
-#include <algorithm>
-#include <iostream>
-#include <cstring>
+#include <fnmatch.h>                    // for fnmatch
+#include <stdlib.h>                     // for abort
+#include <sys/stat.h>                   // for stat, st_mtime
+#include <unistd.h>                     // for access
+
+#include <algorithm>                    // for find
+#include <cstring>                      // for strlen
+#include <fstream>                      // for ifstream, ofstream
+#include <iostream>                     // for cerr, cout
+#include <sstream>                      // for stringstream
+#include <utility>                      // for pair
+
+#include "upmpdutils.hxx"               // for trimstring, path_catslash, etc
 
 using namespace std;
-
-#include "conftree.hxx"
-#include "upmpdutils.hxx"
 
 #undef DEBUG
 #ifdef DEBUG

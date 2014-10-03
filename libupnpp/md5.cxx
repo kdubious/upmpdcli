@@ -27,15 +27,15 @@
  * This code is the same as the code published by RSA Inc.  It has been
  * edited for clarity and style only.
  */
-#include "config.h"
-
-#include <stdio.h>
-#include <string.h>
-
-#include <string>
-using namespace std;
+//#include "config.h"
 
 #include "md5.hxx"
+
+#include <stdio.h>                      // for sscanf
+#include <string.h>                     // for memcpy, memset
+#include <string>                       // for string
+
+using namespace std;
 
 namespace UPnPP {
 

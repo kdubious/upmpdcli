@@ -18,10 +18,16 @@
 #ifndef _UPMPD_H_X_INCLUDED_
 #define _UPMPD_H_X_INCLUDED_
 
-using namespace UPnPProvider;
+#include <string>                       // for string
+#include <unordered_map>                // for unordered_map
+#include <vector>                       // for vector
+
+#include "libupnpp/device/device.hxx"   // for UpnpDevice, etc
 
 class MPDCli;
 class MpdStatus;
+
+using namespace UPnPProvider;
 
 // The UPnP MPD frontend device with its 3 services
 class UpMpd : public UpnpDevice {
@@ -42,8 +48,8 @@ public:
         // (mpd does it)
         upmpdOhMetaPersist = 4
     };
-    UpMpd(const string& deviceid, const string& friendlyname,
-          const unordered_map<string, string>& xmlfiles,
+    UpMpd(const std::string& deviceid, const std::string& friendlyname,
+          const std::unordered_map<std::string, std::string>& xmlfiles,
           MPDCli *mpdcli, unsigned int opts, const std::string& cachefn);
     ~UpMpd();
 
@@ -53,7 +59,7 @@ public:
             return *m_mpds;
         }
 
-    const string& getMetaCacheFn() 
+    const std::string& getMetaCacheFn()
         {
             return m_mcachefn;
         }
@@ -62,11 +68,11 @@ private:
     MPDCli *m_mpdcli;
     const MpdStatus *m_mpds;
     unsigned int m_options;
-    string m_mcachefn;
-    vector<UpnpService*> m_services;
+    std::string m_mcachefn;
+    std::vector<UpnpService*> m_services;
 };
 
 
-extern string upmpdProtocolInfo;
+extern std::string upmpdProtocolInfo;
 
 #endif /* _UPMPD_H_X_INCLUDED_ */
