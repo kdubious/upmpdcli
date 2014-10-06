@@ -88,7 +88,8 @@ void RenderingControl::registerCallback()
 int RenderingControl::setVolume(int volume, const string& channel)
 {
     SoapEncodeInput args(m_serviceType, "SetVolume");
-    args("Channel", channel)("DesiredVolume", SoapHelp::i2s(volume));
+    args("InstanceID", "0")("Channel", channel)
+        ("DesiredVolume", SoapHelp::i2s(volume));
     SoapDecodeOutput data;
     return runAction(args, data);
 }
@@ -96,7 +97,7 @@ int RenderingControl::setVolume(int volume, const string& channel)
 int RenderingControl::getVolume(const string& channel)
 {
     SoapEncodeInput args(m_serviceType, "GetVolume");
-    args("Channel", channel);
+    args("InstanceID", "0")("Channel", channel);
     SoapDecodeOutput data;
     int ret = runAction(args, data);
     if (ret != UPNP_E_SUCCESS) {
@@ -113,7 +114,8 @@ int RenderingControl::getVolume(const string& channel)
 int RenderingControl::setMute(bool mute, const string& channel)
 {
     SoapEncodeInput args(m_serviceType, "SetMute");
-    args("Channel", channel)("DesiredMute", SoapHelp::i2s(mute?1:0));
+    args("InstanceID", "0")("Channel", channel)
+        ("DesiredMute", SoapHelp::i2s(mute?1:0));
     SoapDecodeOutput data;
     return runAction(args, data);
 }
@@ -121,7 +123,7 @@ int RenderingControl::setMute(bool mute, const string& channel)
 bool RenderingControl::getMute(const string& channel)
 {
     SoapEncodeInput args(m_serviceType, "GetMute");
-    args("Channel", channel);
+    args("InstanceID", "0")("Channel", channel);
     SoapDecodeOutput data;
     int ret = runAction(args, data);
     if (ret != UPNP_E_SUCCESS) {
