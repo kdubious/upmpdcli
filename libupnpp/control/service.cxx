@@ -16,7 +16,6 @@
  */
 #include "libupnpp/control/service.hxx"
 
-#include <upnp/ixml.h>                  // for ixmlPrintDocument, etc
 #include <upnp/upnp.h>                  // for Upnp_Event, UPNP_E_SUCCESS, etc
 #include <upnp/upnptools.h>             // for UpnpGetErrorMessage
 
@@ -26,6 +25,7 @@
 #include <utility>                      // for pair
 
 #include "libupnpp/control/description.hxx"  // for UPnPDeviceDesc, etc
+#include "libupnpp/ixmlwrap.hxx"
 #include "libupnpp/log.hxx"             // for LOGDEB1, LOGINF, LOGERR, etc
 #include "libupnpp/ptmutex.hxx"         // for PTMutexLocker, PTMutexInit
 #include "libupnpp/upnpp_p.hxx"         // for caturl
@@ -95,22 +95,23 @@ int Service::runAction(const SoapEncodeInput& args, SoapDecodeOutput& data)
     }
 
     LOGDEB1("Service::runAction: rqst: [" << 
-            ixmlPrintDocument(request) << "]" << endl);
+            ixmlwPrintDoc(request) << "]" << endl);
 
     int ret = UpnpSendAction(hdl, m_actionURL.c_str(), m_serviceType.c_str(),
                              0 /*devUDN*/, request, &response);
 
     if (ret != UPNP_E_SUCCESS) {
         LOGINF("Service::runAction: UpnpSendAction failed: " << ret << 
-               " : " << UpnpGetErrorMessage(ret) << endl);
+               " : " << UpnpGetErrorMessage(ret) << " for " << 
+               ixmlwPrintDoc(request) << endl);
         return ret;
     }
     LOGDEB1("Service::runAction: rslt: [" << 
-            ixmlPrintDocument(response) << "]" << endl);
+            ixmlwPrintDoc(response) << "]" << endl);
 
     if (!decodeSoapBody(args.name.c_str(), response, &data)) {
         LOGERR("Service::runAction: Could not decode response: " <<
-               ixmlPrintDocument(response) << endl);
+               ixmlwPrintDoc(response) << endl);
         return UPNP_E_BAD_RESPONSE;
     }
     return UPNP_E_SUCCESS;
@@ -140,7 +141,7 @@ int Service::srvCB(Upnp_EventType et, void* vevp, void*)
         struct Upnp_Event *evp = (struct Upnp_Event *)vevp;
         LOGDEB1("Service:srvCB: var change event: Sid: " <<
                 evp->Sid << " EventKey " << evp->EventKey << 
-                " changed " << ixmlPrintDocument(evp->ChangedVariables)<< endl);
+                " changed " << ixmlwPrintDoc(evp->ChangedVariables) << endl);
         
         unordered_map<string, string> props;
         if (!decodePropertySet(evp->ChangedVariables, props)) {

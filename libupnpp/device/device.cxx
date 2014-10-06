@@ -21,12 +21,12 @@
 #include <errno.h>                      // for ETIMEDOUT, errno
 #include <sys/time.h>                   // for CLOCK_REALTIME
 #include <time.h>                       // for timespec, clock_gettime
-#include <upnp/ixml.h>                  // for ixmlFreeDOMString, etc
 
 #include <iostream>                     // for endl, operator<<, etc
 #include <utility>                      // for pair
 
 #include "libupnpp/log.hxx"             // for LOGERR, LOGFAT, LOGDEB, etc
+#include "libupnpp/ixmlwrap.hxx"
 #include "libupnpp/upnpplib.hxx"        // for LibUPnP
 #include "libupnpp/upnpputils.hxx"      // for timespec_addnanos
 
@@ -197,10 +197,8 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
     {
         struct Upnp_Action_Request *act = (struct Upnp_Action_Request *)evp;
 
-        DOMString pdoc = ixmlPrintDocument(act->ActionRequest);
         LOGDEB("UPNP_CONTROL_ACTION_REQUEST: " << act->ActionName <<
-               ". Params: " << pdoc << endl);
-        ixmlFreeDOMString(pdoc);
+               ". Params: " << ixmlwPrintDoc(act->ActionRequest) << endl);
 
         auto servit = findService(act->ServiceID);
         if (servit == m_servicemap.end()) {
@@ -236,10 +234,7 @@ int UpnpDevice::callBack(Upnp_EventType et, void* evp)
         // Encode result data
         act->ActionResult = buildSoapBody(dt);
 
-        //{DOMString pdoc = ixmlPrintDocument(act->ActionResult);
-        //LOGDEB("Response data: " << pdoc << endl);
-        //ixmlFreeDOMString(pdoc);
-        //}
+        //LOGDEB("Response data: " << ixmlwPrintDoc(act->ActionResult) << endl);
 
         return UPNP_E_SUCCESS;
     }

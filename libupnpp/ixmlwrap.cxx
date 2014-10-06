@@ -26,6 +26,7 @@ using std::string;
 
 namespace UPnPP {
 
+#if notUsedAnyMore
 // Get the value for the first element in the document with the given name.
 // There should be only one such element for this to make any sense.
 string getFirstElementValue(IXML_Document *doc, const string& name)
@@ -47,6 +48,19 @@ string getFirstElementValue(IXML_Document *doc, const string& name)
     if(nodes)
         ixmlNodeList_free(nodes);
     return ret;
+}
+#endif
+
+string ixmlwPrintDoc(IXML_Document* doc)
+{
+    DOMString s = ixmlPrintDocument(doc);
+    if (s) {
+        string cpps(s);
+        ixmlFreeDOMString(s);
+        return cpps;
+    } else {
+        return string();
+    }
 }
 
 }

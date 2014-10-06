@@ -96,8 +96,8 @@ static int asyncReaddirCB(Upnp_EventType et, void *vev, void *cookie)
     LOGDEB("asyncReaddirCB: errcode " << act->ErrCode << 
            " cturl " <<  UpnpString_get_String(act->CtrlUrl) << 
            " actionrequest " << endl << 
-           ixmlPrintDocument(act->ActionRequest) << endl <<
-           " actionresult " << ixmlPrintDocument(act->ActionResult) << endl);
+           ixmlwPrintDoc(act->ActionRequest) << endl <<
+           " actionresult " << ixmlwPrintDoc(act->ActionResult) << endl);
     return 0;
 }
     int ret = 

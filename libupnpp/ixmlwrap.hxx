@@ -23,9 +23,17 @@
 
 namespace UPnPP {
 
+#if notUsedAnyMore
     /** Retrieve the text content for the first element of given name.
      * Returns an empty string if the element does not contain a text node */
-    std::string getFirstElementValue(IXML_Document *doc, const std::string& name);
+    std::string getFirstElementValue(IXML_Document *doc, 
+                                     const std::string& name); *
+#endif
+
+    /** Return the result of ixmlPrintDocument as a string and take
+     * care of freeing the memory. This is inefficient of course (one
+     * more alloc+copy), and destined to debug statements */
+    std::string ixmlwPrintDoc(IXML_Document*);
 
 }
 
