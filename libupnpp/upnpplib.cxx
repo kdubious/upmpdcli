@@ -14,6 +14,7 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
+#include "config.h"
 
 #include "upnpplib.hxx"
 
@@ -24,6 +25,7 @@
 
 #include <upnp/ixml.h>                  // for ixmlRelaxParser
 #include <upnp/upnptools.h>             // for UpnpGetErrorMessage
+#include <upnp/upnpdebug.h>
 
 #include <iostream>                     // for operator<<, basic_ostream, etc
 #include <map>                          // for map, _Rb_tree_iterator, etc
@@ -33,7 +35,6 @@
 #include <utility>                      // for pair
 #include <vector>                       // for vector
 
-#include "config.h"                     // for HAVE_UPNPSETLOGLEVEL
 #include "getsyshwaddr.h"               // for getsyshwaddr
 
 #include "libupnpp/ptmutex.hxx"         // for PTMutexLocker
@@ -130,11 +131,11 @@ int LibUPnP::setupWebServer(const string& description, UpnpDevice_Handle *dvh)
         UPNPREG_BUF_DESC,
         description.c_str(), 
         description.size(), /* Desc filename len, ignored */
-        1, /* URLBase*/
+        1, /* config_baseURL */
         o_callback, (void *)this, dvh);
 
     if (res != UPNP_E_SUCCESS) {
-        LOGERR(errAsString("UpnpRegisterRootDevice2", m_init_error) << endl);
+        LOGERR(errAsString("UpnpRegisterRootDevice2", res) << endl);
     }
     return res;
 }

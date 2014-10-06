@@ -24,6 +24,7 @@ AC_CHECK_LIB([pthread], [pthread_create], [], [])
 AC_CHECK_LIB([upnp], [UpnpInit], [], AC_MSG_ERROR([libupnp not found]))
 AC_CHECK_LIB([ixml], [ixmlDocument_getElementsByTagName], [], 
 		     AC_MSG_ERROR([libixml (usually installed as part of libupnp) not found]))
+AC_CHECK_FUNCS([getifaddrs] [UpnpSetLogLevel])
 AC_CHECK_LIB([expat], [XML_ParserCreate], [], 
 		      AC_MSG_ERROR([libexpat not found]))
 LIBUPNPP_LIBS="$LIBS"
@@ -33,8 +34,6 @@ AC_CHECK_LIB([mpdclient], [mpd_connection_new], [],
 
 LIBS=""
                      
-AC_CHECK_FUNCS([getifaddrs] [UpnpSetLogLevel])
-
 AC_SUBST(LIBUPNPP_LIBS)
 
 AC_CONFIG_FILES([Makefile])
