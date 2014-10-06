@@ -14,6 +14,8 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
+#include "config.h"
+
 #include "ohproduct.hxx"
 
 #include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
@@ -25,7 +27,6 @@
 #include <utility>                      // for pair
 #include <vector>                       // for vector
 
-#include "config.h"                     // for PACKAGE_VERSION
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
 #include "libupnpp/log.hxx"             // for LOGDEB

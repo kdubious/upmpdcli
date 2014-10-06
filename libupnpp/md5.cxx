@@ -27,7 +27,7 @@
  * This code is the same as the code published by RSA Inc.  It has been
  * edited for clarity and style only.
  */
-//#include "config.h"
+#include "config.h"
 
 #include "md5.hxx"
 
