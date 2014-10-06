@@ -23,6 +23,7 @@
  */
 
 #include <vector>
+#include <unordered_map>
 #include <string>
 #include <sstream>
 
@@ -62,6 +63,46 @@ public:
             "] }" << std::endl;
         return os.str();
     }
+
+    struct Argument {
+        std::string name;
+        bool todevice;
+        std::string relatedVariable;
+        void clear() {
+            name.clear();
+            todevice = true;
+            relatedVariable.clear();
+        }
+    };
+    struct Action {
+        std::string name;
+        std::vector<Argument> argList;
+        void clear() {
+            name.clear();
+            argList.clear();
+        }
+    };
+    struct StateVariable {
+        std::string name;
+        bool sendEvents;
+        std::string dataType;
+        bool hasValueRange;
+        int minimum;
+        int maximum;
+        int step;
+        void clear() {
+            name.clear();
+            sendEvents = false;
+            dataType.clear();
+            hasValueRange = false;
+        }
+    };
+    struct Parsed {
+        std::unordered_map<std::string, Action> actionList;
+        std::unordered_map<std::string, StateVariable> stateTable;
+    };
+    
+    bool fetchAndParseDesc(const std::string&, Parsed& parsed) const;
 };
 
 /**

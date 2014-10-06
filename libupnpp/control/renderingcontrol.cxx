@@ -25,6 +25,7 @@
 #include <string>                       // for string, operator<<, etc
 #include <utility>                      // for pair
 
+#include "libupnpp/control/description.hxx"
 #include "libupnpp/control/avlastchg.hxx"  // for decodeAVLastChange
 #include "libupnpp/control/service.hxx"  // for VarEventReporter, Service
 #include "libupnpp/log.hxx"             // for LOGERR, LOGDEB1, LOGINF
@@ -47,6 +48,39 @@ bool RenderingControl::isRDCService(const string& st)
     return !SType.compare(0, sz, st, 0, sz);
 }
 
+RenderingControl::RenderingControl(const UPnPDeviceDesc& device,
+                                   const UPnPServiceDesc& service)
+    : Service(device, service), m_volmin(0), m_volmax(100), m_volstep(1)
+{
+    UPnPServiceDesc::Parsed sdesc;
+    if (service.fetchAndParseDesc(device.URLBase, sdesc)) {
+        auto it = sdesc.stateTable.find("Volume");
+        if (it != sdesc.stateTable.end() && it->second.hasValueRange) {
+            setVolParams(it->second.minimum, it->second.maximum,
+                         it->second.step);
+        }
+    }
+    registerCallback();
+}
+
+int RenderingControl::devVolTo0100(int dev_vol)
+{
+    int volume;
+    if (dev_vol < m_volmin)
+        dev_vol = m_volmin;
+    if (dev_vol > m_volmax)
+        dev_vol = m_volmax;
+    if (m_volmin != 0 || m_volmax != 100) {
+        float fact = float(m_volmax - m_volmin) / 100.0;
+        if (fact <= 0.0) // ??
+            fact = 1.0;
+        volume = int((dev_vol - m_volmin) / fact);
+    } else {
+        volume = dev_vol;
+    }
+    return volume;
+}
+
 void RenderingControl::evtCallback(
     const std::unordered_map<std::string, std::string>& props)
 {
@@ -63,9 +97,9 @@ void RenderingControl::evtCallback(
                 LOGDEB1("    " << it1->first << " -> " << 
                         it1->second << endl);
                 if (!it1->first.compare("Volume")) {
+                    int vol = devVolTo0100(atoi(it1->second.c_str()));
                     if (m_reporter) {
-                        m_reporter->changed(it1->first.c_str(),
-                                            atoi(it1->second.c_str()));
+                        m_reporter->changed(it1->first.c_str(), vol);
                     }
                 } else if (!it1->first.compare("Mute")) {
                     bool mute;
@@ -85,8 +119,22 @@ void RenderingControl::registerCallback()
     Service::registerCallback(bind(&RenderingControl::evtCallback, this, _1));
 }
 
-int RenderingControl::setVolume(int volume, const string& channel)
+int RenderingControl::setVolume(int ivol, const string& channel)
 {
+    // Input is always 0-100. Translate to actual range
+    if (ivol < 0)
+        ivol = 0;
+    if (ivol > 100)
+        ivol = 100;
+    int volume = ivol;
+    if (m_volmin != 0 || m_volmax != 100) {
+        float fact = float(m_volmax - m_volmin) / 100.0;
+        volume = m_volmin + int(float(ivol) * fact);
+    }
+    //LOGINF("RenderingControl::setVolume: ivol " << ivol << 
+    //      " m_volmin " << m_volmin << " m_volmax " << m_volmax <<
+    //      " m_volstep " << m_volstep << " volume " << volume << endl);
+
     SoapEncodeInput args(m_serviceType, "SetVolume");
     args("InstanceID", "0")("Channel", channel)
         ("DesiredVolume", SoapHelp::i2s(volume));
@@ -103,14 +151,17 @@ int RenderingControl::getVolume(const string& channel)
     if (ret != UPNP_E_SUCCESS) {
         return ret;
     }
-    int volume;
-    if (!data.getInt("CurrentVolume", &volume)) {
+    int dev_volume;
+    if (!data.getInt("CurrentVolume", &dev_volume)) {
         LOGERR("RenderingControl:getVolume: missing CurrentVolume in response" 
         << endl);
         return UPNP_E_BAD_RESPONSE;
     }
-    return volume;
+
+    // Output is always 0-100. Translate from device range
+    return devVolTo0100(dev_volume);
 }
+
 int RenderingControl::setMute(bool mute, const string& channel)
 {
     SoapEncodeInput args(m_serviceType, "SetMute");

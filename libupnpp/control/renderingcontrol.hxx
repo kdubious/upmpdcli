@@ -42,11 +42,7 @@ public:
      *
      */
     RenderingControl(const UPnPDeviceDesc& device,
-                     const UPnPServiceDesc& service)
-        : Service(device, service)
-        {
-            registerCallback();
-        }
+                     const UPnPServiceDesc& service);
 
     RenderingControl() {}
 
@@ -63,9 +59,21 @@ protected:
     /* My service type string */
     static const std::string SType;
 
+    /* Volume settings params */
+    int m_volmin;
+    int m_volmax;
+    int m_volstep;
+
 private:
     void evtCallback(const std::unordered_map<std::string, std::string>&);
     void registerCallback();
+    /** Set volume parameters from service state variable table values */
+    void setVolParams(int min, int max, int step) {
+        m_volmin = min >= 0 ? min : 0;
+        m_volmax = max > 0 ? max : 100;
+        m_volstep = step > 0 ? step : 1;
+    }
+    int devVolTo0100(int);
 };
 
 } // namespace UPnPClient
