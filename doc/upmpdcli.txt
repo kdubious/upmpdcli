@@ -53,7 +53,16 @@ The following parameters can be set:
 |UPnP port|-p port|$UPMPD_UPNPPORT|upnpport
 |OpenHome support switch|-O 0/1||openhome
 |OpenHome playlist disk persistence (default 1)|||ohmetapersist
+|Path to icon to be displayed by control point. <<upmpdcli.iconpathnote,See
+note>>|||iconpath
 |===========================    
+
+[[upmpdcli.iconpathnote]]
+*iconpath* note: the UPnP protocol has provisions for a renderer to send
+the URL to a descriptive icon as part of the device description. The icon
+to use can be set using the *iconpath* configuration file parameter. Due to
+current (and probably permanent) *upmpdcli* limitations, the image file
+*must* be a 64x64 32 bits-per-pixel png file.
 
 [[upmpdcli.openhome]]
 == OpenHome ohMedia services

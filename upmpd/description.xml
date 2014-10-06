@@ -13,8 +13,9 @@
     <modelName>UpMPD</modelName>
     <modelNumber>1.0</modelNumber>
     <modelURL>http://www.github.com/medoc92/upmpd</modelURL>
-    <serialNumber>72</serialNumber>
+    <serialNumber>42</serialNumber>
     <UDN>uuid:@UUID@</UDN>
+    @ICONLIST@
     <serviceList>
       <service>
         <serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType>

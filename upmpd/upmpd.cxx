@@ -79,10 +79,22 @@ static void setupsigs()
 
 // Note: if we ever need this to work without cxx11, there is this:
 // http://www.tutok.sk/fastgl/callback.html
+//
+// Note that there is a problem in the order in which we do things
+// here: because the UpnpDevice() constructor starts the
+// advertisements and publishes the description document before the
+// services are actually initialized, it is possible that a fast
+// client will fail in subscribing to events, which will manifest
+// itself on the server side by error messages like the following in
+// the log:
+//   libupnpp/device/device.cxx:183::UpnpDevice: Bad serviceID: 
+//        urn:upnp-org:serviceId:ConnectionManager
+// The solution would be to have a separate init call to start the
+// device at the end of the constructor code.
 UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
-             const unordered_map<string, string>& xmlfiles,
+             const unordered_map<string, VDirContent>& files,
              MPDCli *mpdcli, unsigned int opts, const string& cachefn)
-    : UpnpDevice(deviceid, xmlfiles), m_mpdcli(mpdcli), m_mpds(0),
+    : UpnpDevice(deviceid, files), m_mpdcli(mpdcli), m_mpds(0),
       m_options(opts),
       m_mcachefn(cachefn)
 {
@@ -161,6 +173,18 @@ static const string ohDesc(
     "  <controlURL>/ctl/OHPlaylist</controlURL>"
     "  <eventSubURL>/evt/OHPlaylist</eventSubURL>"
     "</service>"
+    );
+
+static const string iconDesc(
+    "<iconList>"
+    "  <icon>"
+    "    <mimetype>image/png</mimetype>"
+    "    <width>64</width>"
+    "    <height>64</height>"
+    "    <depth>32</depth>"
+    "    <url>/icon.png</url>"
+    "  </icon>"
+    "</iconList>"
     );
 
 static char *thisprog;
@@ -294,6 +318,7 @@ int main(int argc, char *argv[])
     if (argc != 0)
         Usage();
 
+    string iconpath;
     if (!configfile.empty()) {
         ConfSimple config(configfile.c_str(), 1, true);
         if (!config.ok()) {
@@ -322,6 +347,7 @@ int main(int argc, char *argv[])
         if (config.get("ohmetapersist", value)) {
             ohmetapersist = atoi(value.c_str()) != 0;
         }
+        config.get("iconpath", iconpath);
         if (!(op_flags & OPT_i)) {
             config.get("upnpiface", iface);
             if (iface.empty()) {
@@ -472,9 +498,17 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
-            
+
     string reason;
-    unordered_map<string, string> xmlfiles;
+
+    string icondata;
+    if (!iconpath.empty()) {
+        if (!file_to_string(iconpath, icondata, &reason)) {
+            LOGERR("Failed reading " << iconpath << " : " << reason << endl);
+        }
+    }
+
+    unordered_map<string, VDirContent> files;
     for (unsigned int i = 0; i < xmlfilenames.size(); i++) {
         string filename = path_cat(datadir, xmlfilenames[i]);
         string data;
@@ -488,9 +522,22 @@ int main(int argc, char *argv[])
             data = regsub1("@FRIENDLYNAME@", data, friendlyname);
             if (openhome) 
                 data = regsub1("@OPENHOME@", data, ohDesc);
+            else 
+                data = regsub1("@OPENHOME@", data, "");
+            if (!icondata.empty())
+                data = regsub1("@ICONLIST@", data, iconDesc);
+            else
+                data = regsub1("@ICONLIST@", data, "");
         }
-        xmlfiles[xmlfilenames[i]] = data;
+        files.insert(pair<string, VDirContent>
+                     (xmlfilenames[i], VDirContent(data, "application/xml")));
     }
+
+    if (!icondata.empty()) {
+        files.insert(pair<string, VDirContent>
+                     ("icon.png", VDirContent(icondata, "image/png")));
+    }
+
     unsigned int options = UpMpd::upmpdNone;
     if (ownqueue)
         options |= UpMpd::upmpdOwnQueue;
@@ -501,7 +548,7 @@ int main(int argc, char *argv[])
 
     // Initialize the UPnP device object.
     UpMpd device(string("uuid:") + UUID, friendlyname, 
-                 xmlfiles, mpdclip, options, mcfn);
+                 files, mpdclip, options, mcfn);
     dev = &device;
 
     // And forever generate state change events.

@@ -35,13 +35,30 @@ namespace UPnPProvider {
 
 typedef std::function<int (const UPnPP::SoapArgs&, UPnPP::SoapData&)> soapfun;
 
+// Definition of a virtual directory entry: data and mime type
+struct VDirContent {
+    VDirContent(const std::string& ct, const std::string& mt)
+        : content(ct), mimetype(mt) {}
+    std::string content;
+    std::string mimetype;
+};
+
 /** Define a virtual interface to link libupnp operations to a device 
  * implementation 
  */
 class UpnpDevice {
 public:
+    /** Construct device object
+     * @param deviceId uuid for device: "uuid:UUIDvalue"
+     * @param files list of name/content pairs to be added to the
+     *   virtual directory root. The file names must match the SCDPURL
+     *   values for the services in the description.xml document. Note that 
+     *   this will have to be changed if we ever want to really
+     *   support multiple devices (will need to use subdirectories or
+     *   find another way to avoid name conflicts).
+     */
     UpnpDevice(const std::string& deviceId, 
-               const std::unordered_map<std::string, std::string>& xmlfiles);
+               const std::unordered_map<std::string, VDirContent>& files);
     ~UpnpDevice();
 
     void addService(UpnpService *, const std::string& serviceId);

@@ -67,7 +67,7 @@ static bool vectorstoargslists(const vector<string>& names,
 static const int expiretime = 3600;
 
 UpnpDevice::UpnpDevice(const string& deviceId, 
-                       const unordered_map<string, string>& xmlfiles)
+                       const unordered_map<string, VDirContent>& files)
     : m_deviceId(deviceId), m_needExit(false), m_evloopcond(PTHREAD_COND_INITIALIZER)
 {
     //LOGDEB("UpnpDevice::UpnpDevice(" << m_deviceId << ")" << endl);
@@ -101,18 +101,18 @@ UpnpDevice::UpnpDevice(const string& deviceId,
         return;
     }
 
-    unordered_map<string,string>::const_iterator it = 
-        xmlfiles.find("description.xml");
-    if (it == xmlfiles.end()) {
+    unordered_map<string, VDirContent>::const_iterator it = 
+        files.find("description.xml");
+    if (it == files.end()) {
         LOGFAT("UpnpDevice::UpnpDevice: no description.xml found in xmlfiles"
                << endl);
         return;
     } 
 
-    const string& description = it->second;
+    const string& description = it->second.content;
 
-    for (it = xmlfiles.begin(); it != xmlfiles.end(); it++) {
-        theVD->addFile("/", it->first, it->second, "application/xml");
+    for (it = files.begin(); it != files.end(); it++) {
+        theVD->addFile("/", it->first, it->second.content, it->second.mimetype);
     }
 
     // Start up the web server for sending out description files

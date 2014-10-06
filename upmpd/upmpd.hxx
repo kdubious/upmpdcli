@@ -29,7 +29,7 @@ class MpdStatus;
 
 using namespace UPnPProvider;
 
-// The UPnP MPD frontend device with its 3 services
+// The UPnP MPD frontend device with its services
 class UpMpd : public UpnpDevice {
 public:
     friend class UpMpdRenderCtl;
@@ -49,7 +49,7 @@ public:
         upmpdOhMetaPersist = 4
     };
     UpMpd(const std::string& deviceid, const std::string& friendlyname,
-          const std::unordered_map<std::string, std::string>& xmlfiles,
+          const std::unordered_map<std::string, VDirContent>& files,
           MPDCli *mpdcli, unsigned int opts, const std::string& cachefn);
     ~UpMpd();
 
