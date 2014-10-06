@@ -14,6 +14,8 @@
  *   Free Software Foundation, Inc.,
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
+#include "config.h"
+
 #include "vdir.hxx"
 
 #include <string.h>                     // for memcpy
@@ -157,10 +159,13 @@ bool VirtualDir::addFile(const string& _path, const string& name,
     if (path.empty() || path[path.size() - 1] != '/') {
         path += '/';
     }
+    //LOGDEB("VirtualDir::addFile: path " << path << " name " << name << endl);
+
     if (m_dirs.find(path) == m_dirs.end()) {
         m_dirs[path] = unordered_map<string, VirtualDir::FileEnt>();
         UpnpAddVirtualDir(path.c_str());
     }
+
     VirtualDir::FileEnt entry;
     entry.mtime = time(0);
     entry.mimetype = mimetype;
