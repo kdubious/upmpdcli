@@ -223,7 +223,9 @@ void *UPnPDeviceDirectory::discoExplorer(void *)
             char contentType[LINE_SIZE];
             int code = UpnpDownloadUrlItem(tsk->url.c_str(), &buf, contentType);
             if (code != UPNP_E_SUCCESS) {
-                LOGERR(LibUPnP::errAsString("discoExplorer", code) << endl);
+                LOGERR(LibUPnP::errAsString(
+                           "discoExplorer:UpnpDownloadUrlItem", code) << 
+                       " trying to fetch " << tsk->url << endl);
                 continue;
             }
             string sdesc(buf);

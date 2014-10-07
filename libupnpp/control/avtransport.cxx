@@ -390,9 +390,11 @@ int AVTransport::CTAStringToBits(const string& actions, int& iacts)
             iacts |= TPA_Seek;
         } else if (!it->compare("Stop")) {
             iacts |= TPA_Stop;
+        } else if (it->empty()) {
+            continue;
         } else {
-            LOGERR("AVTransport::CTAStringToBits: unknown action "
-                   << *it << endl);
+            LOGERR("AVTransport::CTAStringToBits: unknown action in " <<
+                   actions << " : [" << *it << "]" << endl);
         }
     }
     return 0;
