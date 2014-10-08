@@ -62,10 +62,10 @@ static AVTransport::TransportState stringToTpState(const string& s)
         return AVTransport::PausedRecording;
     } else if (!stringuppercmp("RECORDING", s)) {
         return AVTransport::Recording;
-    } else if (!stringuppercmp("NO MEDIA PRESENT", s)) {
+    } else if (!stringuppercmp("NO_MEDIA_PRESENT", s)) {
         return AVTransport::NoMediaPresent;
     } else {
-        LOGERR("AVTransport event: bad value for TransportState: " 
+        LOGINF("AVTransport event: bad value for TransportState: " 
                << s << endl);
         return AVTransport::Unknown;
     }
@@ -186,17 +186,17 @@ void AVTransport::evtCallback(
                     }
                 }
             } else if (!it1->first.compare("PlaybackStorageMedium") ||
-                       !it1->first.compare("PossiblePlaybackStorageMedium") ||
+                       !it1->first.compare("PossiblePlaybackStorageMedia") ||
                        !it1->first.compare("RecordStorageMedium") ||
-                       !it1->first.compare("PossibleRecordStorageMedium") ||
+                       !it1->first.compare("PossibleRecordStorageMedia") ||
                        !it1->first.compare("RecordMediumWriteStatus") ||
                        !it1->first.compare("CurrentRecordQualityMode") ||
                        !it1->first.compare("PossibleRecordQualityModes")){
                 m_reporter->changed(it1->first.c_str(),it1->second.c_str());
 
             } else {
-                LOGDEB("AVTransport event: unknown variable: name [" <<
-                       it1->first << "] value [" << it1->second << endl);
+                LOGDEB1("AVTransport event: unknown variable: name [" <<
+                        it1->first << "] value [" << it1->second << endl);
                 m_reporter->changed(it1->first.c_str(),it1->second.c_str());
             }
         }
