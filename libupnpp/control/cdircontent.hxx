@@ -64,7 +64,7 @@ public:
     std::string m_title; // dc:title. Directory name for a container.
     ObjType m_type; // item or container
     ItemClass m_iclass;
-    // Properties as gathered from the XML document (url, artist, etc.),
+    // Properties as gathered from the XML document (album, artist, etc.),
     // except for title which has a proper field.
     // The map keys are the XML tag names
     std::map<std::string, std::string> m_props;
