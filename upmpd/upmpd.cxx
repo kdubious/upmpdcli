@@ -479,8 +479,20 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    //string upnplogfilename("/tmp/upmpdcli_libupnp.log");
-    //mylib->setLogFileName(upnplogfilename, LibUPnP::LogLevelDebug);
+    if ((cp = getenv("UPMPDCLI_UPNPLOGFILENAME"))) {
+        char *cp1 = getenv("UPMPDCLI_UPNPLOGLEVEL");
+        int loglevel = LibUPnP::LogLevelNone;
+        if (cp1) {
+            loglevel = atoi(cp1);
+        }
+        loglevel = loglevel < 0 ? 0: loglevel;
+        loglevel = loglevel > int(LibUPnP::LogLevelDebug) ? 
+            int(LibUPnP::LogLevelDebug) : loglevel;
+
+        if (loglevel != LibUPnP::LogLevelNone) {
+            mylib->setLogFileName(cp, LibUPnP::LogLevel(loglevel));
+        }
+    }
 
     // Create unique ID
     string UUID = LibUPnP::makeDevUUID(friendlyname, hwaddr);
