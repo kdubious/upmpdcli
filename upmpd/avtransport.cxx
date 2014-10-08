@@ -228,13 +228,13 @@ bool UpMpdAVTransport::tpstateMToU(unordered_map<string, string>& status)
     }
 
     status["PlaybackStorageMedium"] = playmedium;
-    status["PossiblePlaybackStorageMedium"] = "HDD,NETWORK";
+    status["PossiblePlaybackStorageMedia"] = "HDD,NETWORK";
     status["RecordStorageMedium"] = "NOT_IMPLEMENTED";
     status["RelativeCounterPosition"] = "0";
     status["AbsoluteCounterPosition"] = "0";
     status["CurrentPlayMode"] = mpdsToPlaymode(mpds);
 
-    status["PossibleRecordStorageMedium"] = "NOT_IMPLEMENTED";
+    status["PossibleRecordStorageMedia"] = "NOT_IMPLEMENTED";
     status["RecordMediumWriteStatus"] = "NOT_IMPLEMENTED";
     status["CurrentRecordQualityMode"] = "NOT_IMPLEMENTED";
     status["PossibleRecordQualityModes"] = "NOT_IMPLEMENTED";
