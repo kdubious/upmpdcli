@@ -19,7 +19,7 @@
 #include <mpd/client.h>
 
 #include <stddef.h>                     // for NULL
-
+#include <unistd.h>
 #include <iostream>                     // for endl, etc
 
 #include "libupnpp/log.hxx"             // for LOGDEB, LOGERR, LOGINF
@@ -110,6 +110,16 @@ bool MPDCli::showError(const string& who)
     for (int i = 0; i < 2; i++) {                       \
         if ((CMD))                                      \
             break;                                      \
+        if (i == 1 || !showError(#CMD))                 \
+            return false;                               \
+    }                                                   \
+    }
+
+#define RETRY_CMD_WITH_SLEEP(CMD) {                     \
+    for (int i = 0; i < 2; i++) {                       \
+        if ((CMD))                                      \
+            break;                                      \
+        sleep(1);                                       \
         if (i == 1 || !showError(#CMD))                 \
             return false;                               \
     }                                                   \
@@ -477,13 +487,18 @@ bool MPDCli::clearQueue()
     RETRY_CMD(mpd_run_clear(M_CONN));
     return true;
 }
+
 bool MPDCli::deleteId(int id)
 {
     LOGDEB("MPDCli::deleteId " << id << endl);
     if (!ok())
         return -1;
-
-    RETRY_CMD(mpd_run_delete_id(M_CONN, (unsigned)id));
+    // It seems that mpd will sometimes get in a funny state, esp.
+    // after failed statsongs. The exact mechanism is a mystery, but
+    // retrying the failed deletes with a bit of wait seems to help a
+    // lot, and this happens seldom enough that this is not a
+    // significant performance issue
+    RETRY_CMD_WITH_SLEEP(mpd_run_delete_id(M_CONN, (unsigned)id));
     return true;
 }
 
