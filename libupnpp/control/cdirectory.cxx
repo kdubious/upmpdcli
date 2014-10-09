@@ -18,6 +18,9 @@
 
 #include "libupnpp/control/cdirectory.hxx"
 
+#include <sys/types.h>
+#include <regex.h>
+
 #include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
 #include <upnp/upnptools.h>             // for UpnpGetErrorMessage
 
@@ -41,6 +44,77 @@ namespace UPnPClient {
 
 // The service type string for Content Directories:
 const string ContentDirectory::SType("urn:schemas-upnp-org:service:ContentDirectory:1");
+
+class SimpleRegexp {
+public:
+    SimpleRegexp(const string& exp, int flags) : m_ok(false) {
+        if (regcomp(&m_expr, exp.c_str(), flags) == 0) {
+            m_ok = true;
+        }
+    }
+    ~SimpleRegexp() {
+        regfree(&m_expr);
+    }
+    bool simpleMatch(const string& val) const {
+        if (!ok())
+            return false;
+        if (regexec(&m_expr, val.c_str(), 0, 0, 0) == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    bool operator() (const string& val) const {
+        return simpleMatch(val);
+    }
+
+    bool ok() const {return m_ok;}
+private:
+    bool m_ok;
+    regex_t m_expr;
+};
+
+/*
+  manufacturer: Bubblesoft model BubbleUPnP Media Server
+  manufacturer: Justin Maggard model Windows Media Connect compatible (MiniDLNA)
+  manufacturer: minimserver.com model MinimServer
+  manufacturer: PacketVideo model TwonkyMedia Server
+  manufacturer: ? model MediaTomb
+*/
+static const SimpleRegexp bubble_rx("bubble", REG_ICASE|REG_NOSUB);
+static const SimpleRegexp mediatomb_rx("mediatomb", REG_ICASE|REG_NOSUB);
+static const SimpleRegexp minidlna_rx("minidlna", REG_ICASE|REG_NOSUB);
+static const SimpleRegexp minim_rx("minim", REG_ICASE|REG_NOSUB);
+static const SimpleRegexp twonky_rx("twonky", REG_ICASE|REG_NOSUB);
+
+ContentDirectory::ContentDirectory(const UPnPDeviceDesc& device,
+                                   const UPnPServiceDesc& service)
+    : Service(device, service), m_rdreqcnt(200), m_serviceKind(CDSKIND_UNKNOWN)
+{
+    LOGERR("ContentDirectory::ContentDirectory: manufacturer: " << 
+           m_manufacturer << " model " << m_modelName << endl);
+
+    if (bubble_rx(m_modelName)) {
+        m_serviceKind = CDSKIND_BUBBLE;
+        LOGDEB1("ContentDirectory::ContentDirectory: BUBBLE" << endl);
+    } else if (mediatomb_rx(m_modelName)) {
+        // Readdir by 200 entries is good for most, but MediaTomb likes
+        // them really big. Actually 1000 is better but I don't dare
+        m_rdreqcnt = 500;
+        m_serviceKind = CDSKIND_MEDIATOMB;
+        LOGDEB1("ContentDirectory::ContentDirectory: MEDIATOMB" << endl);
+    } else if (minidlna_rx(m_modelName)) {
+        m_serviceKind = CDSKIND_MINIDLNA;
+        LOGDEB1("ContentDirectory::ContentDirectory: MINIDLNA" << endl);
+    } else if (minim_rx(m_modelName)) {
+        m_serviceKind = CDSKIND_MINIM;
+        LOGDEB1("ContentDirectory::ContentDirectory: MINIM" << endl);
+    } else if (twonky_rx(m_modelName)) {
+        m_serviceKind = CDSKIND_TWONKY;
+        LOGDEB1("ContentDirectory::ContentDirectory: TWONKY" << endl);
+    } 
+    registerCallback();
+}
 
 // We don't include a version in comparisons, as we are satisfied with
 // version 1

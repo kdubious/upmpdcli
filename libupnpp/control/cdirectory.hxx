@@ -52,23 +52,18 @@ typedef std::shared_ptr<ContentDirectory> CDSH;
  */
 class ContentDirectory : public Service {
 public:
-    /** Construct by copying data from device and service objects.
-     *
-     */
+
+    /** Construct by copying data from device and service objects. */
     ContentDirectory(const UPnPDeviceDesc& device,
-                     const UPnPServiceDesc& service)
-        : Service(device, service), m_rdreqcnt(200)
-        {
-            if (!m_modelName.compare("MediaTomb")) {
-                // Readdir by 200 entries is good for most, but MediaTomb likes
-                // them really big. Actually 1000 is better but I don't dare
-                m_rdreqcnt = 500;
-            }
-            registerCallback();
-        }
+                     const UPnPServiceDesc& service);
 
     /** An empty one */
-    ContentDirectory() {}
+    ContentDirectory() : m_rdreqcnt(200), m_serviceKind(CDSKIND_UNKNOWN) {}
+
+    enum ServiceKind {CDSKIND_UNKNOWN, CDSKIND_BUBBLE, CDSKIND_MEDIATOMB,
+                      CDSKIND_MINIDLNA, CDSKIND_MINIM, CDSKIND_TWONKY};
+
+    ServiceKind getKind() {return m_serviceKind;}
 
     /** Test service type from discovery message */
     static bool isCDService(const std::string& st);
@@ -147,6 +142,8 @@ protected:
 
 private:
     int m_rdreqcnt; // Slice size to use when reading
+    ServiceKind m_serviceKind;
+
     void evtCallback(const std::unordered_map<std::string, std::string>&);
     void registerCallback();
 };
