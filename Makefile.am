@@ -20,6 +20,8 @@ libupnpp_la_SOURCES = \
     libupnpp/control/device.hxx \
     libupnpp/control/discovery.cxx \
     libupnpp/control/discovery.hxx \
+    libupnpp/control/httpdownload.cxx \
+    libupnpp/control/httpdownload.hxx \
     libupnpp/control/mediarenderer.cxx \
     libupnpp/control/mediarenderer.hxx \
     libupnpp/control/mediaserver.cxx \
@@ -112,7 +114,7 @@ upmpdcli_SOURCES = \
      upmpd/ohplaylist.hxx \
      upmpd/ohplaylist.cxx
                            
-upmpdcli_LDADD = libupnpp.la -lmpdclient -lpthread -lrt
+upmpdcli_LDADD = libupnpp.la -lmpdclient -lcurl -lpthread -lrt
 
 dist_pkgdata_DATA = upmpd/description.xml upmpd/AVTransport.xml \
                   upmpd/RenderingControl.xml upmpd/ConnectionManager.xml \

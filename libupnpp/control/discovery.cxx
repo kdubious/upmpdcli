@@ -30,6 +30,7 @@
 #include <map>                          // for _Rb_tree_iterator, map, etc
 #include <utility>                      // for pair
 #include <vector>                       // for vector
+#include <unordered_set>
 
 #include "description.hxx"              // for UPnPDeviceDesc, etc
 
@@ -38,6 +39,7 @@
 #include "libupnpp/upnpplib.hxx"        // for LibUPnP
 #include "libupnpp/upnpputils.hxx"      // for timespec_addnanos
 #include "libupnpp/workqueue.hxx"       // for WorkQueue
+#include "libupnpp/control/httpdownload.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -81,6 +83,7 @@ public:
 
     bool alive;
     string url;
+    string description;
     string deviceId;
     int expires; // Seconds valid
 };
@@ -89,18 +92,16 @@ public:
 // discovered object descriptors for processing by our dedicated
 // thread.
 static WorkQueue<DiscoveredTask*> discoveredQueue("DiscoveredQueue");
+static unordered_set<string> o_downloading;
+static PTMutexInit o_downloading_mutex;
 
 // This gets called in a libupnp thread context for all asynchronous
 // events which we asked for.
 // Example: ContentDirectories appearing and disappearing from the network
 // We queue a task for our worker thread(s)
-// It seems that this can get called by several threads. We have a
-// mutex just for clarifying the message printing, the workqueue is
-// mt-safe of course.
+// We can get called by several threads.
 static int cluCallBack(Upnp_EventType et, void* evp, void*)
 {
-    static PTMutexInit cblock;
-    PTMutexLocker lock(cblock);
     LOGDEB1("discovery:cluCallBack: " << LibUPnP::evTypeAsString(et) << endl);
 
     switch (et) {
@@ -116,7 +117,44 @@ static int cluCallBack(Upnp_EventType et, void* evp, void*)
         if (!disco->DeviceType[0] && !disco->ServiceType[0]) {
             LOGDEB1("discovery:cllb:ALIVE: " << cluDiscoveryToStr(disco) 
                    << endl);
+            // Device signals its existence and well-being. Perform the
+            // UPnP "description" phase by downloading and decoding the
+            // description document.
+
             DiscoveredTask *tp = new DiscoveredTask(1, disco);
+
+            {
+                // Note that this does not prevent multiple successive
+                // downloads of a normal url, just multiple
+                // simultaneous downloads of a slow one, to avoid
+                // tying up threads.
+                PTMutexLocker lock(o_downloading_mutex);
+                auto res = o_downloading.insert(tp->url);
+                if (!res.second) {
+                    LOGDEB("discoExplorer: already downloading " << 
+                           tp->url << endl);
+                    return UPNP_E_SUCCESS;
+                }
+            }
+
+            LOGDEB("discoExplorer: downloading " << tp->url << endl);
+            string sdesc;
+            if (!downloadUrlWithCurl(tp->url, tp->description, 5)) {
+                LOGERR("discoExplorer: downloadUrlWithCurl error for: " << 
+                       tp->url << endl);
+                {PTMutexLocker lock(o_downloading_mutex);
+                    o_downloading.erase(tp->url);
+                }
+                delete tp;
+                return UPNP_E_SUCCESS;
+            }
+            LOGDEB1("discoExplorer: downloaded description document of " <<
+                    tp->description.size() << " bytes" << endl);
+
+            {PTMutexLocker lock(o_downloading_mutex);
+                o_downloading.erase(tp->url);
+            }
+
             if (discoveredQueue.put(tp)) {
                 return UPNP_E_FINISH;
             }
@@ -215,27 +253,8 @@ void *UPnPDeviceDirectory::discoExplorer(void *)
                 // endl);
             }
         } else {
-            // Device signals its existence and well-being. Perform the
-            // UPnP "description" phase by downloading and decoding the
-            // description document.
-            char *buf = 0;
-            // LINE_SIZE is defined by libupnp's upnp.h...
-            char contentType[LINE_SIZE];
-            int code = UpnpDownloadUrlItem(tsk->url.c_str(), &buf, contentType);
-            if (code != UPNP_E_SUCCESS) {
-                LOGERR(LibUPnP::errAsString("discoExplorer:UpnpDownloadUrlItem", code) << 
-                       " trying to fetch " << tsk->url << endl);
-                delete tsk;
-                continue;
-            }
-            string sdesc(buf);
-            free(buf);
-                        
-            LOGDEB1("discoExplorer: downloaded description document of " <<
-                    sdesc.size() << " bytes" << endl);
-
             // Update or insert the device
-            DeviceDescriptor d(tsk->url, sdesc, time(0), tsk->expires);
+            DeviceDescriptor d(tsk->url, tsk->description, time(0), tsk->expires);
             if (!d.device.ok) {
                 LOGERR("discoExplorer: description parse failed for " << 
                        tsk->deviceId << endl);

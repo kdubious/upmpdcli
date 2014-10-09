@@ -22,6 +22,7 @@ AC_DEFINE([_FILE_OFFSET_BITS], [64], [File Offset size])
 AC_CHECK_LIB([rt], [clock_gettime], [], [])
 AC_CHECK_LIB([pthread], [pthread_create], [], [])
 AC_CHECK_LIB([upnp], [UpnpInit], [], AC_MSG_ERROR([libupnp not found]))
+AC_CHECK_LIB([curl], [curl_easy_init], [], AC_MSG_ERROR([libcurl not found]))
 AC_CHECK_LIB([ixml], [ixmlDocument_getElementsByTagName], [], 
 		     AC_MSG_ERROR([libixml (usually installed as part of libupnp) not found]))
 AC_CHECK_FUNCS([getifaddrs] [UpnpSetLogLevel])
