@@ -2,6 +2,26 @@
 
 == Minor releases
 
+=== 0.8.3
+
+This release mostly has modifications to the control side of the library.
+
+upmpdcli now retries some song delete operations, it seems that mpd
+sometimes needs a little time to recover (?)
+
+The control side now uses short timeouts and concurrency to download the
+description documents, which should solve the problem of devices
+disappearing when a very slow-responding one was present on the network.
+
+Misc improvements to the control side of the lib to support upplay.
+
+=== 0.8.2
+
+- Add capability to set an icon to be displayed when selecting a renderer
+  from a control point (see iconpath parameter in configuration file).
+- Control side: fix volume control which was not working on many renderers.
+- Misc changes to ease compilation on non-glibc platforms.
+
 === 0.8.1
 
 0.8.1 has many changes in the library code, but almost none of them affect

@@ -1,3 +1,22 @@
+upmpdcli (0.8.3-1) unstable; urgency=low
+
+  * libupnpp control: Use libcurl to perform the description document
+    download. Previously, the bad timeout management in libupnp would allow
+    a very slow or sick device to basically DOS the discovery process. This
+    has no consequences for upmpdcli proper (only the control side of the
+    lib), beyond introducing a libcurl dependancy, which mpd itself needs
+    anyway (if it's going to accept urls).
+
+ -- Jean-Francois Dockes <jf@dockes.org>  Thu, 09 Oct 2014 11:31:00 +0200
+
+upmpdcli (0.8.2-1) unstable; urgency=low
+
+  * Fix volume control on some renderers.
+  * Allow setting an icon to be displayed by control point in renderer lists
+  * Mix build fixes
+
+ -- Jean-Francois Dockes <jf@dockes.org>  Tue, 07 Oct 2014 15:56:00 +0200
+
 upmpdcli (0.8.1-1) unstable; urgency=low
 
   * Minor bug fixes and improvements.
