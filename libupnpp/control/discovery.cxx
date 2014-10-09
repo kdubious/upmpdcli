@@ -131,7 +131,7 @@ static int cluCallBack(Upnp_EventType et, void* evp, void*)
                 PTMutexLocker lock(o_downloading_mutex);
                 auto res = o_downloading.insert(tp->url);
                 if (!res.second) {
-                    LOGDEB("discoExplorer: already downloading " << 
+                    LOGDEB("discovery:cllb: already downloading " << 
                            tp->url << endl);
                     return UPNP_E_SUCCESS;
                 }
@@ -140,7 +140,7 @@ static int cluCallBack(Upnp_EventType et, void* evp, void*)
             LOGDEB("discoExplorer: downloading " << tp->url << endl);
             string sdesc;
             if (!downloadUrlWithCurl(tp->url, tp->description, 5)) {
-                LOGERR("discoExplorer: downloadUrlWithCurl error for: " << 
+                LOGERR("discovery:cllb: downloadUrlWithCurl error for: " << 
                        tp->url << endl);
                 {PTMutexLocker lock(o_downloading_mutex);
                     o_downloading.erase(tp->url);
@@ -148,7 +148,7 @@ static int cluCallBack(Upnp_EventType et, void* evp, void*)
                 delete tp;
                 return UPNP_E_SUCCESS;
             }
-            LOGDEB1("discoExplorer: downloaded description document of " <<
+            LOGDEB1("discovery:cllb: downloaded description document of " <<
                     tp->description.size() << " bytes" << endl);
 
             {PTMutexLocker lock(o_downloading_mutex);

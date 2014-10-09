@@ -135,7 +135,8 @@ int LibUPnP::setupWebServer(const string& description, UpnpDevice_Handle *dvh)
         o_callback, (void *)this, dvh);
 
     if (res != UPNP_E_SUCCESS) {
-        LOGERR(errAsString("UpnpRegisterRootDevice2", res) << endl);
+        LOGERR(errAsString("UpnpRegisterRootDevice2", res) << " description " <<
+               description << endl);
     }
     return res;
 }
