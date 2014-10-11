@@ -46,11 +46,13 @@
 #include "libupnpp/log.hxx"             // for LOGERR
 #include "libupnpp/soaphelp.hxx"        // for xmlQuote
 #include "libupnpp/upnpavutils.hxx"     // for upnpduration
+#include "libupnpp/control/cdircontent.hxx"
 
 #include "mpdcli.hxx"                   // for UpSong
 
 using namespace std;
 using namespace UPnPP;
+using namespace UPnPClient;
 
 // Append system error string to input string
 void catstrerror(string *reason, const char *what, int _errno)
@@ -393,6 +395,30 @@ string didlmake(const UpSong& song)
        << "</res>"
        << "</item></DIDL-Lite>";
     return ss.str();
+}
+
+bool uMetaToUpSong(const string& metadata, UpSong *ups)
+{
+    if (ups == 0)
+        return false;
+
+    UPnPDirContent dirc;
+    if (!dirc.parse(metadata) && dirc.m_items.size() == 0) {
+        return false;
+    }
+    UPnPDirObject& dobj = *dirc.m_items.begin();
+
+    ups->artist = dobj.f2s("upnp:artist", false);
+    ups->album = dobj.f2s("upnp:album", false);
+    ups->title = dobj.m_title;
+    string stmp = dobj.f2s("duration", true); 
+    if (!stmp.empty()) {
+        ups->duration_secs = upnpdurationtos(stmp);
+    } else {
+        ups->duration_secs = 0;
+    }
+    ups->tracknum = dobj.f2s("upnp:originalTrackNumber", false);
+    return true;
 }
 
 // Substitute regular expression

@@ -100,9 +100,9 @@ public:
     bool consume(bool on);
     bool seek(int seconds);
     bool clearQueue();
-    int insert(const std::string& uri, int pos);
+    int insert(const std::string& uri, int pos, const UpSong& meta);
     // Insert after given id. Returns new id or -1
-    int insertAfterId(const std::string& uri, int id);
+    int insertAfterId(const std::string& uri, int id, const UpSong& meta);
     bool deleteId(int id);
     // start included, end excluded
     bool deletePosRange(unsigned int start, unsigned int end);
@@ -131,6 +131,8 @@ private:
     int m_port;
     std::string m_password;
     regex_t m_tpuexpr;
+    // addtagid command only exists for mpd 0.19 and later.
+    bool m_have_addtagid; 
 
     bool openconn();
     bool updStatus();
@@ -138,6 +140,9 @@ private:
     void freeSongs(std::vector<mpd_song*>& songs);
     bool showError(const std::string& who);
     bool looksLikeTransportURI(const std::string& path);
+    bool checkForCommand(const std::string& cmdname);
+    bool send_tag(const char *cid, int tag, const std::string& data);
+    bool send_tag_data(int id, const UpSong& meta);
 };
 
 

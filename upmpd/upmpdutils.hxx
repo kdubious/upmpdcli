@@ -62,6 +62,9 @@ extern const std::string& mapget(
 // Format a didl fragment from MPD status data
 extern std::string didlmake(const UpSong& song);
 
+// Convert UPnP metadata to UpSong for mpdcli to use
+extern bool uMetaToUpSong(const std::string&, UpSong *ups);
+
 // Replace the first occurrence of regexp. cxx11 regex does not work
 // that well yet...
 extern std::string regsub1(const std::string& sexp, const std::string& input, 

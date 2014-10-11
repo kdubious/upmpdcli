@@ -550,7 +550,9 @@ int OHPlaylist::insert(const SoapArgs& sc, SoapData& data)
     LOGDEB("OHPlaylist::insert: afterid " << afterid << " Uri " <<
            uri << " Metadata " << metadata << endl);
     if (ok) {
-        int id = m_dev->m_mpdcli->insertAfterId(uri, afterid);
+        UpSong metaformpd;
+        uMetaToUpSong(metadata, &metaformpd);
+        int id = m_dev->m_mpdcli->insertAfterId(uri, afterid, metaformpd);
         if ((ok = (id != -1))) {
             m_metacache[uri] = metadata;
             m_cachedirty = true;

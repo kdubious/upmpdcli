@@ -352,8 +352,12 @@ int UpMpdAVTransport::setAVTransportURI(const SoapArgs& sc, SoapData& data,
         }
     }
 
-    int songid;
-    if ((songid = m_dev->m_mpdcli->insert(uri, setnext?curpos+1:curpos)) < 0) {
+    UpSong metaformpd;
+    uMetaToUpSong(metadata, &metaformpd);
+
+    int songid = m_dev->m_mpdcli->insert(uri, setnext ? curpos + 1 : curpos,
+                                         metaformpd);
+    if (songid < 0) {
         return UPNP_E_INTERNAL_ERROR;
     }
 

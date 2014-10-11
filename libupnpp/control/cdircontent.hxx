@@ -108,6 +108,19 @@ public:
 
     }
 
+    /** Simplified interface to retrieving values: we don't distinguish
+     * between non-existing and empty, and we only use the first ressource
+     */
+    std::string f2s(const std::string& nm, bool isresfield) {
+        std::string val;
+        if (isresfield) {
+            getrprop(0, nm, val);
+        } else {
+            getprop(nm, val);
+        }
+        return val;
+    }
+
     int getDurationSeconds(unsigned ridx = 0) const
     {
         std::string sdur;

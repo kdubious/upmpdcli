@@ -39,6 +39,8 @@ MPDCli::MPDCli(const string& host, int port, const string& pass)
     if (!openconn()) {
         return;
     }
+    m_have_addtagid = checkForCommand("addtagid");
+
     m_ok = true;
     m_ok = updStatus();
 }
@@ -202,6 +204,32 @@ bool MPDCli::updStatus()
 
     mpd_status_free(mpds);
     return true;
+}
+
+bool MPDCli::checkForCommand(const string& cmdname)
+{
+    LOGDEB1("MPDCli::checkForCommand: " << cmdname << endl);
+    bool found = false;
+
+    RETRY_CMD(mpd_send_allowed_commands(M_CONN));
+    struct mpd_pair *rep;
+    do {
+        rep = mpd_recv_command_pair(M_CONN);
+        if (rep) {
+            //LOGDEB("MPDCli::checkForCommand: name " <<  rep->name << 
+            //       " value " << rep->value << endl);
+            found = !cmdname.compare(rep->value);
+            mpd_return_pair(M_CONN, rep);
+            if (found)
+                break;
+        }
+    } while (rep);
+
+    if (!mpd_response_finish(M_CONN)) {
+        LOGERR("MPDCli::checkForCommand: mpd_response_finish failed" << endl);
+    }
+
+    return found;
 }
 
 bool MPDCli::statSong(UpSong& upsong, int pos, bool isid)
@@ -433,7 +461,42 @@ bool MPDCli::single(bool on)
     return true;
 }
 
-int MPDCli::insert(const string& uri, int pos)
+bool MPDCli::send_tag(const char *cid, int tag, const string& data)
+{
+    if (!mpd_send_command(M_CONN, "addtagid", cid, 
+                          mpd_tag_name(mpd_tag_type(tag)),
+                          data.c_str(), NULL)) {
+        LOGERR("MPDCli::send_tag: mpd_send_command failed" << endl);
+        return false;
+    }
+
+    return mpd_response_finish(M_CONN);
+}
+
+static const string upmpdcli_comment("client=upmpdcli;");
+
+bool MPDCli::send_tag_data(int id, const UpSong& meta)
+{
+    if (!m_have_addtagid)
+        return false;
+
+    char cid[30];
+    sprintf(cid, "%d", id);
+
+    if (!send_tag(cid, MPD_TAG_ARTIST, meta.artist))
+        return false;
+    if (!send_tag(cid, MPD_TAG_ALBUM, meta.album))
+        return false;
+    if (!send_tag(cid, MPD_TAG_TITLE, meta.title))
+        return false;
+    if (!send_tag(cid, MPD_TAG_TRACK, meta.tracknum))
+        return false;
+    if (!send_tag(cid, MPD_TAG_COMMENT, upmpdcli_comment))
+        return false;
+    return true;
+}
+
+int MPDCli::insert(const string& uri, int pos, const UpSong& meta)
 {
     LOGDEB("MPDCli::insert at :" << pos << " uri " << uri << endl);
     if (!ok())
@@ -444,11 +507,14 @@ int MPDCli::insert(const string& uri, int pos)
 
     int id;
     RETRY_CMD((id=mpd_run_add_id_to(M_CONN, uri.c_str(), (unsigned)pos))!=-1);
+    
+    if (m_have_addtagid)
+        send_tag_data(id, meta);
 
     return id;
 }
 
-int MPDCli::insertAfterId(const string& uri, int id)
+int MPDCli::insertAfterId(const string& uri, int id, const UpSong& meta)
 {
     LOGDEB("MPDCli::insertAfterId: id " << id << " uri " << uri << endl);
     if (!ok())
@@ -459,7 +525,7 @@ int MPDCli::insertAfterId(const string& uri, int id)
 
     // id == 0 means insert at start
     if (id == 0) {
-        return insert(uri, 0);
+        return insert(uri, 0, meta);
     }
 
     vector<mpd_song*> songs;
@@ -470,7 +536,7 @@ int MPDCli::insertAfterId(const string& uri, int id)
     for (unsigned int pos = 0; pos < songs.size(); pos++) {
         unsigned int qid = mpd_song_get_id(songs[pos]);
         if (qid == (unsigned int)id || pos == songs.size() -1) {
-            newid = insert(uri, pos+1);
+            newid = insert(uri, pos+1, meta);
             break;
         }
     }
