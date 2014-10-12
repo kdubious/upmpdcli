@@ -33,7 +33,9 @@ upmpdcli_SOURCES = \
      src/ohvolume.hxx \
      src/ohvolume.cxx \
      src/ohplaylist.hxx \
-     src/ohplaylist.cxx
+     src/ohplaylist.cxx \
+     src/ptmutex.hxx \
+     src/workqueue.hxx
                            
 upmpdcli_LDADD = -lupnpp -lmpdclient -lpthread
 
