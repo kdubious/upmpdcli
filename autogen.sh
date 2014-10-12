@@ -1,4 +1,3 @@
 aclocal
-libtoolize
-automake --add-missing
+automake --force-missing --add-missing
 autoconf

@@ -1,6 +1,6 @@
 Summary:        UPnP Media Renderer front-end to MPD, the Music Player Daemon
 Name:           upmpdcli
-Version:        0.8.1
+Version:        0.8.4
 Release:        1%{?dist}
 Group:          Applications/Multimedia
 License:        GPLv2+
@@ -10,6 +10,7 @@ Requires(pre):  shadow-utils
 Requires(post): systemd
 Requires(preun): systemd
 Requires(postun): systemd
+BuildRequires:  libupnpp
 BuildRequires:  libupnp-devel
 BuildRequires:  libmpdclient-devel
 BuildRequires:  expat-devel
@@ -39,8 +40,6 @@ exit 0
 %install
 %{__rm} -rf %{buildroot}
 %{__make} install DESTDIR=%{buildroot} STRIP=/bin/true INSTALL='install -p'
-%{__rm} -f %{buildroot}%{_libdir}/libupnpp.a
-%{__rm} -f %{buildroot}%{_libdir}/libupnpp.la
 install -D -m644 systemd/upmpdcli.service \
         %{buildroot}%{_unitdir}/upmpdcli.service
 
@@ -51,9 +50,6 @@ install -D -m644 systemd/upmpdcli.service \
 %files
 %defattr(-, root, root, -)
 %{_bindir}/%{name}
-%{_includedir}/libupnpp
-%{_libdir}/libupnpp-%{version}.so*
-%{_libdir}/libupnpp.so
 %{_datadir}/%{name}
 %{_mandir}/man1/%{name}.1*
 %{_unitdir}/upmpdcli.service
@@ -69,6 +65,8 @@ install -D -m644 systemd/upmpdcli.service \
 %systemd_postun_with_restart upmpdcli.service 
 
 %changelog
+* Mon Jun 09 2014 J.F. Dockes <jf@dockes.org> - 0.8.4
+- Separated libupnpp
 * Mon Jun 09 2014 J.F. Dockes <jf@dockes.org> - 0.7.1
 - Implement OpenHome services
 * Sun Apr 20 2014 J.F. Dockes <jf@dockes.org> - 0.6.4

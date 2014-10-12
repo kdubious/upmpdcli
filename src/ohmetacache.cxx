@@ -25,7 +25,7 @@
 #include <utility>                      // for pair
 
 #include "libupnpp/log.hxx"             // for LOGERR, LOGDEB
-#include "libupnpp/workqueue.hxx"       // for WorkQueue
+#include "workqueue.hxx"       // for WorkQueue
 
 using namespace std;
 using namespace UPnPP;
