@@ -919,26 +919,34 @@ just work.</p></div>
 <h2 id="upmpdcli.building">Building</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>For building from source, you will need a recent <tt>C++</tt> compiler (<tt>C++11</tt>),
-and the development packages for <strong>libupnp</strong> version 1.6, <strong>libmpdclient</strong>, and
-<strong>libexpat</strong>.</p></div>
+and the development packages for <strong>libupnp</strong> version 1.6, <strong>libcurl</strong>,
+<strong>libmpdclient</strong>, and <strong>libexpat</strong>.</p></div>
 <div class="paragraph"><p>If you are using the source from Github, you will also need the
 autoconf/automake/libtool trio. Use the <tt>autogen.sh</tt> script to set things
 up.</p></div>
-<div class="paragraph"><p>Otherwise, the procedure is standard and there are currently no specific
-configure options:</p></div>
+<div class="paragraph"><p>The libupnpp library, which used to be part of upmpdcli, has been
+separated, and you need to build this first.</p></div>
+<div class="paragraph"><p>So you need to either clone two github repositories:
+<a href="https://github.com/medoc92/libupnpp">https://github.com/medoc92/libupnpp</a> and
+<a href="https://github.com/medoc92/upmpdcli">https://github.com/medoc92/upmpdcli</a>,
+or download the corresponding release tar files from the the
+<a href="downloads/">download area</a></p></div>
+<div class="paragraph"><p>Once the source is extracted, the procedure is standard and there are
+currently no specific configure options:</p></div>
 <div class="literalblock">
 <div class="content">
 <pre><tt>configure --prefix=/usr
 make
 sudo make install</tt></pre>
 </div></div>
+<div class="paragraph"><p>Which you should apply first to the libupnpp source, then to upmpdcli.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-10-06 18:25:27 CEST
+Last updated 2014-10-13 21:15:17 CEST
 </div>
 </div>
 </body>

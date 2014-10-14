@@ -2,6 +2,13 @@
 
 == Minor releases
 
+=== 0.8.5
+
+0.8.4 was skipped.
+
+Release 0.8.5 has no code changes, it only exists because of changes in the
+package structure.  The libupnpp library now exists in its own package.
+
 === 0.8.3
 
 This release mostly has modifications to the control side of the library.

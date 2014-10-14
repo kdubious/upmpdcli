@@ -98,17 +98,27 @@ just work.
 == Building
 
 For building from source, you will need a recent `C++` compiler (`C++11`),
-and the development packages for *libupnp* version 1.6, *libmpdclient*, and
-*libexpat*.
+and the development packages for *libupnp* version 1.6, *libcurl*,
+*libmpdclient*, and *libexpat*.
 
 If you are using the source from Github, you will also need the
 autoconf/automake/libtool trio. Use the `autogen.sh` script to set things
 up.
 
-Otherwise, the procedure is standard and there are currently no specific
-configure options:
+The libupnpp library, which used to be part of upmpdcli, has been
+separated, and you need to build this first.
+
+So you need to either clone two github repositories:
+https://github.com/medoc92/libupnpp and
+https://github.com/medoc92/upmpdcli,
+or download the corresponding release tar files from the the
+link:downloads/[download area]
+
+Once the source is extracted, the procedure is standard and there are
+currently no specific configure options:
 
     configure --prefix=/usr
     make
     sudo make install
 
+Which you should apply first to the libupnpp source, then to upmpdcli.
