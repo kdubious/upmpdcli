@@ -33,7 +33,8 @@ using namespace UPnPP;
 
 MPDCli::MPDCli(const string& host, int port, const string& pass)
     : m_conn(0), m_ok(false), m_premutevolume(0), m_cachedvolume(50),
-      m_host(host), m_port(port), m_password(pass)
+      m_host(host), m_port(port), m_password(pass), m_lastinsertid(-1),
+      m_lastinsertpos(-1), m_lastinsertqvers(-1)
 {
     regcomp(&m_tpuexpr, "^[[:alpha:]]+://.+", REG_EXTENDED|REG_NOSUB);
     if (!openconn()) {
@@ -502,16 +503,16 @@ int MPDCli::insert(const string& uri, int pos, const UpSong& meta)
     if (!ok())
         return -1;
 
-    if (!updStatus())
-        return -1;
-
-    int id;
-    RETRY_CMD((id=mpd_run_add_id_to(M_CONN, uri.c_str(), (unsigned)pos))!=-1);
+    RETRY_CMD((m_lastinsertid = 
+               mpd_run_add_id_to(M_CONN, uri.c_str(), (unsigned)pos)) != -1);
     
     if (m_have_addtagid)
-        send_tag_data(id, meta);
+        send_tag_data(m_lastinsertid, meta);
 
-    return id;
+    m_lastinsertpos = pos;
+    updStatus();
+    m_lastinsertqvers = m_stat.qvers;
+    return m_lastinsertid;
 }
 
 int MPDCli::insertAfterId(const string& uri, int id, const UpSong& meta)
@@ -520,28 +521,32 @@ int MPDCli::insertAfterId(const string& uri, int id, const UpSong& meta)
     if (!ok())
         return -1;
 
-    if (!updStatus())
-        return -1;
-
     // id == 0 means insert at start
     if (id == 0) {
         return insert(uri, 0, meta);
     }
+    updStatus();
 
-    vector<mpd_song*> songs;
-    if (!getQueueSongs(songs)) {
-        return false;
-    }
-    int newid = -1;
-    for (unsigned int pos = 0; pos < songs.size(); pos++) {
-        unsigned int qid = mpd_song_get_id(songs[pos]);
-        if (qid == (unsigned int)id || pos == songs.size() -1) {
-            newid = insert(uri, pos+1, meta);
-            break;
+    int newpos = 0;
+    if (m_lastinsertid == id && m_lastinsertpos >= 0 &&
+        m_lastinsertqvers == m_stat.qvers) {
+        newpos = m_lastinsertpos + 1;
+    } else {
+        // Translate input id to insert position
+        vector<mpd_song*> songs;
+        if (!getQueueSongs(songs)) {
+            return false;
         }
+        for (unsigned int pos = 0; pos < songs.size(); pos++) {
+            unsigned int qid = mpd_song_get_id(songs[pos]);
+            if (qid == (unsigned int)id || pos == songs.size() -1) {
+                newpos = pos + 1;
+                break;
+            }
+        }
+        freeSongs(songs);
     }
-    freeSongs(songs);
-    return newid;
+    return insert(uri, newpos, meta);
 }
 
 bool MPDCli::clearQueue()
@@ -603,11 +608,12 @@ bool MPDCli::getQueueSongs(vector<mpd_song*>& songs)
     while ((song = mpd_recv_song(M_CONN)) != NULL) {
         songs.push_back(song);
     }
-
+    
     if (!mpd_response_finish(M_CONN)) {
         LOGERR("MPDCli::getQueueSongs: mpd_list_queue_meta failed"<< endl);
         return false;
     }
+    LOGDEB("MPDCli::getQueueSongs: " << songs.size() << " songs " << endl);
     return true;
 }
 

@@ -133,6 +133,14 @@ private:
     regex_t m_tpuexpr;
     // addtagid command only exists for mpd 0.19 and later.
     bool m_have_addtagid; 
+    // Position and id of last insertion: if the new request is to
+    // insert after this id, and the queue did not change, we compute
+    // the new position from the last one instead of re-reading the
+    // queue for looking up the id position. This saves a huge amount
+    // of time.
+    int m_lastinsertid;
+    int m_lastinsertpos;
+    int m_lastinsertqvers;
 
     bool openconn();
     bool updStatus();
