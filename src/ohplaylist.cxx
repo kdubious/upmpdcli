@@ -458,12 +458,11 @@ int OHPlaylist::ohread(const SoapArgs& sc, SoapData& data)
         auto cached = m_metacache.find(song.uri);
         string metadata;
         if (cached != m_metacache.end()) {
-            metadata = SoapHelp::xmlQuote(cached->second);
+            metadata = cached->second;
         } else {
             metadata = didlmake(song);
             m_metacache[song.uri] = metadata;
             m_cachedirty = true;
-            metadata = SoapHelp::xmlQuote(metadata);
         }
         data.addarg("Uri", song.uri);
         data.addarg("Metadata", metadata);
@@ -485,9 +484,9 @@ int OHPlaylist::ohread(const SoapArgs& sc, SoapData& data)
 // Any ids not in the playlist are ignored. 
 int OHPlaylist::readList(const SoapArgs& sc, SoapData& data)
 {
-    LOGDEB("OHPlaylist::readList" << endl);
     string sids;
     bool ok = sc.getString("IdList", &sids);
+    LOGDEB("OHPlaylist::readList: [" << sids << "]" << endl);
     vector<string> ids;
     string out("<TrackList>");
     if (ok) {
@@ -500,16 +499,18 @@ int OHPlaylist::readList(const SoapArgs& sc, SoapData& data)
                 continue;
             }
             UpSong song;
-            if (!m_dev->m_mpdcli->statSong(song, id, true))
+            if (!m_dev->m_mpdcli->statSong(song, id, true)) {
+                LOGDEB("OHPlaylist::readList:stat failed for " << id << endl);
                 continue;
+            }
             auto mit = m_metacache.find(song.uri);
             string metadata;
             if (mit != m_metacache.end()) {
-                //LOGDEB("readList: metadata for songid " << id << " uri " 
+                //LOGDEB("OHPlaylist::readList: meta for id " << id << " uri "
                 // << song.uri << " found in cache " << endl);
                 metadata = SoapHelp::xmlQuote(mit->second);
             } else {
-                //LOGDEB("readList: metadata for songid " << id << " uri " 
+                //LOGDEB("OHPlaylist::readList: meta for id " << id << " uri "
                 // << song.uri << " not found " << endl);
                 metadata = didlmake(song);
                 m_metacache[song.uri] = metadata;
@@ -517,14 +518,15 @@ int OHPlaylist::readList(const SoapArgs& sc, SoapData& data)
                 metadata = SoapHelp::xmlQuote(metadata);
             }
             out += "<Entry><Id>";
-            out += it->c_str();
+            out += SoapHelp::xmlQuote(it->c_str());
             out += "</Id><Uri>";
-            out += song.uri;
+            out += SoapHelp::xmlQuote(song.uri);
             out += "</Uri><Metadata>";
             out += metadata;
             out += "</Metadata></Entry>";
         }
         out += "</TrackList>";
+        //LOGDEB1("OHPlaylist::readList: out: [" << out << "]" << endl);
         data.addarg("TrackList", out);
     }
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
