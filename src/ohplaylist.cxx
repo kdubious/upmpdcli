@@ -553,7 +553,11 @@ int OHPlaylist::insert(const SoapArgs& sc, SoapData& data)
            uri << " Metadata " << metadata << endl);
     if (ok) {
         UpSong metaformpd;
-        uMetaToUpSong(metadata, &metaformpd);
+        if (!uMetaToUpSong(metadata, &metaformpd)) {
+            LOGERR("OHPlaylist::insert: failed to parse metadata " << " Uri " 
+                   << uri << " Metadata " << metadata << endl);
+            return UPNP_E_INTERNAL_ERROR;
+        }
         int id = m_dev->m_mpdcli->insertAfterId(uri, afterid, metaformpd);
         if ((ok = (id != -1))) {
             m_metacache[uri] = metadata;

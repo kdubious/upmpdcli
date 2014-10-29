@@ -403,7 +403,7 @@ bool uMetaToUpSong(const string& metadata, UpSong *ups)
         return false;
 
     UPnPDirContent dirc;
-    if (!dirc.parse(metadata) && dirc.m_items.size() == 0) {
+    if (!dirc.parse(metadata) || dirc.m_items.size() == 0) {
         return false;
     }
     UPnPDirObject& dobj = *dirc.m_items.begin();
