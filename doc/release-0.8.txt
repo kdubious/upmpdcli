@@ -2,6 +2,11 @@
 
 == Minor releases
 
+=== 0.8.6
+
+- Improved speed for loading big playqueues. 
+- Fixed quoting for tracks added from an MPD client.
+
 === 0.8.5
 
 0.8.4 was skipped.

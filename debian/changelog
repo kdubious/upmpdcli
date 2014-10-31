@@ -1,3 +1,10 @@
+upmpdcli (0.8.6-1) unstable; urgency=low
+
+  * Improved speed for loading big playqueues. 
+  * Fixed quoting for tracks added from an MPD client.
+
+ -- Jean-Francois Dockes <jf@dockes.org>  Thu, 31 Oct 2014 15:30:00 +0200
+
 upmpdcli (0.8.5-1) unstable; urgency=low
 
   * Version bump for new packaging. No code changes
