@@ -552,26 +552,37 @@ int OHPlaylist::insert(const SoapArgs& sc, SoapData& data)
     LOGDEB("OHPlaylist::insert: afterid " << afterid << " Uri " <<
            uri << " Metadata " << metadata << endl);
     if (ok) {
-        UpSong metaformpd;
-        if (!uMetaToUpSong(metadata, &metaformpd)) {
-            LOGERR("OHPlaylist::insert: failed to parse metadata " << " Uri " 
-                   << uri << " Metadata " << metadata << endl);
-            return UPNP_E_INTERNAL_ERROR;
-        }
-        int id = m_dev->m_mpdcli->insertAfterId(uri, afterid, metaformpd);
-        if ((ok = (id != -1))) {
-            m_metacache[uri] = metadata;
-            m_cachedirty = true;
-            m_mpdqvers = -1;
-            data.addarg("NewId", SoapHelp::i2s(id));
-            LOGDEB("OHPlaylist::insert: new id: " << id << endl);
-        } else {
-            LOGERR("OHPlaylist::insert: mpd error" << endl);
-            return UPNP_E_INTERNAL_ERROR;
+        int newid;
+        ok = insertUri(afterid, uri, metadata, &newid);
+        if (ok) {
+            data.addarg("NewId", SoapHelp::i2s(newid));
+            LOGDEB("OHPlaylist::insert: new id: " << newid << endl);
         }
     }
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
+}
+
+bool OHPlaylist::insertUri(int afterid, const string& uri, 
+                           const string& metadata, int *newid)
+{
+    UpSong metaformpd;
+    if (!uMetaToUpSong(metadata, &metaformpd)) {
+        LOGERR("OHPlaylist::insert: failed to parse metadata " << " Uri [" 
+               << uri << "] Metadata [" << metadata << "]" << endl);
+        return false;
+    }
+    int id = m_dev->m_mpdcli->insertAfterId(uri, afterid, metaformpd);
+    if (id != -1) {
+        m_metacache[uri] = metadata;
+        m_cachedirty = true;
+        m_mpdqvers = -1;
+        if (newid)
+            *newid = id;
+        return true;
+    } 
+    LOGERR("OHPlaylist::insert: mpd error" << endl);
+    return false;
 }
 
 int OHPlaylist::deleteId(const SoapArgs& sc, SoapData& data)

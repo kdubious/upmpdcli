@@ -37,6 +37,11 @@ public:
                               std::vector<std::string>& values);
     virtual bool cacheFind(const std::string& uri, std:: string& meta);
 
+    // This is the "normal" call version of soap "insert", used
+    // internally by the receiver service
+    virtual bool insertUri(int afterid, const std::string& uri, 
+                           const std::string& metadata, int *newid = 0);
+
 private:
     int play(const SoapArgs& sc, SoapData& data);
     int pause(const SoapArgs& sc, SoapData& data);
