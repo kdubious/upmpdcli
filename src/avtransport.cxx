@@ -277,7 +277,7 @@ bool UpMpdAVTransport::getEventData(bool all, std::vector<std::string>& names,
     chgdata += "</InstanceID>\n</Event>\n";
 
     if (!changefound) {
-        LOGDEB1("UpMpdAVTransport::getEventDataTransport: no updates" << endl);
+        //LOGDEB1("UpMpdAVTransport::getEventDataTransport: no updates" << endl);
         return true;
     }
 
