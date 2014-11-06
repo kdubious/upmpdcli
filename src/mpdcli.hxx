@@ -90,7 +90,7 @@ public:
     bool togglePause();
     bool pause(bool onoff);
     bool play(int pos = -1);
-    bool playId(int pos = -1);
+    bool playId(int id = -1);
     bool stop();
     bool next();
     bool previous();
