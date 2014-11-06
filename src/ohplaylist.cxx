@@ -30,6 +30,7 @@
 #include "libupnpp/base64.hxx"          // for base64_encode
 #include "libupnpp/log.hxx"             // for LOGDEB, LOGERR
 #include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData, i2s, etc
+#include "libupnpp/upnpavutils.hxx"
 
 #include "ohmetacache.hxx"              // for dmcacheSave
 #include "mpdcli.hxx"                   // for MpdStatus, UpSong, MPDCli, etc
@@ -532,6 +533,19 @@ int OHPlaylist::readList(const SoapArgs& sc, SoapData& data)
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
+bool OHPlaylist::ireadList(const vector<int>& ids, vector<UpSong>& songs)
+{
+    for (auto it = ids.begin(); it != ids.end(); it++) {
+        UpSong song;
+        if (!m_dev->m_mpdcli->statSong(song, *it, true)) {
+            LOGDEB("OHPlaylist::readList:stat failed for " << *it << endl);
+            continue;
+        }
+        songs.push_back(song);
+    }
+    return true;
+}
+
 // Adds the given uri and metadata as a new track to the playlist. 
 // Set the AfterId argument to 0 to insert a track at the start of the
 // playlist.
@@ -620,14 +634,44 @@ int OHPlaylist::idArray(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHPlaylist::idArray" << endl);
     string idarray;
-    if (makeIdArray(idarray)) {
-        const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
-        LOGDEB("OHPlaylist::idArray: qvers " << mpds.qvers << endl);
-        data.addarg("Token", SoapHelp::i2s(mpds.qvers));
+    int token;
+    if (iidArray(idarray, &token)) {
+        data.addarg("Token", SoapHelp::i2s(token));
         data.addarg("Array", idarray);
         return UPNP_E_SUCCESS;
     }
     return UPNP_E_INTERNAL_ERROR;
+}
+
+bool OHPlaylist::iidArray(string& idarray, int *token)
+{
+    LOGDEB("OHPlaylist::idArray (internal)" << endl);
+    if (makeIdArray(idarray)) {
+        const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
+        LOGDEB("OHPlaylist::idArray: qvers " << mpds.qvers << endl);
+        if (token)
+            *token = mpds.qvers;
+        return true;
+    }
+    return false;
+}
+
+bool OHPlaylist::urlMap(unordered_map<int, string>& umap)
+{
+    string sarray; 
+    if (iidArray(sarray, 0)) {
+        vector<int> ids;
+        if (ohplIdArrayToVec(sarray, &ids)) {
+            vector<UpSong> songs;
+            if (ireadList(ids, songs)) {
+                for (auto it = songs.begin(); it != songs.end(); it++) {
+                    umap[it->mpdid] = it->uri;
+                }
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 // Check if id array changed since last call (which returned a gen token)

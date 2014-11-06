@@ -38,6 +38,8 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
 
+    virtual bool iStop();
+
 private:
     int play(const SoapArgs& sc, SoapData& data);
     int stop(const SoapArgs& sc, SoapData& data);

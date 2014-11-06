@@ -146,6 +146,12 @@ int OHReceiver::play(const SoapArgs& sc, SoapData& data)
         LOGERR("OHReceiver::play: no metadata" << endl);
         return UPNP_E_INTERNAL_ERROR;
     }
+
+    m_dev->m_mpdcli->stop();
+
+    int id = -1;
+    unordered_map<int, string> urlmap;
+    string line;
         
     // We start the songcast command to receive the audio flux and
     // export it as HTTP, then insert http URI at the front of the
@@ -157,21 +163,37 @@ int OHReceiver::play(const SoapArgs& sc, SoapData& data)
     args.push_back("-u");
     args.push_back(m_uri);
     LOGDEB("OHReceiver::play: executing scmpdcli" << endl);
-    ok = m_cmd->startExec("scmpdcli", args, false, false) >= 0;
+    ok = m_cmd->startExec("scmpdcli", args, false, true) >= 0;
     if (!ok) {
         LOGERR("OHReceiver::play: executing scmpdcli failed" <<endl);
         goto out;
     } else {
         LOGDEB("OHReceiver::play: scmpdcli pid "<< m_cmd->getChildPid()<< endl);
     }
+    // Wait for scmpdcli to signal ready, then play
+    m_cmd->getline(line);
+    LOGDEB("OHReceiver got " << line << " from scmpdcli" << endl);
 
     // And insert the appropriate uri in the mpd playlist
-    ok = m_pl->insertUri(0, m_httpuri, SoapHelp::xmlUnquote(m_metadata));
-    if (!ok) {
-        LOGERR("OHReceiver::play: insertUri() failed\n");
+    if (!m_pl->urlMap(urlmap)) {
+        LOGERR("OHReceiver::play: urlMap() failed" <<endl);
         goto out;
     }
-    ok = m_dev->m_mpdcli->play(0);
+    for (auto it = urlmap.begin(); it != urlmap.end(); it++) {
+        if (it->second == m_httpuri) {
+            id = it->first;
+        }
+    }
+    if (id == -1) {
+        ok = m_pl->insertUri(0, m_httpuri, SoapHelp::xmlUnquote(m_metadata),
+            &id);
+        if (!ok) {
+            LOGERR("OHReceiver::play: insertUri() failed\n");
+            goto out;
+        }
+    }
+
+    ok = m_dev->m_mpdcli->playId(id);
     if (!ok) {
         LOGERR("OHReceiver::play: play() failed\n");
         goto out;
@@ -180,16 +202,25 @@ int OHReceiver::play(const SoapArgs& sc, SoapData& data)
     maybeWakeUp(ok);
 
 out:
+    if (!ok) {
+        iStop();
+    }
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
+}
+
+bool OHReceiver::iStop()
+{
+    if (m_cmd) {
+        m_cmd->zapChild();
+        m_cmd = shared_ptr<ExecCmd>(0);
+    }
+    return m_dev->m_mpdcli->stop();
 }
 
 int OHReceiver::stop(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHReceiver::stop" << endl);
-    bool ok = false;
-    m_cmd->zapChild();
-    m_cmd = shared_ptr<ExecCmd>(0);
-    ok = m_dev->m_mpdcli->stop();
+    bool ok = iStop();
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
