@@ -63,22 +63,6 @@ OHReceiver::OHReceiver(UpMpd *dev, OHPlaylist *pl, int port)
         "/Songcast.wav";
 }
 
-// Allowed states: Stopped, Playing,Waiting, Buffering
-static string mpdsToTransportState(MpdStatus::State st)
-{
-    string tstate;
-
-    switch(st) {
-    case MpdStatus::MPDS_PLAY: 
-        tstate = "Playing";
-        break;
-    default:
-        tstate = "Stopped";
-        break;
-    }
-    return tstate;
-}
-
 //                                 
 static const string o_protocolinfo("ohz:*:*:*,ohm:*:*:*,ohu:*.*.*");
 //static const string o_protocolinfo("ohu:*:*:*");
@@ -87,11 +71,15 @@ bool OHReceiver::makestate(unordered_map<string, string> &st)
 {
     st.clear();
 
-    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
-
     st["Uri"] = m_uri;
     st["Metadata"] = m_metadata;
-    st["TransportState"] = mpdsToTransportState(mpds.state);
+    // Allowed states: Stopped, Playing,Waiting, Buffering
+    // We won't receive a Stop action if we are not Playing. So we
+    // are playing as long as we have a subprocess
+    if (m_cmd)
+        st["TransportState"] = "Playing";
+    else 
+        st["TransportState"] = "Stopped";
     st["ProtocolInfo"] = o_protocolinfo;
     return true;
 }
@@ -254,8 +242,11 @@ int OHReceiver::sender(const SoapArgs& sc, SoapData& data)
 int OHReceiver::transportState(const SoapArgs& sc, SoapData& data)
 {
     //LOGDEB("OHReceiver::transportState" << endl);
-    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
-    string tstate = mpdsToTransportState(mpds.state);
+
+    // Allowed states: Stopped, Playing,Waiting, Buffering
+    // We won't receive a Stop action if we are not Playing. So we
+    // are playing as long as we have a subprocess
+    string tstate = m_cmd ? "Playing" : "Stopped";
     data.addarg("Value", tstate);
     LOGDEB("OHReceiver::transportState: " << tstate << endl);
     return UPNP_E_SUCCESS;
