@@ -14,42 +14,52 @@
  *	 Free Software Foundation, Inc.,
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#ifndef _OHPRODUCT_H_X_INCLUDED_
-#define _OHPRODUCT_H_X_INCLUDED_
+#ifndef _OHRECEIVER_H_X_INCLUDED_
+#define _OHRECEIVER_H_X_INCLUDED_
 
 #include <string>                       // for string
+#include <unordered_map>                // for unordered_map
 #include <vector>                       // for vector
+#include <memory>
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
 #include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
 
-class UpMpd;
+#include "execmd.h"
 
 using namespace UPnPP;
+class UpMpd;
+class OHPlaylist;
 
-class OHProduct : public UPnPProvider::UpnpService {
+class OHReceiver : public UPnPProvider::UpnpService {
 public:
-    OHProduct(UpMpd *dev, const std::string& friendlyname, bool hasRcv);
+    OHReceiver(UpMpd *dev, OHPlaylist *pl, int httpport);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
+
 private:
-    int manufacturer(const SoapArgs& sc, SoapData& data);
-    int model(const SoapArgs& sc, SoapData& data);
-    int product(const SoapArgs& sc, SoapData& data);
-    int standby(const SoapArgs& sc, SoapData& data);
-    int setStandby(const SoapArgs& sc, SoapData& data);
-    int sourceCount(const SoapArgs& sc, SoapData& data);
-    int sourceXML(const SoapArgs& sc, SoapData& data);
-    int sourceIndex(const SoapArgs& sc, SoapData& data);
-    int setSourceIndex(const SoapArgs& sc, SoapData& data);
-    int setSourceIndexByName(const SoapArgs& sc, SoapData& data);
-    int source(const SoapArgs& sc, SoapData& data);
-    int attributes(const SoapArgs& sc, SoapData& data);
-    int sourceXMLChangeCount(const SoapArgs& sc, SoapData& data);
+    int play(const SoapArgs& sc, SoapData& data);
+    int stop(const SoapArgs& sc, SoapData& data);
+    int setSender(const SoapArgs& sc, SoapData& data);
+    int sender(const SoapArgs& sc, SoapData& data);
+    int protocolInfo(const SoapArgs& sc, SoapData& data);
+    int transportState(const SoapArgs& sc, SoapData& data);
+
+    bool makestate(std::unordered_map<std::string, std::string> &st);
+    void maybeWakeUp(bool ok);
+    // State variable storage (previous state)
+    std::unordered_map<std::string, std::string> m_state;
+    // Current
+    std::string m_uri;
+    std::string m_metadata;
 
     UpMpd *m_dev;
-    std::string m_roomOrName;
+    OHPlaylist *m_pl;
+
+    std::shared_ptr<ExecCmd> m_cmd;
+    int m_httpport;
+    std::string m_httpuri;
 };
 
-#endif /* _OHPRODUCT_H_X_INCLUDED_ */
+#endif /* _OHRECEIVER_H_X_INCLUDED_ */

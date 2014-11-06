@@ -41,10 +41,12 @@
 #include "ohinfo.hxx"                   // for OHInfo
 #include "ohplaylist.hxx"               // for OHPlaylist
 #include "ohproduct.hxx"                // for OHProduct
+#include "ohreceiver.hxx"
 #include "ohtime.hxx"                   // for OHTime
 #include "ohvolume.hxx"                 // for OHVolume
 #include "renderctl.hxx"                // for UpMpdRenderCtl
 #include "upmpdutils.hxx"               // for path_cat, Pidfile, regsub1, etc
+#include "execmd.h"
 
 using namespace std;
 using namespace std::placeholders;
@@ -52,6 +54,11 @@ using namespace UPnPP;
 
 static const string dfltFriendlyName("UpMpd");
 string upmpdProtocolInfo;
+
+// Is scmpdcli (songcast-to-HTTP command) installed ? We only create
+// an OpenHome Receiver service if it is. This is checked when
+// starting up
+static bool has_scmpdcli(false);
 
 static UpnpDevice *dev;
 
@@ -93,7 +100,9 @@ static void setupsigs()
 // device at the end of the constructor code.
 UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
              const unordered_map<string, VDirContent>& files,
-             MPDCli *mpdcli, unsigned int opts, const string& cachefn)
+             MPDCli *mpdcli, unsigned int opts, const string& cachefn,
+             int schttpport
+    )
     : UpnpDevice(deviceid, files), m_mpdcli(mpdcli), m_mpds(0),
       m_options(opts),
       m_mcachefn(cachefn)
@@ -107,7 +116,7 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
     m_services.push_back(avt);
     m_services.push_back(new UpMpdConMan(this));
     if (m_options & upmpdDoOH) {
-        m_services.push_back(new OHProduct(this, friendlyname));
+        m_services.push_back(new OHProduct(this, friendlyname, has_scmpdcli));
         m_services.push_back(new OHInfo(this));
         m_services.push_back(new OHTime(this));
         m_services.push_back(new OHVolume(this, rdctl));
@@ -115,6 +124,9 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
         m_services.push_back(ohp);
         if (avt)
             avt->setOHP(ohp);
+        if (has_scmpdcli) {
+            m_services.push_back(new OHReceiver(this, ohp, schttpport));
+        }
     }
 }
 
@@ -137,7 +149,7 @@ const MpdStatus& UpMpd::getMpdStatus()
 
 #include "conftree.hxx"
 
-static const string ohDesc(
+static string ohDesc(
     "<service>"
     "  <serviceType>urn:av-openhome-org:service:Product:1</serviceType>"
     "  <serviceId>urn:av-openhome-org:serviceId:Product</serviceId>"
@@ -172,6 +184,15 @@ static const string ohDesc(
     "  <SCPDURL>/OHPlaylist.xml</SCPDURL>"
     "  <controlURL>/ctl/OHPlaylist</controlURL>"
     "  <eventSubURL>/evt/OHPlaylist</eventSubURL>"
+    "</service>"
+    );
+static string ohDescReceive(
+    "<service>"
+    "  <serviceType>urn:av-openhome-org:service:Receiver:1</serviceType>"
+    "  <serviceId>urn:av-openhome-org:serviceId:Receiver</serviceId>"
+    "  <SCPDURL>/OHReceiver.xml</SCPDURL>"
+    "  <controlURL>/ctl/OHReceiver</controlURL>"
+    "  <eventSubURL>/evt/OHReceiver</eventSubURL>"
     "</service>"
     );
 
@@ -318,6 +339,7 @@ int main(int argc, char *argv[])
     if (argc != 0)
         Usage();
 
+    int schttpport(8888);
     string iconpath;
     if (!configfile.empty()) {
         ConfSimple config(configfile.c_str(), 1, true);
@@ -357,6 +379,8 @@ int main(int argc, char *argv[])
         if (!(op_flags & OPT_P) && config.get("upnpport", value)) {
             upport = atoi(value.c_str());
         }
+        if (config.get("schttpport", value))
+            schttpport = atoi(value.c_str());
     }
 
     if (Logger::getTheLog(logfilename) == 0) {
@@ -458,6 +482,10 @@ int main(int argc, char *argv[])
         }
     }
 
+    // Do we have an scmpdcli command installed (for songcast)?
+    string unused;
+    has_scmpdcli = ExecCmd::which("scmpdcli", unused);
+
     // Initialize libupnpp, and check health
     LibUPnP *mylib = 0;
     string hwaddr;
@@ -499,6 +527,9 @@ int main(int argc, char *argv[])
 
     // Read our XML data to make it available from the virtual directory
     if (openhome) {
+        if (has_scmpdcli) {
+            ohxmlfilenames.push_back("OHReceiver.xml");
+        }
         xmlfilenames.insert(xmlfilenames.end(), ohxmlfilenames.begin(),
                             ohxmlfilenames.end());
     }
@@ -532,10 +563,14 @@ int main(int argc, char *argv[])
             // Special for description: set UUID and friendlyname
             data = regsub1("@UUID@", data, UUID);
             data = regsub1("@FRIENDLYNAME@", data, friendlyname);
-            if (openhome) 
+            if (openhome) {
+                if (has_scmpdcli) {
+                    ohDesc += ohDescReceive;
+                }
                 data = regsub1("@OPENHOME@", data, ohDesc);
-            else 
+            } else {
                 data = regsub1("@OPENHOME@", data, "");
+            }
             if (!icondata.empty())
                 data = regsub1("@ICONLIST@", data, iconDesc);
             else
@@ -560,7 +595,7 @@ int main(int argc, char *argv[])
 
     // Initialize the UPnP device object.
     UpMpd device(string("uuid:") + UUID, friendlyname, 
-                 files, mpdclip, options, mcfn);
+                 files, mpdclip, options, mcfn, schttpport);
     dev = &device;
 
     // And forever generate state change events.

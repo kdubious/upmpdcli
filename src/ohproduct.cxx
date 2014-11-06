@@ -40,10 +40,33 @@ using namespace std::placeholders;
 static const string sTpProduct("urn:av-openhome-org:service:Product:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Product");
 
-OHProduct::OHProduct(UpMpd *dev, const string& friendlyname)
+static string csxml(
+    "<SourceList>"
+    " <Source>"
+    "  <Name>PlayList</Name>"
+    "  <Type>Playlist</Type>"
+    "  <Visible>true</Visible>"
+    " </Source>"
+    " <Source>"
+    "  <Name>UpnpAv</Name>"
+    "  <Type>UpnpAv</Type>"
+    "  <Visible>true</Visible>"
+    " </Source>"
+    );
+
+OHProduct::OHProduct(UpMpd *dev, const string& friendlyname, bool hasRcv)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
       m_roomOrName(friendlyname)
 {
+    if (hasRcv) {
+        csxml += string(" <Source>"
+                        "  <Name>Receiver</Name>"
+                        "  <Type>Receiver</Type>"
+                        "  <Visible>true</Visible>"
+                        "  </Source>");
+    }
+    csxml += string("</SourceList>");
+
     dev->addActionMapping(this, "Manufacturer", 
                           bind(&OHProduct::manufacturer, this, _1, _2));
     dev->addActionMapping(this, "Model", bind(&OHProduct::model, this, _1, _2));
@@ -71,15 +94,6 @@ OHProduct::OHProduct(UpMpd *dev, const string& friendlyname)
                           bind(&OHProduct::sourceXMLChangeCount, this, _1, _2));
 }
 
-static const string csxml(
-    "<SourceList>"
-    "<Source>"
-    "<Name>PlayList</Name>"
-    "<Type>Playlist</Type>"
-    "<Visible>true</Visible>"
-    "</Source>"
-    "</SourceList>"
-    );
 
 static const string csattrs("Info Time Volume");
 static const string csversion(PACKAGE_VERSION);
@@ -89,6 +103,7 @@ static const string csmanurl("http://www.lesbonscomptes.com/upmpdcli");
 static const string csmodname("UpMPDCli UPnP-MPD gateway");
 static const string csmodurl("http://www.lesbonscomptes.com/upmpdcli");
 static const string csprodname("Upmpdcli");
+
 bool OHProduct::getEventData(bool all, std::vector<std::string>& names, 
                              std::vector<std::string>& values)
 {

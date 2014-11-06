@@ -36,6 +36,7 @@ public:
     friend class UpMpdAVTransport;
     friend class OHInfo;
     friend class OHPlaylist;
+    friend class OHReceiver;
 
     enum Options {
         upmpdNone,
@@ -50,7 +51,8 @@ public:
     };
     UpMpd(const std::string& deviceid, const std::string& friendlyname,
           const std::unordered_map<std::string, VDirContent>& files,
-          MPDCli *mpdcli, unsigned int opts, const std::string& cachefn);
+          MPDCli *mpdcli, unsigned int opts, const std::string& cachefn,
+        int schttpport);
     ~UpMpd();
 
     const MpdStatus &getMpdStatus();
