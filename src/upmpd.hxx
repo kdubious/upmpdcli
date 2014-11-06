@@ -38,8 +38,8 @@ public:
     friend class OHPlaylist;
     friend class OHReceiver;
 
-    enum Options {
-        upmpdNone,
+    enum OptFlags {
+        upmpdNone = 0,
         // If set, the MPD queue belongs to us, we shall clear
         // it as we like.
         upmpdOwnQueue = 1, 
@@ -49,10 +49,16 @@ public:
         // (mpd does it)
         upmpdOhMetaPersist = 4
     };
+    struct Options {
+        Options() : options(upmpdNone), ohmetasleep(0), schttpport(8888) {}
+        unsigned int options;
+        std::string  cachefn;
+        unsigned int ohmetasleep;
+        int schttpport;
+    };
     UpMpd(const std::string& deviceid, const std::string& friendlyname,
           const std::unordered_map<std::string, VDirContent>& files,
-          MPDCli *mpdcli, unsigned int opts, const std::string& cachefn,
-        int schttpport);
+          MPDCli *mpdcli, Options opts);
     ~UpMpd();
 
     const MpdStatus &getMpdStatus();

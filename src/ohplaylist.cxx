@@ -43,7 +43,7 @@ using namespace std::placeholders;
 static const string sTpProduct("urn:av-openhome-org:service:Playlist:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Playlist");
 
-OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl)
+OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl, unsigned int cssleep)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
       m_cachedirty(false), m_mpdqvers(-1)
 {
@@ -98,6 +98,7 @@ OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl)
     dev->m_mpdcli->consume(false);
     
     if ((dev->m_options & UpMpd::upmpdOhMetaPersist)) {
+        dmcacheSetOpts(cssleep);
         if (!dmcacheRestore(dev->getMetaCacheFn(), m_metacache)) {
             LOGERR("ohPlaylist: cache restore failed" << endl);
         } else {

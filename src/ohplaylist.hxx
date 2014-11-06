@@ -32,7 +32,7 @@ using namespace UPnPP;
 
 class OHPlaylist : public UPnPProvider::UpnpService {
 public:
-    OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl);
+    OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl, unsigned int cachesavesleep);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);

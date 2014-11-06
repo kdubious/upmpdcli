@@ -100,12 +100,10 @@ static void setupsigs()
 // device at the end of the constructor code.
 UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
              const unordered_map<string, VDirContent>& files,
-             MPDCli *mpdcli, unsigned int opts, const string& cachefn,
-             int schttpport
-    )
+             MPDCli *mpdcli, Options opts)
     : UpnpDevice(deviceid, files), m_mpdcli(mpdcli), m_mpds(0),
-      m_options(opts),
-      m_mcachefn(cachefn)
+      m_options(opts.options),
+      m_mcachefn(opts.cachefn)
 {
     // Note: the order is significant here as it will be used when
     // calling the getStatus() methods, and we want AVTransport to
@@ -120,12 +118,12 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
         m_services.push_back(new OHInfo(this));
         m_services.push_back(new OHTime(this));
         m_services.push_back(new OHVolume(this, rdctl));
-        OHPlaylist *ohp = new OHPlaylist(this, rdctl);
+        OHPlaylist *ohp = new OHPlaylist(this, rdctl, opts.ohmetasleep);
         m_services.push_back(ohp);
         if (avt)
             avt->setOHP(ohp);
         if (has_scmpdcli) {
-            m_services.push_back(new OHReceiver(this, ohp, schttpport));
+            m_services.push_back(new OHReceiver(this, ohp, opts.schttpport));
         }
     }
 }
@@ -339,7 +337,8 @@ int main(int argc, char *argv[])
     if (argc != 0)
         Usage();
 
-    int schttpport(8888);
+    UpMpd::Options opts;
+
     string iconpath;
     if (!configfile.empty()) {
         ConfSimple config(configfile.c_str(), 1, true);
@@ -380,7 +379,9 @@ int main(int argc, char *argv[])
             upport = atoi(value.c_str());
         }
         if (config.get("schttpport", value))
-            schttpport = atoi(value.c_str());
+            opts.schttpport = atoi(value.c_str());
+        if (config.get("ohmetasleep", value))
+            opts.ohmetasleep = atoi(value.c_str());
     }
 
     if (Logger::getTheLog(logfilename) == 0) {
@@ -419,9 +420,9 @@ int main(int argc, char *argv[])
         cachedir = path_cat(path_tildexpand("~") , "/.cache/upmpdcli");
     }
 
-    string mcfn;
+    string& mcfn = opts.cachefn;
     if (ohmetapersist) {
-        mcfn = path_cat(cachedir, "/metacache");
+        opts.cachefn = path_cat(cachedir, "/metacache");
         if (!path_makepath(cachedir, 0755)) {
             LOGERR("makepath("<< cachedir << ") : errno : " << errno << endl);
         } else {
@@ -585,17 +586,16 @@ int main(int argc, char *argv[])
                      ("icon.png", VDirContent(icondata, "image/png")));
     }
 
-    unsigned int options = UpMpd::upmpdNone;
     if (ownqueue)
-        options |= UpMpd::upmpdOwnQueue;
+        opts.options |= UpMpd::upmpdOwnQueue;
     if (openhome)
-        options |= UpMpd::upmpdDoOH;
+        opts.options |= UpMpd::upmpdDoOH;
     if (ohmetapersist)
-        options |= UpMpd::upmpdOhMetaPersist;
+        opts.options |= UpMpd::upmpdOhMetaPersist;
 
     // Initialize the UPnP device object.
     UpMpd device(string("uuid:") + UUID, friendlyname, 
-                 files, mpdclip, options, mcfn, schttpport);
+                 files, mpdclip, opts);
     dev = &device;
 
     // And forever generate state change events.

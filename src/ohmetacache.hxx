@@ -9,6 +9,7 @@ typedef std::unordered_map<std::string, std::string> mcache_type;
 /** 
  * Saving and restoring the metadata cache to/from disk
  */
+extern void dmcacheSetOpts(unsigned int slptime);
 extern bool dmcacheSave(const std::string& fn, const mcache_type& cache);
 extern bool dmcacheRestore(const std::string& fn, mcache_type& cache);
 

@@ -20,6 +20,7 @@
 #include <errno.h>                      // for errno
 #include <stdio.h>                      // for rename
 #include <string.h>                     // for strchr
+#include <unistd.h>
 
 #include <iostream>                     // for basic_ostream, operator<<, etc
 #include <utility>                      // for pair
@@ -29,6 +30,12 @@
 
 using namespace std;
 using namespace UPnPP;
+
+static unsigned int slptimesecs;
+void dmcacheSetOpts(unsigned int slpsecs)
+{
+    slptimesecs = slpsecs;
+}
 
 class SaveCacheTask {
 public:
@@ -149,6 +156,10 @@ static void *dmcacheSaveWorker(void *)
         }
 
         delete tsk;
+        if (slptimesecs) {
+            LOGDEB1("dmcacheSave: sleeping " << slptimesecs << endl);
+            sleep(slptimesecs);
+        }
     }
 }
 
