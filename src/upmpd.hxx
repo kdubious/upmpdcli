@@ -58,7 +58,10 @@ public:
     const MpdStatus &getMpdStatus();
     const MpdStatus &getMpdStatusNoUpdate()
         {
-            return *m_mpds;
+            if (m_mpds == 0)
+                return getMpdStatus();
+            else
+                return *m_mpds;
         }
 
     const std::string& getMetaCacheFn()
