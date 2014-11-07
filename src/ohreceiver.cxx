@@ -27,7 +27,6 @@
 #include <utility>                      // for pair
 #include <vector>                       // for vector
 
-#define LOCAL_LOGINC 4
 #include "libupnpp/log.hxx"             // for LOGDEB, LOGERR
 #include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData, i2s, etc
 
@@ -102,8 +101,8 @@ bool OHReceiver::getEventData(bool all, std::vector<std::string>& names,
     m_state = state;
 
     for (auto it = changed.begin(); it != changed.end(); it++) {
-        LOGDEB("OHReceiver::getEventData: changed: " << it->first <<
-               " = " << it->second << endl);
+        //LOGDEB("OHReceiver::getEventData: changed: " << it->first <<
+        // " = " << it->second << endl);
         names.push_back(it->first);
         values.push_back(it->second);
     }
@@ -160,7 +159,7 @@ int OHReceiver::play(const SoapArgs& sc, SoapData& data)
     }
     // Wait for scmpdcli to signal ready, then play
     m_cmd->getline(line);
-    LOGDEB("OHReceiver got " << line << " from scmpdcli" << endl);
+    LOGDEB("OHReceiver: scmpdcli sent: " << line);
 
     // And insert the appropriate uri in the mpd playlist
     if (!m_pl->urlMap(urlmap)) {
@@ -187,12 +186,11 @@ int OHReceiver::play(const SoapArgs& sc, SoapData& data)
         goto out;
     }
 
-    maybeWakeUp(ok);
-
 out:
     if (!ok) {
         iStop();
     }
+    maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
@@ -202,7 +200,20 @@ bool OHReceiver::iStop()
         m_cmd->zapChild();
         m_cmd = shared_ptr<ExecCmd>(0);
     }
-    return m_dev->m_mpdcli->stop();
+    m_dev->m_mpdcli->stop();
+
+    unordered_map<int, string> urlmap;
+    // Remove our bogus URi from the playlist
+    if (!m_pl->urlMap(urlmap)) {
+        LOGERR("OHReceiver::stop: urlMap() failed" <<endl);
+        return false;
+    }
+    for (auto it = urlmap.begin(); it != urlmap.end(); it++) {
+        if (it->second == m_httpuri) {
+            m_dev->m_mpdcli->deleteId(it->first);
+        }
+    }
+    return true;
 }
 
 int OHReceiver::stop(const SoapArgs& sc, SoapData& data)

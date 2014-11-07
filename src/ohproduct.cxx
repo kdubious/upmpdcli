@@ -40,32 +40,27 @@ using namespace std::placeholders;
 static const string sTpProduct("urn:av-openhome-org:service:Product:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Product");
 
-static string csxml(
-    "<SourceList>"
-    " <Source>"
-    "  <Name>PlayList</Name>"
-    "  <Type>Playlist</Type>"
-    "  <Visible>true</Visible>"
-    " </Source>"
-    " <Source>"
-    "  <Name>UpnpAv</Name>"
-    "  <Type>UpnpAv</Type>"
-    "  <Visible>true</Visible>"
-    " </Source>"
-    );
+static string csxml("<SourceList>\n");
+static vector<string> o_sources;
 
 OHProduct::OHProduct(UpMpd *dev, const string& friendlyname, bool hasRcv)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
-      m_roomOrName(friendlyname)
+      m_roomOrName(friendlyname), m_sourceIndex(0)
 {
-    if (hasRcv) {
-        csxml += string(" <Source>"
-                        "  <Name>Receiver</Name>"
-                        "  <Type>Receiver</Type>"
-                        "  <Visible>true</Visible>"
-                        "  </Source>");
+    o_sources.push_back("Playlist");
+    o_sources.push_back("UpnpAv");
+    if (hasRcv) 
+        o_sources.push_back("Receiver");
+
+    for (auto it = o_sources.begin(); it != o_sources.end(); it++) {
+        csxml += string(" <Source>\n") +
+            "  <Name>" + *it + "</Name>\n" +
+            "  <Type>" + *it + "</Type>\n" +
+            "  <Visible>true</Visible>\n" +
+            "  </Source>\n";
     }
-    csxml += string("</SourceList>");
+    csxml += string("</SourceList>\n");
+    LOGDEB("OHProduct::OHProduct: sources: " << csxml << endl);
 
     dev->addActionMapping(this, "Manufacturer", 
                           bind(&OHProduct::manufacturer, this, _1, _2));
@@ -124,10 +119,12 @@ bool OHProduct::getEventData(bool all, std::vector<std::string>& names,
         names.push_back("ProductInfo"); values.push_back(csversion);
         names.push_back("ProductUrl"); values.push_back("");
         names.push_back("ProductImageUri"); values.push_back("");
-        names.push_back("Standby"); values.push_back("0");
-        names.push_back("SourceCount"); values.push_back("1");
+        names.push_back("Standby"); values.push_back(m_standby?"1":"0");
+        names.push_back("SourceCount"); 
+        values.push_back(SoapHelp::i2s(o_sources.size()));
         names.push_back("SourceXml"); values.push_back(csxml);
-        names.push_back("SourceIndex"); values.push_back("0");
+        names.push_back("SourceIndex"); 
+        values.push_back(SoapHelp::i2s(m_sourceIndex));
         names.push_back("Attributes");values.push_back(csattrs);
     }
     return true;
@@ -174,17 +171,17 @@ int OHProduct::standby(const SoapArgs& sc, SoapData& data)
 int OHProduct::setStandby(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHProduct::setStandby" << endl);
-    bool standby;
-    if (!sc.getBool("Value", &standby)) {
+    if (!sc.getBool("Value", &m_standby)) {
         return UPNP_E_INVALID_PARAM;
     }
+    m_dev->loopWakeup();
     return UPNP_E_SUCCESS;
 }
 
 int OHProduct::sourceCount(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHProduct::sourceCount" << endl);
-    data.addarg("Value", "1");
+    data.addarg("Value", SoapHelp::i2s(o_sources.size()));
     return UPNP_E_SUCCESS;
 }
 
@@ -198,7 +195,7 @@ int OHProduct::sourceXML(const SoapArgs& sc, SoapData& data)
 int OHProduct::sourceIndex(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHProduct::sourceIndex" << endl);
-    data.addarg("Value", "0");
+    data.addarg("Value", SoapHelp::i2s(m_sourceIndex));
     return UPNP_E_SUCCESS;
 }
 
@@ -210,21 +207,33 @@ int OHProduct::setSourceIndex(const SoapArgs& sc, SoapData& data)
         return UPNP_E_INVALID_PARAM;
     }
     LOGDEB("OHProduct::setSourceIndex: " << sindex << endl);
+    if (sindex < 0 || sindex >= int(o_sources.size())) {
+        LOGERR("OHProduct::setSourceIndex: bad index: " << sindex << endl);
+        return UPNP_E_INVALID_PARAM;
+    }
+    m_sourceIndex = sindex;
+    m_dev->loopWakeup();
     return UPNP_E_SUCCESS;
 }
 
 int OHProduct::setSourceIndexByName(const SoapArgs& sc, SoapData& data)
 {
     LOGDEB("OHProduct::setSourceIndexByName" << endl);
-    map<string, string>::const_iterator it;
 
-    it = sc.args.find("Value");
-    if (it == sc.args.end() || it->second.empty()) {
+    string name;
+    if (!sc.getString("Value", &name)) {
         return UPNP_E_INVALID_PARAM;
     }
-    LOGDEB("OHProduct::setSourceIndexByName: " << it->second << endl);
-    m_dev->loopWakeup();
-    return UPNP_E_SUCCESS;
+    for (unsigned int i = 0; i < o_sources.size(); i++) {
+        if (o_sources[i] == name) {
+            m_sourceIndex = i;
+            m_dev->loopWakeup();
+            return UPNP_E_SUCCESS;
+        }
+    }
+            
+    LOGERR("OHProduct::setSoaurceIndexByName: no such name: " << name << endl);
+    return UPNP_E_INVALID_PARAM;
 }
 
 int OHProduct::source(const SoapArgs& sc, SoapData& data)
@@ -235,12 +244,13 @@ int OHProduct::source(const SoapArgs& sc, SoapData& data)
         return UPNP_E_INVALID_PARAM;
     }
     LOGDEB("OHProduct::source: " << sindex << endl);
-    if (sindex != 0) {
+    if (sindex < 0 || sindex >= int(o_sources.size())) {
+        LOGERR("OHProduct::source: bad index: " << sindex << endl);
         return UPNP_E_INVALID_PARAM;
     }
     data.addarg("SystemName", m_roomOrName);
-    data.addarg("Type", "Playlist");
-    data.addarg("Name", "PlayList");
+    data.addarg("Type", o_sources[sindex]);
+    data.addarg("Name", o_sources[sindex]);
     data.addarg("Visible", "1");
     return UPNP_E_SUCCESS;
 }

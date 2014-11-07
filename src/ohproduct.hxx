@@ -50,6 +50,8 @@ private:
 
     UpMpd *m_dev;
     std::string m_roomOrName;
+    int m_sourceIndex;
+    bool m_standby;
 };
 
 #endif /* _OHPRODUCT_H_X_INCLUDED_ */
