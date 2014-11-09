@@ -55,10 +55,10 @@ using namespace UPnPP;
 static const string dfltFriendlyName("UpMpd");
 string upmpdProtocolInfo;
 
-// Is scmpdcli (songcast-to-HTTP command) installed ? We only create
+// Is sc2mpd (songcast-to-HTTP command) installed ? We only create
 // an OpenHome Receiver service if it is. This is checked when
 // starting up
-static bool has_scmpdcli(false);
+static bool has_sc2mpd(false);
 
 static UpnpDevice *dev;
 
@@ -114,7 +114,7 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
     m_services.push_back(avt);
     m_services.push_back(new UpMpdConMan(this));
     if (m_options & upmpdDoOH) {
-        m_services.push_back(new OHProduct(this, friendlyname, has_scmpdcli));
+        m_services.push_back(new OHProduct(this, friendlyname, has_sc2mpd));
         m_services.push_back(new OHInfo(this));
         m_services.push_back(new OHTime(this));
         m_services.push_back(new OHVolume(this, rdctl));
@@ -122,7 +122,7 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
         m_services.push_back(ohp);
         if (avt)
             avt->setOHP(ohp);
-        if (has_scmpdcli) {
+        if (has_sc2mpd) {
             m_services.push_back(new OHReceiver(this, ohp, opts.schttpport));
         }
     }
@@ -483,9 +483,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Do we have an scmpdcli command installed (for songcast)?
+    // Do we have an sc2mpd command installed (for songcast)?
     string unused;
-    has_scmpdcli = ExecCmd::which("scmpdcli", unused);
+    has_sc2mpd = ExecCmd::which("sc2mpd", unused);
 
     // Initialize libupnpp, and check health
     LibUPnP *mylib = 0;
@@ -528,7 +528,7 @@ int main(int argc, char *argv[])
 
     // Read our XML data to make it available from the virtual directory
     if (openhome) {
-        if (has_scmpdcli) {
+        if (has_sc2mpd) {
             ohxmlfilenames.push_back("OHReceiver.xml");
         }
         xmlfilenames.insert(xmlfilenames.end(), ohxmlfilenames.begin(),
@@ -565,7 +565,7 @@ int main(int argc, char *argv[])
             data = regsub1("@UUID@", data, UUID);
             data = regsub1("@FRIENDLYNAME@", data, friendlyname);
             if (openhome) {
-                if (has_scmpdcli) {
+                if (has_sc2mpd) {
                     ohDesc += ohDescReceive;
                 }
                 data = regsub1("@OPENHOME@", data, ohDesc);

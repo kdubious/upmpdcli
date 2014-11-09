@@ -149,17 +149,17 @@ int OHReceiver::play(const SoapArgs& sc, SoapData& data)
     vector<string> args;
     args.push_back("-u");
     args.push_back(m_uri);
-    LOGDEB("OHReceiver::play: executing scmpdcli" << endl);
-    ok = m_cmd->startExec("scmpdcli", args, false, true) >= 0;
+    LOGDEB("OHReceiver::play: executing sc2mpd" << endl);
+    ok = m_cmd->startExec("sc2mpd", args, false, true) >= 0;
     if (!ok) {
-        LOGERR("OHReceiver::play: executing scmpdcli failed" <<endl);
+        LOGERR("OHReceiver::play: executing sc2mpd failed" <<endl);
         goto out;
     } else {
-        LOGDEB("OHReceiver::play: scmpdcli pid "<< m_cmd->getChildPid()<< endl);
+        LOGDEB("OHReceiver::play: sc2mpd pid "<< m_cmd->getChildPid()<< endl);
     }
-    // Wait for scmpdcli to signal ready, then play
+    // Wait for sc2mpd to signal ready, then play
     m_cmd->getline(line);
-    LOGDEB("OHReceiver: scmpdcli sent: " << line);
+    LOGDEB("OHReceiver: sc2mpd sent: " << line);
 
     // And insert the appropriate uri in the mpd playlist
     if (!m_pl->urlMap(urlmap)) {
