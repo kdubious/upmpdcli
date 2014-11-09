@@ -1,0 +1,87 @@
+= upmpdcli Linn Songcast integration
+
+The *upmdcli* UPnP front-end to MPD implements support for Linn Songcast with
+help from the *sc2mpd* auxiliary process.
+
+== What is Songcast
+
+Songcast is a protocol for transporting audio streams across the
+network. This is independant from the UPnP framework which mostly deals
+with URLs and audio files (usually, but not necessarily, compressed).
+
+The streams transported by Songcast are actual real-time audio data, which
+can go straight to an audio card for playing.
+
+Controlling the streams (connecting, starting, stopping) is done through an
+UPnP service named OpenHome _Receiver_.
+
+The typical use of Songcast is to have an audio driver on a Windows or OS X
+desktop capture and forward the audio stream to a remote Songcast device.
+
+Any application on the desktop will (be compelled to) transparently play to
+the remote device, without need to know anything about Songcast.
+
+== Implementation of Songcast support in upmpdcli
+
+*upmpdcli* implements the _Receiver_ service, and uses an auxiliary process
+(*sc2mpd*) for transporting the audio data. *sc2mpd* is a slight
+modification of the sample program which comes with the Linn Songcast
+open-source implementation, with the addition of an HTTP interface (based
+on _libmicrohttpd_) to forward the data to *mpd*.
+
+Setting up a connection happens as follows:
+ 
+- If it finds an executable *sc2mpd* command in the PATH when starting up,
+  *upmpdcli* advertises a _Receiver_ service.
+
+- The Songcast implementation from the desktop finds out about the
+  _Receiver_ through the normal UPnP mechanisms and can be instructed to
+  use it. It then tells the _Receiver_ in *upmpdcli* to start playing.
+
+- *upmdpcli* starts the *sc2mpd* process, which gets ready to receive data
+  through Songcast, and make it available through HTTP.
+
+- *upmpdcli* instructs *mpd* to play the URL for the *sc2mpd* output.
+
+There is currently a 10-12 S delay between the connection request and the
+moment the audio starts playing. This is not normal, but I could not find
+the reason for it, so it's an unavoidable inconvenience at the moment.
+
+== Configuration
+
+No configuration is necessary: if *sc2mpd* is present, *upmpdcli* will
+advertise the Songcast capability, and any host with a Songcast sender
+installed should be able to use it.
+
+== Building sc2mpd
+
+There are two parts in building *sc2mpd*:
+
+- Building the Openhome libraries
+- Building *scmpd* proper
+
+Building the Openhome libraries is a bit of a black art, and the sc2mpd
+source comes with an *ohbuild.sh* script which will try to clone the
+Openhome git repositories and build the libs:
+
+    mkdir /my/place/for/openhome
+    sh ohbuild.sh /my/place/for/openhome
+
+Miscellaneous error messages will be displayed during the build. Hope for
+the best...
+
+When this is done configure sc2mpd:
+
+    sh autogen.sh
+    ./configure --prefix=/usr --with-openhome=/my/place/for/openhome
+    make
+    sudo make install
+
+The build uses static libraries, so you can move the executable to another
+machine without needing the openhome directory.
+
+== Miscellaneous remarks
+
+Songcast is probably best transported over a wired connection. If you are
+doing this over WIFI and experiencing glitches, the wireless is the first
+suspect.

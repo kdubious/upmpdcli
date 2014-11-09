@@ -1,0 +1,10 @@
+= Notes for the upmpdcli 0.9 release series
+
+upmpdcli 0.9 implements support for link:sc2mpd.html[Linn Songcast]. This
+is mostly an addition to the unchanged 0.8.6 code, so, when not using
+Songcast, it should be as stable as 0.8.6.
+
+Bugs fixed since 0.8.6
+
+- Fix the _Kazoo_ Control Point going loopy when the upmpdcli playlist
+  became empty.
