@@ -77,6 +77,12 @@ overwritten during an upgrade, if you are upgrading to 0.7.x from an
 earlier version and you want to enable the services, you need to set the
 option in the configuration file.
 
+[[upmpdcli.songcast]]
+== Songcast integration
+
+upmpdcli recent versions support Songcast. See the
+link:sc2mpd.html[description here].
+
 [[upmpdcli.boot]]
 == Boot time startup
 
