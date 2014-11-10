@@ -54,7 +54,8 @@ No configuration is necessary by default: if *sc2mpd* is present,
 Songcast sender installed should be able to use it.
 
 However, you can set a number of values in the upmpdcli configuration file
-(you *must* set the *upmpdcli* `-c` option for *sc2mpd* to see them):
+(you *must* set the *upmpdcli* `-c` option for *sc2mpd* to see them, the
+environment variable will not work):
 
 sclogfilename:: 
 Name of the file which will receive *sc2mpd* log messages. `stderr` by
