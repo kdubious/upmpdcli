@@ -805,9 +805,51 @@ the reason for it, so it&#8217;s an unavoidable inconvenience at the moment.</p>
 <div class="sect1">
 <h2 id="_configuration">Configuration</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>No configuration is necessary: if <strong>sc2mpd</strong> is present, <strong>upmpdcli</strong> will
-advertise the Songcast capability, and any host with a Songcast sender
-installed should be able to use it.</p></div>
+<div class="paragraph"><p>No configuration is necessary by default: if <strong>sc2mpd</strong> is present,
+<strong>upmpdcli</strong> will advertise the Songcast capability, and any host with a
+Songcast sender installed should be able to use it.</p></div>
+<div class="paragraph"><p>However, you can set a number of values in the upmpdcli configuration file
+(you <strong>must</strong> set the <strong>upmpdcli</strong> <tt>-c</tt> option for <strong>sc2mpd</strong> to see them):</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+sclogfilename
+</dt>
+<dd>
+<p>
+Name of the file which will receive <strong>sc2mpd</strong> log messages. <tt>stderr</tt> by
+default. This <em>can&#8217;t be</em> the same file used by <strong>upmpdcli</strong>.
+</p>
+</dd>
+<dt class="hdlist1">
+scloglevel
+</dt>
+<dd>
+<p>
+Log verbosity.
+</p>
+</dd>
+<dt class="hdlist1">
+schttpport
+</dt>
+<dd>
+<p>
+HTTP port used by <strong>mpd</strong> to connect to <strong>sc2mpd</strong>. 8888 by default. This must
+be an available port on <tt>localhost</tt>, and it will only accept connections from
+<tt>localhost</tt>.
+</p>
+</dd>
+<dt class="hdlist1">
+sc2mpd
+</dt>
+<dd>
+<p>
+Path for the <strong>sc2mpd</strong> executable file (e.g. <tt>/usr/local/bin/sc2mpd</tt>). Only
+useful if <strong>sc2mpd</strong> was not installed to a location in the executable $PATH
+set for the init scripts. Typically only <tt>/bin</tt> and <tt>/usr/bin</tt> are in
+there.
+</p>
+</dd>
+</dl></div>
 </div>
 </div>
 <div class="sect1">
@@ -860,7 +902,7 @@ suspect.</p></div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-11-09 15:51:29 CET
+Last updated 2014-11-10 16:15:50 CET
 </div>
 </div>
 </body>

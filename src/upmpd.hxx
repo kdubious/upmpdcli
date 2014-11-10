@@ -27,6 +27,9 @@
 class MPDCli;
 class MpdStatus;
 
+extern std::string g_configfilename;
+extern std::string g_sc2mpd_path;
+
 using namespace UPnPProvider;
 
 // The UPnP MPD frontend device with its services
@@ -47,7 +50,9 @@ public:
         upmpdDoOH = 2,
         // Save queue metadata to disk for persistence across restarts
         // (mpd does it)
-        upmpdOhMetaPersist = 4
+        upmpdOhMetaPersist = 4,
+        // sc2mpd was found: advertise songcast receiver
+        upmpdOhReceiver = 8
     };
     struct Options {
         Options() : options(upmpdNone), ohmetasleep(0), schttpport(8888) {}

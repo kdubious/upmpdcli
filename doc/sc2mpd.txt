@@ -49,9 +49,31 @@ the reason for it, so it's an unavoidable inconvenience at the moment.
 
 == Configuration
 
-No configuration is necessary: if *sc2mpd* is present, *upmpdcli* will
-advertise the Songcast capability, and any host with a Songcast sender
-installed should be able to use it.
+No configuration is necessary by default: if *sc2mpd* is present,
+*upmpdcli* will advertise the Songcast capability, and any host with a
+Songcast sender installed should be able to use it.
+
+However, you can set a number of values in the upmpdcli configuration file
+(you *must* set the *upmpdcli* `-c` option for *sc2mpd* to see them):
+
+sclogfilename:: 
+Name of the file which will receive *sc2mpd* log messages. `stderr` by
+default. This _can't be_ the same file used by *upmpdcli*.
+
+scloglevel:: 
+Log verbosity.  
+
+schttpport:: 
+
+HTTP port used by *mpd* to connect to *sc2mpd*. 8888 by default. This must
+be an available port on `localhost`, and it will only accept connections from
+`localhost`.
+
+sc2mpd:: 
+Path for the *sc2mpd* executable file (e.g. `/usr/local/bin/sc2mpd`). Only
+useful if *sc2mpd* was not installed to a location in the executable $PATH
+set for the init scripts. Typically only `/bin` and `/usr/bin` are in
+there.
 
 == Building sc2mpd
 

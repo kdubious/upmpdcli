@@ -149,10 +149,16 @@ int OHReceiver::play(const SoapArgs& sc, SoapData& data)
     vector<string> args;
     args.push_back("-u");
     args.push_back(m_uri);
-    LOGDEB("OHReceiver::play: executing sc2mpd" << endl);
-    ok = m_cmd->startExec("sc2mpd", args, false, true) >= 0;
+    if (!g_configfilename.empty()) {
+        args.push_back("-c");
+        args.push_back(g_configfilename);
+    }
+        
+    LOGDEB("OHReceiver::play: executing " << g_sc2mpd_path << endl);
+    ok = m_cmd->startExec(g_sc2mpd_path, args, false, true) >= 0;
     if (!ok) {
-        LOGERR("OHReceiver::play: executing sc2mpd failed" <<endl);
+        LOGERR("OHReceiver::play: executing " << g_sc2mpd_path << " failed" 
+               << endl);
         goto out;
     } else {
         LOGDEB("OHReceiver::play: sc2mpd pid "<< m_cmd->getChildPid()<< endl);

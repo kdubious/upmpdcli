@@ -52,38 +52,6 @@ using namespace std;
 using namespace std::placeholders;
 using namespace UPnPP;
 
-static const string dfltFriendlyName("UpMpd");
-string upmpdProtocolInfo;
-
-// Is sc2mpd (songcast-to-HTTP command) installed ? We only create
-// an OpenHome Receiver service if it is. This is checked when
-// starting up
-static bool has_sc2mpd(false);
-
-static UpnpDevice *dev;
-
-static void onsig(int)
-{
-    LOGDEB("Got sig" << endl);
-    dev->shouldExit();
-}
-
-static const int catchedSigs[] = {SIGINT, SIGQUIT, SIGTERM};
-
-static void setupsigs()
-{
-    struct sigaction action;
-    action.sa_handler = onsig;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    for (unsigned int i = 0; i < sizeof(catchedSigs) / sizeof(int); i++)
-        if (signal(catchedSigs[i], SIG_IGN) != SIG_IGN) {
-            if (sigaction(catchedSigs[i], &action, 0) < 0) {
-                perror("Sigaction failed");
-            }
-        }
-}
-
 // Note: if we ever need this to work without cxx11, there is this:
 // http://www.tutok.sk/fastgl/callback.html
 //
@@ -113,8 +81,9 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
     UpMpdAVTransport* avt = new UpMpdAVTransport(this);
     m_services.push_back(avt);
     m_services.push_back(new UpMpdConMan(this));
+    bool ohReceiver = (m_options & upmpdOhReceiver) != 0; 
     if (m_options & upmpdDoOH) {
-        m_services.push_back(new OHProduct(this, friendlyname, has_sc2mpd));
+        m_services.push_back(new OHProduct(this, friendlyname, ohReceiver));
         m_services.push_back(new OHInfo(this));
         m_services.push_back(new OHTime(this));
         m_services.push_back(new OHVolume(this, rdctl));
@@ -122,7 +91,7 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
         m_services.push_back(ohp);
         if (avt)
             avt->setOHP(ohp);
-        if (has_sc2mpd) {
+        if (ohReceiver) {
             m_services.push_back(new OHReceiver(this, ohp, opts.schttpport));
         }
     }
@@ -147,6 +116,47 @@ const MpdStatus& UpMpd::getMpdStatus()
 
 #include "conftree.hxx"
 
+static char *thisprog;
+
+static int op_flags;
+#define OPT_MOINS 0x1
+#define OPT_h     0x2
+#define OPT_p     0x4
+#define OPT_d     0x8
+#define OPT_D     0x10
+#define OPT_c     0x20
+#define OPT_l     0x40
+#define OPT_f     0x80
+#define OPT_q     0x100
+#define OPT_i     0x200
+#define OPT_P     0x400
+#define OPT_O     0x800
+
+static const char usage[] = 
+    "-c configfile \t configuration file to use\n"
+    "-h host    \t specify host MPD is running on\n"
+    "-p port     \t specify MPD port\n"
+    "-d logfilename\t debug messages to\n"
+    "-l loglevel\t  log level (0-6)\n"
+    "-D    \t run as a daemon\n"
+    "-f friendlyname\t define device displayed name\n"
+    "-q 0|1\t if set, we own the mpd queue, else avoid clearing it whenever we feel like it\n"
+    "-i iface    \t specify network interface name to be used for UPnP\n"
+    "-P upport    \t specify port number to be used for UPnP\n"
+    "-O 0|1\t decide if we run and export the OpenHome services\n"
+    "\n"
+    ;
+
+static void
+Usage(void)
+{
+    fprintf(stderr, "%s: usage:\n%s", thisprog, usage);
+    exit(1);
+}
+
+// The description XML document is the first thing downloaded by
+// clients and tells them what services we export, and where to find
+// them.
 static string ohDesc(
     "<service>"
     "  <serviceType>urn:av-openhome-org:service:Product:1</serviceType>"
@@ -184,6 +194,9 @@ static string ohDesc(
     "  <eventSubURL>/evt/OHPlaylist</eventSubURL>"
     "</service>"
     );
+
+// We only advertise the Openhome Receiver service if the sc2mpd
+// songcast-to-mpd gateway command is available
 static string ohDescReceive(
     "<service>"
     "  <serviceType>urn:av-openhome-org:service:Receiver:1</serviceType>"
@@ -206,48 +219,6 @@ static const string iconDesc(
     "</iconList>"
     );
 
-static char *thisprog;
-
-static int op_flags;
-#define OPT_MOINS 0x1
-#define OPT_h     0x2
-#define OPT_p     0x4
-#define OPT_d     0x8
-#define OPT_D     0x10
-#define OPT_c     0x20
-#define OPT_l     0x40
-#define OPT_f     0x80
-#define OPT_q     0x100
-#define OPT_i     0x200
-#define OPT_P     0x400
-#define OPT_O     0x800
-
-static const char usage[] = 
-    "-c configfile \t configuration file to use\n"
-    "-h host    \t specify host MPD is running on\n"
-    "-p port     \t specify MPD port\n"
-    "-d logfilename\t debug messages to\n"
-    "-l loglevel\t  log level (0-6)\n"
-    "-D    \t run as a daemon\n"
-    "-f friendlyname\t define device displayed name\n"
-    "-q 0|1\t if set, we own the mpd queue, else avoid clearing it whenever we feel like it\n"
-    "-i iface    \t specify network interface name to be used for UPnP\n"
-    "-P upport    \t specify port number to be used for UPnP\n"
-    "-O 0|1\t decide if we run and export the OpenHome services\n"
-    "\n"
-    ;
-static void
-Usage(void)
-{
-    fprintf(stderr, "%s: usage:\n%s", thisprog, usage);
-    exit(1);
-}
-
-static string myDeviceUUID;
-
-static string datadir(DATADIR "/");
-static string configdir(CONFIGDIR "/");
-
 // Our XML description data. !Keep description.xml first!
 static vector<const char *> xmlfilenames = 
 {
@@ -260,6 +231,42 @@ static vector<const char *> ohxmlfilenames =
     "OHPlaylist.xml",
 };
 
+static const string dfltFriendlyName("UpMpd");
+
+// This is global
+string upmpdProtocolInfo;
+
+// Static for cleanup in sig handler.
+static UpnpDevice *dev;
+
+static string datadir(DATADIR "/");
+
+// Global
+string g_configfilename(CONFIGDIR "/upmpdcli.conf");
+
+// Path for the sc2mpd command, or empty
+string g_sc2mpd_path;
+
+static void onsig(int)
+{
+    LOGDEB("Got sig" << endl);
+    dev->shouldExit();
+}
+
+static const int catchedSigs[] = {SIGINT, SIGQUIT, SIGTERM};
+static void setupsigs()
+{
+    struct sigaction action;
+    action.sa_handler = onsig;
+    action.sa_flags = 0;
+    sigemptyset(&action.sa_mask);
+    for (unsigned int i = 0; i < sizeof(catchedSigs) / sizeof(int); i++)
+        if (signal(catchedSigs[i], SIG_IGN) != SIG_IGN) {
+            if (sigaction(catchedSigs[i], &action, 0) < 0) {
+                perror("Sigaction failed");
+            }
+        }
+}
 
 int main(int argc, char *argv[])
 {
@@ -268,7 +275,6 @@ int main(int argc, char *argv[])
     string mpdpassword;
     string logfilename;
     int loglevel(Logger::LLINF);
-    string configfile;
     string friendlyname(dfltFriendlyName);
     bool ownqueue = true;
     bool openhome = true;
@@ -287,7 +293,7 @@ int main(int argc, char *argv[])
     if ((cp = getenv("UPMPD_FRIENDLYNAME")))
         friendlyname = atoi(cp);
     if ((cp = getenv("UPMPD_CONFIG")))
-        configfile = cp;
+        g_configfilename = cp;
     if ((cp = getenv("UPMPD_UPNPIFACE")))
         iface = cp;
     if ((cp = getenv("UPMPD_UPNPPORT")))
@@ -302,7 +308,7 @@ int main(int argc, char *argv[])
         while (**argv)
             switch (*(*argv)++) {
             case 'c':   op_flags |= OPT_c; if (argc < 2)  Usage();
-                configfile = *(++argv); argc--; goto b1;
+                g_configfilename = *(++argv); argc--; goto b1;
             case 'D':   op_flags |= OPT_D; break;
             case 'd':   op_flags |= OPT_d; if (argc < 2)  Usage();
                 logfilename = *(++argv); argc--; goto b1;
@@ -340,10 +346,10 @@ int main(int argc, char *argv[])
     UpMpd::Options opts;
 
     string iconpath;
-    if (!configfile.empty()) {
-        ConfSimple config(configfile.c_str(), 1, true);
+    if (!g_configfilename.empty()) {
+        ConfSimple config(g_configfilename.c_str(), 1, true);
         if (!config.ok()) {
-            cerr << "Could not open config: " << configfile << endl;
+            cerr << "Could not open config: " << g_configfilename << endl;
             return 1;
         }
         string value;
@@ -380,15 +386,27 @@ int main(int argc, char *argv[])
         }
         if (config.get("schttpport", value))
             opts.schttpport = atoi(value.c_str());
+        config.get("sc2mpd", g_sc2mpd_path);
         if (config.get("ohmetasleep", value))
             opts.ohmetasleep = atoi(value.c_str());
     }
-
     if (Logger::getTheLog(logfilename) == 0) {
         cerr << "Can't initialize log" << endl;
         return 1;
     }
     Logger::getTheLog("")->setLogLevel(Logger::LogLevel(loglevel));
+
+    if (g_sc2mpd_path.empty()) {
+        // Do we have an sc2mpd command installed (for songcast)?
+        if (!ExecCmd::which("sc2mpd", g_sc2mpd_path))
+            g_sc2mpd_path.clear();
+    } else {
+        if (access(g_sc2mpd_path.c_str(), X_OK|R_OK) != 0) {
+            LOGERR("Specified path for sc2mpd: " << g_sc2mpd_path << 
+                   " is not executable" << endl);
+            g_sc2mpd_path.clear();
+        }
+    }
 
     Pidfile pidfile(pidfilename);
 
@@ -483,10 +501,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Do we have an sc2mpd command installed (for songcast)?
-    string unused;
-    has_sc2mpd = ExecCmd::which("sc2mpd", unused);
-
     // Initialize libupnpp, and check health
     LibUPnP *mylib = 0;
     string hwaddr;
@@ -528,7 +542,7 @@ int main(int argc, char *argv[])
 
     // Read our XML data to make it available from the virtual directory
     if (openhome) {
-        if (has_sc2mpd) {
+        if (!g_sc2mpd_path.empty()) {
             ohxmlfilenames.push_back("OHReceiver.xml");
         }
         xmlfilenames.insert(xmlfilenames.end(), ohxmlfilenames.begin(),
@@ -565,7 +579,7 @@ int main(int argc, char *argv[])
             data = regsub1("@UUID@", data, UUID);
             data = regsub1("@FRIENDLYNAME@", data, friendlyname);
             if (openhome) {
-                if (has_sc2mpd) {
+                if (!g_sc2mpd_path.empty()) {
                     ohDesc += ohDescReceive;
                 }
                 data = regsub1("@OPENHOME@", data, ohDesc);
@@ -592,6 +606,8 @@ int main(int argc, char *argv[])
         opts.options |= UpMpd::upmpdDoOH;
     if (ohmetapersist)
         opts.options |= UpMpd::upmpdOhMetaPersist;
+    if (!g_sc2mpd_path.empty())
+        opts.options |= UpMpd::upmpdOhReceiver;
 
     // Initialize the UPnP device object.
     UpMpd device(string("uuid:") + UUID, friendlyname, 
