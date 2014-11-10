@@ -28,7 +28,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/log.hxx"             // for LOGDEB, LOGERR
-#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData, i2s, etc
+#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing, i2s, etc
 
 #include "mpdcli.hxx"                   // for MpdStatus, UpSong, MPDCli, etc
 #include "upmpd.hxx"                    // for UpMpd, etc
@@ -116,7 +116,7 @@ void OHReceiver::maybeWakeUp(bool ok)
         m_dev->loopWakeup();
 }
 
-int OHReceiver::play(const SoapArgs& sc, SoapData& data)
+int OHReceiver::play(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHReceiver::play" << endl);
     bool ok = false;
@@ -222,7 +222,7 @@ bool OHReceiver::iStop()
     return true;
 }
 
-int OHReceiver::stop(const SoapArgs& sc, SoapData& data)
+int OHReceiver::stop(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHReceiver::stop" << endl);
     bool ok = iStop();
@@ -230,7 +230,7 @@ int OHReceiver::stop(const SoapArgs& sc, SoapData& data)
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
-int OHReceiver::setSender(const SoapArgs& sc, SoapData& data)
+int OHReceiver::setSender(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHReceiver::setSender" << endl);
     string uri, metadata;
@@ -248,7 +248,7 @@ int OHReceiver::setSender(const SoapArgs& sc, SoapData& data)
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
-int OHReceiver::sender(const SoapArgs& sc, SoapData& data)
+int OHReceiver::sender(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHReceiver::sender" << endl);
     data.addarg("Uri", m_uri);
@@ -256,7 +256,7 @@ int OHReceiver::sender(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHReceiver::transportState(const SoapArgs& sc, SoapData& data)
+int OHReceiver::transportState(const SoapIncoming& sc, SoapOutgoing& data)
 {
     //LOGDEB("OHReceiver::transportState" << endl);
 
@@ -269,7 +269,7 @@ int OHReceiver::transportState(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHReceiver::protocolInfo(const SoapArgs& sc, SoapData& data)
+int OHReceiver::protocolInfo(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHReceiver::protocolInfo" << endl);
     data.addarg("Value", o_protocolinfo);

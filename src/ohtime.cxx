@@ -27,7 +27,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/log.hxx"             // for LOGDEB
-#include "libupnpp/soaphelp.hxx"        // for i2s, SoapData, SoapArgs
+#include "libupnpp/soaphelp.hxx"        // for i2s, SoapOutgoing, SoapIncoming
 
 #include "mpdcli.hxx"                   // for MpdStatus, etc
 #include "upmpd.hxx"                    // for UpMpd
@@ -95,7 +95,7 @@ bool OHTime::getEventData(bool all, std::vector<std::string>& names,
     return true;
 }
 
-int OHTime::ohtime(const SoapArgs& sc, SoapData& data)
+int OHTime::ohtime(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHTime::ohtime" << endl);
     string trackcount, duration, seconds;

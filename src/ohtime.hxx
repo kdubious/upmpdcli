@@ -22,7 +22,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
+#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
 class UpMpd;
 
@@ -35,7 +35,7 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
 private:
-    int ohtime(const SoapArgs& sc, SoapData& data);
+    int ohtime(const SoapIncoming& sc, SoapOutgoing& data);
 
     void getdata(std::string& trackcount, std::string &duration, std::string& seconds);
     bool makestate(std::unordered_map<std::string, std::string> &st);

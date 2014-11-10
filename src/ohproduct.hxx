@@ -21,7 +21,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
+#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
 class UpMpd;
 
@@ -34,19 +34,19 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
 private:
-    int manufacturer(const SoapArgs& sc, SoapData& data);
-    int model(const SoapArgs& sc, SoapData& data);
-    int product(const SoapArgs& sc, SoapData& data);
-    int standby(const SoapArgs& sc, SoapData& data);
-    int setStandby(const SoapArgs& sc, SoapData& data);
-    int sourceCount(const SoapArgs& sc, SoapData& data);
-    int sourceXML(const SoapArgs& sc, SoapData& data);
-    int sourceIndex(const SoapArgs& sc, SoapData& data);
-    int setSourceIndex(const SoapArgs& sc, SoapData& data);
-    int setSourceIndexByName(const SoapArgs& sc, SoapData& data);
-    int source(const SoapArgs& sc, SoapData& data);
-    int attributes(const SoapArgs& sc, SoapData& data);
-    int sourceXMLChangeCount(const SoapArgs& sc, SoapData& data);
+    int manufacturer(const SoapIncoming& sc, SoapOutgoing& data);
+    int model(const SoapIncoming& sc, SoapOutgoing& data);
+    int product(const SoapIncoming& sc, SoapOutgoing& data);
+    int standby(const SoapIncoming& sc, SoapOutgoing& data);
+    int setStandby(const SoapIncoming& sc, SoapOutgoing& data);
+    int sourceCount(const SoapIncoming& sc, SoapOutgoing& data);
+    int sourceXML(const SoapIncoming& sc, SoapOutgoing& data);
+    int sourceIndex(const SoapIncoming& sc, SoapOutgoing& data);
+    int setSourceIndex(const SoapIncoming& sc, SoapOutgoing& data);
+    int setSourceIndexByName(const SoapIncoming& sc, SoapOutgoing& data);
+    int source(const SoapIncoming& sc, SoapOutgoing& data);
+    int attributes(const SoapIncoming& sc, SoapOutgoing& data);
+    int sourceXMLChangeCount(const SoapIncoming& sc, SoapOutgoing& data);
 
     UpMpd *m_dev;
     std::string m_roomOrName;

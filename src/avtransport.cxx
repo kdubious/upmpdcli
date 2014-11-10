@@ -25,7 +25,7 @@
 #include <utility>                      // for pair
 
 #include "libupnpp/log.hxx"             // for LOGDEB, LOGDEB1, LOGERR
-#include "libupnpp/soaphelp.hxx"        // for SoapData, SoapArgs, etc
+#include "libupnpp/soaphelp.hxx"        // for SoapOutgoing, SoapIncoming, etc
 #include "libupnpp/upnpavutils.hxx"     // for upnpduration, etc
 
 #include "mpdcli.hxx"                   // for MpdStatus, MPDCli, etc
@@ -290,24 +290,19 @@ bool UpMpdAVTransport::getEventData(bool all, std::vector<std::string>& names,
 }
 
 // http://192.168.4.4:8200/MediaItems/246.mp3
-int UpMpdAVTransport::setAVTransportURI(const SoapArgs& sc, SoapData& data, 
+int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& data, 
                                         bool setnext)
 {
-    map<string, string>::const_iterator it;
-
     // pretend not to support setnext:
     //if (setnext) return UPNP_E_INVALID_PARAM;
-
-    it = setnext? sc.args.find("NextURI") : sc.args.find("CurrentURI");
-    if (it == sc.args.end() || it->second.empty()) {
+    string uri;
+    bool found = setnext? sc.get("NextURI", &uri) : sc.get("CurrentURI", &uri);
+    if (!found) {
         return UPNP_E_INVALID_PARAM;
     }
-    string uri = it->second;
     string metadata;
-    it = setnext? sc.args.find("NextURIMetaData") : 
-        sc.args.find("CurrentURIMetaData");
-    if (it != sc.args.end())
-        metadata = it->second;
+    found = setnext ? sc.get("NextURIMetaData", &metadata) :
+        sc.get("CurrentURIMetaData", &metadata);
     LOGDEB("Set(next)AVTransportURI: next " << setnext <<  " uri " << uri <<
            " metadata[" << metadata << "]" << endl);
 
@@ -414,7 +409,7 @@ int UpMpdAVTransport::setAVTransportURI(const SoapArgs& sc, SoapData& data,
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdAVTransport::getPositionInfo(const SoapArgs& sc, SoapData& data)
+int UpMpdAVTransport::getPositionInfo(const SoapIncoming& sc, SoapOutgoing& data)
 {
     const MpdStatus &mpds = m_dev->getMpdStatus();
     //LOGDEB("UpMpdAVTransport::getPositionInfo. State: " << mpds.state <<endl);
@@ -467,7 +462,7 @@ int UpMpdAVTransport::getPositionInfo(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdAVTransport::getTransportInfo(const SoapArgs& sc, SoapData& data)
+int UpMpdAVTransport::getTransportInfo(const SoapIncoming& sc, SoapOutgoing& data)
 {
     const MpdStatus &mpds = m_dev->getMpdStatus();
     //LOGDEB("UpMpdAVTransport::getTransportInfo. State: " << mpds.state<<endl);
@@ -485,7 +480,7 @@ int UpMpdAVTransport::getTransportInfo(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdAVTransport::getDeviceCapabilities(const SoapArgs& sc, SoapData& data)
+int UpMpdAVTransport::getDeviceCapabilities(const SoapIncoming& sc, SoapOutgoing& data)
 {
     data.addarg("PlayMedia", "NETWORK,HDD");
     data.addarg("RecMedia", "NOT_IMPLEMENTED");
@@ -493,7 +488,7 @@ int UpMpdAVTransport::getDeviceCapabilities(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdAVTransport::getMediaInfo(const SoapArgs& sc, SoapData& data)
+int UpMpdAVTransport::getMediaInfo(const SoapIncoming& sc, SoapOutgoing& data)
 {
     const MpdStatus &mpds = m_dev->getMpdStatus();
     LOGDEB("UpMpdAVTransport::getMediaInfo. State: " << mpds.state << endl);
@@ -540,7 +535,7 @@ int UpMpdAVTransport::getMediaInfo(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdAVTransport::playcontrol(const SoapArgs& sc, SoapData& data, int what)
+int UpMpdAVTransport::playcontrol(const SoapIncoming& sc, SoapOutgoing& data, int what)
 {
     const MpdStatus &mpds = m_dev->getMpdStatus();
     LOGDEB("UpMpdAVTransport::playcontrol State: " << mpds.state <<
@@ -581,7 +576,7 @@ int UpMpdAVTransport::playcontrol(const SoapArgs& sc, SoapData& data, int what)
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
-int UpMpdAVTransport::seqcontrol(const SoapArgs& sc, SoapData& data, int what)
+int UpMpdAVTransport::seqcontrol(const SoapIncoming& sc, SoapOutgoing& data, int what)
 {
     const MpdStatus &mpds = m_dev->getMpdStatus();
     LOGDEB("UpMpdAVTransport::seqcontrol State: " << mpds.state << " what "
@@ -602,15 +597,13 @@ int UpMpdAVTransport::seqcontrol(const SoapArgs& sc, SoapData& data, int what)
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 	
-int UpMpdAVTransport::setPlayMode(const SoapArgs& sc, SoapData& data)
+int UpMpdAVTransport::setPlayMode(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    map<string, string>::const_iterator it;
-		
-    it = sc.args.find("NewPlayMode");
-    if (it == sc.args.end() || it->second.empty()) {
+    string playmode;
+    if (!sc.get("NewPlayMode", &playmode)) {
         return UPNP_E_INVALID_PARAM;
     }
-    string playmode(it->second);
+
     bool ok;
     if (!playmode.compare("NORMAL")) {
         ok = m_dev->m_mpdcli->repeat(false) && m_dev->m_mpdcli->random(false) &&
@@ -637,7 +630,7 @@ int UpMpdAVTransport::setPlayMode(const SoapArgs& sc, SoapData& data)
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
-int UpMpdAVTransport::getTransportSettings(const SoapArgs& sc, SoapData& data)
+int UpMpdAVTransport::getTransportSettings(const SoapIncoming& sc, SoapOutgoing& data)
 {
     const MpdStatus &mpds = m_dev->getMpdStatus();
     string playmode = mpdsToPlaymode(mpds);
@@ -646,8 +639,8 @@ int UpMpdAVTransport::getTransportSettings(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdAVTransport::getCurrentTransportActions(const SoapArgs& sc, 
-                                                 SoapData& data)
+int UpMpdAVTransport::getCurrentTransportActions(const SoapIncoming& sc, 
+                                                 SoapOutgoing& data)
 {
     const MpdStatus &mpds = m_dev->getMpdStatus();
     string tactions("Next,Previous");
@@ -665,21 +658,17 @@ int UpMpdAVTransport::getCurrentTransportActions(const SoapArgs& sc,
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdAVTransport::seek(const SoapArgs& sc, SoapData& data)
+int UpMpdAVTransport::seek(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    map<string, string>::const_iterator it;
-		
-    it = sc.args.find("Unit");
-    if (it == sc.args.end() || it->second.empty()) {
+    string unit;
+    if (!sc.get("Unit", &unit)) {
         return UPNP_E_INVALID_PARAM;
     }
-    string unit(it->second);
-
-    it = sc.args.find("Target");
-    if (it == sc.args.end() || it->second.empty()) {
+    
+    string target;
+    if (!sc.get("Target", &target)) {
         return UPNP_E_INVALID_PARAM;
     }
-    string target(it->second);
 
     //LOGDEB("UpMpdAVTransport::seek: unit " << unit << " target " << target << 
     //	   " current posisition " << mpds.songelapsedms / 1000 << 

@@ -21,7 +21,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
+#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
 class UpMpd;
 
@@ -34,9 +34,9 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
 private:
-    int getCurrentConnectionIDs(const SoapArgs& sc, SoapData& data);
-    int getCurrentConnectionInfo(const SoapArgs& sc, SoapData& data);
-    int getProtocolInfo(const SoapArgs& sc, SoapData& data);
+    int getCurrentConnectionIDs(const SoapIncoming& sc, SoapOutgoing& data);
+    int getCurrentConnectionInfo(const SoapIncoming& sc, SoapOutgoing& data);
+    int getProtocolInfo(const SoapIncoming& sc, SoapOutgoing& data);
 
 };
 

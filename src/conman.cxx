@@ -27,7 +27,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/log.hxx"             // for LOGDEB
-#include "libupnpp/soaphelp.hxx"        // for SoapData, SoapArgs
+#include "libupnpp/soaphelp.hxx"        // for SoapOutgoing, SoapIncoming
 
 #include "upmpd.hxx"                    // for UpMpd
 
@@ -65,22 +65,19 @@ bool UpMpdConMan::getEventData(bool all, std::vector<std::string>& names,
     return true;
 }
 
-int UpMpdConMan::getCurrentConnectionIDs(const SoapArgs& sc, SoapData& data)
+int UpMpdConMan::getCurrentConnectionIDs(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("UpMpd:getCurrentConnectionIDs" << endl);
     data.addarg("ConnectionIDs", "0");
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdConMan::getCurrentConnectionInfo(const SoapArgs& sc, SoapData& data)
+int UpMpdConMan::getCurrentConnectionInfo(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("UpMpdConMan:getCurrentConnectionInfo" << endl);
-    map<string, string>::const_iterator it;
-    it = sc.args.find("ConnectionID");
-    if (it == sc.args.end() || it->second.empty()) {
-        return UPNP_E_INVALID_PARAM;
-    }
-    if (it->second.compare("0")) {
+
+    string conid;
+    if (!sc.get("ConnectionID", &conid) || conid.compare("0")) {
         return UPNP_E_INVALID_PARAM;
     }
 
@@ -95,7 +92,7 @@ int UpMpdConMan::getCurrentConnectionInfo(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdConMan::getProtocolInfo(const SoapArgs& sc, SoapData& data)
+int UpMpdConMan::getProtocolInfo(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("UpMpdConMan::getProtocolInfo" << endl);
     data.addarg("Source", "");

@@ -27,7 +27,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/log.hxx"             // for LOGDEB
-#include "libupnpp/soaphelp.hxx"        // for SoapData, i2s, SoapArgs
+#include "libupnpp/soaphelp.hxx"        // for SoapOutgoing, i2s, SoapIncoming
 
 #include "mpdcli.hxx"                   // for MpdStatus, etc
 #include "upmpd.hxx"                    // for UpMpd
@@ -127,7 +127,7 @@ bool OHInfo::getEventData(bool all, std::vector<std::string>& names,
     return true;
 }
 
-int OHInfo::counters(const SoapArgs& sc, SoapData& data)
+int OHInfo::counters(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHInfo::counters" << endl);
     
@@ -139,7 +139,7 @@ int OHInfo::counters(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHInfo::track(const SoapArgs& sc, SoapData& data)
+int OHInfo::track(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHInfo::track" << endl);
 
@@ -150,7 +150,7 @@ int OHInfo::track(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHInfo::details(const SoapArgs& sc, SoapData& data)
+int OHInfo::details(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHInfo::details" << endl);
 
@@ -165,7 +165,7 @@ int OHInfo::details(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHInfo::metatext(const SoapArgs& sc, SoapData& data)
+int OHInfo::metatext(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHInfo::metatext" << endl);
     data.addarg("Value", "");

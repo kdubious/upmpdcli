@@ -23,7 +23,7 @@
 #include <memory>
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
+#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
 #include "execmd.h"
 
@@ -41,12 +41,12 @@ public:
     virtual bool iStop();
 
 private:
-    int play(const SoapArgs& sc, SoapData& data);
-    int stop(const SoapArgs& sc, SoapData& data);
-    int setSender(const SoapArgs& sc, SoapData& data);
-    int sender(const SoapArgs& sc, SoapData& data);
-    int protocolInfo(const SoapArgs& sc, SoapData& data);
-    int transportState(const SoapArgs& sc, SoapData& data);
+    int play(const SoapIncoming& sc, SoapOutgoing& data);
+    int stop(const SoapIncoming& sc, SoapOutgoing& data);
+    int setSender(const SoapIncoming& sc, SoapOutgoing& data);
+    int sender(const SoapIncoming& sc, SoapOutgoing& data);
+    int protocolInfo(const SoapIncoming& sc, SoapOutgoing& data);
+    int transportState(const SoapIncoming& sc, SoapOutgoing& data);
 
     bool makestate(std::unordered_map<std::string, std::string> &st);
     void maybeWakeUp(bool ok);

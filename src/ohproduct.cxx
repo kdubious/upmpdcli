@@ -30,7 +30,7 @@
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
 #include "libupnpp/log.hxx"             // for LOGDEB
-#include "libupnpp/soaphelp.hxx"        // for SoapData, SoapArgs
+#include "libupnpp/soaphelp.hxx"        // for SoapOutgoing, SoapIncoming
 
 #include "upmpd.hxx"                    // for UpMpd
 
@@ -130,7 +130,7 @@ bool OHProduct::getEventData(bool all, std::vector<std::string>& names,
     return true;
 }
 
-int OHProduct::manufacturer(const SoapArgs& sc, SoapData& data)
+int OHProduct::manufacturer(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::manufacturer" << endl);
     data.addarg("Name", csmanname);
@@ -140,7 +140,7 @@ int OHProduct::manufacturer(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHProduct::model(const SoapArgs& sc, SoapData& data)
+int OHProduct::model(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::model" << endl);
     data.addarg("Name", csmodname);
@@ -150,7 +150,7 @@ int OHProduct::model(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHProduct::product(const SoapArgs& sc, SoapData& data)
+int OHProduct::product(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::product" << endl);
     data.addarg("Room", m_roomOrName);
@@ -161,14 +161,14 @@ int OHProduct::product(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHProduct::standby(const SoapArgs& sc, SoapData& data)
+int OHProduct::standby(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::standby" << endl);
     data.addarg("Value", "0");
     return UPNP_E_SUCCESS;
 }
 
-int OHProduct::setStandby(const SoapArgs& sc, SoapData& data)
+int OHProduct::setStandby(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::setStandby" << endl);
     if (!sc.getBool("Value", &m_standby)) {
@@ -178,28 +178,28 @@ int OHProduct::setStandby(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHProduct::sourceCount(const SoapArgs& sc, SoapData& data)
+int OHProduct::sourceCount(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::sourceCount" << endl);
     data.addarg("Value", SoapHelp::i2s(o_sources.size()));
     return UPNP_E_SUCCESS;
 }
 
-int OHProduct::sourceXML(const SoapArgs& sc, SoapData& data)
+int OHProduct::sourceXML(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::sourceXML" << endl);
     data.addarg("Value", csxml);
     return UPNP_E_SUCCESS;
 }
 
-int OHProduct::sourceIndex(const SoapArgs& sc, SoapData& data)
+int OHProduct::sourceIndex(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::sourceIndex" << endl);
     data.addarg("Value", SoapHelp::i2s(m_sourceIndex));
     return UPNP_E_SUCCESS;
 }
 
-int OHProduct::setSourceIndex(const SoapArgs& sc, SoapData& data)
+int OHProduct::setSourceIndex(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::setSourceIndex" << endl);
     int sindex;
@@ -216,7 +216,7 @@ int OHProduct::setSourceIndex(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHProduct::setSourceIndexByName(const SoapArgs& sc, SoapData& data)
+int OHProduct::setSourceIndexByName(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::setSourceIndexByName" << endl);
 
@@ -236,7 +236,7 @@ int OHProduct::setSourceIndexByName(const SoapArgs& sc, SoapData& data)
     return UPNP_E_INVALID_PARAM;
 }
 
-int OHProduct::source(const SoapArgs& sc, SoapData& data)
+int OHProduct::source(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::source" << endl);
     int sindex;
@@ -255,14 +255,14 @@ int OHProduct::source(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHProduct::attributes(const SoapArgs& sc, SoapData& data)
+int OHProduct::attributes(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::attributes" << endl);
     data.addarg("Value", csattrs);
     return UPNP_E_SUCCESS;
 }
 
-int OHProduct::sourceXMLChangeCount(const SoapArgs& sc, SoapData& data)
+int OHProduct::sourceXMLChangeCount(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::sourceXMLChangeCount" << endl);
     data.addarg("Value", "0");

@@ -22,7 +22,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
+#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 #include "mpdcli.hxx"
 
 class UpMpd;
@@ -47,30 +47,30 @@ public:
     virtual bool urlMap(std::unordered_map<int, std::string>& umap);
 
 private:
-    int play(const SoapArgs& sc, SoapData& data);
-    int pause(const SoapArgs& sc, SoapData& data);
-    int stop(const SoapArgs& sc, SoapData& data);
-    int next(const SoapArgs& sc, SoapData& data);
-    int previous(const SoapArgs& sc, SoapData& data);
-    int setRepeat(const SoapArgs& sc, SoapData& data);
-    int repeat(const SoapArgs& sc, SoapData& data);
-    int setShuffle(const SoapArgs& sc, SoapData& data);
-    int shuffle(const SoapArgs& sc, SoapData& data);
-    int seekSecondAbsolute(const SoapArgs& sc, SoapData& data);
-    int seekSecondRelative(const SoapArgs& sc, SoapData& data);
-    int seekId(const SoapArgs& sc, SoapData& data);
-    int seekIndex(const SoapArgs& sc, SoapData& data);
-    int transportState(const SoapArgs& sc, SoapData& data);
-    int id(const SoapArgs& sc, SoapData& data);
-    int ohread(const SoapArgs& sc, SoapData& data);
-    int readList(const SoapArgs& sc, SoapData& data);
-    int insert(const SoapArgs& sc, SoapData& data);
-    int deleteId(const SoapArgs& sc, SoapData& data);
-    int deleteAll(const SoapArgs& sc, SoapData& data);
-    int tracksMax(const SoapArgs& sc, SoapData& data);
-    int idArray(const SoapArgs& sc, SoapData& data);
-    int idArrayChanged(const SoapArgs& sc, SoapData& data);
-    int protocolInfo(const SoapArgs& sc, SoapData& data);
+    int play(const SoapIncoming& sc, SoapOutgoing& data);
+    int pause(const SoapIncoming& sc, SoapOutgoing& data);
+    int stop(const SoapIncoming& sc, SoapOutgoing& data);
+    int next(const SoapIncoming& sc, SoapOutgoing& data);
+    int previous(const SoapIncoming& sc, SoapOutgoing& data);
+    int setRepeat(const SoapIncoming& sc, SoapOutgoing& data);
+    int repeat(const SoapIncoming& sc, SoapOutgoing& data);
+    int setShuffle(const SoapIncoming& sc, SoapOutgoing& data);
+    int shuffle(const SoapIncoming& sc, SoapOutgoing& data);
+    int seekSecondAbsolute(const SoapIncoming& sc, SoapOutgoing& data);
+    int seekSecondRelative(const SoapIncoming& sc, SoapOutgoing& data);
+    int seekId(const SoapIncoming& sc, SoapOutgoing& data);
+    int seekIndex(const SoapIncoming& sc, SoapOutgoing& data);
+    int transportState(const SoapIncoming& sc, SoapOutgoing& data);
+    int id(const SoapIncoming& sc, SoapOutgoing& data);
+    int ohread(const SoapIncoming& sc, SoapOutgoing& data);
+    int readList(const SoapIncoming& sc, SoapOutgoing& data);
+    int insert(const SoapIncoming& sc, SoapOutgoing& data);
+    int deleteId(const SoapIncoming& sc, SoapOutgoing& data);
+    int deleteAll(const SoapIncoming& sc, SoapOutgoing& data);
+    int tracksMax(const SoapIncoming& sc, SoapOutgoing& data);
+    int idArray(const SoapIncoming& sc, SoapOutgoing& data);
+    int idArrayChanged(const SoapIncoming& sc, SoapOutgoing& data);
+    int protocolInfo(const SoapIncoming& sc, SoapOutgoing& data);
 
     bool makeIdArray(std::string&);
     bool makestate(std::unordered_map<std::string, std::string> &st);

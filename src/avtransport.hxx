@@ -23,7 +23,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
+#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
 class OHPlaylist;
 class UpMpd;
@@ -43,17 +43,17 @@ public:
     }
 
 private:
-    int setAVTransportURI(const SoapArgs& sc, SoapData& data, bool setnext);
-    int getPositionInfo(const SoapArgs& sc, SoapData& data);
-    int getTransportInfo(const SoapArgs& sc, SoapData& data);
-    int getMediaInfo(const SoapArgs& sc, SoapData& data);
-    int getDeviceCapabilities(const SoapArgs& sc, SoapData& data);
-    int setPlayMode(const SoapArgs& sc, SoapData& data);
-    int getTransportSettings(const SoapArgs& sc, SoapData& data);
-    int getCurrentTransportActions(const SoapArgs& sc, SoapData& data);
-    int playcontrol(const SoapArgs& sc, SoapData& data, int what);
-    int seek(const SoapArgs& sc, SoapData& data);
-    int seqcontrol(const SoapArgs& sc, SoapData& data, int what);
+    int setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& data, bool setnext);
+    int getPositionInfo(const SoapIncoming& sc, SoapOutgoing& data);
+    int getTransportInfo(const SoapIncoming& sc, SoapOutgoing& data);
+    int getMediaInfo(const SoapIncoming& sc, SoapOutgoing& data);
+    int getDeviceCapabilities(const SoapIncoming& sc, SoapOutgoing& data);
+    int setPlayMode(const SoapIncoming& sc, SoapOutgoing& data);
+    int getTransportSettings(const SoapIncoming& sc, SoapOutgoing& data);
+    int getCurrentTransportActions(const SoapIncoming& sc, SoapOutgoing& data);
+    int playcontrol(const SoapIncoming& sc, SoapOutgoing& data, int what);
+    int seek(const SoapIncoming& sc, SoapOutgoing& data);
+    int seqcontrol(const SoapIncoming& sc, SoapOutgoing& data, int what);
     // Translate MPD state to AVTransport state variables.
     bool tpstateMToU(std::unordered_map<std::string, std::string>& state);
 

@@ -22,7 +22,7 @@
 #include <unordered_map>                // for unordered_map
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
+#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
 class UpMpd;
 
@@ -39,12 +39,12 @@ public:
     void setmute_i(bool onoff);
 private:
     bool rdstateMToU(std::unordered_map<std::string, std::string>& status);
-    int setMute(const SoapArgs& sc, SoapData& data);
-    int getMute(const SoapArgs& sc, SoapData& data);
-    int setVolume(const SoapArgs& sc, SoapData& data, bool isDb);
-    int getVolume(const SoapArgs& sc, SoapData& data, bool isDb);
-    int listPresets(const SoapArgs& sc, SoapData& data);
-    int selectPreset(const SoapArgs& sc, SoapData& data);
+    int setMute(const SoapIncoming& sc, SoapOutgoing& data);
+    int getMute(const SoapIncoming& sc, SoapOutgoing& data);
+    int setVolume(const SoapIncoming& sc, SoapOutgoing& data, bool isDb);
+    int getVolume(const SoapIncoming& sc, SoapOutgoing& data, bool isDb);
+    int listPresets(const SoapIncoming& sc, SoapOutgoing& data);
+    int selectPreset(const SoapIncoming& sc, SoapOutgoing& data);
 
     UpMpd *m_dev;
     // Desired volume target. We may delay executing small volume

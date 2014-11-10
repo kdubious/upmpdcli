@@ -27,7 +27,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/log.hxx"             // for LOGDEB
-#include "libupnpp/soaphelp.hxx"        // for SoapData, SoapArgs, i2s
+#include "libupnpp/soaphelp.hxx"        // for SoapOutgoing, SoapIncoming, i2s
 
 #include "upmpd.hxx"                    // for UpMpd
 #include "upmpdutils.hxx"               // for diffmaps
@@ -101,7 +101,7 @@ bool OHVolume::getEventData(bool all, std::vector<std::string>& names,
     return true;
 }
 
-int OHVolume::characteristics(const SoapArgs& sc, SoapData& data)
+int OHVolume::characteristics(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::charact." << endl);
     data.addarg("VolumeMax", "100");
@@ -113,7 +113,7 @@ int OHVolume::characteristics(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHVolume::setVolume(const SoapArgs& sc, SoapData& data)
+int OHVolume::setVolume(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::setVolume" << endl);
     int volume;
@@ -125,7 +125,7 @@ int OHVolume::setVolume(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHVolume::setMute(const SoapArgs& sc, SoapData& data)
+int OHVolume::setMute(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::setMute" << endl);
     bool mute;
@@ -136,7 +136,7 @@ int OHVolume::setMute(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHVolume::volumeInc(const SoapArgs& sc, SoapData& data)
+int OHVolume::volumeInc(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::volumeInc" << endl);
     int newvol = m_ctl->getvolume_i() + 1;
@@ -147,7 +147,7 @@ int OHVolume::volumeInc(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHVolume::volumeDec(const SoapArgs& sc, SoapData& data)
+int OHVolume::volumeDec(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::volumeDec" << endl);
     int newvol = m_ctl->getvolume_i() - 1;
@@ -158,14 +158,14 @@ int OHVolume::volumeDec(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHVolume::volume(const SoapArgs& sc, SoapData& data)
+int OHVolume::volume(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::volume" << endl);
     data.addarg("Value", SoapHelp::i2s(m_ctl->getvolume_i()));
     return UPNP_E_SUCCESS;
 }
 
-int OHVolume::mute(const SoapArgs& sc, SoapData& data)
+int OHVolume::mute(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::mute" << endl);
     bool mute = m_ctl->getvolume_i() == 0;
@@ -173,7 +173,7 @@ int OHVolume::mute(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHVolume::volumeLimit(const SoapArgs& sc, SoapData& data)
+int OHVolume::volumeLimit(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::volumeLimit" << endl);
     data.addarg("Value", "100");

@@ -29,7 +29,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/log.hxx"             // for LOGDEB
-#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData, i2s, etc
+#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing, i2s, etc
 
 #include "mpdcli.hxx"                   // for MPDCli, MpdStatus
 #include "upmpd.hxx"                    // for UpMpd
@@ -158,12 +158,11 @@ bool UpMpdRenderCtl::getEventData(bool all, std::vector<std::string>& names,
 //   device.
 
 #if 0
-int UpMpdRenderCtl::getVolumeDBRange(const SoapArgs& sc, SoapData& data)
+int UpMpdRenderCtl::getVolumeDBRange(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    map<string, string>::const_iterator it;
-
-    it = sc.args.find("Channel");
-    if (it == sc.args.end() || it->second.compare("Master")) {
+    string channel;
+    
+    if (!sc.get("Channel", &channel) || channel.compare("Master")) {
         return UPNP_E_INVALID_PARAM;
     }
     data.addarg("MinValue", "-10240");
@@ -209,22 +208,19 @@ void UpMpdRenderCtl::setmute_i(bool onoff)
     }
 }
 
-int UpMpdRenderCtl::setMute(const SoapArgs& sc, SoapData& data)
+int UpMpdRenderCtl::setMute(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    map<string, string>::const_iterator it;
-
-    it = sc.args.find("Channel");
-    if (it == sc.args.end() || it->second.compare("Master")) {
+    string channel;
+    if (!sc.get("Channel", &channel) || channel.compare("Master")) {
         return UPNP_E_INVALID_PARAM;
     }
-		
-    it = sc.args.find("DesiredMute");
-    if (it == sc.args.end() || it->second.empty()) {
+    string desired;
+    if (!sc.get("DesiredMute", &desired)) {
         return UPNP_E_INVALID_PARAM;
     }
-    if (it->second[0] == 'F' || it->second[0] == '0') {
+    if (desired[0] == 'F' || desired[0] == '0') {
         setmute_i(false);
-    } else if (it->second[0] == 'T' || it->second[0] == '1') {
+    } else if (desired[0] == 'T' || desired[0] == '1') {
         setmute_i(true);
     } else {
         return UPNP_E_INVALID_PARAM;
@@ -233,33 +229,31 @@ int UpMpdRenderCtl::setMute(const SoapArgs& sc, SoapData& data)
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdRenderCtl::getMute(const SoapArgs& sc, SoapData& data)
+int UpMpdRenderCtl::getMute(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    map<string, string>::const_iterator it;
-
-    it = sc.args.find("Channel");
-    if (it == sc.args.end() || it->second.compare("Master")) {
+    string channel;
+    if (!sc.get("Channel", &channel) || channel.compare("Master")) {
         return UPNP_E_INVALID_PARAM;
     }
+
     int volume = m_dev->m_mpdcli->getVolume();
     data.addarg("CurrentMute", volume == 0 ? "1" : "0");
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdRenderCtl::setVolume(const SoapArgs& sc, SoapData& data, bool isDb)
+int UpMpdRenderCtl::setVolume(const SoapIncoming& sc, SoapOutgoing& data, bool isDb)
 {
-    map<string, string>::const_iterator it;
+    string channel;
+    if (!sc.get("Channel", &channel) || channel.compare("Master")) {
+        return UPNP_E_INVALID_PARAM;
+    }
 
-    it = sc.args.find("Channel");
-    if (it == sc.args.end() || it->second.compare("Master")) {
+    string desired;
+    
+    if (!sc.get("DesiredVolume", &desired)) {
         return UPNP_E_INVALID_PARAM;
     }
-		
-    it = sc.args.find("DesiredVolume");
-    if (it == sc.args.end() || it->second.empty()) {
-        return UPNP_E_INVALID_PARAM;
-    }
-    int volume = atoi(it->second.c_str());
+    int volume = atoi(desired.c_str());
     if (isDb) {
         volume = dbvaluetopercent(volume);
     } 
@@ -273,16 +267,14 @@ int UpMpdRenderCtl::setVolume(const SoapArgs& sc, SoapData& data, bool isDb)
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdRenderCtl::getVolume(const SoapArgs& sc, SoapData& data, bool isDb)
+int UpMpdRenderCtl::getVolume(const SoapIncoming& sc, SoapOutgoing& data, bool isDb)
 {
     // LOGDEB("UpMpdRenderCtl::getVolume" << endl);
-    map<string, string>::const_iterator it;
-
-    it = sc.args.find("Channel");
-    if (it == sc.args.end() || it->second.compare("Master")) {
+    string channel;
+    if (!sc.get("Channel", &channel) || channel.compare("Master")) {
         return UPNP_E_INVALID_PARAM;
     }
-		
+	
     int volume = getvolume_i();
     if (isDb) {
         volume = percentodbvalue(volume);
@@ -291,22 +283,21 @@ int UpMpdRenderCtl::getVolume(const SoapArgs& sc, SoapData& data, bool isDb)
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdRenderCtl::listPresets(const SoapArgs& sc, SoapData& data)
+int UpMpdRenderCtl::listPresets(const SoapIncoming& sc, SoapOutgoing& data)
 {
     // The 2nd arg is a comma-separated list of preset names
     data.addarg("CurrentPresetNameList", "FactoryDefaults");
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdRenderCtl::selectPreset(const SoapArgs& sc, SoapData& data)
+int UpMpdRenderCtl::selectPreset(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    map<string, string>::const_iterator it;
-		
-    it = sc.args.find("PresetName");
-    if (it == sc.args.end() || it->second.empty()) {
+    string presetnm;
+    
+    if (!sc.get("PresetName", &presetnm)) {
         return UPNP_E_INVALID_PARAM;
     }
-    if (it->second.compare("FactoryDefaults")) {
+    if (presetnm.compare("FactoryDefaults")) {
         return UPNP_E_INVALID_PARAM;
     }
 

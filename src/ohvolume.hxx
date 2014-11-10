@@ -22,7 +22,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
+#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
 class UpMpd;
 class UpMpdRenderCtl;
@@ -36,14 +36,14 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
 private:
-    int characteristics(const SoapArgs& sc, SoapData& data);
-    int setVolume(const SoapArgs& sc, SoapData& data);
-    int volume(const SoapArgs& sc, SoapData& data);
-    int volumeInc(const SoapArgs& sc, SoapData& data);
-    int volumeDec(const SoapArgs& sc, SoapData& data);
-    int volumeLimit(const SoapArgs& sc, SoapData& data);
-    int mute(const SoapArgs& sc, SoapData& data);
-    int setMute(const SoapArgs& sc, SoapData& data);
+    int characteristics(const SoapIncoming& sc, SoapOutgoing& data);
+    int setVolume(const SoapIncoming& sc, SoapOutgoing& data);
+    int volume(const SoapIncoming& sc, SoapOutgoing& data);
+    int volumeInc(const SoapIncoming& sc, SoapOutgoing& data);
+    int volumeDec(const SoapIncoming& sc, SoapOutgoing& data);
+    int volumeLimit(const SoapIncoming& sc, SoapOutgoing& data);
+    int mute(const SoapIncoming& sc, SoapOutgoing& data);
+    int setMute(const SoapIncoming& sc, SoapOutgoing& data);
 
     bool makestate(std::unordered_map<std::string, std::string> &st);
     // State variable storage

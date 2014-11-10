@@ -22,7 +22,7 @@
 #include <vector>                       // for vector
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapArgs, SoapData
+#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
 class UpMpd;
 
@@ -35,10 +35,10 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
 private:
-    int counters(const SoapArgs& sc, SoapData& data);
-    int track(const SoapArgs& sc, SoapData& data);
-    int details(const SoapArgs& sc, SoapData& data);
-    int metatext(const SoapArgs& sc, SoapData& data);
+    int counters(const SoapIncoming& sc, SoapOutgoing& data);
+    int track(const SoapIncoming& sc, SoapOutgoing& data);
+    int details(const SoapIncoming& sc, SoapOutgoing& data);
+    int metatext(const SoapIncoming& sc, SoapOutgoing& data);
 
     bool makestate(std::unordered_map<std::string, std::string>& state);
     void urimetadata(std::string& uri, std::string& metadata);
