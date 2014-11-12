@@ -1,3 +1,11 @@
+upmpdcli (0.9.0-1) unstable; urgency=low
+
+  * Support Songcast streaming (needs the sc2mpd program). See web site:
+    http://www.lesbonscomptes.com/upmpdcli
+  * Fixed quoting for tracks added from an MPD client.
+
+ -- Jean-Francois Dockes <jf@dockes.org>  Wed, 12 Nov 2014 17:53:00 +0200
+
 upmpdcli (0.8.6-1) unstable; urgency=low
 
   * Improved speed for loading big playqueues. 

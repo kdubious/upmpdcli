@@ -754,8 +754,8 @@ network. This is independant from the UPnP framework which mostly deals
 with URLs and audio files (usually, but not necessarily, compressed).</p></div>
 <div class="paragraph"><p>The streams transported by Songcast are actual real-time audio data, which
 can go straight to an audio card for playing.</p></div>
-<div class="paragraph"><p>Controlling the streams (connecting, starting, stopping) is done through an
-UPnP service named OpenHome <em>Receiver</em>.</p></div>
+<div class="paragraph"><p>Controlling the streams on the renderer (connecting, starting, stopping) is
+done through an UPnP service named OpenHome <em>Receiver</em>.</p></div>
 <div class="paragraph"><p>The typical use of Songcast is to have an audio driver on a Windows or OS X
 desktop capture and forward the audio stream to a remote Songcast device.</p></div>
 <div class="paragraph"><p>Any application on the desktop will (be compelled to) transparently play to
@@ -879,7 +879,9 @@ sh ohbuild.sh /my/place/for/openhome</tt></pre>
 </div></div>
 <div class="paragraph"><p>Miscellaneous error messages will be displayed during the build. Hope for
 the best&#8230;</p></div>
-<div class="paragraph"><p>When this is done configure sc2mpd:</p></div>
+<div class="paragraph"><p>When this is done, extract the source for sc2mpd, or clone the github
+repository: <a href="http://www.github.com/medoc92/sc2mpd">http://www.github.com/medoc92/sc2mpd</a>. The <tt>autogen.sh</tt> step (and
+hence the autotools) is not needed for tar file extracts:</p></div>
 <div class="literalblock">
 <div class="content">
 <pre><tt>sh autogen.sh
@@ -889,6 +891,8 @@ sudo make install</tt></pre>
 </div></div>
 <div class="paragraph"><p>The build uses static libraries, so you can move the executable to another
 machine without needing the openhome directory.</p></div>
+<div class="paragraph"><p>After restarting <strong>upmpdcli</strong>, it should advertise the <em>Receiver</em> service and
+appear in the Songcast Sender menus.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -903,7 +907,7 @@ suspect.</p></div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-11-10 16:23:19 CET
+Last updated 2014-11-12 18:01:46 CET
 </div>
 </div>
 </body>
