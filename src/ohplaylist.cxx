@@ -606,6 +606,12 @@ int OHPlaylist::deleteId(const SoapIncoming& sc, SoapOutgoing& data)
     int id;
     bool ok = sc.getInt("Value", &id);
     if (ok) {
+        const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
+        if (mpds.songid == id) {
+            // MPD skips to the next track if the current one is removed,
+            // but I think it's better to stop in this case
+            m_dev->m_mpdcli->stop();
+        }
         ok = m_dev->m_mpdcli->deleteId(id);
         m_mpdqvers = -1;
         maybeWakeUp(ok);
