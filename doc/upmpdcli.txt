@@ -111,20 +111,23 @@ If you are using the source from Github, you will also need the
 autoconf/automake/libtool trio. Use the `autogen.sh` script to set things
 up.
 
-The libupnpp library, which used to be part of upmpdcli, has been
-separated, and you need to build this first.
+The *libupnpp* library, which used to be part of *upmpdcli*, has been
+separated, and you need to build it first.
 
 So you need to either clone two github repositories:
 https://github.com/medoc92/libupnpp and
 https://github.com/medoc92/upmpdcli,
-or download the corresponding release tar files from the the
-link:downloads/[download area]
+or download the release tar files from the the
+link:downloads.html[download area]
 
 Once the source is extracted, the procedure is standard and there are
 currently no specific configure options:
+
+    # Only for git source
+    sh autogen.sh 
 
     configure --prefix=/usr
     make
     sudo make install
 
-Which you should apply first to the libupnpp source, then to upmpdcli.
+Which you should apply first to the *libupnpp* source, then to *upmpdcli*.
