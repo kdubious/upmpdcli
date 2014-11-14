@@ -40,7 +40,6 @@
 
 #include <map>
 
-using namespace std;
 
 #ifdef HAVE_DEBUGLOG
 #include "debuglog.h"
@@ -184,7 +183,7 @@ int SelectLoop::doLoop()
         // Walk the netcon map and set up the read and write fd_sets
         // for select()
         nfds = 0;
-        for (map<int, NetconP>::iterator it = m_polldata.begin();
+        for (std::map<int, NetconP>::iterator it = m_polldata.begin();
                 it != m_polldata.end(); it++) {
             NetconP& pll = it->second;
             int fd  = it->first;
@@ -260,7 +259,7 @@ int SelectLoop::doLoop()
                 continue;
             }
 
-            map<int, NetconP>::iterator it = m_polldata.find(fd);
+            std::map<int, NetconP>::iterator it = m_polldata.find(fd);
             if (it == m_polldata.end()) {
                 /// This should not happen actually
                 LOGDEB2(("Netcon::selectloop: fd %d not found\n", fd));
@@ -309,7 +308,7 @@ int SelectLoop::remselcon(NetconP con)
         return -1;
     }
     LOGDEB1(("Netcon::remselcon: fd %d\n", con->m_fd));
-    map<int, NetconP>::iterator it = m_polldata.find(con->m_fd);
+    std::map<int, NetconP>::iterator it = m_polldata.find(con->m_fd);
     if (it == m_polldata.end()) {
         LOGDEB1(("Netcon::remselcon: con not found for fd %d\n", con->m_fd));
         return -1;

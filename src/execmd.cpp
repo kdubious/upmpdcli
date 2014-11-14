@@ -31,15 +31,12 @@
 
 #include <vector>
 #include <string>
-#include <sstream>
-#include <iostream>
+#include <memory>
 
 #include "execmd.h"
 
 #include "netcon.h"
 #include "closefrom.h"
-
-using namespace std;
 
 extern char **environ;
 
@@ -66,17 +63,20 @@ bool ExecCmd::o_useVfork = false;
 #define MIN(A,B) ((A) < (B) ? (A) : (B))
 #endif
 
-static void stringToTokens(const string &s, vector<string> &tokens, 
-                    const string &delims = " \t", bool skipinit=true);
+static void stringToTokens(const std::string &s, 
+                           std::vector<std::string> &tokens, 
+                           const std::string &delims = " \t", 
+                           bool skipinit=true);
 
-static void stringToTokens(const string& str, vector<string>& tokens,
-		    const string& delims, bool skipinit)
+static void stringToTokens(const std::string& str, 
+                           std::vector<std::string>& tokens,
+                           const std::string& delims, bool skipinit)
 {
-    string::size_type startPos = 0, pos;
+    std::string::size_type startPos = 0, pos;
 
     // Skip initial delims, return empty if this eats all.
     if (skipinit && 
-	(startPos = str.find_first_not_of(delims, 0)) == string::npos) {
+	(startPos = str.find_first_not_of(delims, 0)) == std::string::npos) {
 	return;
     }
     while (startPos < str.size()) { 
@@ -84,13 +84,13 @@ static void stringToTokens(const string& str, vector<string>& tokens,
         pos = str.find_first_of(delims, startPos);
 
         // Add token to the vector and adjust start
-	if (pos == string::npos) {
+	if (pos == std::string::npos) {
 	    tokens.push_back(str.substr(startPos));
 	    break;
 	} else if (pos == startPos) {
 	    // Dont' push empty tokens after first
 	    if (tokens.empty())
-		tokens.push_back(string());
+		tokens.push_back(std::string());
 	    startPos = ++pos;
 	} else {
 	    tokens.push_back(str.substr(startPos, pos - startPos));
@@ -116,7 +116,8 @@ static bool exec_is_there(const char *candidate)
     return false;
 }
 
-bool ExecCmd::which(const string& cmd, string& exepath, const char* path)
+bool ExecCmd::which(const std::string& cmd, std::string& exepath, 
+                    const char* path)
 {
     if (cmd.empty()) 
 	return false;
@@ -138,12 +139,14 @@ bool ExecCmd::which(const string& cmd, string& exepath, const char* path)
     if (pp == 0)
 	return false;
 
-    vector<string> pels;
+    std::vector<std::string> pels;
     stringToTokens(pp, pels, ":");
-    for (vector<string>::iterator it = pels.begin(); it != pels.end(); it++) {
+    for (std::vector<std::string>::iterator it = pels.begin(); 
+         it != pels.end(); it++) {
 	if (it->empty())
 	    *it = ".";
-	string candidate = (it->empty() ? string(".") : *it) + "/" + cmd;
+	std::string candidate = (it->empty() ? std::string(".") : *it) + 
+            "/" + cmd;
 	if (exec_is_there(candidate.c_str())) {
 	    exepath = candidate;
 	    return true;
@@ -152,14 +155,14 @@ bool ExecCmd::which(const string& cmd, string& exepath, const char* path)
     return false;
 }
 
-void  ExecCmd::putenv(const string &ea)
+void  ExecCmd::putenv(const std::string &ea)
 {
     m_env.push_back(ea);
 }
 
-void  ExecCmd::putenv(const string &name, const string& value)
+void  ExecCmd::putenv(const std::string &name, const std::string& value)
 {
-    string ea = name + "=" + value;
+    std::string ea = name + "=" + value;
     putenv(ea);
 }
 
@@ -219,8 +222,8 @@ public:
                         grp, errno));
             }
 	}
-	m_parent->m_tocmd = shared_ptr<Netcon>(0);
-	m_parent->m_fromcmd = shared_ptr<Netcon>(0);
+	m_parent->m_tocmd = std::shared_ptr<Netcon>(0);
+	m_parent->m_fromcmd = std::shared_ptr<Netcon>(0);
 	pthread_sigmask(SIG_UNBLOCK, &m_parent->m_blkcld, 0);
 	m_parent->reset();
     }
@@ -247,7 +250,7 @@ ExecCmd::~ExecCmd()
 // If one of the calls block, the problem manifests itself by 20mn
 // (filter timeout) of looping on "ExecCmd::doexec: selectloop
 // returned 1', because the father is waiting on the read descriptor
-inline void ExecCmd::dochild(const string &cmd, const char **argv,
+inline void ExecCmd::dochild(const std::string &cmd, const char **argv,
 			     const char **envv,
 			     bool has_input, bool has_output)
 {
@@ -317,13 +320,14 @@ inline void ExecCmd::dochild(const string &cmd, const char **argv,
     _exit(127);
 }
 
-int ExecCmd::startExec(const string &cmd, const vector<string>& args,
+int ExecCmd::startExec(const std::string &cmd, 
+                       const std::vector<std::string>& args,
 		       bool has_input, bool has_output)
 {
     { // Debug and logging
-	string command = cmd + " ";
-	for (vector<string>::const_iterator it = args.begin();it != args.end();
-	     it++) {
+	std::string command = cmd + " ";
+	for (std::vector<std::string>::const_iterator it = args.begin();
+             it != args.end(); it++) {
 	    command += "{" + *it + "} ";
 	}
 	LOGDEB(("ExecCmd::startExec: (%d|%d) %s\n", 
@@ -360,7 +364,7 @@ int ExecCmd::startExec(const string &cmd, const vector<string>& args,
     // Fill up argv
     argv[0] = cmd.c_str();
     int i = 1;
-    vector<string>::const_iterator it;
+    std::vector<std::string>::const_iterator it;
     for (it = args.begin(); it != args.end(); it++) {
 	argv[i++] = it->c_str();
     }
@@ -380,14 +384,14 @@ int ExecCmd::startExec(const string &cmd, const vector<string>& args,
     int eidx;
     for (eidx = 0; eidx < envsize; eidx++)
 	envv[eidx] = environ[eidx];
-    for (vector<string>::const_iterator it = m_env.begin(); 
+    for (std::vector<std::string>::const_iterator it = m_env.begin(); 
 	 it != m_env.end(); it++) {
 	envv[eidx++] = it->c_str();
     }
     envv[eidx] = 0;
 
     // As we are going to use execve, not execvp, do the PATH thing.
-    string exe;
+    std::string exe;
     if (!which(cmd, exe)) {
         LOGERR(("ExecCmd::startExec: %s not found\n", cmd.c_str()));
         free(argv);
@@ -459,7 +463,7 @@ int ExecCmd::startExec(const string &cmd, const vector<string>& args,
 // Netcon callback. Send data to the command's input
 class ExecWriter : public NetconWorker {
 public:
-    ExecWriter(const string *input, ExecCmdProvide *provide) 
+    ExecWriter(const std::string *input, ExecCmdProvide *provide) 
 	: m_input(input), m_cnt(0), m_provide(provide)
     {}				    
     virtual int data(NetconData *con, Netcon::Event reason)
@@ -493,7 +497,7 @@ public:
 	return ret;
     }
 private:
-    const string   *m_input;
+    const std::string   *m_input;
     unsigned int    m_cnt; // Current offset inside m_input
     ExecCmdProvide *m_provide;
 };
@@ -501,7 +505,7 @@ private:
 // Netcon callback. Get data from the command output.
 class ExecReader : public NetconWorker {
 public:
-    ExecReader(string *output, ExecCmdAdvise *advise) 
+    ExecReader(std::string *output, ExecCmdAdvise *advise) 
 	: m_output(output), m_advise(advise)
     {}				    
     virtual int data(NetconData *con, Netcon::Event reason)
@@ -519,13 +523,14 @@ public:
 	return n;
     }
 private:
-    string        *m_output;
+    std::string        *m_output;
     ExecCmdAdvise *m_advise;
 };
 
 
-int ExecCmd::doexec(const string &cmd, const vector<string>& args,
-		    const string *input, string *output)
+int ExecCmd::doexec(const std::string &cmd, 
+                    const std::vector<std::string>& args,
+		    const std::string *input, std::string *output)
 {
 
     if (startExec(cmd, args, input != 0, output != 0) < 0) {
@@ -544,11 +549,11 @@ int ExecCmd::doexec(const string &cmd, const vector<string>& args,
 		LOGERR(("ExecCmd::doexec: no connection from command\n"));
 		return -1;
 	    }
-	    oclicon->setcallback(make_shared<ExecReader>
+	    oclicon->setcallback(std::make_shared<ExecReader>
 				 (ExecReader(output, m_advise)));
 	    myloop.addselcon(m_fromcmd, Netcon::NETCONPOLL_READ);
 	    // Give up ownership 
-	    m_fromcmd = shared_ptr<Netcon>(0);
+	    m_fromcmd = std::shared_ptr<Netcon>(0);
 	} 
         // Setup input
 	if (input) {
@@ -557,11 +562,11 @@ int ExecCmd::doexec(const string &cmd, const vector<string>& args,
 		LOGERR(("ExecCmd::doexec: no connection from command\n"));
 		return -1;
 	    }
-	    iclicon->setcallback(make_shared<ExecWriter>
+	    iclicon->setcallback(std::make_shared<ExecWriter>
 				 (ExecWriter(input, m_provide)));
 	    myloop.addselcon(m_tocmd, Netcon::NETCONPOLL_WRITE);
 	    // Give up ownership 
-	    m_tocmd = shared_ptr<Netcon>(0);
+	    m_tocmd = std::shared_ptr<Netcon>(0);
 	}
 
         // Do the actual reading/writing/waiting
@@ -602,7 +607,7 @@ int ExecCmd::doexec(const string &cmd, const vector<string>& args,
     return ret1;
 }
 
-int ExecCmd::send(const string& data)
+int ExecCmd::send(const std::string& data)
 {
     NetconCli *con = dynamic_cast<NetconCli *>(m_tocmd.get());
     if (con == 0) {
@@ -623,7 +628,7 @@ int ExecCmd::send(const string& data)
     return nwritten;
 }
 
-int ExecCmd::receive(string& data, int cnt)
+int ExecCmd::receive(std::string& data, int cnt)
 {
     NetconCli *con = dynamic_cast<NetconCli *>(m_fromcmd.get());
     if (con == 0) {
@@ -650,7 +655,7 @@ int ExecCmd::receive(string& data, int cnt)
     return ntot;
 }
 
-int ExecCmd::getline(string& data)
+int ExecCmd::getline(std::string& data)
 {
     NetconCli *con = dynamic_cast<NetconCli *>(m_fromcmd.get());
     if (con == 0) {
@@ -716,9 +721,9 @@ bool ExecCmd::maybereap(int *status)
 // Static
 bool ExecCmd::backtick(const std::vector<std::string> cmd, std::string& out)
 {
-    vector<string>::const_iterator it = cmd.begin();
+    std::vector<std::string>::const_iterator it = cmd.begin();
     it++;
-    vector<string> args(it, cmd.end());
+    std::vector<std::string> args(it, cmd.end());
     ExecCmd mexec;
     int status = mexec.doexec(*cmd.begin(), args, 0, &out);
     return status == 0;
@@ -742,12 +747,12 @@ void ReExec::init(int argc, char *args[])
     free(cd);
 }
 
-void ReExec::insertArgs(const vector<string>& args, int idx)
+void ReExec::insertArgs(const std::vector<std::string>& args, int idx)
 {
-    vector<string>::iterator it, cit;
+    std::vector<std::string>::iterator it, cit;
     unsigned int cmpoffset = (unsigned int)-1;
 
-    if (idx == -1 || string::size_type(idx) >= m_argv.size()) {
+    if (idx == -1 || std::string::size_type(idx) >= m_argv.size()) {
 	it = m_argv.end();
 	if (m_argv.size() >= args.size()) {
 	    cmpoffset = m_argv.size() - args.size();
@@ -775,9 +780,9 @@ void ReExec::insertArgs(const vector<string>& args, int idx)
     m_argv.insert(it, args.begin(), args.end());
 }
 
-void ReExec::removeArg(const string& arg)
+void ReExec::removeArg(const std::string& arg)
 {
-    for (vector<string>::iterator it = m_argv.begin(); 
+    for (std::vector<std::string>::iterator it = m_argv.begin(); 
 	 it != m_argv.end(); it++) {
 	if (*it == arg)
 	    it = m_argv.erase(it);
@@ -794,7 +799,7 @@ void ReExec::reexec()
     FILE *fp = stdout; //fopen("/tmp/exectrace", "w");
     if (fp) {
 	fprintf(fp, "reexec: pwd: [%s] args: ", cwd?cwd:"getcwd failed");
-	for (vector<string>::const_iterator it = m_argv.begin();
+	for (std::vector<std::string>::const_iterator it = m_argv.begin();
 	     it != m_argv.end(); it++) {
 	    fprintf(fp, "[%s] ", it->c_str());
 	}
@@ -830,7 +835,7 @@ void ReExec::reexec()
 	
     // Fill up argv
     int i = 0;
-    vector<string>::const_iterator it;
+    std::vector<std::string>::const_iterator it;
     for (it = m_argv.begin(); it != m_argv.end(); it++) {
 	argv[i++] = it->c_str();
     }
