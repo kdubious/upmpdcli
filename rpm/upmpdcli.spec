@@ -1,6 +1,6 @@
 Summary:        UPnP Media Renderer front-end to MPD, the Music Player Daemon
 Name:           upmpdcli
-Version:        0.8.4
+Version:        0.9.1
 Release:        1%{?dist}
 Group:          Applications/Multimedia
 License:        GPLv2+
