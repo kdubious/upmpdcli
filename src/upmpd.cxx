@@ -161,35 +161,35 @@ static string ohDesc(
     "<service>"
     "  <serviceType>urn:av-openhome-org:service:Product:1</serviceType>"
     "  <serviceId>urn:av-openhome-org:serviceId:Product</serviceId>"
-    "  <SCPDURL>/OHProduct.xml</SCPDURL>"
+    "  <SCPDURL>/upmpd/OHProduct.xml</SCPDURL>"
     "  <controlURL>/ctl/OHProduct</controlURL>"
     "  <eventSubURL>/evt/OHProduct</eventSubURL>"
     "</service>"
     "<service>"
     "  <serviceType>urn:av-openhome-org:service:Info:1</serviceType>"
     "  <serviceId>urn:av-openhome-org:serviceId:Info</serviceId>"
-    "  <SCPDURL>/OHInfo.xml</SCPDURL>"
+    "  <SCPDURL>/upmpd/OHInfo.xml</SCPDURL>"
     "  <controlURL>/ctl/OHInfo</controlURL>"
     "  <eventSubURL>/evt/OHInfo</eventSubURL>"
     "</service>"
     "<service>"
     "  <serviceType>urn:av-openhome-org:service:Time:1</serviceType>"
     "  <serviceId>urn:av-openhome-org:serviceId:Time</serviceId>"
-    "  <SCPDURL>/OHTime.xml</SCPDURL>"
+    "  <SCPDURL>/upmpd/OHTime.xml</SCPDURL>"
     "  <controlURL>/ctl/OHTime</controlURL>"
     "  <eventSubURL>/evt/OHTime</eventSubURL>"
     "</service>"
     "<service>"
     "  <serviceType>urn:av-openhome-org:service:Volume:1</serviceType>"
     "  <serviceId>urn:av-openhome-org:serviceId:Volume</serviceId>"
-    "  <SCPDURL>/OHVolume.xml</SCPDURL>"
+    "  <SCPDURL>/upmpd/OHVolume.xml</SCPDURL>"
     "  <controlURL>/ctl/OHVolume</controlURL>"
     "  <eventSubURL>/evt/OHVolume</eventSubURL>"
     "</service>"
     "<service>"
     "  <serviceType>urn:av-openhome-org:service:Playlist:1</serviceType>"
     "  <serviceId>urn:av-openhome-org:serviceId:Playlist</serviceId>"
-    "  <SCPDURL>/OHPlaylist.xml</SCPDURL>"
+    "  <SCPDURL>/upmpd/OHPlaylist.xml</SCPDURL>"
     "  <controlURL>/ctl/OHPlaylist</controlURL>"
     "  <eventSubURL>/evt/OHPlaylist</eventSubURL>"
     "</service>"
@@ -201,7 +201,7 @@ static string ohDescReceive(
     "<service>"
     "  <serviceType>urn:av-openhome-org:service:Receiver:1</serviceType>"
     "  <serviceId>urn:av-openhome-org:serviceId:Receiver</serviceId>"
-    "  <SCPDURL>/OHReceiver.xml</SCPDURL>"
+    "  <SCPDURL>/upmpd/OHReceiver.xml</SCPDURL>"
     "  <controlURL>/ctl/OHReceiver</controlURL>"
     "  <eventSubURL>/evt/OHReceiver</eventSubURL>"
     "</service>"
@@ -214,7 +214,7 @@ static const string iconDesc(
     "    <width>64</width>"
     "    <height>64</height>"
     "    <depth>32</depth>"
-    "    <url>/icon.png</url>"
+    "    <url>/upmpd/icon.png</url>"
     "  </icon>"
     "</iconList>"
     );
@@ -567,6 +567,7 @@ int main(int argc, char *argv[])
     }
 
     unordered_map<string, VDirContent> files;
+    string dir("/upmpd/");
     for (unsigned int i = 0; i < xmlfilenames.size(); i++) {
         string filename = path_cat(datadir, xmlfilenames[i]);
         string data;
@@ -592,12 +593,13 @@ int main(int argc, char *argv[])
                 data = regsub1("@ICONLIST@", data, "");
         }
         files.insert(pair<string, VDirContent>
-                     (xmlfilenames[i], VDirContent(data, "application/xml")));
+                     (dir + xmlfilenames[i], 
+                      VDirContent(data, "application/xml")));
     }
 
     if (!icondata.empty()) {
         files.insert(pair<string, VDirContent>
-                     ("icon.png", VDirContent(icondata, "image/png")));
+                     (dir + "icon.png", VDirContent(icondata, "image/png")));
     }
 
     if (ownqueue)
