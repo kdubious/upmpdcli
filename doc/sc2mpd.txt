@@ -3,6 +3,9 @@
 The *upmdcli* UPnP front-end to MPD implements support for Linn Songcast with
 help from the *sc2mpd* auxiliary process.
 
+*_This only works with 16 bits sound for now. Don't try it with
+anything else, there is a risk of strange noises !_*
+
 == What is Songcast
 
 Songcast is a protocol for transporting audio streams across the
