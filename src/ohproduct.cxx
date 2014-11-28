@@ -48,7 +48,7 @@ OHProduct::OHProduct(UpMpd *dev, const string& friendlyname, bool hasRcv)
       m_roomOrName(friendlyname), m_sourceIndex(0)
 {
     o_sources.push_back("Playlist");
-    o_sources.push_back("UpnpAv");
+    //o_sources.push_back("UpnpAv");
     if (hasRcv) 
         o_sources.push_back("Receiver");
 
