@@ -327,12 +327,18 @@ bool MPDCli::setVolume(int volume, bool isMute)
 
     if (isMute) {
         if (volume) {
+            // If we're already not muted, do nothing
+            if (m_premutevolume == 0)
+                return true;
             // Restore premute volume
             LOGDEB("MPDCli::setVolume: restoring premute " << m_premutevolume 
                    << endl);
             volume = m_stat.volume = m_premutevolume;
             m_premutevolume = 0;
         } else {
+            // If we're already muted, do nothing
+            if (m_premutevolume > 0)
+                return true;
             if (m_cachedvolume > 0) {
                 m_premutevolume = m_cachedvolume;
             }
