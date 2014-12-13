@@ -346,6 +346,7 @@ int main(int argc, char *argv[])
     UpMpd::Options opts;
 
     string iconpath;
+    string cachedir;
     if (!g_configfilename.empty()) {
         ConfSimple config(g_configfilename.c_str(), 1, true);
         if (!config.ok()) {
@@ -375,6 +376,7 @@ int main(int argc, char *argv[])
             ohmetapersist = atoi(value.c_str()) != 0;
         }
         config.get("iconpath", iconpath);
+        config.get("cachedir", cachedir);
         if (!(op_flags & OPT_i)) {
             config.get("upnpiface", iface);
             if (iface.empty()) {
@@ -410,8 +412,6 @@ int main(int argc, char *argv[])
 
     Pidfile pidfile(pidfilename);
 
-    string cachedir;
-
     // If started by root, do the pidfile + change uid thing
     uid_t runas(0);
     if (geteuid() == 0) {
@@ -433,9 +433,11 @@ int main(int argc, char *argv[])
             LOGFAT("Can't write pidfile: " << pidfile.getreason() << endl);
             return 1;
         }
-        cachedir = "/var/cache/upmpdcli";
+	if (cachedir.empty())
+            cachedir = "/var/cache/upmpdcli";
     } else {
-        cachedir = path_cat(path_tildexpand("~") , "/.cache/upmpdcli");
+	if (cachedir.empty())
+            cachedir = path_cat(path_tildexpand("~") , "/.cache/upmpdcli");
     }
 
     string& mcfn = opts.cachefn;

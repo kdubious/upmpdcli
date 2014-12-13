@@ -53,6 +53,7 @@ The following parameters can be set:
 |UPnP port|-p port|$UPMPD_UPNPPORT|upnpport
 |OpenHome support switch|-O 0/1||openhome
 |OpenHome playlist disk persistence (default 1)|||ohmetapersist
+|Directory for cached data (/var/cache/upmpdcli or ~/.cache/upmpdcli)|||cachedir
 |Path to icon to be displayed by control point. <<upmpdcli.iconpathnote,See
 note>>|||iconpath
 |===========================    
