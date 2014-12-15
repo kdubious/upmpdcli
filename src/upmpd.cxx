@@ -54,18 +54,6 @@ using namespace UPnPP;
 
 // Note: if we ever need this to work without cxx11, there is this:
 // http://www.tutok.sk/fastgl/callback.html
-//
-// Note that there is a problem in the order in which we do things
-// here: because the UpnpDevice() constructor starts the
-// advertisements and publishes the description document before the
-// services are actually initialized, it is possible that a fast
-// client will fail in subscribing to events, which will manifest
-// itself on the server side by error messages like the following in
-// the log:
-//   libupnpp/device/device.cxx:183::UpnpDevice: Bad serviceID: 
-//        urn:upnp-org:serviceId:ConnectionManager
-// The solution would be to have a separate init call to start the
-// device at the end of the constructor code.
 UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
              const unordered_map<string, VDirContent>& files,
              MPDCli *mpdcli, Options opts)
