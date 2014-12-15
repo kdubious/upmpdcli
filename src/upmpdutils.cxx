@@ -343,7 +343,7 @@ string didlmake(const UpSong& song)
         "xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" "
         "xmlns:dlna=\"urn:schemas-dlna-org:metadata-1-0/\">"
        << "<item restricted=\"1\">";
-
+    ss << "<orig>mpd</orig>";
     {   const string& val = song.title;
         ss << "<dc:title>" << SoapHelp::xmlQuote(val) << "</dc:title>";
     }

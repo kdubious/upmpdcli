@@ -42,7 +42,11 @@ public:
     std::string tracknum;
     std::string genre;
     unsigned int duration_secs;
-    unsigned int mpdid;
+    int mpdid;
+    std::string dump() {
+        return std::string("Uri [") + uri + "] Artist [" + artist + "] Album ["
+            +  album + "] Title [" + title + "] Tno [" + tracknum + "]";
+    }
 };
 
 class MpdStatus {

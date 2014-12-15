@@ -153,6 +153,17 @@ bool OHPlaylist::makeIdArray(string& out)
         out = m_idArrayCached;
         // Mpd queue did not change: no need to look at the metadata cache
         //LOGDEB("OHPlaylist::makeIdArray: mpd queue did not change" << endl);
+        // Update the current song anyway: if it's an internet radio,
+        // the title may have changed with no indication from the
+        // queue. Only do this if the metadata originated from mpd of
+        // course...
+        if (mpds.songid != -1) {
+            auto it = m_metacache.find(mpds.currentsong.uri);
+            if (it != m_metacache.end() && 
+                it->second.find("<orig>mpd</orig>") != string::npos) {
+                m_metacache[mpds.currentsong.uri] = didlmake(mpds.currentsong);
+            }
+        }
         return true;
     }
 
