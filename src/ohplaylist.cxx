@@ -322,7 +322,7 @@ int OHPlaylist::setRepeat(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::setRepeat" << endl);
     bool onoff;
-    bool ok = sc.getBool("Value", &onoff);
+    bool ok = sc.get("Value", &onoff);
     if (ok) {
         ok = m_dev->m_mpdcli->repeat(onoff);
         maybeWakeUp(ok);
@@ -342,7 +342,7 @@ int OHPlaylist::setShuffle(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::setShuffle" << endl);
     bool onoff;
-    bool ok = sc.getBool("Value", &onoff);
+    bool ok = sc.get("Value", &onoff);
     if (ok) {
         // Note that mpd shuffle shuffles the playlist, which is different
         // from playing at random
@@ -364,7 +364,7 @@ int OHPlaylist::seekSecondAbsolute(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::seekSecondAbsolute" << endl);
     int seconds;
-    bool ok = sc.getInt("Value", &seconds);
+    bool ok = sc.get("Value", &seconds);
     if (ok) {
         ok = m_dev->m_mpdcli->seek(seconds);
         maybeWakeUp(ok);
@@ -376,7 +376,7 @@ int OHPlaylist::seekSecondRelative(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::seekSecondRelative" << endl);
     int seconds;
-    bool ok = sc.getInt("Value", &seconds);
+    bool ok = sc.get("Value", &seconds);
     if (ok) {
         const MpdStatus &mpds =  m_dev->getMpdStatusNoUpdate();
         bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
@@ -416,7 +416,7 @@ int OHPlaylist::seekId(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::seekId" << endl);
     int id;
-    bool ok = sc.getInt("Value", &id);
+    bool ok = sc.get("Value", &id);
     if (ok) {
         ok = m_dev->m_mpdcli->playId(id);
         maybeWakeUp(ok);
@@ -429,7 +429,7 @@ int OHPlaylist::seekIndex(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::seekIndex" << endl);
     int pos;
-    bool ok = sc.getInt("Value", &pos);
+    bool ok = sc.get("Value", &pos);
     if (ok) {
         ok = m_dev->m_mpdcli->play(pos);
         maybeWakeUp(ok);
@@ -461,7 +461,7 @@ bool OHPlaylist::cacheFind(const string& uri, string& meta)
 int OHPlaylist::ohread(const SoapIncoming& sc, SoapOutgoing& data)
 {
     int id;
-    bool ok = sc.getInt("Id", &id);
+    bool ok = sc.get("Id", &id);
     LOGDEB("OHPlaylist::ohread id " << id << endl);
     UpSong song;
     if (ok) {
@@ -498,7 +498,7 @@ int OHPlaylist::ohread(const SoapIncoming& sc, SoapOutgoing& data)
 int OHPlaylist::readList(const SoapIncoming& sc, SoapOutgoing& data)
 {
     string sids;
-    bool ok = sc.getString("IdList", &sids);
+    bool ok = sc.get("IdList", &sids);
     LOGDEB("OHPlaylist::readList: [" << sids << "]" << endl);
     vector<string> ids;
     string out("<TrackList>");
@@ -570,10 +570,10 @@ int OHPlaylist::insert(const SoapIncoming& sc, SoapOutgoing& data)
     LOGDEB("OHPlaylist::insert" << endl);
     int afterid;
     string uri, metadata;
-    bool ok = sc.getInt("AfterId", &afterid);
-    ok = ok && sc.getString("Uri", &uri);
+    bool ok = sc.get("AfterId", &afterid);
+    ok = ok && sc.get("Uri", &uri);
     if (ok)
-        ok = ok && sc.getString("Metadata", &metadata);
+        ok = ok && sc.get("Metadata", &metadata);
 
     LOGDEB("OHPlaylist::insert: afterid " << afterid << " Uri " <<
            uri << " Metadata " << metadata << endl);
@@ -615,7 +615,7 @@ int OHPlaylist::deleteId(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::deleteId" << endl);
     int id;
-    bool ok = sc.getInt("Value", &id);
+    bool ok = sc.get("Value", &id);
     if (ok) {
         const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
         if (mpds.songid == id) {
@@ -697,7 +697,7 @@ int OHPlaylist::idArrayChanged(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::idArrayChanged" << endl);
     int qvers;
-    bool ok = sc.getInt("Token", &qvers);
+    bool ok = sc.get("Token", &qvers);
     const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
     
     LOGDEB("OHPlaylist::idArrayChanged: query qvers " << qvers << 

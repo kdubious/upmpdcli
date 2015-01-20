@@ -234,8 +234,7 @@ int OHReceiver::setSender(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHReceiver::setSender" << endl);
     string uri, metadata;
-    bool ok = sc.getString("Uri", &uri) &&
-        sc.getString("Metadata", &metadata);
+    bool ok = sc.get("Uri", &uri) && sc.get("Metadata", &metadata);
 
     if (ok) {
         m_uri = uri;

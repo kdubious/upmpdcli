@@ -117,7 +117,7 @@ int OHVolume::setVolume(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::setVolume" << endl);
     int volume;
-    if (!sc.getInt("Value", &volume)) {
+    if (!sc.get("Value", &volume)) {
         return UPNP_E_INVALID_PARAM;
     }
     m_ctl->setvolume_i(volume);
@@ -129,7 +129,7 @@ int OHVolume::setMute(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::setMute" << endl);
     bool mute;
-    if (!sc.getBool("Value", &mute)) {
+    if (!sc.get("Value", &mute)) {
         return UPNP_E_INVALID_PARAM;
     }
     m_ctl->setmute_i(mute);

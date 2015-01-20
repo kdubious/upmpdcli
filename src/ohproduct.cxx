@@ -171,7 +171,7 @@ int OHProduct::standby(const SoapIncoming& sc, SoapOutgoing& data)
 int OHProduct::setStandby(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::setStandby" << endl);
-    if (!sc.getBool("Value", &m_standby)) {
+    if (!sc.get("Value", &m_standby)) {
         return UPNP_E_INVALID_PARAM;
     }
     m_dev->loopWakeup();
@@ -203,7 +203,7 @@ int OHProduct::setSourceIndex(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::setSourceIndex" << endl);
     int sindex;
-    if (!sc.getInt("Value", &sindex)) {
+    if (!sc.get("Value", &sindex)) {
         return UPNP_E_INVALID_PARAM;
     }
     LOGDEB("OHProduct::setSourceIndex: " << sindex << endl);
@@ -221,7 +221,7 @@ int OHProduct::setSourceIndexByName(const SoapIncoming& sc, SoapOutgoing& data)
     LOGDEB("OHProduct::setSourceIndexByName" << endl);
 
     string name;
-    if (!sc.getString("Value", &name)) {
+    if (!sc.get("Value", &name)) {
         return UPNP_E_INVALID_PARAM;
     }
     for (unsigned int i = 0; i < o_sources.size(); i++) {
@@ -240,7 +240,7 @@ int OHProduct::source(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::source" << endl);
     int sindex;
-    if (!sc.getInt("Index", &sindex)) {
+    if (!sc.get("Index", &sindex)) {
         return UPNP_E_INVALID_PARAM;
     }
     LOGDEB("OHProduct::source: " << sindex << endl);
