@@ -768,7 +768,7 @@ int NetconServLis::openservice(int port, int backlog)
     ipaddr.sin_family = AF_INET;
     ipaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     ipaddr.sin_port = htons((short)port);
-    if (bind(m_fd, (struct sockaddr *)&ipaddr, sizeof(ipaddr)) < 0) {
+    if (::bind(m_fd, (struct sockaddr *)&ipaddr, sizeof(ipaddr)) < 0) {
         LOGSYSERR("NetconServLis", "bind", "");
         goto out;
     }
