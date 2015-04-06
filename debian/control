@@ -3,7 +3,7 @@ Section: contrib/sound
 Priority: extra
 Maintainer: Jean-Francois Dockes <jf@dockes.org>
 Build-Depends: debhelper (>= 8.0.0), autotools-dev, libmpdclient-dev, 
-               libupnpp-dev (= 0.9.1), libupnp6-dev
+               libupnpp-dev, libupnp6-dev
 Standards-Version: 3.9.3
 Homepage: http://www.lesbonscomptes.com/upmpdcli
 
