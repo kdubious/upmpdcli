@@ -390,12 +390,6 @@ int main(int argc, char *argv[])
         // Do we have an sc2mpd command installed (for songcast)?
         if (!ExecCmd::which("sc2mpd", g_sc2mpd_path))
             g_sc2mpd_path.clear();
-    } else {
-        if (access(g_sc2mpd_path.c_str(), X_OK|R_OK) != 0) {
-            LOGERR("Specified path for sc2mpd: " << g_sc2mpd_path << 
-                   " is not executable" << endl);
-            g_sc2mpd_path.clear();
-        }
     }
 
     Pidfile pidfile(pidfilename);
@@ -468,6 +462,16 @@ int main(int argc, char *argv[])
             LOGFAT("Can't set my uid to " << runas << " current: " << geteuid()
                    << endl);
             return 1;
+        }
+    }
+
+//// Dropped root 
+
+    if (!g_sc2mpd_path.empty()) {
+        if (access(g_sc2mpd_path.c_str(), X_OK|R_OK) != 0) {
+            LOGERR("Specified path for sc2mpd: " << g_sc2mpd_path << 
+                   " is not executable" << endl);
+            g_sc2mpd_path.clear();
         }
     }
 
