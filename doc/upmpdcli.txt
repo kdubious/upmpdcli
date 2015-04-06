@@ -127,7 +127,7 @@ currently no specific configure options:
     # Only for git source
     sh autogen.sh 
 
-    configure --prefix=/usr
+    ./configure --prefix=/usr
     make
     sudo make install
 

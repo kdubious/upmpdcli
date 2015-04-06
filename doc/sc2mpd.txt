@@ -3,8 +3,18 @@
 The *upmdcli* UPnP front-end to MPD implements support for Linn Songcast with
 help from the *sc2mpd* auxiliary process.
 
-*_This only works with 16 bits sound for now. Don't try it with
-anything else, there is a risk of strange noises !_*
+*_This has mostly been tested with 16 bits sound but a recent change seems
+to have fixed 24 bits sound, so this should be now usable for MACs.  This
+needs mpd 0.19 on the renderer. Still be a bit careful as this is quite new
+and there is a risk of strange noises !_*
+
+*_Do not try 24 bits sound with MPD 0.18 !_* (or turn the volume very
+low...). Using Songcast from a Mac (24 bits audio) needs *mpd 0.19*,
+configured with `--disable-audiofile`.
+
+As Debian and Ubuntu tend to lag quite bit on MPD progresses, I have setup 
+link:downloads.html#mpd[backport repositories] for recent mpd versions
+(currently 0.19.9), for Ubuntu, Debian i386/amd64 and Raspbian.
 
 == What is Songcast
 
@@ -84,29 +94,40 @@ there.
 There are two parts in building *sc2mpd*:
 
 - Building the Openhome libraries
-- Building *scmpd* proper
+- Building *sc2mpd* proper
 
-Building the Openhome libraries is a bit of a black art, and the sc2mpd
-source comes with an *ohbuild.sh* script which will try to clone the
-Openhome git repositories and build the libs:
+First clone the *sc2mpd* Github repository:
+http://www.github.com/medoc92/sc2mpd.
 
+*sc2mpd* depends on the microhttpd library. Install the development and
+runtime packages which are currently named _libmicrohttpd-dev_ and
+_libmicrohttpd10_ on Debian-derived systems (use _libmicrohttpd_ and
+_libmicrohttpd-devel_ for Fedora).
+
+
+Building the Openhome libraries is a bit of a black art, and the *sc2mpd*
+source comes with an _ohbuild.sh_ script which will try to clone the
+Openhome Git repositories and build the libs:
+
+    cd sc2mpd
     mkdir /my/place/for/openhome
     sh ohbuild.sh /my/place/for/openhome
 
 Miscellaneous error messages will be displayed during the build. Hope for
 the best...
 
-When this is done, extract the source for sc2mpd, or clone the github
-repository: http://www.github.com/medoc92/sc2mpd. The `autogen.sh` step (and
-hence the autotools) is not needed for tar file extracts:
+
+When this is done, build *sc2mpd*, using the following commands inside the
+_sc2mpd_ directory:
 
     sh autogen.sh
     ./configure --prefix=/usr --with-openhome=/my/place/for/openhome
     make
     sudo make install
 
-The build uses static libraries, so you can move the executable to another
-machine without needing the openhome directory.
+The build uses static Openhome libraries, so you can move the executable to
+another machine without needing the Openhome directory (don't forget to
+install the _libmicrohttpd_ runtime though).
 
 After restarting *upmpdcli*, it should advertise the _Receiver_ service and
 appear in the Songcast Sender menus.

@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
-<meta name="generator" content="AsciiDoc 8.6.9" />
+<meta name="generator" content="AsciiDoc 8.6.7" />
 <title>upmpdcli Linn Songcast integration</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
@@ -87,15 +87,9 @@ ul, ol, li > p {
 ul > li     { color: #aaa; }
 ul > li > * { color: black; }
 
-.monospaced, code, pre {
-  font-family: "Courier New", Courier, monospace;
-  font-size: inherit;
-  color: navy;
+pre {
   padding: 0;
   margin: 0;
-}
-pre {
-  white-space: pre-wrap;
 }
 
 #author {
@@ -225,7 +219,7 @@ div.exampleblock > div.content {
 }
 
 div.imageblock div.content { padding-left: 0; }
-span.image img { border-style: none; vertical-align: text-bottom; }
+span.image img { border-style: none; }
 a.image:visited { color: white; }
 
 dl {
@@ -421,6 +415,12 @@ div.unbreakable { page-break-inside: avoid; }
  *
  * */
 
+tt {
+  font-family: "Courier New", Courier, monospace;
+  font-size: inherit;
+  color: navy;
+}
+
 div.tableblock {
   margin-top: 1.0em;
   margin-bottom: 1.5em;
@@ -453,6 +453,12 @@ div.tableblock > table[frame="vsides"] {
  * html5 specific
  *
  * */
+
+.monospaced {
+  font-family: "Courier New", Courier, monospace;
+  font-size: inherit;
+  color: navy;
+}
 
 table.tableblock {
   margin-top: 1.0em;
@@ -533,8 +539,6 @@ body.manpage div.sectionbody {
 @media print {
   body.manpage div#toc { display: none; }
 }
-
-
 </style>
 <script type="text/javascript">
 /*<![CDATA[*/
@@ -740,8 +744,16 @@ asciidoc.install();
 <div class="sectionbody">
 <div class="paragraph"><p>The <strong>upmdcli</strong> UPnP front-end to MPD implements support for Linn Songcast with
 help from the <strong>sc2mpd</strong> auxiliary process.</p></div>
-<div class="paragraph"><p><strong><em>This only works with 16 bits sound for now. Don&#8217;t try it with
-anything else, there is a risk of strange noises !</em></strong></p></div>
+<div class="paragraph"><p><strong><em>This has mostly been tested with 16 bits sound but a recent change seems
+to have fixed 24 bits sound, so this should be now usable for MACs.  This
+needs mpd 0.19 on the renderer. Still be a bit careful as this is quite new
+and there is a risk of strange noises !</em></strong></p></div>
+<div class="paragraph"><p><strong><em>Do not try 24 bits sound with MPD 0.18 !</em></strong> (or turn the volume very
+low&#8230;). Using Songcast from a Mac (24 bits audio) needs <strong>mpd 0.19</strong>,
+configured with <tt>--disable-audiofile</tt>.</p></div>
+<div class="paragraph"><p>As Debian and Ubuntu tend to lag quite bit on MPD progresses, I have setup
+<a href="downloads.html#mpd">backport repositories</a> for recent mpd versions
+(currently 0.19.9), for Ubuntu, Debian i386/amd64 and Raspbian.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -807,7 +819,7 @@ the reason for it, so it&#8217;s an unavoidable inconvenience at the moment.</p>
 <strong>upmpdcli</strong> will advertise the Songcast capability, and any host with a
 Songcast sender installed should be able to use it.</p></div>
 <div class="paragraph"><p>However, you can set a number of values in the upmpdcli configuration file
-(you <strong>must</strong> set the <strong>upmpdcli</strong> <code>-c</code> option for <strong>sc2mpd</strong> to see them, the
+(you <strong>must</strong> set the <strong>upmpdcli</strong> <tt>-c</tt> option for <strong>sc2mpd</strong> to see them, the
 environment variable will not work):</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
@@ -815,7 +827,7 @@ sclogfilename
 </dt>
 <dd>
 <p>
-Name of the file which will receive <strong>sc2mpd</strong> log messages. <code>stderr</code> by
+Name of the file which will receive <strong>sc2mpd</strong> log messages. <tt>stderr</tt> by
 default. This <em>can&#8217;t be</em> the same file used by <strong>upmpdcli</strong>.
 </p>
 </dd>
@@ -833,8 +845,8 @@ schttpport
 <dd>
 <p>
 HTTP port used by <strong>mpd</strong> to connect to <strong>sc2mpd</strong>. 8888 by default. This must
-be an available port on <code>localhost</code>, and it will only accept connections from
-<code>localhost</code>.
+be an available port on <tt>localhost</tt>, and it will only accept connections from
+<tt>localhost</tt>.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -842,9 +854,9 @@ sc2mpd
 </dt>
 <dd>
 <p>
-Path for the <strong>sc2mpd</strong> executable file (e.g. <code>/usr/local/bin/sc2mpd</code>). Only
+Path for the <strong>sc2mpd</strong> executable file (e.g. <tt>/usr/local/bin/sc2mpd</tt>). Only
 useful if <strong>sc2mpd</strong> was not installed to a location in the executable $PATH
-set for the init scripts. Typically only <code>/bin</code> and <code>/usr/bin</code> are in
+set for the init scripts. Typically only <tt>/bin</tt> and <tt>/usr/bin</tt> are in
 there.
 </p>
 </dd>
@@ -863,32 +875,39 @@ Building the Openhome libraries
 </li>
 <li>
 <p>
-Building <strong>scmpd</strong> proper
+Building <strong>sc2mpd</strong> proper
 </p>
 </li>
 </ul></div>
-<div class="paragraph"><p>Building the Openhome libraries is a bit of a black art, and the sc2mpd
-source comes with an <strong>ohbuild.sh</strong> script which will try to clone the
-Openhome git repositories and build the libs:</p></div>
+<div class="paragraph"><p>First clone the <strong>sc2mpd</strong> Github repository:
+<a href="http://www.github.com/medoc92/sc2mpd">http://www.github.com/medoc92/sc2mpd</a>.</p></div>
+<div class="paragraph"><p><strong>sc2mpd</strong> depends on the microhttpd library. Install the development and
+runtime packages which are currently named <em>libmicrohttpd-dev</em> and
+<em>libmicrohttpd10</em> on Debian-derived systems (use <em>libmicrohttpd</em> and
+<em>libmicrohttpd-devel</em> for Fedora).</p></div>
+<div class="paragraph"><p>Building the Openhome libraries is a bit of a black art, and the <strong>sc2mpd</strong>
+source comes with an <em>ohbuild.sh</em> script which will try to clone the
+Openhome Git repositories and build the libs:</p></div>
 <div class="literalblock">
 <div class="content">
-<pre><code>mkdir /my/place/for/openhome
-sh ohbuild.sh /my/place/for/openhome</code></pre>
+<pre><tt>cd sc2mpd
+mkdir /my/place/for/openhome
+sh ohbuild.sh /my/place/for/openhome</tt></pre>
 </div></div>
 <div class="paragraph"><p>Miscellaneous error messages will be displayed during the build. Hope for
 the best&#8230;</p></div>
-<div class="paragraph"><p>When this is done, extract the source for sc2mpd, or clone the github
-repository: <a href="http://www.github.com/medoc92/sc2mpd">http://www.github.com/medoc92/sc2mpd</a>. The <code>autogen.sh</code> step (and
-hence the autotools) is not needed for tar file extracts:</p></div>
+<div class="paragraph"><p>When this is done, build <strong>sc2mpd</strong>, using the following commands inside the
+<em>sc2mpd</em> directory:</p></div>
 <div class="literalblock">
 <div class="content">
-<pre><code>sh autogen.sh
+<pre><tt>sh autogen.sh
 ./configure --prefix=/usr --with-openhome=/my/place/for/openhome
 make
-sudo make install</code></pre>
+sudo make install</tt></pre>
 </div></div>
-<div class="paragraph"><p>The build uses static libraries, so you can move the executable to another
-machine without needing the openhome directory.</p></div>
+<div class="paragraph"><p>The build uses static Openhome libraries, so you can move the executable to
+another machine without needing the Openhome directory (don&#8217;t forget to
+install the <em>libmicrohttpd</em> runtime though).</p></div>
 <div class="paragraph"><p>After restarting <strong>upmpdcli</strong>, it should advertise the <em>Receiver</em> service and
 appear in the Songcast Sender menus.</p></div>
 </div>
@@ -905,7 +924,7 @@ suspect.</p></div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-11-21 18:51:58 CET
+Last updated 2015-03-03 09:39:27 CET
 </div>
 </div>
 </body>
