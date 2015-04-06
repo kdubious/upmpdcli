@@ -222,8 +222,8 @@ public:
                         grp, errno));
             }
 	}
-	m_parent->m_tocmd = std::shared_ptr<Netcon>(0);
-	m_parent->m_fromcmd = std::shared_ptr<Netcon>(0);
+	m_parent->m_tocmd = std::shared_ptr<Netcon>();
+	m_parent->m_fromcmd = std::shared_ptr<Netcon>();
 	pthread_sigmask(SIG_UNBLOCK, &m_parent->m_blkcld, 0);
 	m_parent->reset();
     }
