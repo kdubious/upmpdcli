@@ -3,7 +3,7 @@
 .txt.html:
 	asciidoc $<
 
-all: upmpdcli.html sc2mpd.html release-0.8.html release-0.9.html
+all: upmpdcli.html release-0.8.html release-0.9.html
 
 clean:
 	rm -f *.html
