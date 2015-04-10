@@ -34,6 +34,7 @@
 #include "upmpd.hxx"                    // for UpMpd, etc
 #include "upmpdutils.hxx"               // for didlmake, diffmaps, etc
 #include "ohplaylist.hxx"
+#include "ohproduct.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -41,9 +42,9 @@ using namespace std::placeholders;
 static const string sTpProduct("urn:av-openhome-org:service:Receiver:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Receiver");
 
-OHReceiver::OHReceiver(UpMpd *dev, OHPlaylist *pl, int port)
-    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), m_pl(pl), 
-      m_httpport(port)
+OHReceiver::OHReceiver(UpMpd *dev, OHPlaylist *pl, OHProduct *pr, int port)
+    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), 
+      m_pl(pl), m_pr(pr), m_httpport(port)
 {
     dev->addActionMapping(this, "Play", 
                           bind(&OHReceiver::play, this, _1, _2));
@@ -219,6 +220,15 @@ bool OHReceiver::iStop()
             m_dev->m_mpdcli->deleteId(it->first);
         }
     }
+    // At least the songcast windows driver never resets the source
+    // index (it does call stop when it deconnects).
+    // I guess that there is no reason to reset the source, and
+    // another CP could just set it to what it wants, but Bubble at
+    // least won't do a thing with the renderer as long as the source
+    // is set to receiver.
+    if (m_pr)
+        m_pr->iSetSourceIndex(0);
+
     return true;
 }
 
@@ -257,7 +267,7 @@ int OHReceiver::sender(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHReceiver::transportState(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    //LOGDEB("OHReceiver::transportState" << endl);
+    LOGDEB("OHReceiver::transportState" << endl);
 
     // Allowed states: Stopped, Playing,Waiting, Buffering
     // We won't receive a Stop action if we are not Playing. So we

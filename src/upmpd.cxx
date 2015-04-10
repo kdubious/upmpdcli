@@ -71,16 +71,18 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
     m_services.push_back(new UpMpdConMan(this));
     bool ohReceiver = (m_options & upmpdOhReceiver) != 0; 
     if (m_options & upmpdDoOH) {
-        m_services.push_back(new OHProduct(this, friendlyname, ohReceiver));
+        OHProduct *ohpr = new OHProduct(this, friendlyname, ohReceiver);
+        m_services.push_back(ohpr);
         m_services.push_back(new OHInfo(this));
         m_services.push_back(new OHTime(this));
         m_services.push_back(new OHVolume(this, rdctl));
-        OHPlaylist *ohp = new OHPlaylist(this, rdctl, opts.ohmetasleep);
-        m_services.push_back(ohp);
+        OHPlaylist *ohpl = new OHPlaylist(this, rdctl, opts.ohmetasleep);
+        m_services.push_back(ohpl);
         if (avt)
-            avt->setOHP(ohp);
+            avt->setOHP(ohpl);
         if (ohReceiver) {
-            m_services.push_back(new OHReceiver(this, ohp, opts.schttpport));
+            m_services.push_back(new OHReceiver(this, ohpl, ohpr, 
+                                                opts.schttpport));
         }
     }
 }

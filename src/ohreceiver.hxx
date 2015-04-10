@@ -30,10 +30,11 @@
 using namespace UPnPP;
 class UpMpd;
 class OHPlaylist;
+class OHProduct;
 
 class OHReceiver : public UPnPProvider::UpnpService {
 public:
-    OHReceiver(UpMpd *dev, OHPlaylist *pl, int httpport);
+    OHReceiver(UpMpd *dev, OHPlaylist *pl, OHProduct *pr, int httpport);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
@@ -58,6 +59,7 @@ private:
 
     UpMpd *m_dev;
     OHPlaylist *m_pl;
+    OHProduct *m_pr;
 
     std::shared_ptr<ExecCmd> m_cmd;
     int m_httpport;

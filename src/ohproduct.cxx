@@ -47,6 +47,7 @@ OHProduct::OHProduct(UpMpd *dev, const string& friendlyname, bool hasRcv)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
       m_roomOrName(friendlyname), m_sourceIndex(0)
 {
+    // Playlist must stay first.
     o_sources.push_back("Playlist");
     //o_sources.push_back("UpnpAv");
     if (hasRcv) 
@@ -199,13 +200,8 @@ int OHProduct::sourceIndex(const SoapIncoming& sc, SoapOutgoing& data)
     return UPNP_E_SUCCESS;
 }
 
-int OHProduct::setSourceIndex(const SoapIncoming& sc, SoapOutgoing& data)
+int OHProduct::iSetSourceIndex(int sindex)
 {
-    LOGDEB("OHProduct::setSourceIndex" << endl);
-    int sindex;
-    if (!sc.get("Value", &sindex)) {
-        return UPNP_E_INVALID_PARAM;
-    }
     LOGDEB("OHProduct::setSourceIndex: " << sindex << endl);
     if (sindex < 0 || sindex >= int(o_sources.size())) {
         LOGERR("OHProduct::setSourceIndex: bad index: " << sindex << endl);
@@ -214,6 +210,15 @@ int OHProduct::setSourceIndex(const SoapIncoming& sc, SoapOutgoing& data)
     m_sourceIndex = sindex;
     m_dev->loopWakeup();
     return UPNP_E_SUCCESS;
+}
+int OHProduct::setSourceIndex(const SoapIncoming& sc, SoapOutgoing&)
+{
+    LOGDEB("OHProduct::setSourceIndex" << endl);
+    int sindex;
+    if (!sc.get("Value", &sindex)) {
+        return UPNP_E_INVALID_PARAM;
+    }
+    return iSetSourceIndex(sindex);
 }
 
 int OHProduct::setSourceIndexByName(const SoapIncoming& sc, SoapOutgoing& data)

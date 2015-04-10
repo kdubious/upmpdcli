@@ -33,6 +33,7 @@ public:
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
+    int iSetSourceIndex(int index);
 private:
     int manufacturer(const SoapIncoming& sc, SoapOutgoing& data);
     int model(const SoapIncoming& sc, SoapOutgoing& data);
