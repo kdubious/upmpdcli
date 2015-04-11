@@ -63,12 +63,20 @@ OHReceiver::OHReceiver(UpMpd *dev, OHPlaylist *pl, OHProduct *pr, int port)
         "/Songcast.wav";
 }
 
-//                                 
 static const string o_protocolinfo("ohz:*:*:*,ohm:*:*:*,ohu:*.*.*");
-//static const string o_protocolinfo("ohu:*:*:*");
 
 bool OHReceiver::makestate(unordered_map<string, string> &st)
 {
+    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
+
+    if (m_cmd && mpds.state != MpdStatus::MPDS_PLAY && 
+        mpds.state != MpdStatus::MPDS_PAUSE) {
+        // playing was stopped through ohplaylist or
+        // avtransport. I'm not sure we're supposed to let this
+        // happen, but we do. Stop too.
+        iStop();
+    }
+
     st.clear();
 
     st["Uri"] = m_uri;
@@ -246,7 +254,11 @@ int OHReceiver::setSender(const SoapIncoming& sc, SoapOutgoing& data)
     string uri, metadata;
     bool ok = sc.get("Uri", &uri) && sc.get("Metadata", &metadata);
 
-    if (ok) {
+    // Only do something if data changes, and then first stop any
+    // current playing. We probably should not receive this if we're
+    // not in the stopped state, but just in case...
+    if (ok && (m_uri.compare(uri) || m_metadata.compare(metadata))) {
+        iStop();
         m_uri = uri;
         m_metadata = metadata;
         LOGDEB("OHReceiver::setSender: uri [" << m_uri << "] meta [" << 
