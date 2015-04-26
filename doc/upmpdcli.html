@@ -883,6 +883,13 @@ cellspacing="0" cellpadding="4">
 <td align="left" valign="top"><p class="table"></p></td>
 <td align="left" valign="top"><p class="table">iconpath</p></td>
 </tr>
+<tr>
+<td align="left" valign="top"><p class="table">Path to HTML file to be used as presentation
+page. <a href="#upmpdcli.presentationnote">See note</a></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table"></p></td>
+<td align="left" valign="top"><p class="table">presentationhtml</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -891,6 +898,10 @@ the URL to a descriptive icon as part of the device description. The icon
 to use can be set using the <strong>iconpath</strong> configuration file parameter. Due to
 current (and probably permanent) <strong>upmpdcli</strong> limitations, the image file
 <strong>must</strong> be a 64x64 32 bits-per-pixel png file.</p></div>
+<div class="paragraph" id="upmpdcli.presentationnote"><p><strong>presentationhtml</strong> note: the file referenced by the path will only be read
+once when upmpdcli starts, it can&#8217;t presently be used for status updates
+(but I guess that you could put a redirect in there, to something more
+dynamic served by a real HTTP server).</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -964,7 +975,7 @@ sudo make install</tt></pre>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2015-02-03 23:29:39 CET
+Last updated 2015-04-26 10:02:19 CEST
 </div>
 </div>
 </body>

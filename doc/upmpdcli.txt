@@ -56,6 +56,8 @@ The following parameters can be set:
 |Directory for cached data (/var/cache/upmpdcli or ~/.cache/upmpdcli)|||cachedir
 |Path to icon to be displayed by control point. <<upmpdcli.iconpathnote,See
 note>>|||iconpath
+|Path to HTML file to be used as presentation
+page. <<upmpdcli.presentationnote,See note>>|||presentationhtml
 |===========================    
 
 [[upmpdcli.iconpathnote]]
@@ -64,6 +66,12 @@ the URL to a descriptive icon as part of the device description. The icon
 to use can be set using the *iconpath* configuration file parameter. Due to
 current (and probably permanent) *upmpdcli* limitations, the image file
 *must* be a 64x64 32 bits-per-pixel png file.
+
+[[upmpdcli.presentationnote]]
+*presentationhtml* note: the file referenced by the path will only be read
+once when *upmpdcli* starts, it can't presently be used for status updates
+(but I guess that you could put a redirect in there, to something more
+dynamic served by a real HTTP server).
 
 [[upmpdcli.openhome]]
 == OpenHome ohMedia services
