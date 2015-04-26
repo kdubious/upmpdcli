@@ -12,6 +12,8 @@ upmpdcli_SOURCES = \
      src/avtransport.hxx \
      src/execmd.cpp \
      src/execmd.h \
+     src/httpfs.cxx \
+     src/httpfs.hxx \
      src/netcon.cpp \
      src/netcon.h \
      src/closefrom.cpp \
@@ -51,7 +53,7 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/RenderingControl.xml src/ConnectionManager.xml \
                   src/OHProduct.xml src/OHInfo.xml src/OHTime.xml \
                   src/OHVolume.xml src/OHPlaylist.xml src/OHReceiver.xml \
-                  src/protocolinfo.txt
+                  src/protocolinfo.txt src/presentation.html
 
 dist_sysconf_DATA = src/upmpdcli.conf
 

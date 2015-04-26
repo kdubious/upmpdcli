@@ -60,7 +60,7 @@ bool UpMpdConMan::getEventData(bool all, std::vector<std::string>& names,
     // we return nothing.
     if (all) {
         names.push_back("SinkProtocolInfo");
-        values.push_back(upmpdProtocolInfo);
+        values.push_back(g_protocolInfo);
     }
     return true;
 }
@@ -96,7 +96,7 @@ int UpMpdConMan::getProtocolInfo(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("UpMpdConMan::getProtocolInfo" << endl);
     data.addarg("Source", "");
-    data.addarg("Sink", upmpdProtocolInfo);
+    data.addarg("Sink", g_protocolInfo);
 
     return UPNP_E_SUCCESS;
 }

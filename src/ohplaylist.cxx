@@ -241,7 +241,7 @@ bool OHPlaylist::makestate(unordered_map<string, string> &st)
     st["Shuffle"] = SoapHelp::i2s(mpds.random);
     st["Id"] = mpds.songid == -1 ? "0" : SoapHelp::i2s(mpds.songid);
     st["TracksMax"] = SoapHelp::i2s(tracksmax);
-    st["ProtocolInfo"] = upmpdProtocolInfo;
+    st["ProtocolInfo"] = g_protocolInfo;
     makeIdArray(st["IdArray"]);
 
     return true;
@@ -713,6 +713,6 @@ int OHPlaylist::idArrayChanged(const SoapIncoming& sc, SoapOutgoing& data)
 int OHPlaylist::protocolInfo(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::protocolInfo" << endl);
-    data.addarg("Value", upmpdProtocolInfo);
+    data.addarg("Value", g_protocolInfo);
     return UPNP_E_SUCCESS;
 }

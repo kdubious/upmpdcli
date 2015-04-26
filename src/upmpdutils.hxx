@@ -25,13 +25,6 @@
 
 class UpSong;
 
-/** Read protocol info file. This contains the connection manager protocol info data
- *
- * We strip white-space from beginning/ends of lines, and allow
- * #-started comments (on a line alone only, comments after data not allowed).
- */
-bool read_protocolinfo(const std::string& fn, std::string& out);
-
 /**
  * Read file into string.
  * @return true for ok, false else

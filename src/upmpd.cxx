@@ -47,6 +47,7 @@
 #include "renderctl.hxx"                // for UpMpdRenderCtl
 #include "upmpdutils.hxx"               // for path_cat, Pidfile, regsub1, etc
 #include "execmd.h"
+#include "httpfs.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -144,87 +145,10 @@ Usage(void)
     exit(1);
 }
 
-// The description XML document is the first thing downloaded by
-// clients and tells them what services we export, and where to find
-// them.
-static string ohDesc(
-    "<service>"
-    "  <serviceType>urn:av-openhome-org:service:Product:1</serviceType>"
-    "  <serviceId>urn:av-openhome-org:serviceId:Product</serviceId>"
-    "  <SCPDURL>/upmpd/OHProduct.xml</SCPDURL>"
-    "  <controlURL>/ctl/OHProduct</controlURL>"
-    "  <eventSubURL>/evt/OHProduct</eventSubURL>"
-    "</service>"
-    "<service>"
-    "  <serviceType>urn:av-openhome-org:service:Info:1</serviceType>"
-    "  <serviceId>urn:av-openhome-org:serviceId:Info</serviceId>"
-    "  <SCPDURL>/upmpd/OHInfo.xml</SCPDURL>"
-    "  <controlURL>/ctl/OHInfo</controlURL>"
-    "  <eventSubURL>/evt/OHInfo</eventSubURL>"
-    "</service>"
-    "<service>"
-    "  <serviceType>urn:av-openhome-org:service:Time:1</serviceType>"
-    "  <serviceId>urn:av-openhome-org:serviceId:Time</serviceId>"
-    "  <SCPDURL>/upmpd/OHTime.xml</SCPDURL>"
-    "  <controlURL>/ctl/OHTime</controlURL>"
-    "  <eventSubURL>/evt/OHTime</eventSubURL>"
-    "</service>"
-    "<service>"
-    "  <serviceType>urn:av-openhome-org:service:Volume:1</serviceType>"
-    "  <serviceId>urn:av-openhome-org:serviceId:Volume</serviceId>"
-    "  <SCPDURL>/upmpd/OHVolume.xml</SCPDURL>"
-    "  <controlURL>/ctl/OHVolume</controlURL>"
-    "  <eventSubURL>/evt/OHVolume</eventSubURL>"
-    "</service>"
-    "<service>"
-    "  <serviceType>urn:av-openhome-org:service:Playlist:1</serviceType>"
-    "  <serviceId>urn:av-openhome-org:serviceId:Playlist</serviceId>"
-    "  <SCPDURL>/upmpd/OHPlaylist.xml</SCPDURL>"
-    "  <controlURL>/ctl/OHPlaylist</controlURL>"
-    "  <eventSubURL>/evt/OHPlaylist</eventSubURL>"
-    "</service>"
-    );
-
-// We only advertise the Openhome Receiver service if the sc2mpd
-// songcast-to-mpd gateway command is available
-static string ohDescReceive(
-    "<service>"
-    "  <serviceType>urn:av-openhome-org:service:Receiver:1</serviceType>"
-    "  <serviceId>urn:av-openhome-org:serviceId:Receiver</serviceId>"
-    "  <SCPDURL>/upmpd/OHReceiver.xml</SCPDURL>"
-    "  <controlURL>/ctl/OHReceiver</controlURL>"
-    "  <eventSubURL>/evt/OHReceiver</eventSubURL>"
-    "</service>"
-    );
-
-static const string iconDesc(
-    "<iconList>"
-    "  <icon>"
-    "    <mimetype>image/png</mimetype>"
-    "    <width>64</width>"
-    "    <height>64</height>"
-    "    <depth>32</depth>"
-    "    <url>/upmpd/icon.png</url>"
-    "  </icon>"
-    "</iconList>"
-    );
-
-// Our XML description data. !Keep description.xml first!
-static vector<const char *> xmlfilenames = 
-{
-    /* keep first */ "description.xml", /* keep first */
-    "RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml",
-};
-static vector<const char *> ohxmlfilenames = 
-{
-    "OHProduct.xml", "OHInfo.xml", "OHTime.xml", "OHVolume.xml", 
-    "OHPlaylist.xml",
-};
-
 static const string dfltFriendlyName("UpMpd");
 
 // This is global
-string upmpdProtocolInfo;
+string g_protocolInfo;
 
 // Static for cleanup in sig handler.
 static UpnpDevice *dev;
@@ -271,6 +195,7 @@ int main(int argc, char *argv[])
     bool ohmetapersist = true;
     string upmpdcliuser("upmpdcli");
     string pidfilename("/var/run/upmpdcli.pid");
+    string presentationhtml(DATADIR "/presentation.html");
     string iface;
     unsigned short upport = 0;
     string upnpip;
@@ -366,6 +291,7 @@ int main(int argc, char *argv[])
             ohmetapersist = atoi(value.c_str()) != 0;
         }
         config.get("iconpath", iconpath);
+        config.get("presentationhtml", presentationhtml);
         config.get("cachedir", cachedir);
         if (!(op_flags & OPT_i)) {
             config.get("upnpiface", iface);
@@ -536,66 +462,12 @@ int main(int argc, char *argv[])
     // Create unique ID
     string UUID = LibUPnP::makeDevUUID(friendlyname, hwaddr);
 
-    // Read our XML data to make it available from the virtual directory
-    if (openhome) {
-        if (!g_sc2mpd_path.empty()) {
-            ohxmlfilenames.push_back("OHReceiver.xml");
-        }
-        xmlfilenames.insert(xmlfilenames.end(), ohxmlfilenames.begin(),
-                            ohxmlfilenames.end());
-    }
-
-    {
-        string protofile = path_cat(datadir, "protocolinfo.txt");
-        if (!read_protocolinfo(protofile, upmpdProtocolInfo)) {
-            LOGFAT("Failed reading protocol info from " << protofile << endl);
-            return 1;
-        }
-    }
-
-    string reason;
-
-    string icondata;
-    if (!iconpath.empty()) {
-        if (!file_to_string(iconpath, icondata, &reason)) {
-            LOGERR("Failed reading " << iconpath << " : " << reason << endl);
-        }
-    }
-
+    // Initialize the data we serve through HTTP (device and service
+    // descriptions, icons, presentation page, etc.)
     unordered_map<string, VDirContent> files;
-    string dir("/upmpd/");
-    for (unsigned int i = 0; i < xmlfilenames.size(); i++) {
-        string filename = path_cat(datadir, xmlfilenames[i]);
-        string data;
-        if (!file_to_string(filename, data, &reason)) {
-            LOGFAT("Failed reading " << filename << " : " << reason << endl);
-            return 1;
-        }
-        if (i == 0) {
-            // Special for description: set UUID and friendlyname
-            data = regsub1("@UUID@", data, UUID);
-            data = regsub1("@FRIENDLYNAME@", data, friendlyname);
-            if (openhome) {
-                if (!g_sc2mpd_path.empty()) {
-                    ohDesc += ohDescReceive;
-                }
-                data = regsub1("@OPENHOME@", data, ohDesc);
-            } else {
-                data = regsub1("@OPENHOME@", data, "");
-            }
-            if (!icondata.empty())
-                data = regsub1("@ICONLIST@", data, iconDesc);
-            else
-                data = regsub1("@ICONLIST@", data, "");
-        }
-        files.insert(pair<string, VDirContent>
-                     (dir + xmlfilenames[i], 
-                      VDirContent(data, "application/xml")));
-    }
-
-    if (!icondata.empty()) {
-        files.insert(pair<string, VDirContent>
-                     (dir + "icon.png", VDirContent(icondata, "image/png")));
+    if (!initHttpFs(files, datadir, UUID, friendlyname, openhome, iconpath,
+            presentationhtml)) {
+        exit(1);
     }
 
     if (ownqueue)

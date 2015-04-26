@@ -29,6 +29,7 @@ class MpdStatus;
 
 extern std::string g_configfilename;
 extern std::string g_sc2mpd_path;
+extern std::string g_protocolInfo;
 
 using namespace UPnPProvider;
 
@@ -87,8 +88,5 @@ private:
     std::string m_mcachefn;
     std::vector<UpnpService*> m_services;
 };
-
-
-extern std::string upmpdProtocolInfo;
 
 #endif /* _UPMPD_H_X_INCLUDED_ */

@@ -94,36 +94,6 @@ void catstrerror(string *reason, const char *what, int _errno)
 #endif
 }
 
-bool read_protocolinfo(const string& fn, string& out)
-{
-    ifstream input;
-    input.open(fn, ios::in);
-    if (!input.is_open()) {
-	return false;
-    }	    
-    bool eof = false;
-    for (;;) {
-        string line;
-	getline(input, line);
-	if (!input.good()) {
-	    if (input.bad()) {
-		return false;
-	    }
-	    // Must be eof ? But maybe we have a partial line which
-	    // must be processed. This happens if the last line before
-	    // eof ends with a backslash, or there is no final \n
-            eof = true;
-	}
-        trimstring(line, " \t\n\r");
-        if (line[0] == '#')
-            continue;
-        out += line;
-        if (eof) 
-            break;
-    }
-    return true;
-}
-
 bool file_to_string(const string &fn, string &data, string *reason)
 {
     const int RDBUFSZ = 4096;

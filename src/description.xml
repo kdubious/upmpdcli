@@ -40,6 +40,6 @@
       </service>
       @OPENHOME@
     </serviceList>
-    <presentationURL>/upmpd/presentation.html</presentationURL>
+    @PRESENTATION@
   </device>
 </root>
