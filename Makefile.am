@@ -5,7 +5,7 @@ AM_CPPFLAGS = -DDEBUG -g -Wall \
 
 AM_CXXFLAGS = -std=c++0x 
 
-bin_PROGRAMS = upmpdcli
+bin_PROGRAMS = upmpdcli scctl
 
 upmpdcli_SOURCES = \
      src/avtransport.cxx \
@@ -49,6 +49,11 @@ upmpdcli_SOURCES = \
                            
 upmpdcli_LDADD = -lupnpp -lmpdclient -lpthread
 
+scctl_SOURCES = \
+    scctl_src/scctl.cxx
+
+scctl_LDADD = -lupnpp -lpthread
+              
 dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/RenderingControl.xml src/ConnectionManager.xml \
                   src/OHProduct.xml src/OHInfo.xml src/OHTime.xml \
