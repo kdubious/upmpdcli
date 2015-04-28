@@ -56,7 +56,7 @@ public:
         upmpdOhReceiver = 8
     };
     struct Options {
-        Options() : options(upmpdNone), ohmetasleep(0), schttpport(8888) {}
+        Options() : options(upmpdNone), ohmetasleep(0), schttpport(8768) {}
         unsigned int options;
         std::string  cachefn;
         unsigned int ohmetasleep;
