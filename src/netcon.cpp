@@ -31,8 +31,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
-
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
@@ -61,6 +61,15 @@
 
 #ifndef SOCKLEN_T
 #define SOCKLEN_T socklen_t
+#endif
+
+// Size of path buffer in sockaddr_un (AF_UNIX socket
+// addr). Mysteriously it's 108 (explicit value) under linux, no
+// define accessible. Let's take a little margin as it appears that
+// some systems use 92. I believe we could also malloc a variable size
+// struct but why bother.
+#ifndef UNIX_PATH_MAX
+#define UNIX_PATH_MAX 90
 #endif
 
 // Need &one, &zero for setsockopt...
@@ -615,33 +624,57 @@ int NetconCli::openconn(const char *host, unsigned int port, int timeo)
 
     closeconn();
 
-    struct sockaddr_in saddr;
-    memset(&saddr, 0, sizeof(saddr));
-    saddr.sin_family = AF_INET;
-    saddr.sin_port = htons(port);
+    struct sockaddr *saddr;
+    socklen_t addrsize;
 
-    // Server name may be host name or IP address
-    int addr;
-    if ((addr = inet_addr(host)) != -1) {
-        memcpy(&saddr.sin_addr, &addr, sizeof(addr));
-    } else {
-        struct hostent *hp;
-        if ((hp = gethostbyname(host)) == 0) {
-            LOGERR(("NetconCli::openconn: gethostbyname(%s) failed\n", host));
+    struct sockaddr_in ip_addr;
+    struct sockaddr_un unix_addr;
+    if (host[0] != '/') {
+        memset(&ip_addr, 0, sizeof(ip_addr));
+        ip_addr.sin_family = AF_INET;
+        ip_addr.sin_port = htons(port);
+
+        // Server name may be host name or IP address
+        int addr;
+        if ((addr = inet_addr(host)) != -1) {
+            memcpy(&ip_addr.sin_addr, &addr, sizeof(addr));
+        } else {
+            struct hostent *hp;
+            if ((hp = gethostbyname(host)) == 0) {
+                LOGERR(("NetconCli::openconn: gethostbyname(%s) failed\n", 
+                        host));
+                return -1;
+            }
+            memcpy(&ip_addr.sin_addr, hp->h_addr, hp->h_length);
+        }
+
+        if ((m_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+            LOGSYSERR("NetconCli::openconn", "socket", "");
             return -1;
         }
-        memcpy(&saddr.sin_addr, hp->h_addr, hp->h_length);
-    }
+        addrsize = sizeof(ip_addr);
+        saddr = (sockaddr*)&ip_addr;
+    } else {
+        memset(&unix_addr, 0, sizeof(unix_addr));
+        unix_addr.sun_family = AF_UNIX;
+        if (strlen(host) > UNIX_PATH_MAX - 1) {
+            LOGERR(("NetconCli::openconn: name too long: %s\n", host));
+            return -1;
+        }
+        strcpy(unix_addr.sun_path, host);
 
-    if ((m_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        LOGSYSERR("NetconCli::openconn", "socket", "");
-        return -1;
+        if ((m_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+            LOGSYSERR("NetconCli::openconn", "socket", "");
+            return -1;
+        }
+        addrsize = sizeof(unix_addr);
+        saddr = (sockaddr*)&unix_addr;
     }
     if (timeo > 0) {
         set_nonblock(1);
     }
 
-    if (connect(m_fd, (struct sockaddr *) &saddr, sizeof(saddr)) < 0) {
+    if (connect(m_fd, saddr, addrsize) < 0) {
         if (timeo > 0) {
             if (errno != EINPROGRESS) {
                 goto out;
@@ -676,17 +709,21 @@ out:
 }
 
 // Same as previous, but get the port number from services
-int NetconCli::openconn(const char *host, char *serv, int timeo)
+int NetconCli::openconn(const char *host, const char *serv, int timeo)
 {
     LOGDEB2(("Netconcli::openconn: host %s, serv %s\n", host, serv));
 
-    struct servent *sp;
-    if ((sp = getservbyname(serv, "tcp")) == 0) {
-        LOGERR(("NetconCli::openconn: getservbyname failed for %s\n", serv));
-        return -1;
+    if (host[0]  != '/') {
+        struct servent *sp;
+        if ((sp = getservbyname(serv, "tcp")) == 0) {
+            LOGERR(("NetconCli::openconn: getservbyname failed for %s\n",serv));
+            return -1;
+        }
+        // Callee expects the port number in host byte order
+        return openconn(host, ntohs(sp->s_port), timeo);
+    } else {
+        return openconn(host, (unsigned int)0, timeo);
     }
-    // Callee expects the port number in host byte order
-    return openconn(host, ntohs(sp->s_port), timeo);
 }
 
 
@@ -727,22 +764,64 @@ static void dump_servent(struct servent *servp)
 #endif
 
 // Set up service.
-int NetconServLis::openservice(char *serv, int backlog)
+int NetconServLis::openservice(const char *serv, int backlog)
 {
     int port;
     struct servent  *servp;
+    if (!serv) {
+        LOGERR(("NetconServLis::openservice: null serv??\n"));
+        return -1;
+    }
     LOGDEB1(("NetconServLis::openservice: serv %s\n", serv));
 #ifdef NETCON_ACCESSCONTROL
     if (initperms(serv) < 0) {
         return -1;
     }
 #endif
-    if ((servp = getservbyname(serv, "tcp")) == 0) {
-        LOGERR(("NetconServLis::openservice: getservbyname failed for %s\n", serv));
-        return -1;
+
+    m_serv = serv;
+    if (serv[0] != '/') {
+        if ((servp = getservbyname(serv, "tcp")) == 0) {
+            LOGERR(("NetconServLis::openservice: getservbyname failed for %s\n",
+                    serv));
+            return -1;
+        }
+        port = (int)ntohs((short)servp->s_port);
+        return openservice(port, backlog);
+    } else {
+        if (strlen(serv) > UNIX_PATH_MAX - 1) {
+            LOGERR(("NetconServLis::openservice: too long for AF_UNIX: %s\n",
+                    serv));
+            return -1;
+        }
+        int ret = -1;
+        struct sockaddr_un  addr;
+        if ((m_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+            LOGSYSERR("NetconServLis", "socket", "");
+            return -1;
+        }
+        memset(&addr, 0, sizeof(addr));
+        addr.sun_family = AF_UNIX;
+        strcpy(addr.sun_path, serv);
+
+        if (::bind(m_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+            LOGSYSERR("NetconServLis", "bind", "");
+            goto out;
+        }
+        if (listen(m_fd, backlog) < 0) {
+            LOGSYSERR("NetconServLis", "listen", "");
+            goto out;
+        }
+
+        LOGDEB1(("NetconServLis::openservice: service opened ok\n"));
+        ret = 0;
+    out:
+        if (ret < 0 && m_fd >= 0) {
+            close(m_fd);
+            m_fd = -1;
+        }
+        return ret;
     }
-    port = (int)ntohs((short)servp->s_port);
-    return openservice(port, backlog);
 }
 
 // Port is a natural host integer value
@@ -800,7 +879,7 @@ int NetconServLis::initperms(int port)
 }
 
 // Get authorized address lists from parameter file. This is disabled for now
-int NetconServLis::initperms(char *serv)
+int NetconServLis::initperms(const char *serv)
 {
     if (permsinit) {
         return 0;
@@ -868,31 +947,47 @@ NetconServLis::accept(int timeo)
     NetconServCon *con = 0;
     int newfd = -1;
     struct sockaddr_in who;
-    SOCKLEN_T clilen = (SOCKLEN_T)sizeof(who);
-    if ((newfd = ::accept(m_fd, (struct sockaddr *)&who, &clilen)) < 0) {
-        LOGSYSERR("NetconServCon::accept", "accept", "");
-        goto out;
-    }
+    struct sockaddr_un uwho;
+    if (m_serv.empty() || m_serv[0] != '/') {
+        SOCKLEN_T clilen = (SOCKLEN_T)sizeof(who);
+        if ((newfd = ::accept(m_fd, (struct sockaddr *)&who, &clilen)) < 0) {
+            LOGSYSERR("NetconServCon::accept", "accept", "");
+            goto out;
+        }
 #ifdef NETCON_ACCESSCONTROL
-    if (checkperms(&who, clilen) < 0) {
-        goto out;
-    }
+        if (checkperms(&who, clilen) < 0) {
+            goto out;
+        }
 #endif
+    } else {
+        SOCKLEN_T clilen = (SOCKLEN_T)sizeof(uwho);
+        if ((newfd = ::accept(m_fd, (struct sockaddr *)&uwho, &clilen)) < 0) {
+            LOGSYSERR("NetconServCon::accept", "accept", "");
+            goto out;
+        }
+    }
+
     con = new NetconServCon(newfd);
     if (con == 0) {
         LOGERR(("NetconServLis::accept: new NetconServCon failed\n"));
         goto out;
     }
+
     // Retrieve peer's host name. Errors are non fatal
-    struct hostent *hp;
-    if ((hp = gethostbyaddr((char *) & (who.sin_addr), sizeof(struct in_addr),
-                            AF_INET)) == 0) {
-        LOGERR(("NetconServLis::accept: gethostbyaddr failed for addr 0x%lx\n",
+    if (m_serv.empty() || m_serv[0] != '/') {
+        struct hostent *hp;
+        if ((hp = gethostbyaddr((char *) & (who.sin_addr), 
+                                sizeof(struct in_addr), AF_INET)) == 0) {
+            LOGERR(("NetconServLis::accept: gethostbyaddr failed for addr 0x%lx\n",
                 who.sin_addr.s_addr));
-        con->setpeer(inet_ntoa(who.sin_addr));
+            con->setpeer(inet_ntoa(who.sin_addr));
+        } else {
+            con->setpeer(hp->h_name);
+        }
     } else {
-        con->setpeer(hp->h_name);
+        con->setpeer(m_serv.c_str());
     }
+
     LOGDEB2(("NetconServLis::accept: setting keepalive\n"));
     if (setsockopt(newfd, SOL_SOCKET, SO_KEEPALIVE,
                    (char *)&one, sizeof(one)) < 0) {
@@ -1106,7 +1201,10 @@ int trycli(char *host, char *serv)
         fprintf(stderr, "new NetconCli failed\n");
         return 1;
     }
-    if (clicon->openconn(host, serv) < 0) {
+    int port = atoi(serv);
+    int ret = port > 0 ? 
+        clicon->openconn(host, port) : clicon->openconn(host, serv);
+    if (ret < 0) {
         fprintf(stderr, "openconn(%s, %s) failed\n", host, serv);
         return 1;
     }
@@ -1135,7 +1233,7 @@ int trycli(char *host, char *serv)
     SelectLoop myloop;
     myloop.addselcon(con, Netcon::NETCONPOLL_WRITE);
     fprintf(stderr, "client ready\n");
-    int ret = myloop.doLoop();
+    ret = myloop.doLoop();
     if (ret < 0) {
         fprintf(stderr, "selectloop failed\n");
         exit(1);
@@ -1237,7 +1335,10 @@ int tryserv(char *serv)
     sigaction(SIGQUIT, &sa, 0);
     sigaction(SIGTERM, &sa, 0);
 
-    if (servlis->openservice(serv) < 0) {
+    int port = atoi(serv);
+    int ret = port > 0 ? 
+        servlis->openservice(port) : servlis->openservice(serv);
+    if (ret < 0) {
         fprintf(stderr, "openservice(%s) failed\n", serv);
         return 1;
     }

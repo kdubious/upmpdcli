@@ -17,9 +17,10 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 #include <sys/time.h>
+
 #include <map>
 #include <memory>
-
+#include <string>
 
 /// A set of classes to manage client-server communication over a
 /// connection-oriented network, or a pipe.
@@ -234,7 +235,8 @@ public:
     virtual int readready();
     /// Check for data being available for writing
     virtual int writeready();
-    /// Read a line of text on an ascii connection
+    /// Read a line of text on an ascii connection. Returns -1 or byte count
+    /// including final 0. \n is kept
     virtual int getline(char *buf, int cnt, int timeo = -1);
     /// Set handler to be called when the connection is placed in the
     /// selectloop and an event occurs.
@@ -258,11 +260,14 @@ public:
         m_silentconnectfailure = silent;
     }
 
-    /// Open connection to specified host and named service.
-    int openconn(const char *host, char *serv, int timeo = -1);
+    /// Open connection to specified host and named service. Set host
+    /// to an absolute path name for an AF_UNIX service. serv is
+    /// ignored in this case.
+    int openconn(const char *host, const char *serv, int timeo = -1);
 
     /// Open connection to specified host and numeric port. port is in
-    /// HOST byte order
+    /// HOST byte order. Set host to an absolute path name for an
+    /// AF_UNIX service. serv is ignored in this case.
     int openconn(const char *host, unsigned int port, int timeo = -1);
 
     /// Reuse existing fd.
@@ -311,8 +316,9 @@ public:
 #endif /* NETCON_ACCESSCONTROL */
     }
     ~NetconServLis();
-    /// Open named service.
-    int openservice(char *serv, int backlog = 10);
+    /// Open named service. Used absolute pathname to create an
+    /// AF_UNIX path-based socket instead of an IP one.
+    int openservice(const char *serv, int backlog = 10);
     /// Open service by port number.
     int openservice(int port, int backlog = 10);
     /// Wait for incoming connection. Returned connected Netcon
@@ -324,12 +330,15 @@ protected:
     /// insert the new connection in the selectloop.
     virtual int cando(Netcon::Event reason);
 
+    // Empty if port was numeric, else service name or socket path
+    std::string m_serv; 
+
 private:
 #ifdef NETCON_ACCESSCONTROL
     int permsinit;
     struct intarrayparam okaddrs;
     struct intarrayparam okmasks;
-    int initperms(char *servicename);
+    int initperms(const char *servicename);
     int initperms(int port);
     int checkperms(void *cli, int clilen);
 #endif /* NETCON_ACCESSCONTROL */

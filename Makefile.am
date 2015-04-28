@@ -50,7 +50,9 @@ upmpdcli_SOURCES = \
 upmpdcli_LDADD = -lupnpp -lmpdclient -lpthread
 
 scctl_SOURCES = \
-    scctl_src/scctl.cxx
+    scctl_src/scctl.cxx \
+    src/netcon.cpp \
+    src/upmpdutils.cxx
 
 scctl_LDADD = -lupnpp -lpthread
               

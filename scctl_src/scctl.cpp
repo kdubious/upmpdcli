@@ -15,12 +15,30 @@
  *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-///// Songcast UPnP Controller
+/* 
+ * Songcast UPnP controller. 
+ *
+ * This can list the state of all Receivers, tell
+ * a Receiver to play the same URI as another one (master/slave,
+ * except that the slaves don't really follow the master state, they
+ * will just keep playing the same URI), or tell a Receiver to return
+ * to Playlist operation.
+ * 
+ * To avoid encurring a discovery timeout for each op, there is a
+ * server mode, in which a permanent process executes the above
+ * commands, received on Unix socket, and returns the results.
+ *
+ * When executing any of the ops from the command line, the program
+ * first tries to contact the server, and does things itself if no
+ * server is found (encurring 2-3 S of timeout in the latter case).
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <string>
 #include <iostream>
@@ -30,12 +48,11 @@ using namespace std;
 
 #include "libupnpp/upnpplib.hxx"
 #include "libupnpp/log.hxx"
-#include "libupnpp/upnpputils.hxx"
-#include "libupnpp/ptmutex.hxx"
-#include "libupnpp/control/service.hxx"
 #include "libupnpp/control/mediarenderer.hxx"
-#include "libupnpp/control/renderingcontrol.hxx"
 #include "libupnpp/control/discovery.hxx"
+
+#include "../src/netcon.h"
+#include "../src/upmpdutils.hxx"
 
 using namespace UPnPClient;
 using namespace UPnPP;
@@ -299,46 +316,80 @@ void ohNoSongcast(const vector<string>& slaves)
     }
 }
 
+string showReceivers()
+{
+    vector<SongcastState> vscs;
+    listReceivers(vscs);
+    ostringstream out;
+
+    for (auto& scs: vscs) {
+        switch (scs.state) {
+        case SongcastState::SCS_GENERROR:    out << "Error ";break;
+        case SongcastState::SCS_NOOH:        out << "Nooh  ";break;
+        case SongcastState::SCS_NOTRECEIVER: out << "Off   ";break;
+        case SongcastState::SCS_STOPPED:     out << "Stop  ";break;
+        case SongcastState::SCS_PLAYING:     out << "Play  ";break;
+        }
+        out << scs.nm << " ";
+        out << scs.UDN << " ";
+        if (scs.state == SongcastState::SCS_PLAYING) {
+            out << scs.uri;
+        } else if (scs.state == SongcastState::SCS_GENERROR) {
+            out << scs.reason;
+        }
+        out << endl;
+    }
+    return out.str();
+}
+
 static char *thisprog;
 static char usage [] =
 " -l list renderers with Songcast Receiver capability\n"
-" -s <master> <slave> [slave ...] : Set up the slaves renderers as Songcast"
+" -s <master> <slave> [slave ...] : Set up the slaves renderers as Songcast\n"
 "    Receivers and make them play from the same uri as the master\n"
 " -x <renderer> [renderer ...] Reset renderers from Songcast to Playlist\n"
+" -S run as server\n"
 "\n"
 "Renderers may be designated by friendly name or UUID\n"
-"  \n\n"
+"\n"
 ;
 static void
-Usage(void)
+Usage(FILE *fp = stderr)
 {
-    fprintf(stderr, "%s: usage:\n%s", thisprog, usage);
+    fprintf(fp, "%s: usage:\n%s", thisprog, usage);
     exit(1);
 }
 static int   op_flags;
 #define OPT_l    0x1
 #define OPT_s    0x2
 #define OPT_x    0x4
+#define OPT_S    0x8
+#define OPT_h    0x10
+
+int runserver();
+bool tryserver(int argc, char *argv[]);
 
 int main(int argc, char *argv[])
 {
     thisprog = argv[0];
 
     int ret;
-    while ((ret = getopt(argc, argv, "lsx")) != -1) {
+    while ((ret = getopt(argc, argv, "lSsxh")) != -1) {
         switch (ret) {
         case 'l': if (op_flags) Usage(); op_flags |= OPT_l; break;
         case 's': if (op_flags) Usage(); op_flags |= OPT_s; break;
+        case 'S': if (op_flags) Usage(); op_flags |= OPT_S; break;
         case 'x': if (op_flags) Usage(); op_flags |= OPT_x; break;
+        case 'h': Usage(stdout);
         default: Usage();
         }
     }
 
-    if (Logger::getTheLog("/tmp/upexplo.log") == 0) {
-        cerr << "Can't initialize log" << endl;
-        return 1;
+    // If we're not a server, try to contact one to avoid the
+    // discovery timeout
+    if (!(op_flags & OPT_S) && tryserver(argc -1, &argv[1])) {
+        exit(0);
     }
-    Logger::getTheLog("")->setLogLevel(Logger::LLDEB1);
 
     LibUPnP *mylib = LibUPnP::getLibUPnP();
     if (!mylib) {
@@ -359,26 +410,8 @@ int main(int argc, char *argv[])
         }
         if (optind < argc)
             Usage();
-        vector<SongcastState> vscs;
-        listReceivers(vscs);
-        for (auto& scs: vscs) {
-            switch (scs.state) {
-            case SongcastState::SCS_GENERROR:    cout << "Error ";break;
-            case SongcastState::SCS_NOOH:        cout << "Nooh  ";break;
-            case SongcastState::SCS_NOTRECEIVER: cout << "Off   ";break;
-            case SongcastState::SCS_STOPPED:     cout << "Stop  ";break;
-            case SongcastState::SCS_PLAYING:     cout << "Play  ";break;
-            }
-            cout << scs.nm << " ";
-            cout << scs.UDN << " ";
-            if (scs.state == SongcastState::SCS_PLAYING) {
-                cout << scs.uri;
-            } else if (scs.state == SongcastState::SCS_GENERROR) {
-                cout << scs.reason;
-            }
-            cout << endl;
-        }
-        
+        string out = showReceivers();
+        cout << out;
     } else if ((op_flags & OPT_s)) {
         if (op_flags & (OPT_l|OPT_x)) {
             Usage();
@@ -402,9 +435,208 @@ int main(int argc, char *argv[])
             slaves.push_back(argv[optind++]);
         }
         ohNoSongcast(slaves);
+    } else if (op_flags & OPT_S) {
+        exit(runserver());
     } else {
         Usage();
     }
 
+    return 0;
+}
+
+// The Unix socket path which we use for client-server operation
+bool sockname(string& nm)
+{
+    char buf[80];
+    sprintf(buf, "/tmp/scctl%d", int(getuid()));
+    if (access(buf, 0) < 0) {
+        if (mkdir(buf, 0700)) {
+            perror("mkdir");
+            return false;
+        }
+    }
+    sprintf(buf, "/tmp/scctl%d/sock", int(getuid()));
+    nm = buf;
+    return true;
+}
+
+
+// Try to have an op run in server process (to avoid the discovery
+// timeout).
+bool tryserver(const string& cmd)
+{
+    fflush(stdout);
+
+    NetconCli *clicon = new NetconCli();
+    NetconP con(clicon);
+    if (!con) {
+        cerr << "tryserver: new NetconCli failed\n";
+        return false;
+    }
+    
+    string snm;
+    if (!sockname(snm)) {
+        return false;
+    }
+    if (clicon->openconn(snm.c_str(), (unsigned int)0) < 0) {
+        // Server not running case, no big deal
+        LOGDEB("openconn(" << snm << ") failed (ok: server not running)\n");
+        return false;
+    }
+
+    if (clicon->send(cmd.c_str(), cmd.size() + 1) < 0) {
+        cerr << "Send failed\n";
+        return false;
+    }
+    char buf[1024];
+    for (;;) {
+        int cnt = clicon->receive(buf, 1024);
+        if (cnt < 0) {
+            perror("receive:");
+            return false;
+        }
+        if (cnt == 0)
+            break;
+        if (write(1, buf, cnt) != cnt) {
+            perror("write");
+            return false;
+        }
+    }
+    return true;
+}
+
+bool tryserver(int argc, char **argv)
+{
+    string cmd;
+    for (int i = 0; i < argc; i++) {
+        // May need quoting here ? 
+        cmd  += argv[i]; 
+        cmd += " ";
+    }
+    cmd += "\n";
+    return tryserver(cmd);
+}
+
+
+// Listening endpoint for the server. For each connection, one request
+// is served immediately and the connection is closed.
+class MyNetconServLis : public NetconServLis {
+public:
+protected:
+    int cando(Netcon::Event reason);
+};
+
+// Server worker method. Called for each connection, does one thing
+// and returns.
+int MyNetconServLis::cando(Netcon::Event reason)
+{
+    NetconServCon *con = accept();
+    if (con == 0) {
+        LOGERR("scctl server: accept() failed\n");
+        return 1;
+    }
+    std::unique_ptr<Netcon> conhold(con);
+
+    // Get command
+    string line;
+    {
+        char buf[2048];
+        if  (con->getline(buf, 2048, 2) <= 0) {
+            LOGERR("scctl: server: getline() failed\n");
+            return 1;
+        }
+        line = buf;
+    }
+
+    trimstring(line, " \n");
+    vector<string> toks;
+    stringToTokens(line, toks);
+    if (toks.empty()) {
+        return 1;
+    }
+
+    string cmd = toks[0];
+    string out;
+    if (!cmd.compare("-p")) {
+        // ping
+        out = "Ok\n";
+    } else if (!cmd.compare("-l")) {
+        out = showReceivers();
+    } else if (!cmd.compare("-s")) {
+        if (cmd.size() < 3)
+            return 1;
+        vector<string>::iterator beg = toks.begin();
+        beg++;
+        string master = *beg;
+        beg++;
+        vector<string> slaves(beg, toks.end());
+        ohSongcast(master, slaves);
+    } else if (!cmd.compare("-x")) {
+        if (cmd.size() < 2)
+            return 1;
+        vector<string>::iterator beg = toks.begin();
+        beg++;
+        vector<string> slaves(beg, toks.end());
+        ohNoSongcast(slaves);
+    } else {
+        return 1;
+    }
+
+    if (con->send(out.c_str(), out.size(), 0) < 0) {
+        LOGERR("scctl: server: send() failed\n");
+        return 1;
+    }
+
+    return 1;
+}
+
+// Server init routine
+
+int runserver()
+{
+    string snm;
+    if (!sockname(snm)) {
+        return 1;
+    }
+
+    // Check if already running, else clean up socket
+    if (access(snm.c_str(), 0) == 0) {
+        
+        if(tryserver("-p\n")) {
+            // Already running
+            return 0;
+        }
+        if (unlink(snm.c_str()) < 0) {
+            perror("unlink");
+            return 1;
+        }
+    }
+
+    // Run
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+
+    // Initialize lib at once, will be ready when we need it
+    showReceivers();
+
+    MyNetconServLis *servlis = new MyNetconServLis();
+    if (servlis == 0) {
+        LOGERR("scctl: server: new NetconServLis failed\n");
+        return 1;
+    }
+    if (servlis->openservice(snm.c_str()) < 0) {
+        LOGERR("scctl: server: openservice(" << snm << ") failed\n");
+        return 1;
+    }
+
+    SelectLoop myloop;
+    myloop.addselcon(NetconP(servlis), Netcon::NETCONPOLL_READ);
+
+    LOGDEB("scctl: server: openservice(" << snm << ") Ok\n");
+
+    if (myloop.doLoop() < 0) {
+        LOGERR("scctl: server: selectloop failed\n");
+        return 1;
+    }
     return 0;
 }
