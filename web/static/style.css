@@ -1,0 +1,63 @@
+body {	margin: 0; font-family: sans-serif }
+* { font-family: inherit  }
+
+
+#menu ul
+{
+}
+
+#menu ul li
+{
+display: inline;
+line-height: 30px;
+padding-left: 3px;
+}
+
+#menu ul li a
+{
+background-color: transparent;
+background-repeat: repeat-x;
+padding: 8px 12px 8px 12px;
+font-size: 12px;
+font-weight: bold;
+}
+
+#menu ul li a:hover
+{
+background: #aaa;
+color: #4A4A24;
+text-decoration: none;
+}
+
+
+a { text-decoration: none }
+table td {
+	padding: 10;
+	border-right: 1px dotted black ;
+	border-collapse: collapse;
+}
+table td:last-child {
+	border-right: 0px;
+}
+form { margin: 0 }
+input, select {
+	margin-top: 2px;
+	margin-bottom: 2px;
+	background: white;
+	border: 1px solid #999;
+	padding: 3px;
+	width: 100%;
+	color: #555;
+}
+input:focus, button:focus, select:focus{
+	border: 1px solid black;
+	color: black;
+}
+input[type=button],input[type=reset],input[type=submit] { width: 32%; }
+input[type=button]:hover,input[type=reset]:hover,input[type=submit]:hover{ color:white; background: #ccc; cursor: pointer; }
+input[type=reset]:hover,input[type=submit]:hover { }
+input[name=before], input[name=after] { width: 45% }
+tr { vertical-align: top }
+
+hr { border: 1px solid #999 }
+
