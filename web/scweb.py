@@ -20,11 +20,12 @@ def top():
 def listReceivers():
     devnull = open('/dev/null', 'w')
     try:
-        data = subprocess.check_output(['scctl', '-l', '-n'], stderr = devnull)
+        data = subprocess.check_output(['scctl', '-l'], stderr = devnull)
     except:
         data = "scctl error"
     o = []
     for line in data.splitlines():
+        #print >> sys.stderr, line
         fields = re.split('''\s+''', line);
         if len(fields) == 4:
             status, fname, uuid, uri = fields
@@ -55,7 +56,7 @@ def assocReceivers():
                 pass
 
     try:
-        data = subprocess.check_output(['scctl', '-l', '-n'], stderr = devnull)
+        data = subprocess.check_output(['scctl', '-l'], stderr = devnull)
     except:
         data = "scctl error"
 
@@ -87,7 +88,7 @@ def stopReceivers():
             pass
 
     try:
-        data = subprocess.check_output(['scctl', '-l', '-n'], stderr = devnull)
+        data = subprocess.check_output(['scctl', '-l'], stderr = devnull)
     except:
         data = "scctl error"
 

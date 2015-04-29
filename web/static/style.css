@@ -39,24 +39,31 @@ table td {
 table td:last-child {
 	border-right: 0px;
 }
-form { margin: 0 }
+
+form { 
+    margin: 10;
+}
 input, select {
 	margin-top: 2px;
 	margin-bottom: 2px;
 	background: white;
 	border: 1px solid #999;
 	padding: 3px;
-	width: 100%;
-	color: #555;
+	color: #f55;
 }
 input:focus, button:focus, select:focus{
 	border: 1px solid black;
 	color: black;
 }
-input[type=button],input[type=reset],input[type=submit] { width: 32%; }
-input[type=button]:hover,input[type=reset]:hover,input[type=submit]:hover{ color:white; background: #ccc; cursor: pointer; }
-input[type=reset]:hover,input[type=submit]:hover { }
-input[name=before], input[name=after] { width: 45% }
+input[type=button],input[type=reset],input[type=submit] { 
+
+}
+input[type=button]:hover,input[type=reset]:hover,input[type=submit]:hover{ 
+    color:white; background: #ccc; cursor: pointer; 
+}
+input[type=reset]:hover,input[type=submit]:hover { 
+}
+
 tr { vertical-align: top }
 
 hr { border: 1px solid #999 }
