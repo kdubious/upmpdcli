@@ -1,0 +1,151 @@
+= Managing multiroom audio with Linn Songcast and upmpdcli
+
+== What is Linn Songcast
+
+*Songcast* is a protocol for transporting audio streams across the network,
+developped by link:http://oss.linn.co.uk/trac/wiki/Songcast[Linn] as a
+series of open-source libraries and applications.
+
+There are two types of entities involved in the protocol:
+
+ - A *Songcast* _Sender_ generates an audio stream.
+ - A *Songcast* _Receiver_, which typically runs on an OpenHome Renderer,
+   receives the stream and plays it.
+
+The streams transported by *Songcast* are actual real-time audio data, which
+can go straight to an audio card for playing.
+
+Controlling the streams (connecting, starting, stopping) is
+done through an UPnP service named OpenHome __Receiver__, which runs on an
+UPnP Media Renderer implementing the OpenHome services.
+
+The typical use of *Songcast* is to have an audio driver on a Windows or OS X
+desktop capture and forward the audio stream to a remote *Songcast* device
+(this is the main purpose of the *Songcast* Mac and Windows applications,
+apart from actually controlling the audio destination).
+
+Any application on the desktop will (be compelled to) transparently play to
+the remote device, without need to know anything about *Songcast*.
+
+== Multiple Receivers
+
+Multiple _Receiver_ hosts can connect to the same _Sender_, so that they
+will all be playing the same audio.
+
+The Mac and Windows *Songcast* apps only let you connect the _Sender_ to one
+Receiver though.
+
+*upmpdcli* now includes a small application which can list the state of
+the local *Songcast* Receivers, make a Receiver play from the same URI as
+another one (for building multiroom groups), or return a Media Renderer
+from Receiver to normal operation.
+
+The functions can be accessed either from the *scctl* command line utility,
+or from a local Web application (as Songcast is mostly used from a Windows
+or Mac PC, it would be inconvenient to have to access the Linux command
+line to control the multiroom groups).
+
+This has only be tested with *upmpdcli* and its link:sc2mpd.html[sc2mpd]
+*Songcast* auxiliary process as Receiver implementation, but I'd guess that
+there is a good chance it would work with others.
+
+This is very preliminary for now and there are a number of issues, I hope
+to improve them, but for now, this is definitely an _early adopters_ system:
+
+  - The initial synchronisation when forming the group is very bad. To
+    resynchronize everything, stop or pause the playing on the PC (from the
+    player, e.g. Media Player, not from the Songcast utility), wait for the
+    audio to drain, and a few seconds more, then restart playing.
+
+  - It's quite easy to put the system in a confused state where nothing
+    seems to work any more. Stopping all Receivers (with *scctl* or the Web
+    interface) and restarting the PC will normally get things back to
+    sanity, but it will sometimes be necessary to restart everything.
+    *Always give the commands a little time to take effect*. Especially,
+    it's quite common that the audio will not begin to play for around
+    10 S after activation from the *Songcast* PC interface. Clicking on
+    stuff too early is the surest way to get into bad states, always give
+    10 S to the system when things seem to not be happening.
+
+  - _The following problem seems to be gone from the latest *Songcast*
+    code_ (which is used by the current `ohbuild.sh` script).  Songcast can
+    be transported by either unicast or multicast IP. multicast is of
+    course much better for the network load, but I seem to have seen random
+    *sc2mpd* crashes with it. I am not sure of the cause (may be not linked
+    to multicast at all), but if you experience random *sc2mpd* crashes,
+    switch *Songcast* to unicast (in the PC Songcast app advanced
+    configuration panel. Unicast is the default).
+
+
+== Setting things up
+
+The following seems to work for me:
+
+ - Remove libupnpp and upmpdcli packages from the system to avoid confusion
+ - Clone the libupnpp, upmpdcli and sc2mpd repositories from
+   link:https://github.com/[GitHub]
+ - Follow the usual procedure to build. This should just be the usual for
+   libupnpp and upmpdcli:
+    
+    sh autogen.sh
+    ./configure --prefix=/usr
+    make
+    sudo make install
+
+ - For sc2mpd, things are a small bit more complicated, see the _Building
+   sc2mpd_ section in link:sc2mpd.html[this document].
+ - Repeat the above steps on all the machines which you want to be Receivers.
+ - Activate a Receiver from the PC *Songcast* interface. Play something and
+   leave it playing.
+ - Use either *scctl* (`scctl -h` prints a simple help message), or the Web
+   interface (see further) to associate other Receivers to the same Sender.
+ - Stop or Pause the music. Wait 10 S, restart. *_Multiroom !_*
+
+Once the slave Receivers are associated with the Sender, they should stay
+in this state until you change it. So you can stop/start Songcast on the
+PC, and they will usually just follow.
+
+An "associated" Receiver is just one which plays from the same URI, it
+keeps no other relation to the "Master". Only one Receiver is a bit special
+because it is the one known from the PC, but there is no specific reason to
+use it as Master, the Master is only used to get the URI. Avoid changing
+the state of the "PC"l Receiver from outside the PC *Songcast* interface,
+this can only confuse things.
+
+Every time you change the group configuration, you need to resynchronize
+the audio by pausing, waiting, restarting.
+
+I do know that the whole thing is not very solid, this is a prototype and I
+hope to improve some of the issues in the future: constructive problem
+reports are more than welcome, but no flaming (for now) please :)
+
+
+== Controlling the Songcast groups from the Web interface
+
+To avoid having to access the command line interface to control the
+*Songcast* groups, *upmpdcli* comes with a small Web server which uses
+*scctl* to actually do the work. This is found inside the `web/`
+subdirectory inside the *upmpdcli* source tree.
+
+The server is based on the 
+link:http://bottlepy.org/docs/dev/index.html[Bottle Python Web Framework]
+and it only depends on Python (version 2 and 3 are supported by *Bottle*,
+but the current app only works with Python 2).
+
+I'll find ways to autostart the server in the future, but for now, 
+use the `scweb-standalone.py` script to manually start it:
+    
+    python2 ./scweb-standalone.py
+
+This will start a server on localhost, on port 8777 which is good for
+testing, but not very useful. Use the -a 0.0.0.0 option to let the server
+answer on all local addresses (or specify the address to use a specific
+interface):
+
+    python2 ./scweb-standalone.py -a 0.0.0.0
+
+-p can be used to specify a port.
+
+Once started, connecting to the server from any browser should hopefully
+display a reasonably self-explanatory interface.
+
