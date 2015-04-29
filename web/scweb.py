@@ -2,6 +2,7 @@ import subprocess
 import sys
 import bottle
 import re
+import time
 
 @bottle.route('/static/:path#.+#')
 def server_static(path):
@@ -11,8 +12,9 @@ def server_static(path):
 @bottle.view('main')
 def top():
     devnull = open('/dev/null', 'w')
-    #cmd = subprocess.Popen(['scctl', '-S'], stderr = devnull, stdout = devnull)
-    cmd = subprocess.Popen(['scctl', '-S'])
+    cmd = subprocess.Popen(['scctl', '-S'], stderr = devnull, stdout = devnull)
+    # Sleep a wee bit to give a chance to the server to initialize
+    time.sleep(1)
     return dict(title='')
 
 @bottle.route('/list')
