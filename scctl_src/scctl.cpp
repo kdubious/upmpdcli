@@ -344,11 +344,15 @@ string showReceivers()
 
 static char *thisprog;
 static char usage [] =
-" -l list renderers with Songcast Receiver capability\n"
+" -l List renderers with Songcast Receiver capability\n"
 " -s <master> <slave> [slave ...] : Set up the slaves renderers as Songcast\n"
 "    Receivers and make them play from the same uri as the master\n"
 " -x <renderer> [renderer ...] Reset renderers from Songcast to Playlist\n"
-" -S run as server\n"
+" -S Run as server\n"
+" -f If no server is found, scctl will fork one after performing the\n"
+"    requested command, so that the next execution will not have to wait for\n"
+"    the discovery timeout.n"
+" -h This help.\n"
 "\n"
 "Renderers may be designated by friendly name or UUID\n"
 "\n"
@@ -359,37 +363,46 @@ Usage(FILE *fp = stderr)
     fprintf(fp, "%s: usage:\n%s", thisprog, usage);
     exit(1);
 }
+
 static int   op_flags;
 #define OPT_l    0x1
 #define OPT_s    0x2
 #define OPT_x    0x4
 #define OPT_S    0x8
 #define OPT_h    0x10
+#define OPT_f    0x20
+#define OPT_p    0x40
 
 int runserver();
-bool tryserver(int argc, char *argv[]);
+bool tryserver(int flags, int argc, char *argv[]);
 
 int main(int argc, char *argv[])
 {
     thisprog = argv[0];
 
     int ret;
-    while ((ret = getopt(argc, argv, "lSsxh")) != -1) {
+    while ((ret = getopt(argc, argv, "fhlsSx")) != -1) {
         switch (ret) {
-        case 'l': if (op_flags) Usage(); op_flags |= OPT_l; break;
-        case 's': if (op_flags) Usage(); op_flags |= OPT_s; break;
-        case 'S': if (op_flags) Usage(); op_flags |= OPT_S; break;
-        case 'x': if (op_flags) Usage(); op_flags |= OPT_x; break;
-        case 'h': Usage(stdout);
+        case 'f': op_flags |= OPT_f; break;
+        case 'h': Usage(stdout); break;
+        case 'l': op_flags |= OPT_l; break;
+        case 's': op_flags |= OPT_s; break;
+        case 'S': op_flags |= OPT_S; break;
+        case 'x': op_flags |= OPT_x; break;
         default: Usage();
         }
     }
+    //fprintf(stderr, "argc %d optind %d flgs: 0x%x\n", argc, optind, op_flags);
 
     // If we're not a server, try to contact one to avoid the
     // discovery timeout
-    if (!(op_flags & OPT_S) && tryserver(argc -1, &argv[1])) {
+    if (!(op_flags & OPT_S) && tryserver(op_flags, argc -optind, 
+                                         &argv[optind])) {
         exit(0);
     }
+
+    if ((op_flags & ~OPT_f) == 0)
+        Usage();
 
     LibUPnP *mylib = LibUPnP::getLibUPnP();
     if (!mylib) {
@@ -435,12 +448,20 @@ int main(int argc, char *argv[])
             slaves.push_back(argv[optind++]);
         }
         ohNoSongcast(slaves);
-    } else if (op_flags & OPT_S) {
+    } else if ((op_flags & OPT_S)) {
         exit(runserver());
     } else {
         Usage();
     }
 
+    // If we get here, we have executed a local command. If -f is set,
+    // fork and run the server code so that a next execution will use
+    // this instead (and not incur the discovery timeout)
+    if ((op_flags & OPT_f)) {
+        // Father exits, son process becomes server
+        if (daemon(0, 0) == 0)
+            runserver();
+    } 
     return 0;
 }
 
@@ -505,9 +526,13 @@ bool tryserver(const string& cmd)
     return true;
 }
 
-bool tryserver(int argc, char **argv)
+bool tryserver(int opflags, int argc, char **argv)
 {
-    string cmd;
+    char opts[30];
+    sprintf(opts, "0x%x", opflags);
+    string cmd(opts);
+    cmd += " ";
+        
     for (int i = 0; i < argc; i++) {
         // May need quoting here ? 
         cmd  += argv[i]; 
@@ -549,21 +574,25 @@ int MyNetconServLis::cando(Netcon::Event reason)
     }
 
     trimstring(line, " \n");
+
+    LOGDEB1("scctl: server: got cmd: " << line << endl);
+
     vector<string> toks;
     stringToTokens(line, toks);
     if (toks.empty()) {
         return 1;
     }
 
-    string cmd = toks[0];
+    int opflags = strtoul(toks[0].c_str(), 0, 0);
+
     string out;
-    if (!cmd.compare("-p")) {
+    if (opflags & OPT_p) {
         // ping
         out = "Ok\n";
-    } else if (!cmd.compare("-l")) {
+    } else if (opflags & OPT_l) {
         out = showReceivers();
-    } else if (!cmd.compare("-s")) {
-        if (cmd.size() < 3)
+    } else if (opflags & OPT_s) {
+        if (toks.size() < 3)
             return 1;
         vector<string>::iterator beg = toks.begin();
         beg++;
@@ -571,14 +600,15 @@ int MyNetconServLis::cando(Netcon::Event reason)
         beg++;
         vector<string> slaves(beg, toks.end());
         ohSongcast(master, slaves);
-    } else if (!cmd.compare("-x")) {
-        if (cmd.size() < 2)
+    } else if (opflags & OPT_x) {
+        if (toks.size() < 2)
             return 1;
         vector<string>::iterator beg = toks.begin();
         beg++;
         vector<string> slaves(beg, toks.end());
         ohNoSongcast(slaves);
     } else {
+        LOGERR("scctl: server: bad cmd:" << toks[0] << endl);
         return 1;
     }
 
