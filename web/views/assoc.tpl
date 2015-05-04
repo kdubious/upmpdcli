@@ -1,4 +1,4 @@
-%include('header.tpl', title="")
+%include('header.tpl', title="", refresh=10)
 
 %include('menu.tpl', current='assoc')
 
