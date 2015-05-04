@@ -8,6 +8,9 @@ if [ "$1" = configure ]; then
 	adduser --disabled-password --quiet --system \
 	    --home /nonexistent --no-create-home --shell /bin/false upmpdcli
     fi
+    if ! groups upmpdcli | cut -d' ' -f 3- | grep -q -w audio ; then
+        usermod -a -G audio upmpdcli
+    fi
 fi
 
 #DEBHELPER#

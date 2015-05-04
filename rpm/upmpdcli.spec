@@ -33,7 +33,7 @@ on Android tablets or phones.
 %pre
 getent group upmpdcli >/dev/null || groupadd -r upmpdcli
 getent passwd upmpdcli >/dev/null || \
-    useradd -r -g upmpdcli -d /nonexistent -s /sbin/nologin \
+    useradd -r -g upmpdcli -G audio -d /nonexistent -s /sbin/nologin \
     -c "upmpdcli mpd UPnP front-end" upmpdcli
 exit 0
 
