@@ -179,8 +179,14 @@ int OHReceiver::play(const SoapIncoming& sc, SoapOutgoing& data)
     }
 
     if (m_pm == OHReceiverParams::OHRP_MPD) {
-        // Wait for sc2mpd to signal ready, then play
-        m_cmd->getline(line);
+        // Wait for sc2mpd to signal ready, then play.
+        // sc2mpd writes a single line to stdout "CONNECTED" when
+        // it gets there, which should be more or less instantaneous
+        int timeo = 15;
+        if (m_cmd->getline(line, timeo) < 0) {
+            LOGERR("OHReceiver: mpd mode: sc2mpd still not ready to play after " << timeo << " seconds\n");
+            goto out;
+        }
         LOGDEB("OHReceiver: sc2mpd sent: " << line);
         // And insert the appropriate uri in the mpd playlist
         if (!m_pl->urlMap(urlmap)) {

@@ -138,7 +138,7 @@ class ExecCmd {
 		  bool has_input, bool has_output);
     int send(const std::string& data);
     int receive(std::string& data, int cnt = -1);
-    int getline(std::string& data);
+    int getline(std::string& data, int timeosecs = -1);
     int wait();
     /** Wait with WNOHANG set. 
 	@return true if process exited, false else.

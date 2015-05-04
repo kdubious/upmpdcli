@@ -655,7 +655,7 @@ int ExecCmd::receive(std::string& data, int cnt)
     return ntot;
 }
 
-int ExecCmd::getline(std::string& data)
+int ExecCmd::getline(std::string& data, int timeo)
 {
     NetconCli *con = dynamic_cast<NetconCli *>(m_fromcmd.get());
     if (con == 0) {
@@ -664,7 +664,7 @@ int ExecCmd::getline(std::string& data)
     }
     const int BS = 1024;
     char buf[BS];
-    int n = con->getline(buf, BS);
+    int n = con->getline(buf, BS, timeo);
     if (n < 0) {
 	LOGERR(("ExecCmd::getline: error\n"));
     } else if (n > 0) {
