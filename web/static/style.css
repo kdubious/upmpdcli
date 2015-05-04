@@ -1,59 +1,66 @@
-body {	margin: 0; font-family: sans-serif }
-* { font-family: inherit  }
-
-
-#menu ul
-{
+body {	
+    margin: 10;
+    font-family: sans-serif;
 }
 
-#menu ul li
-{
-display: inline;
-line-height: 30px;
-padding-left: 3px;
+* { 
+    font-family: inherit;
 }
 
-#menu ul li a
-{
-background-color: transparent;
-background-repeat: repeat-x;
-padding: 8px 12px 8px 12px;
-font-size: 12px;
-font-weight: bold;
+#menu ul {
+    margin: 20 0 20 0;
 }
 
-#menu ul li a:hover
-{
-background: #aaa;
-color: #4A4A24;
-text-decoration: none;
+#menu ul li {
+    display: inline;
+    line-height: 30px;
+    padding-left: 3px;
 }
 
+#menu ul li a {
+    background-color: transparent;
+    background-repeat: repeat-x;
+    padding: 8px 12px 8px 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
 
-a { text-decoration: none }
+#menu ul li a:hover {
+    background: #aaa;
+    color: #4A4A24;
+    text-decoration: none;
+}
+
+a { 
+    text-decoration: none;
+}
+
+table {
+    margin: 0 0 0 10;
+}
 table td {
-	padding: 10;
-	border-right: 1px dotted black ;
-	border-collapse: collapse;
+    padding: 10;
+    border-right: 1px dotted black ;
+    border-collapse: collapse;
 }
 table td:last-child {
-	border-right: 0px;
+    border-right: 0px;
 }
 
 form { 
-    margin: 10;
+    margin: 0;
 }
 input, select {
-	margin-top: 2px;
-	margin-bottom: 2px;
-	background: white;
-	border: 1px solid #999;
-	padding: 3px;
-	color: #f55;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    background: white;
+    border: 1px solid #999;
+    padding: 3px;
+    color: #f55;
 }
 input:focus, button:focus, select:focus{
-	border: 1px solid black;
-	color: black;
+    border: 1px solid black;
+    color: black;
 }
 input[type=button],input[type=reset],input[type=submit] { 
 
