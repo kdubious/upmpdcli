@@ -25,6 +25,8 @@
 #include <stdlib.h>                     // for atoi, getenv, exit
 #include <sys/param.h>                  // for MIN
 #include <unistd.h>                     // for geteuid, chown, sleep, etc
+#include <string.h>                     // for memset
+#include <grp.h>
 
 #include <iostream>                     // for basic_ostream, operator<<, etc
 #include <string>                       // for string, operator<<, etc
@@ -82,8 +84,19 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
         if (avt)
             avt->setOHP(ohpl);
         if (ohReceiver) {
-            m_services.push_back(new OHReceiver(this, ohpl, ohpr, 
-                                                opts.schttpport));
+            struct OHReceiverParams parms;
+            parms.pl = ohpl;
+            parms.pr = ohpr;
+            if (opts.schttpport)
+                parms.httpport = opts.schttpport;
+            if (!opts.scplaymethod.empty()) {
+                if (!opts.scplaymethod.compare("alsa")) {
+                    parms.pm = OHReceiverParams::OHRP_ALSA;
+                } else if (!opts.scplaymethod.compare("mpd")) {
+                    parms.pm = OHReceiverParams::OHRP_MPD;
+                }
+            }
+            m_services.push_back(new OHReceiver(this, parms));
         }
     }
 }
@@ -304,6 +317,7 @@ int main(int argc, char *argv[])
         }
         if (config.get("schttpport", value))
             opts.schttpport = atoi(value.c_str());
+        config.get("scplaymethod", opts.scplaymethod);
         config.get("sc2mpd", g_sc2mpd_path);
         if (config.get("ohmetasleep", value))
             opts.ohmetasleep = atoi(value.c_str());
@@ -324,6 +338,7 @@ int main(int argc, char *argv[])
 
     // If started by root, do the pidfile + change uid thing
     uid_t runas(0);
+    gid_t runasg(0);
     if (geteuid() == 0) {
         struct passwd *pass = getpwnam(upmpdcliuser.c_str());
         if (pass == 0) {
@@ -332,6 +347,7 @@ int main(int argc, char *argv[])
             return 1;
         }
         runas = pass->pw_uid;
+        runasg = pass->pw_gid;
 
         pid_t pid;
         if ((pid = pidfile.open()) != 0) {
@@ -386,11 +402,23 @@ int main(int argc, char *argv[])
                 LOGERR("chown("<<logfilename<<") : errno : " << errno << endl);
             }
         }
+        if (initgroups(upmpdcliuser.c_str(), runasg) < 0) {
+            LOGERR("initgroup failed. Errno: " << errno << endl);
+        }
         if (setuid(runas) < 0) {
             LOGFAT("Can't set my uid to " << runas << " current: " << geteuid()
                    << endl);
             return 1;
         }
+#if 0        
+        gid_t list[100];
+        int ng = getgroups(100, list);
+        cerr << "GROUPS: ";
+        for (int i = 0; i < ng; i++) {
+            cerr << int(list[i]) << " ";
+        }
+        cerr << endl;
+#endif
     }
 
 //// Dropped root 

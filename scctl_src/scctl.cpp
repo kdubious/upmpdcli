@@ -39,6 +39,7 @@
 #include <getopt.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <signal.h>
 
 #include <string>
 #include <iostream>

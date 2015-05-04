@@ -32,9 +32,18 @@ class UpMpd;
 class OHPlaylist;
 class OHProduct;
 
+struct OHReceiverParams {
+    enum PlayMethod {OHRP_MPD, OHRP_ALSA};
+    PlayMethod pm;
+    OHPlaylist *pl;
+    OHProduct *pr;
+    int httpport;
+    OHReceiverParams() : pm(OHRP_MPD), pl(0), pr(0), httpport(8768) {}
+};
+
 class OHReceiver : public UPnPProvider::UpnpService {
 public:
-    OHReceiver(UpMpd *dev, OHPlaylist *pl, OHProduct *pr, int httpport);
+    OHReceiver(UpMpd *dev, const OHReceiverParams& parms);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
@@ -64,6 +73,7 @@ private:
     std::shared_ptr<ExecCmd> m_cmd;
     int m_httpport;
     std::string m_httpuri;
+    OHReceiverParams::PlayMethod m_pm;
 };
 
 #endif /* _OHRECEIVER_H_X_INCLUDED_ */

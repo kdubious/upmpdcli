@@ -56,11 +56,12 @@ public:
         upmpdOhReceiver = 8
     };
     struct Options {
-        Options() : options(upmpdNone), ohmetasleep(0), schttpport(8768) {}
+        Options() : options(upmpdNone), ohmetasleep(0), schttpport(0) {}
         unsigned int options;
         std::string  cachefn;
         unsigned int ohmetasleep;
         int schttpport;
+        std::string scplaymethod;
     };
     UpMpd(const std::string& deviceid, const std::string& friendlyname,
           const std::unordered_map<std::string, VDirContent>& files,

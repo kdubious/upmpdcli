@@ -42,9 +42,10 @@ using namespace std::placeholders;
 static const string sTpProduct("urn:av-openhome-org:service:Receiver:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Receiver");
 
-OHReceiver::OHReceiver(UpMpd *dev, OHPlaylist *pl, OHProduct *pr, int port)
+OHReceiver::OHReceiver(UpMpd *dev, const OHReceiverParams& parms)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), 
-      m_pl(pl), m_pr(pr), m_httpport(port)
+      m_pl(parms.pl), m_pr(parms.pr), m_httpport(parms.httpport),
+      m_pm(parms.pm)
 {
     dev->addActionMapping(this, "Play", 
                           bind(&OHReceiver::play, this, _1, _2));
@@ -68,13 +69,14 @@ static const string o_protocolinfo("ohz:*:*:*,ohm:*:*:*,ohu:*.*.*");
 bool OHReceiver::makestate(unordered_map<string, string> &st)
 {
     const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
-
-    if (m_cmd && mpds.state != MpdStatus::MPDS_PLAY && 
-        mpds.state != MpdStatus::MPDS_PAUSE) {
-        // playing was stopped through ohplaylist or
-        // avtransport. I'm not sure we're supposed to let this
-        // happen, but we do. Stop too.
-        iStop();
+    if (m_pm == OHReceiverParams::OHRP_MPD) {
+        if (m_cmd && mpds.state != MpdStatus::MPDS_PLAY && 
+            mpds.state != MpdStatus::MPDS_PAUSE) {
+            // playing was stopped through ohplaylist or
+            // avtransport. I'm not sure we're supposed to let this
+            // happen, but we do. Stop too.
+            iStop();
+        }
     }
 
     st.clear();
@@ -149,13 +151,16 @@ int OHReceiver::play(const SoapIncoming& sc, SoapOutgoing& data)
     unordered_map<int, string> urlmap;
     string line;
         
-    // We start the songcast command to receive the audio flux and
-    // export it as HTTP, then insert http URI at the front of the
-    // queue and execute next/play
+    // We start the songcast command to receive the audio flux and either
+    // export it as HTTP (then insert http URI at the front of the
+    // queue and execute next/play), or play it directly to the sound card
     if (m_cmd)
         m_cmd->zapChild();
     m_cmd = shared_ptr<ExecCmd>(new ExecCmd());
     vector<string> args;
+    if (m_pm == OHReceiverParams::OHRP_ALSA) {
+        args.push_back("-d");
+    }
     args.push_back("-u");
     args.push_back(m_uri);
     if (!g_configfilename.empty()) {
@@ -172,33 +177,35 @@ int OHReceiver::play(const SoapIncoming& sc, SoapOutgoing& data)
     } else {
         LOGDEB("OHReceiver::play: sc2mpd pid "<< m_cmd->getChildPid()<< endl);
     }
-    // Wait for sc2mpd to signal ready, then play
-    m_cmd->getline(line);
-    LOGDEB("OHReceiver: sc2mpd sent: " << line);
 
-    // And insert the appropriate uri in the mpd playlist
-    if (!m_pl->urlMap(urlmap)) {
-        LOGERR("OHReceiver::play: urlMap() failed" <<endl);
-        goto out;
-    }
-    for (auto it = urlmap.begin(); it != urlmap.end(); it++) {
-        if (it->second == m_httpuri) {
-            id = it->first;
-        }
-    }
-    if (id == -1) {
-        ok = m_pl->insertUri(0, m_httpuri, SoapHelp::xmlUnquote(m_metadata),
-            &id);
-        if (!ok) {
-            LOGERR("OHReceiver::play: insertUri() failed\n");
+    if (m_pm == OHReceiverParams::OHRP_MPD) {
+        // Wait for sc2mpd to signal ready, then play
+        m_cmd->getline(line);
+        LOGDEB("OHReceiver: sc2mpd sent: " << line);
+        // And insert the appropriate uri in the mpd playlist
+        if (!m_pl->urlMap(urlmap)) {
+            LOGERR("OHReceiver::play: urlMap() failed" <<endl);
             goto out;
         }
-    }
+        for (auto it = urlmap.begin(); it != urlmap.end(); it++) {
+            if (it->second == m_httpuri) {
+                id = it->first;
+            }
+        }
+        if (id == -1) {
+            ok = m_pl->insertUri(0, m_httpuri, SoapHelp::xmlUnquote(m_metadata),
+                                 &id);
+            if (!ok) {
+                LOGERR("OHReceiver::play: insertUri() failed\n");
+                goto out;
+            }
+        }
 
-    ok = m_dev->m_mpdcli->playId(id);
-    if (!ok) {
-        LOGERR("OHReceiver::play: play() failed\n");
-        goto out;
+        ok = m_dev->m_mpdcli->playId(id);
+        if (!ok) {
+            LOGERR("OHReceiver::play: play() failed\n");
+            goto out;
+        }
     }
 
 out:
@@ -206,11 +213,13 @@ out:
         iStop();
     }
     maybeWakeUp(ok);
+    LOGDEB("OHReceiver::play: returning\n");
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
 bool OHReceiver::iStop()
 {
+    LOGDEB("OHReceiver::iStop()\n");
     if (m_cmd) {
         m_cmd->zapChild();
         m_cmd = shared_ptr<ExecCmd>(0);

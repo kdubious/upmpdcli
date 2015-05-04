@@ -56,7 +56,8 @@ to improve them, but for now, this is definitely an _early adopters_ system:
     resynchronize everything, stop or pause the playing on the PC (from the
     player, e.g. Media Player, not from the Songcast utility), wait for the
     audio to drain, and a few seconds more, then restart playing.
-
+  - Receivers slowly drift out of sync, especially if they use different
+    hardware. I intend to work on this, but it's a difficult issue.
   - It's quite easy to put the system in a confused state where nothing
     seems to work any more. Stopping all Receivers (with *scctl* or the Web
     interface) and restarting the PC will normally get things back to
