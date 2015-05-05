@@ -68,14 +68,22 @@ static const string o_protocolinfo("ohz:*:*:*,ohm:*:*:*,ohu:*.*.*");
 
 bool OHReceiver::makestate(unordered_map<string, string> &st)
 {
-    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
     if (m_pm == OHReceiverParams::OHRP_MPD) {
+        const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
         if (m_cmd && mpds.state != MpdStatus::MPDS_PLAY && 
             mpds.state != MpdStatus::MPDS_PAUSE) {
             // playing was stopped through ohplaylist or
             // avtransport. I'm not sure we're supposed to let this
             // happen, but we do. Stop too.
             iStop();
+        }
+    } else {
+        if (m_cmd) {
+            int status;
+            if (m_cmd->maybereap(&status)) {
+                LOGDEB("OHReceiver: sc2cmd exited with status " << status << endl);
+                m_cmd = shared_ptr<ExecCmd>(new ExecCmd());
+            }
         }
     }
 
