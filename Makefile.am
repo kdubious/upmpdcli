@@ -50,7 +50,7 @@ upmpdcli_SOURCES = \
 upmpdcli_LDADD = -lupnpp -lmpdclient -lpthread
 
 scctl_SOURCES = \
-    scctl_src/scctl.cxx \
+    scctl_src/scctl.cpp \
     src/netcon.cpp \
     src/upmpdutils.cxx
 
@@ -62,11 +62,21 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/OHVolume.xml src/OHPlaylist.xml src/OHReceiver.xml \
                   src/protocolinfo.txt src/presentation.html
 
+EXTRA_DIST = web.tar.gz systemd/upmpdcli.service
+
+web.tar.gz: bogus
+	tar cvzf web.tar.gz web
+bogus:
+clean-local:
+	rm -f web.tar.gz
+
+install-data-hook:
+	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < $(srcdir)/web.tar.gz 
+
 dist_sysconf_DATA = src/upmpdcli.conf
 
 dist_man1_MANS = man/upmpdcli.1
 
-EXTRA_DIST = systemd/upmpdcli.service
-dist-hook:
-	test -z "`git status -s | grep -v upmpdcli-$(VERSION)`"
-	git tag -f -a upmpdcli-v$(VERSION) -m 'version $(VERSION)'
+#dist-hook:
+#	test -z "`git status -s | grep -v upmpdcli-$(VERSION)`"
+#       git tag -f -a upmpdcli-v$(VERSION) -m 'version $(VERSION)'

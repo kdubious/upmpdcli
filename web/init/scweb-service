@@ -283,16 +283,20 @@ check_single_user() {
 }
 
 start() {
+    #echo "START"
     if ! test -f $PIDFILE; then
+        #echo "DORUN?"
+        [ "$SCWEB_DORUN" = "yes" ] || exit 0
+        #echo "USER SET?"
         [ -z "$SCWEB_USER" ] && exit 0
         begin_msg "Starting scweb Songcast control web interface";
         check_single_user $SCWEB_USER
-        echo SCWEB_USER $SCWEB_USER single ok
+        #echo SCWEB_USER $SCWEB_USER single ok
         PARAMS=""
         [ -n "$SCWEB_ADDRESS" ]        && PARAMS="$PARAMS -a $SCWEB_ADDRESS"
         [ -n "$SCWEB_PORT" ]           && PARAMS="$PARAMS -p $SCWEB_PORT"
 
-        echo start_daemon $SCWEB_USER $binary $PARAMS
+        #echo start_daemon $SCWEB_USER $binary $PARAMS
         start_daemon $SCWEB_USER $binary $PARAMS > /dev/null 2>&1
         # ugly: wait until the final process has forked
         sleep .1
@@ -305,16 +309,29 @@ start() {
             RETVAL=1
             fail_msg
         fi
+    else
+        echo "Pidfile $PIDFILE already exists" 1>&2
     fi
+    
     return $RETVAL
+}
+
+scwebpid()
+{
+    echo `ps ax | grep 'python.*scweb-standalone' |grep -v grep | \
+        awk '{print $1}'`
 }
 
 stop() {
     if test -f $PIDFILE; then
         begin_msg "Stopping scweb web interface";
-        killproc $binary
+
+        RPID=`scwebpid`
+        [ -n "$RPID" ] && kill "$RPID"
         RETVAL=$?
-        if ! pidof $binary > /dev/null 2>&1; then
+
+        RPID=`scwebpid`
+        if test -z "$RPID"; then
             rm -f $PIDFILE
             succ_msg
         else

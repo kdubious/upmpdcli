@@ -1,12 +1,12 @@
 # Values for the upmpdcli Songcast Receiver control web interface
 
-# Actually start ?
-SCWEB_DORUN=yes
+# Actually start ? Not by default
+#SCWEB_DORUN=yes
 
 SCWEB_USER=upmpdcli
 
-# Address can 0.0.0.0 for all interfaces or empty for localhost only
-SCWEB_ADDRESS=0.0.0.0
+# Address can 0.0.0.0 for all interfaces or empty for localhost only (default)
+#SCWEB_ADDRESS=
 
 # Choose port
-#SCWEB_PORT=8777
+#SCWEB_PORT=8780
