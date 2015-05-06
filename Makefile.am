@@ -65,13 +65,13 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
 EXTRA_DIST = web.tar.gz systemd/upmpdcli.service
 
 web.tar.gz: bogus
-	tar cvzf web.tar.gz web
-bogus:
-clean-local:
-	rm -f web.tar.gz
+	if test -d $(srcdir)/web; then \
+           (cd $(srcdir); tar cvzf - web) > web.tar.gz; fi
 
-install-data-hook:
-	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < $(srcdir)/web.tar.gz 
+bogus:
+
+install-data-hook: web.tar.gz
+	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < web.tar.gz 
 
 dist_sysconf_DATA = src/upmpdcli.conf
 
