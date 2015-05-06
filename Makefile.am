@@ -77,6 +77,6 @@ dist_sysconf_DATA = src/upmpdcli.conf
 
 dist_man1_MANS = man/upmpdcli.1
 
-#dist-hook:
-#	test -z "`git status -s | grep -v upmpdcli-$(VERSION)`"
-#       git tag -f -a upmpdcli-v$(VERSION) -m 'version $(VERSION)'
+ #dist-hook:
+ #	test -z "`git status -s | grep -v upmpdcli-$(VERSION)`"
+ #       git tag -f -a upmpdcli-v$(VERSION) -m 'version $(VERSION)'

@@ -1,3 +1,13 @@
+upmpdcli (0.11.0-1) unstable; urgency=low
+
+  * ohreceiver service augmented to support sc2mpd in direct alsa mode
+  * scctl command allows controlling Songcast receivers
+  * Actually serve a presentation page.
+  * Misc: see git log
+
+ -- Jean-Francois Dockes <jf@dockes.org>  Fri, 14 Nov 2014 17:53:00 +0200
+
+
 upmpdcli (0.9.1-1) unstable; urgency=low
 
   * ?
