@@ -964,18 +964,21 @@ sh autogen.sh</tt></pre>
 </div></div>
 <div class="literalblock">
 <div class="content">
-<pre><tt>./configure --prefix=/usr
+<pre><tt>./configure --prefix=/usr --sysconfdir=/etc
 make
 sudo make install</tt></pre>
 </div></div>
 <div class="paragraph"><p>Which you should apply first to the <strong>libupnpp</strong> source, then to <strong>upmpdcli</strong>.</p></div>
+<div class="paragraph"><p>If you omit the <tt>--sysconfdir=/etc</tt> part, <tt>upmpdcli.conf</tt> will end up in
+<tt>/usr/etc/</tt>, which is ok, but confusing, as package installers put it in
+<tt>/etc/</tt></p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2015-04-26 10:03:12 CEST
+Last updated 2015-05-05 10:32:34 CEST
 </div>
 </div>
 </body>
