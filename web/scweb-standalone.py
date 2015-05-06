@@ -6,7 +6,7 @@ import scweb
 # handle command-line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('-a', '--addr', default='127.0.0.1',help='address to bind to [127.0.0.1]')
-parser.add_argument('-p', '--port', default='8780', type=int, help='port to listen on [8780]')
+parser.add_argument('-p', '--port', default='8680', type=int, help='port to listen on [8780]')
 args = parser.parse_args()
 
 # change to webui's directory and import

@@ -1,0 +1,9 @@
+= Notes for the upmpdcli 0.11 release series
+
+*upmpdcli* 0.11 mainly improves on the Songcast support, in complement with
+the changes in *sc2mpd*. Especially, it now includes an utility (*scctl*)
+and web interface to set up multi-room Songcast.
+
+== Bugs fixed since 0.9.0
+
+- Nothing very notable.

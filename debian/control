@@ -17,3 +17,11 @@ Description: UPnP Media Renderer front-end to MPD, the Music Player Daemon
  A typical configuration might have for example, MPD running on a Raspberry
  PI, with upmpdcli on the same host or any other Linux PC on the network.
 
+
+Package: scweb
+Architecture: all
+Section: python
+Depends: upmpdcli, ${python:Depends}
+Description: web interface for controlling multiple Songcast Receivers
+ scweb is a web front-end to the scctl songcast receiver control command
+
