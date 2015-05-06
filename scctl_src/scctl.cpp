@@ -220,13 +220,14 @@ bool setReceiverPlaying(const string& nm, SongcastState& st,
         st.reason = nm + " : null handle ??";
         return false;
     }
+
+    if (st.rcv->setSender(uri, meta)) {
+        st.reason = nm + " Receiver::setSender() failed";
+        return false;
+    }
     if (st.prod->setSourceIndex(st.receiverSourceIndex)) {
         st.reason = nm + " : can't set source index to " +
             SoapHelp::i2s(st.receiverSourceIndex);
-        return false;
-    }
-    if (st.rcv->setSender(uri, meta)) {
-        st.reason = nm + " Receiver::setSender() failed";
         return false;
     }
     if (st.rcv->play()) {

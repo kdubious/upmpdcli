@@ -281,7 +281,8 @@ int OHReceiver::setSender(const SoapIncoming& sc, SoapOutgoing& data)
     // current playing. We probably should not receive this if we're
     // not in the stopped state, but just in case...
     if (ok && (m_uri.compare(uri) || m_metadata.compare(metadata))) {
-        iStop();
+        if (m_cmd)
+            iStop();
         m_uri = uri;
         m_metadata = metadata;
         LOGDEB("OHReceiver::setSender: uri [" << m_uri << "] meta [" << 

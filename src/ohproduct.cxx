@@ -202,7 +202,7 @@ int OHProduct::sourceIndex(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHProduct::iSetSourceIndex(int sindex)
 {
-    LOGDEB("OHProduct::setSourceIndex: " << sindex << endl);
+    LOGDEB("OHProduct::iSetSourceIndex: " << sindex << endl);
     if (sindex < 0 || sindex >= int(o_sources.size())) {
         LOGERR("OHProduct::setSourceIndex: bad index: " << sindex << endl);
         return UPNP_E_INVALID_PARAM;
@@ -223,17 +223,16 @@ int OHProduct::setSourceIndex(const SoapIncoming& sc, SoapOutgoing&)
 
 int OHProduct::setSourceIndexByName(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    LOGDEB("OHProduct::setSourceIndexByName" << endl);
 
     string name;
     if (!sc.get("Value", &name)) {
+        LOGERR("OHProduct::setSourceIndexByName: no Value" << endl);
         return UPNP_E_INVALID_PARAM;
     }
+    LOGDEB("OHProduct::setSourceIndexByName: " << name << endl);
     for (unsigned int i = 0; i < o_sources.size(); i++) {
         if (o_sources[i] == name) {
-            m_sourceIndex = i;
-            m_dev->loopWakeup();
-            return UPNP_E_SUCCESS;
+            return iSetSourceIndex(i);
         }
     }
             
