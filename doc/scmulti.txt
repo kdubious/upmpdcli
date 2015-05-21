@@ -4,88 +4,94 @@ General information about *upmpdcli* support for *Songcast* can be found
 link:sc2mpd.html[here]. This page explains how to set up a multiroom
 synchronized audio system using *upmpdcli* and *Songcast*.
 
+NOTE: multicast and WIFI don't mix well in many cases. If you have
+wireless Receivers experiencing sound drop issues, try selecting unicast in
+the Songcast advanced configuration panel on the desktop.
+
 == Multiple Receivers
 
 Multiple *Songcast* _Receiver_ hosts can connect to the same _Sender_, so
-that they will all be playing the same audio.
+that they will all be playing the same audio. They form a group only in the
+sense that they play from the same URI, and are not otherwise linked.
 
 The Mac and Windows *Songcast* apps only let you activate one  
 _Receiver_ though.
 
-*upmpdcli* now includes a small application which can list the state of
-the local *Songcast* Receivers, make a Receiver play from the same URI as
-another one (for building multiroom groups), or return a Media Renderer
-from Receiver to normal operation.
+The *upmpdcli* package now includes the *scctl* command line utility, which
+can list the state of the local *Songcast* _Receivers_, make a _Receiver_
+play from the same URI as another one (for building multi-room groups), or
+return a _Media Renderer_ from _Receiver_ to normal operation.
 
-The functions can be accessed either from the *scctl* command line utility,
-or from a local Web application (as Songcast is mostly used from a Windows
-or Mac PC, it would be inconvenient to have to access the Linux command
-line to control the multiroom groups).
+As the Songcast application is only available on Windows or Mac desktops,
+it would be inconvenient to have to access the Linux command line to
+control the multi-room groups, and the *upmpdcli* package also includes a
+small Web application which can be accessed from a desktop web browser to
+control the groups.
 
 This has only be tested with *upmpdcli* and its link:sc2mpd.html[sc2mpd]
 *Songcast* auxiliary process as Receiver implementation, but I'd guess that
 there is a good chance it would work with others.
 
+
 == Synchronisation issues
 
-The short version is: all sc2mpd instances must be configured to play
+The short version is: all *sc2mpd* instances must be configured to play
 directly to Alsa. See the link:sc2mpd.html#Configuration[configuration
 section].
 
-Longer version: Songcast is a real-time audio stream. As the Sender and
-Receiver sample clocks (the 44.1 or 48 KHz clocks) are independant, audio
+Longer version: *Songcast* is a real-time audio stream. As the _Sender_ and
+_Receiver_ sample clocks (the 44.1 or 48 KHz clocks) are independant, audio
 reproduction on the two systems will slowly drift. If nothing is done,
-after a time, the Receiver will have to skip samples or add a period of
+after a time, the _Receiver_ will have to skip samples or add a period of
 silence (depending if its clock is slower or faster), which is quite
 audible and ennoying, and will happen "from time to time", depending of how
 much the clocks differ.
 
 The only way to control this is to adjust the rate of reproduction on the
-Receiver, which can be done in two ways:
+_Receiver_, which can be done in two ways:
 
- - Linn hardware uses timestamps embedded in the audio stream to adjust
+ - *Linn* hardware uses timestamps embedded in the audio stream to adjust
    their hardware sample clock.
- - sc2mpd in Alsa mode uses sample rate conversion to adjust the stream.
+ - *sc2mpd* in _`alsa`_ mode uses sample rate conversion to adjust the stream.
 
-This is not specific to Songcast of course, all real time audio network
+This is not specific to *Songcast* of course, all real time audio network
 transports have to do something similar.
 
-Independantly of the clock issue, all Receivers should use approximately
+Independantly of the clock issue, all _Receivers_ should use approximately
 the same amount of buffering for the audio to be reasonably synchronous
 (with no more shifts than moving around would produce anyway). This is
 impossible to achieve when going through mpd, and the second reason why
-sc2mpd must be set in Alsa mode for multiroom setups. In mpd mode, the
-receivers can be out of sync by several seconds.
-
+*sc2mpd* must be set in _`alsa`_ mode for multiroom setups. In _`mpd`_
+mode, the _Receivers_ can be out of sync by several seconds.
 
 == Setting things up
 
  - Install upmpdcli and sc2mpd on each of the _Receiver_ systems. Edit
    `/etc/upmpdcli.conf` to set:
    * `friendlyname`, this is quite useful when managing several systems.
-   * `scplaymethod` = alsa
+   * `scplaymethod` = _`alsa`_
    * `scalsadevice`: use `aplay -L` to chose an appropriate device.
 
- - Activate the web interface on one of the Receivers (or on any machine
+ - Activate the web interface on one of the _Receivers_ (or on any machine
    with upmpdcli installed actually). Edit `/etc/default/scweb` to
    configure the interface (see comments in there) and start it with
-   `/etc/init.d/scweb-service start`.
+   `service scweb start`.
 
- - Activate a Receiver from the PC *Songcast* interface. Play something and
+ - Activate a _Receiver_ from the PC *Songcast* interface. Play something and
    leave it playing.
 
  - Connect to the Web interface (host and port chosen above) with a
-   browser, and use it to list, activate, or disconnect the Receivers.
+   browser, and use it to list, activate, or disconnect the _Receivers_.
 
-Once the slave Receivers are associated with the Sender, they should stay
-in this state until you change it. So you can stop/start Songcast on the
+Once the slave _Receivers_ are associated with the _Sender_, they should stay
+in this state until you change it. So you can stop/start *Songcast* on the
 PC, and they will usually just follow.
 
-An "associated" Receiver is just one which plays from the same URI, it
-keeps no other relation to the "Master". Only one Receiver is a bit special
+An "associated" _Receiver_ is just one which plays from the same URI, it
+keeps no other relation to the "Master". Only one _Receiver_ is a bit special
 because it is the one known from the PC, but there is no specific reason to
 use it as Master, the Master is only used to get the URI. Avoid changing
-the state of the "PC"'s Receiver from outside the PC *Songcast* interface,
+the state of the "PC"'s _Receiver_ from outside the PC *Songcast* interface,
 this can only confuse things.
 
 == More detail about the Web interface
@@ -105,7 +111,7 @@ interface:
     
     python2 ./scweb-standalone.py
 
-This will start a server on localhost, on port 8780 by default which is
+This will start a server on localhost, on port 8680 by default which is
 good for testing, but not very useful. Use the -a 0.0.0.0 option to let the
 server answer on all local addresses (or specify the address to use a
 specific interface):
@@ -117,3 +123,6 @@ specific interface):
 Once started, connecting to the server from any browser should hopefully
 display a reasonably self-explanatory interface.
 
+Recent *upmpdcli* packages install the web app as a service named
+*scweb*. The service is not started by default though, you need to edit
+`/etc/default/scweb`.
