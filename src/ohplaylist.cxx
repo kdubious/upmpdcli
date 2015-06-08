@@ -407,7 +407,7 @@ int OHPlaylist::transportState(const SoapIncoming& sc, SoapOutgoing& data)
     default:
         tstate = "Stopped";
     }
-    data.addarg("TransportState", tstate);
+    data.addarg("Value", tstate);
     return UPNP_E_SUCCESS;
 }
 
