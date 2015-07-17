@@ -236,7 +236,7 @@ bool OHReceiver::iStop()
     LOGDEB("OHReceiver::iStop()\n");
     if (m_cmd) {
         m_cmd->zapChild();
-        m_cmd = shared_ptr<ExecCmd>(0);
+        m_cmd = shared_ptr<ExecCmd>();
     }
     m_dev->m_mpdcli->stop();
 
