@@ -154,6 +154,10 @@ int libclf_closefrom(int fd0)
 
 static int closefrom_maxfd = -1;
 
+#ifndef OPEN_MAX
+#define OPEN_MAX 256 /* Guess */
+#endif
+
 void libclf_setmaxfd(int max)
 {
     closefrom_maxfd = max;
