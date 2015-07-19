@@ -111,7 +111,7 @@ int libclf_closefrom(int fd0)
 }
 
 /*************************************************************************/
-#elif (defined(linux) || defined(__linux))
+#elif (defined(linux) || defined(__linux) || defined(__linux__))
 
 /* Use /proc/self/fd directory */
 #include <sys/types.h>
