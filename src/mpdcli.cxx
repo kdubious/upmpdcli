@@ -31,10 +31,12 @@ using namespace UPnPP;
 
 #define M_CONN ((struct mpd_connection *)m_conn)
 
-MPDCli::MPDCli(const string& host, int port, const string& pass)
+MPDCli::MPDCli(const string& host, int port, const string& pass,
+               const string& onstart, const string& onstop)
     : m_conn(0), m_ok(false), m_premutevolume(0), m_cachedvolume(50),
-      m_host(host), m_port(port), m_password(pass), m_lastinsertid(-1),
-      m_lastinsertpos(-1), m_lastinsertqvers(-1)
+      m_host(host), m_port(port), m_password(pass), m_onstart(onstart),
+      m_onstop(onstop), m_lastinsertid(-1), m_lastinsertpos(-1),
+      m_lastinsertqvers(-1)
 {
     regcomp(&m_tpuexpr, "^[[:alpha:]]+://.+", REG_EXTENDED|REG_NOSUB);
     if (!openconn()) {
@@ -162,7 +164,13 @@ bool MPDCli::updStatus()
     m_stat.qvers = mpd_status_get_queue_version(mpds);
 
     switch (mpd_status_get_state(mpds)) {
-    case MPD_STATE_STOP: m_stat.state = MpdStatus::MPDS_STOP;break;
+    case MPD_STATE_STOP:
+        // Only execute onstop command if mpd was playing or paused
+        if (m_stat.state != MpdStatus::MPDS_STOP && !m_onstop.empty()) {
+            system(m_onstop.c_str());
+        }
+        m_stat.state = MpdStatus::MPDS_STOP;
+        break;
     case MPD_STATE_PLAY: m_stat.state = MpdStatus::MPDS_PLAY;break;
     case MPD_STATE_PAUSE: m_stat.state = MpdStatus::MPDS_PAUSE;break;
     case MPD_STATE_UNKNOWN: 
@@ -384,6 +392,9 @@ bool MPDCli::play(int pos)
     LOGDEB("MPDCli::play(pos=" << pos << ")" << endl);
     if (!ok())
         return false;
+    if (!m_onstart.empty()) {
+        system(m_onstart.c_str());
+    }
     if (pos >= 0) {
         RETRY_CMD(mpd_run_play_pos(M_CONN, (unsigned int)pos));
     } else {
@@ -397,6 +408,9 @@ bool MPDCli::playId(int id)
     LOGDEB("MPDCli::playId(id=" << id << ")" << endl);
     if (!ok())
         return false;
+    if (!m_onstart.empty()) {
+        system(m_onstart.c_str());
+    }
     RETRY_CMD(mpd_run_play_id(M_CONN, (unsigned int)id));
     return updStatus();
 }

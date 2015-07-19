@@ -86,7 +86,8 @@ public:
 class MPDCli {
 public:
     MPDCli(const std::string& host, int port = 6600, 
-           const std::string& pass="");
+           const std::string& pass="", const std::string& m_onstart="",
+           const std::string& m_onstop="");
     ~MPDCli();
     bool ok() {return m_ok && m_conn;}
     bool setVolume(int ivol, bool isMute = false);
@@ -134,6 +135,8 @@ private:
     std::string m_host;
     int m_port;
     std::string m_password;
+    std::string m_onstart;
+    std::string m_onstop;
     regex_t m_tpuexpr;
     // addtagid command only exists for mpd 0.19 and later.
     bool m_have_addtagid; 
