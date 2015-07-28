@@ -51,6 +51,7 @@ The following parameters can be set:
 |UPnP network interface|-i iface|$UPMPD_UPNPIFACE|upnpiface
 |UPnP IP address (if interface not set)|||upnpip
 |UPnP port|-p port|$UPMPD_UPNPPORT|upnpport
+|UPnP AV support switch|||upnpav
 |OpenHome support switch|-O 0/1||openhome
 |OpenHome playlist disk persistence (default 1)|||ohmetapersist
 |Directory for cached data (/var/cache/upmpdcli or ~/.cache/upmpdcli)|||cachedir
