@@ -27,6 +27,33 @@
 using namespace std;
 using namespace UPnPP;
 
+// UPnP AV services. We can disable this to help pure OpenHome
+// renderers which having both UPnP AV and OpenHome gets in trouble
+// (Kinsky)
+static string upnpAVDesc(
+    "<service>"
+    "  <serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType>"
+    "  <serviceId>urn:upnp-org:serviceId:RenderingControl</serviceId>"
+    "  <SCPDURL>/upmpd/RenderingControl.xml</SCPDURL>"
+    "  <controlURL>/ctl/RenderingControl</controlURL>"
+    "  <eventSubURL>/evt/RenderingControl</eventSubURL>"
+    "</service>"
+    "<service>"
+    "  <serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType>"
+    "  <serviceId>urn:upnp-org:serviceId:AVTransport</serviceId>"
+    "  <SCPDURL>/upmpd/AVTransport.xml</SCPDURL>"
+    "  <controlURL>/ctl/AVTransport</controlURL>"
+    "  <eventSubURL>/evt/AVTransport</eventSubURL>"
+    "</service>"
+    "<service>"
+    "  <serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>"
+    "  <serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>"
+    "  <SCPDURL>/upmpd/ConnectionManager.xml</SCPDURL>"
+    "  <controlURL>/ctl/ConnectionManager</controlURL>"
+    "  <eventSubURL>/evt/ConnectionManager</eventSubURL>"
+    "</service>"
+    );
+
 // The description XML document is the first thing downloaded by
 // clients and tells them what services we export, and where to find
 // them. The base data is in /usr/shared/upmpdcli/description.xml, it
@@ -154,10 +181,10 @@ static bool read_protocolinfo(const string& fn, string& out)
 bool initHttpFs(unordered_map<string, VDirContent>& files,
                 const string& datadir,
                 const string& UUID, const string& friendlyname, 
-                bool openhome, const string& iconpath,
-                const string& presentationhtml)
+                bool enableAV, bool enableOH, 
+                const string& iconpath, const string& presentationhtml)
 {
-    if (openhome) {
+    if (enableOH) {
         if (!g_sc2mpd_path.empty()) {
             ohxmlfilenames.push_back("OHReceiver.xml");
         }
@@ -197,7 +224,12 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
             // Special for description: set UUID and friendlyname
             data = regsub1("@UUID@", data, UUID);
             data = regsub1("@FRIENDLYNAME@", data, friendlyname);
-            if (openhome) {
+            if (enableAV) {
+                data = regsub1("@UPNPAV@", data, upnpAVDesc);
+            } else {
+                data = regsub1("@UPNPAV@", data, "");
+            }
+            if (enableOH) {
                 if (!g_sc2mpd_path.empty()) {
                     ohDesc += ohDescReceive;
                 }

@@ -204,7 +204,8 @@ int main(int argc, char *argv[])
     int loglevel(Logger::LLINF);
     string friendlyname(dfltFriendlyName);
     bool ownqueue = true;
-    bool openhome = true;
+    bool enableAV = true;
+    bool enableOH = true;
     bool ohmetapersist = true;
     string upmpdcliuser("upmpdcli");
     string pidfilename("/var/run/upmpdcli.pid");
@@ -254,7 +255,7 @@ int main(int argc, char *argv[])
                 const char *cp =  *(++argv);
                 if (*cp == '1' || *cp == 't' || *cp == 'T' || *cp == 'y' || 
                     *cp == 'Y')
-                    openhome = true;
+                    enableOH = true;
                 argc--; goto b1;
             }
             case 'P':   op_flags |= OPT_P; if (argc < 2)  Usage();
@@ -298,7 +299,10 @@ int main(int argc, char *argv[])
             ownqueue = atoi(value.c_str()) != 0;
         }
         if (config.get("openhome", value)) {
-            openhome = atoi(value.c_str()) != 0;
+            enableOH = atoi(value.c_str()) != 0;
+        }
+        if (config.get("upnpav", value)) {
+            enableAV = atoi(value.c_str()) != 0;
         }
         if (config.get("ohmetapersist", value)) {
             ohmetapersist = atoi(value.c_str()) != 0;
@@ -493,14 +497,14 @@ int main(int argc, char *argv[])
     // Initialize the data we serve through HTTP (device and service
     // descriptions, icons, presentation page, etc.)
     unordered_map<string, VDirContent> files;
-    if (!initHttpFs(files, datadir, UUID, friendlyname, openhome, iconpath,
-            presentationhtml)) {
+    if (!initHttpFs(files, datadir, UUID, friendlyname, enableAV, enableOH, 
+                    iconpath, presentationhtml)) {
         exit(1);
     }
 
     if (ownqueue)
         opts.options |= UpMpd::upmpdOwnQueue;
-    if (openhome)
+    if (enableOH)
         opts.options |= UpMpd::upmpdDoOH;
     if (ohmetapersist)
         opts.options |= UpMpd::upmpdOhMetaPersist;
