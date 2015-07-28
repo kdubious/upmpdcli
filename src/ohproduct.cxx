@@ -57,7 +57,7 @@ OHProduct::OHProduct(UpMpd *dev, const string& friendlyname, bool hasRcv)
         csxml += string(" <Source>\n") +
             "  <Name>" + *it + "</Name>\n" +
             "  <Type>" + *it + "</Type>\n" +
-            "  <Visible>true</Visible>\n" +
+            "  <Visible>1</Visible>\n" +
             "  </Source>\n";
     }
     csxml += string("</SourceList>\n");
