@@ -276,6 +276,8 @@ int main(int argc, char *argv[])
 
     string iconpath;
     string cachedir;
+    string onstart;
+    string onstop;
     if (!g_configfilename.empty()) {
         ConfSimple config(g_configfilename.c_str(), 1, true);
         if (!config.ok()) {
@@ -310,6 +312,8 @@ int main(int argc, char *argv[])
         config.get("iconpath", iconpath);
         config.get("presentationhtml", presentationhtml);
         config.get("cachedir", cachedir);
+        config.get("onstart", onstart);
+        config.get("onstop", onstop);
         if (!(op_flags & OPT_i)) {
             config.get("upnpiface", iface);
             if (iface.empty()) {
@@ -439,7 +443,7 @@ int main(int argc, char *argv[])
     MPDCli *mpdclip = 0;
     int mpdretrysecs = 2;
     for (;;) {
-        mpdclip = new MPDCli(mpdhost, mpdport, mpdpassword);
+        mpdclip = new MPDCli(mpdhost, mpdport, mpdpassword, onstart, onstop);
         if (mpdclip == 0) {
             LOGFAT("Can't allocate MPD client object" << endl);
             return 1;
