@@ -71,7 +71,9 @@ bool OHVolume::makestate(unordered_map<string, string> &st)
     st["VolumeUnity"] = "100";
     st["VolumeSteps"] = "100";
     st["VolumeMilliDbPerSteps"] = millidbperstep;
+    st["Balance"] = "0";
     st["BalanceMax"] = "0";
+    st["Fade"] = "0";
     st["FadeMax"] = "0";
     int volume = m_ctl->getvolume_i();
     st["Volume"] = SoapHelp::i2s(volume);
