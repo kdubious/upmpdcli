@@ -1,3 +1,10 @@
+upmpdcli (0.11.2-1) unstable; urgency=low
+
+  * Add config parameter to allow turning off UPnP AV (keep OpenHome only).
+    Helps Linn Kinsky a lot
+
+ -- Jean-Francois Dockes <jf@dockes.org>  Wed, 06 May 2015 14:43:00 +0200
+
 upmpdcli (0.11.0-2) unstable; urgency=low
 
   * Fixed scweb service install
