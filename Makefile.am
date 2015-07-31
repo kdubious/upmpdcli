@@ -47,7 +47,7 @@ upmpdcli_SOURCES = \
      src/upmpdutils.hxx \
      src/workqueue.hxx
                            
-upmpdcli_LDADD = -lupnpp -lmpdclient -lpthread
+upmpdcli_LDADD = $(UPMPDCLI_LIBS)
 
 scctl_SOURCES = \
     scctl_src/scctl.cpp \

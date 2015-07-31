@@ -18,12 +18,31 @@ AC_TYPE_OFF_T
 AC_DEFINE([_LARGE_FILE_SOURCE], [], [Large files support])
 AC_DEFINE([_FILE_OFFSET_BITS], [64], [File Offset size])
 
+#### Libraries
 AC_CHECK_LIB([pthread], [pthread_create], [], [])
-AC_CHECK_LIB([upnpp], [UPnPP::getLibUPnP], [], [])
+
+# The 3 following checks for libthreadutil libixml and libupnp are normally
+# unnecessary and even problematic. upmpdcli does not use them directly,
+# and they should be used automatically because libupnpp is linked with them.
+# Still you may need them to include them on some systems where the
+# automatic link does not work.
+dnl AC_CHECK_LIB([threadutil], [TimerThreadRemove], [],
+dnl     AC_MSG_ERROR([libthreadutil (part of libupnp) not found]))
+dnl AC_CHECK_LIB([ixml], [ixmlDocument_getElementsByTagName], [], 
+dnl    AC_MSG_ERROR([libixml (usually installed as part of libupnp) not found]))
+dnl AC_CHECK_LIB([upnp], [UpnpInit], [], AC_MSG_ERROR([libupnp not found]))
+
+
+AC_CHECK_LIB([upnpp], [getsyshwaddr], [], [AC_MSG_ERROR([libupnpp])])
 AC_CHECK_LIB([mpdclient], [mpd_connection_new], [],
-                     AC_MSG_ERROR([libmpdclient not found]))
+                          AC_MSG_ERROR([libmpdclient not found]))
+
+UPMPDCLI_LIBS=$LIBS
+echo "UPMPDCLI_LIBS=$LIBS"
 
 LIBS=""
-                     
+
+AC_SUBST(UPMPDCLI_LIBS)
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
