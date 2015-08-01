@@ -31,6 +31,8 @@ dnl     AC_MSG_ERROR([libthreadutil (part of libupnp) not found]))
 dnl AC_CHECK_LIB([ixml], [ixmlDocument_getElementsByTagName], [], 
 dnl    AC_MSG_ERROR([libixml (usually installed as part of libupnp) not found]))
 dnl AC_CHECK_LIB([upnp], [UpnpInit], [], AC_MSG_ERROR([libupnp not found]))
+dnl AC_CHECK_LIB([curl], [curl_easy_init], [],AC_MSG_ERROR([libcurl not found]))
+dnl AC_CHECK_LIB([expat], [XML_ParserCreate], [],AC_MSG_ERROR([libexpat not found]))
 
 
 AC_CHECK_LIB([upnpp], [getsyshwaddr], [], [AC_MSG_ERROR([libupnpp])])

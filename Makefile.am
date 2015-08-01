@@ -54,7 +54,7 @@ scctl_SOURCES = \
     src/netcon.cpp \
     src/upmpdutils.cxx
 
-scctl_LDADD = -lupnpp -lpthread
+scctl_LDADD = $(UPMPDCLI_LIBS)
               
 dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/RenderingControl.xml src/ConnectionManager.xml \
