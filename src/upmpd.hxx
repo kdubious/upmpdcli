@@ -53,7 +53,9 @@ public:
         // (mpd does it)
         upmpdOhMetaPersist = 4,
         // sc2mpd was found: advertise songcast receiver
-        upmpdOhReceiver = 8
+        upmpdOhReceiver = 8,
+        // Do not publish UPnP AV services (avtransport and renderer).
+        upmpdNoAV = 16
     };
     struct Options {
         Options() : options(upmpdNone), ohmetasleep(0), schttpport(0) {}

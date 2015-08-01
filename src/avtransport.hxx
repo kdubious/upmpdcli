@@ -32,7 +32,7 @@ using namespace UPnPP;
 
 class UpMpdAVTransport : public UPnPProvider::UpnpService {
 public:
-    UpMpdAVTransport(UpMpd *dev);
+    UpMpdAVTransport(UpMpd *dev, bool noev);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);

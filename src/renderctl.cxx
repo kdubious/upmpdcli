@@ -45,8 +45,9 @@ static const string sIdRender("urn:upnp-org:serviceId:RenderingControl");
 
 static const int minVolumeDelta = 5;
 
-UpMpdRenderCtl::UpMpdRenderCtl(UpMpd *dev)
-    : UpnpService(sTpRender, sIdRender, dev), m_dev(dev), m_desiredvolume(-1)
+UpMpdRenderCtl::UpMpdRenderCtl(UpMpd *dev, bool noev)
+    : UpnpService(sTpRender, sIdRender, dev, noev), m_dev(dev), 
+      m_desiredvolume(-1)
 {
     m_dev->addActionMapping(this, "SetMute", 
                             bind(&UpMpdRenderCtl::setMute, this, _1, _2));

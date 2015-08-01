@@ -45,13 +45,6 @@ static string upnpAVDesc(
     "  <controlURL>/ctl/AVTransport</controlURL>"
     "  <eventSubURL>/evt/AVTransport</eventSubURL>"
     "</service>"
-    "<service>"
-    "  <serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>"
-    "  <serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>"
-    "  <SCPDURL>/upmpd/ConnectionManager.xml</SCPDURL>"
-    "  <controlURL>/ctl/ConnectionManager</controlURL>"
-    "  <eventSubURL>/evt/ConnectionManager</eventSubURL>"
-    "</service>"
     );
 
 // The description XML document is the first thing downloaded by

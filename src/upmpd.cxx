@@ -64,12 +64,13 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
       m_options(opts.options),
       m_mcachefn(opts.cachefn)
 {
+    bool avtnoev = (m_options & upmpdNoAV) != 0; 
     // Note: the order is significant here as it will be used when
     // calling the getStatus() methods, and we want AVTransport to
     // update the mpd status for OHInfo
-    UpMpdRenderCtl *rdctl = new UpMpdRenderCtl(this);
+    UpMpdRenderCtl *rdctl = new UpMpdRenderCtl(this, avtnoev);
     m_services.push_back(rdctl);
-    UpMpdAVTransport* avt = new UpMpdAVTransport(this);
+    UpMpdAVTransport* avt = new UpMpdAVTransport(this, avtnoev);
     m_services.push_back(avt);
     m_services.push_back(new UpMpdConMan(this));
     bool ohReceiver = (m_options & upmpdOhReceiver) != 0; 
@@ -514,7 +515,8 @@ int main(int argc, char *argv[])
         opts.options |= UpMpd::upmpdOhMetaPersist;
     if (!g_sc2mpd_path.empty())
         opts.options |= UpMpd::upmpdOhReceiver;
-
+    if (!enableAV)
+        opts.options |= UpMpd::upmpdNoAV;
     // Initialize the UPnP device object.
     UpMpd device(string("uuid:") + UUID, friendlyname, 
                  files, mpdclip, opts);

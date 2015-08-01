@@ -30,7 +30,7 @@ using namespace UPnPP;
 
 class UpMpdRenderCtl : public UPnPProvider::UpnpService {
 public:
-    UpMpdRenderCtl(UpMpd *dev);
+    UpMpdRenderCtl(UpMpd *dev, bool noev);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
