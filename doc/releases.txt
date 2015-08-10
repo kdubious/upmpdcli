@@ -1,0 +1,115 @@
+= Upmpdcli release notes
+
+== Upmpdcli 0.12
+
+This has a small change to use a new feature in libupnpp 0.12 to suppress
+error messages produced when when UPnP AV services were turned off.
+The version number was changed mostly to signal the dependancy on libupnpp
+0.12.
+
+== Upmpdcli 0.11
+
+*upmpdcli* 0.11 mainly improves the *Songcast* support, in complement with
+the changes in *sc2mpd*. Especially, it now includes an utility (*scctl*)
+and WEB interface to set up multi-room *Songcast*.
+
+Minor releases:
+
+0.11.2::
+    Add an `upnpav` configuration variable, to enable turning off UPnP AV
+    support (on by default). Turning off UPnP AV allows the Linn Kinsky
+    control point to work smoothly with upmpdcli (it gets confused when
+    both OpenHome and UPnP AV services are enabled).
+
+
+== Upmpdcli 0.9
+
+*upmpdcli* 0.9 implements support for link:sc2mpd.html[Linn Songcast]. This
+is mostly an addition to the unchanged 0.8.6 code, so, when not using
+Songcast, it should be as stable as 0.8.6.
+
+Bugs fixed: 
+     
+- Fix the _Kazoo_ Control Point going loopy when the upmpdcli playlist
+  became empty.
+
+
+== Upmpdcli 0.8
+
+0.8.6::
+Small improvements:
+* Improved speed for loading big playqueues. 
+* Fixed quoting for tracks added from an MPD client.
+
+0.8.5::
+No code changes, it only exists because of changes in the
+package structure. The libupnpp library has been separated in its own
+package.
+
+0.8.4::
+Skipped.
+
+0.8.3::
+This release mostly has modifications to the control side of the library.
+* upmpdcli now retries some song delete operations, it seems that mpd
+  sometimes needs a little time to recover (?)
+* The control side now uses short timeouts and concurrency to download
+  the description documents, which should solve the problem of devices
+  disappearing when a very slow-responding one was present on the network.
+* Misc improvements to the control side of the lib to support upplay.
+
+0.8.2::
+* Add capability to set an icon to be displayed when selecting a renderer
+  from a control point (see iconpath parameter in configuration file).
+* Control side: fix volume control which was not working on many renderers.
+* Misc changes to ease compilation on non-glibc platforms.
+
+0.8.1::
+Many changes in the library code, but almost none of them affect the
+device side, they concern support for writing a control-point, which is
+mostly disjoint. The following changes are relevant to upmpdcli, and
+consistant with a minor release:
+
+* When used with an non-OpenHome Control Point, multiple calls to
+  SetNextTransportURI no longer result in a lengthening of the MPD queue,
+  and a wrong playlist.
+* The OpenHome Playlist metadata is now writen to a temporary file which
+  is then renamed, to avoid partial saves of big lists.
+* The AVTransport service uses the OpenHome PlayList metadata cache
+  for describing the current track data to a pure AVTransport Control
+  Point. This is a very marginal improvement, and only makes sense in case
+  the AVTransport CP is used for displaying the current track.
+* The OpenHome service was not completly switched off when the option was
+  off sometimes resulting in spurious error messages (and nothing more).
+* Bad lock management inside the device code could result in a
+  semi-deadlock in rare situations. Upmpdcli would then mostly be gone from
+  the network, while still doing temporary appearances. This is linked to
+  design issues in libupnp, which handles quite badly a situation where a
+  subscribed Control Point responds very slowly or not at all to event
+  connections.
+
+0.8.0::
+
+The main changes in release 0.8 deal with better handling of the OpenHome
+playlist, in addition to a number of small bug fixes, and efficiency
+improvements.
+
+- OpenHome playlist: metadata from tracks directly added to the MPD queue
+  through an MPD client (such as, e.g. MPDroid, gmpc...) is now remembered
+  by *upmpdcli* and will be displayed in the UPnP Control Point.
+
+- OpenHome playlist: the metadata for the playlist is now saved to disk so
+  that it survives restarts (like the MPD playlist does). The previous
+  situation was that the current playing queue was still active after a
+  player restart, but no metadata (titles, artists, etc.) was displayed.
+
+- Actually advertise on the network when starting up and dying. An
+  oversight in previous versions resulted in the fact that *upmpdcli* could
+  only be discovered by a search (when the Control Point started), but,
+  when *upmpdcli* was started, it would not appear in a running Control Point
+  device list. 
+
+- Do not advertise support for raw PCM strings (audio/Lxx), as we can't
+  actually play them. It is better to give accurate information to the
+  Control Point, so that it can choose an alternate format such as Wav if
+  it is available. 

@@ -1,3 +1,11 @@
+upmpdcli (0.12.0-1) unstable; urgency=low
+
+  * Avoid error messages occurring when UPnP AV was suppressed (because
+    eventing was still active) by using new libupnpp feature.
+  * Bump version to help remember that this needs libupnpp 0.12
+
+ -- Jean-Francois Dockes <jf@dockes.org>  Mon, 10 Aug 2015 08:47:00 +0200
+
 upmpdcli (0.11.2-1) unstable; urgency=low
 
   * Add config parameter to allow turning off UPnP AV (keep OpenHome only).
