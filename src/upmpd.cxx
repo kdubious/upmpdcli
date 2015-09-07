@@ -210,6 +210,7 @@ int main(int argc, char *argv[])
     bool ohmetapersist = true;
     string upmpdcliuser("upmpdcli");
     string pidfilename("/var/run/upmpdcli.pid");
+    string iconpath(DATADIR "/icon.png");
     string presentationhtml(DATADIR "/presentation.html");
     string iface;
     unsigned short upport = 0;
