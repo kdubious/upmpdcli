@@ -201,7 +201,7 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
     string presentationdata;
     if (!presentationhtml.empty()) {
         if (!file_to_string(presentationhtml, presentationdata, &reason)) {
-            LOGERR("Failed reading " << iconpath << " : " << reason << endl);
+            LOGERR("Failed reading " << presentationhtml << " : " << reason << endl);
         }
     }
 

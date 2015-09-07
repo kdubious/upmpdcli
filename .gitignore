@@ -2,9 +2,13 @@
 *.la
 *.lo
 *.o
+.autotools
+.cproject
 .deps
 .dirstamp
 .libs
+.project
+.settings
 Makefile
 Makefile.in
 aclocal.m4
