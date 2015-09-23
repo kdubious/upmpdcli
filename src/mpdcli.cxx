@@ -95,7 +95,7 @@ bool MPDCli::showError(const string& who)
 
     int error = mpd_connection_get_error(M_CONN);
     if (error == MPD_ERROR_SUCCESS) {
-        //LOGDEB("MPDCli::showError: " << who << " success !" << endl;);
+        //LOGDEB("MPDCli::showError: " << who << " success !" << endl);
         return false;
     }
     LOGERR(who << " failed: " <<  mpd_connection_get_error_message(M_CONN) 
@@ -167,7 +167,9 @@ bool MPDCli::updStatus()
     case MPD_STATE_STOP:
         // Only execute onstop command if mpd was playing or paused
         if (m_stat.state != MpdStatus::MPDS_STOP && !m_onstop.empty()) {
-            system(m_onstop.c_str());
+            if (system(m_onstop.c_str())) {
+                LOGERR("MPDCli::updStatus: " << m_onstop << " failed "<< endl);
+            }
         }
         m_stat.state = MpdStatus::MPDS_STOP;
         break;
@@ -243,7 +245,7 @@ bool MPDCli::checkForCommand(const string& cmdname)
 
 bool MPDCli::statSong(UpSong& upsong, int pos, bool isid)
 {
-    //LOGDEB("MPDCli::statSong. isid " << isid << " val " << pos << endl);
+    //LOGDEB("MPDCli::statSong. isid " << isid << " id/pos " << pos << endl);
     if (!ok())
         return false;
 
@@ -269,6 +271,7 @@ bool MPDCli::statSong(UpSong& upsong, int pos, bool isid)
 
 UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
 {
+    LOGDEB1("MPDCli::mapSong" << endl);
     const char *cp;
 
     cp = mpd_song_get_uri(song);
@@ -315,11 +318,14 @@ UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
     upsong.duration_secs = mpd_song_get_duration(song);
     upsong.mpdid = mpd_song_get_id(song);
 
+    LOGDEB1("MPDCli::mapSong: got mpdid " << upsong.mpdid << " " << 
+            upsong.dump() << endl);
     return upsong;
 }
 
 bool MPDCli::setVolume(int volume, bool isMute)
 {
+    LOGDEB1("MPDCli::setVolume" << endl);
     if (!ok()) {
         return false;
     }
@@ -366,6 +372,7 @@ bool MPDCli::setVolume(int volume, bool isMute)
 
 int MPDCli::getVolume()
 {
+    LOGDEB1("MPDCli::getVolume" << endl);
     return m_stat.volume >= 0 ? m_stat.volume : m_cachedvolume;
 }
 
@@ -393,7 +400,9 @@ bool MPDCli::play(int pos)
     if (!ok())
         return false;
     if (!m_onstart.empty()) {
-        system(m_onstart.c_str());
+        if (system(m_onstart.c_str())) {
+            LOGERR("MPDCli::play: " << m_onstart << " failed "<< endl);
+        }
     }
     if (pos >= 0) {
         RETRY_CMD(mpd_run_play_pos(M_CONN, (unsigned int)pos));
@@ -409,7 +418,9 @@ bool MPDCli::playId(int id)
     if (!ok())
         return false;
     if (!m_onstart.empty()) {
-        system(m_onstart.c_str());
+        if (system(m_onstart.c_str())) {
+            LOGERR("MPDCli::playId: " << m_onstart << " failed "<< endl);
+        }
     }
     RETRY_CMD(mpd_run_play_id(M_CONN, (unsigned int)id));
     return updStatus();
@@ -491,13 +502,19 @@ bool MPDCli::send_tag(const char *cid, int tag, const string& data)
         return false;
     }
 
-    return mpd_response_finish(M_CONN);
+    if (!mpd_response_finish(M_CONN)) {
+        LOGERR("MPDCli::send_tag: mpd_response_finish failed\n");
+        showError("MPDCli::send_tag");
+        return false;
+    }
+    return true;
 }
 
 static const string upmpdcli_comment("client=upmpdcli;");
 
 bool MPDCli::send_tag_data(int id, const UpSong& meta)
 {
+    LOGDEB1("MPDCli::send_tag_data" << endl);
     if (!m_have_addtagid)
         return false;
 
@@ -620,6 +637,7 @@ bool MPDCli::statId(int id)
 
 bool MPDCli::getQueueSongs(vector<mpd_song*>& songs)
 {
+    LOGDEB1("MPDCli::getQueueSongs" << endl);
     songs.clear();
 
     RETRY_CMD(mpd_send_list_queue_meta(M_CONN));
@@ -639,6 +657,7 @@ bool MPDCli::getQueueSongs(vector<mpd_song*>& songs)
 
 void MPDCli::freeSongs(vector<mpd_song*>& songs)
 {
+    LOGDEB1("MPDCli::freeSongs" << endl);
     for (vector<mpd_song*>::iterator it = songs.begin();
          it != songs.end(); it++) {
         mpd_song_free(*it);
@@ -669,7 +688,6 @@ int MPDCli::curpos()
            << m_stat.songid << endl);
     return m_stat.songpos;
 }
-
 
 
 

@@ -141,12 +141,13 @@ static string translateIdArray(const vector<UpSong>& in)
         }
         sdeb += SoapHelp::i2s(val) + " ";
     }
-    LOGDEB("OHPlaylist: current ids: " << sdeb << endl);
+    LOGDEB("OHPlaylist::translateIdArray: current ids: " << sdeb << endl);
     return base64_encode(out1);
 }
 
 bool OHPlaylist::makeIdArray(string& out)
 {
+    LOGDEB1("OHPlaylist::makeIdArray\n");
     const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
 
     if (mpds.qvers == m_mpdqvers) {
@@ -592,6 +593,7 @@ int OHPlaylist::insert(const SoapIncoming& sc, SoapOutgoing& data)
 bool OHPlaylist::insertUri(int afterid, const string& uri, 
                            const string& metadata, int *newid)
 {
+    LOGDEB1("OHPlaylist::insertUri: " << uri << endl);
     UpSong metaformpd;
     if (!uMetaToUpSong(metadata, &metaformpd)) {
         LOGERR("OHPlaylist::insert: failed to parse metadata " << " Uri [" 
@@ -607,7 +609,7 @@ bool OHPlaylist::insertUri(int afterid, const string& uri,
             *newid = id;
         return true;
     } 
-    LOGERR("OHPlaylist::insert: mpd error" << endl);
+    LOGERR("OHPlaylist::insertUri: mpd error" << endl);
     return false;
 }
 
