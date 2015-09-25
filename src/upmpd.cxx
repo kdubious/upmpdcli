@@ -276,7 +276,6 @@ int main(int argc, char *argv[])
 
     UpMpd::Options opts;
 
-    string iconpath;
     string cachedir;
     string onstart;
     string onstop;
