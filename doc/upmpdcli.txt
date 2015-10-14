@@ -61,6 +61,7 @@ note>>|||iconpath
 page. <<upmpdcli.presentationnote,See note>>|||presentationhtml
 |Run a command (or shell script) when playback is about to begin.|||onstart
 |Run a command (or shell script) when playback is about to end.|||onstop
+|Run a command (or shell script) when volume is changed.|||onvolumechange
 |===========================    
 
 [[upmpdcli.iconpathnote]]

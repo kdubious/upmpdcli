@@ -32,11 +32,12 @@ using namespace UPnPP;
 #define M_CONN ((struct mpd_connection *)m_conn)
 
 MPDCli::MPDCli(const string& host, int port, const string& pass,
-               const string& onstart, const string& onstop)
+               const string& onstart, const string& onstop,
+               const string& onvolumechange)
     : m_conn(0), m_ok(false), m_premutevolume(0), m_cachedvolume(50),
       m_host(host), m_port(port), m_password(pass), m_onstart(onstart),
-      m_onstop(onstop), m_lastinsertid(-1), m_lastinsertpos(-1),
-      m_lastinsertqvers(-1)
+      m_onstop(onstop), m_onvolumechange(onvolumechange), m_lastinsertid(-1),
+      m_lastinsertpos(-1), m_lastinsertqvers(-1)
 {
     regcomp(&m_tpuexpr, "^[[:alpha:]]+://.+", REG_EXTENDED|REG_NOSUB);
     if (!openconn()) {
@@ -365,6 +366,17 @@ bool MPDCli::setVolume(int volume, bool isMute)
         volume = 100;
     
     RETRY_CMD(mpd_run_set_volume(M_CONN, volume));
+    if (!m_onvolumechange.empty()) {
+        char buf[256];
+        int n = snprintf(buf, sizeof buf, "%s %i", m_onvolumechange.c_str(),
+                         volume);
+        if (!(n >= 0 && n < 256 && system(buf) != 0)) {
+            // The command has not been completely written to the buffer or
+            // the command has not run successfully.
+            LOGERR("MPDCli::setVolume: " << m_onvolumechange << " failed "
+                   << endl);
+        }
+    }
     m_stat.volume = volume;
     m_cachedvolume = volume;
     return true;
