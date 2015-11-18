@@ -33,6 +33,20 @@ class ConfSimple;
 extern ConfSimple *g_config;
 extern std::string g_protocolInfo;
 
+typedef struct ohInfoDesc {
+  std::string name;
+  std::string info;
+  std::string url;
+  std::string imageUri;
+} ohInfoDesc_t;
+
+typedef struct ohProductDesc {
+  ohInfoDesc_t manufacturer;
+  ohInfoDesc_t model;
+  ohInfoDesc_t product;
+  std::string room;
+} ohProductDesc_t;
+
 using namespace UPnPProvider;
 
 class UpMpdRenderCtl;
@@ -88,6 +102,7 @@ public:
         int sendermpdport;
     };
     UpMpd(const std::string& deviceid, const std::string& friendlyname,
+          ohProductDesc_t& ohProductDesc,
           const std::unordered_map<std::string, VDirContent>& files,
           MPDCli *mpdcli, Options opts);
     ~UpMpd();

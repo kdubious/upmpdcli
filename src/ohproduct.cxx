@@ -58,9 +58,9 @@ static string scripts_dir("/usr/share/upmpdcli/src_scripts");
 // (Type, Name) list
 static vector<pair<string, string> > o_sources;
 
-OHProduct::OHProduct(UpMpd *dev, const string& friendlyname)
+OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc)
     : OHService(sTpProduct, sIdProduct, dev),
-      m_roomOrName(friendlyname), m_sourceIndex(0), m_standby(false)
+      m_ohProductDesc(ohProductDesc), m_sourceIndex(0), m_standby(false)
 {
     // Playlist must stay first.
     o_sources.push_back(pair<string,string>("Playlist","Playlist"));
@@ -131,31 +131,23 @@ OHProduct::~OHProduct()
 {
 }
 
-static const string csversion(UPMPDCLI_PACKAGE_VERSION);
-static const string csmanname("UpMPDCli heavy industries Co.");
-static const string csmaninfo("Such nice guys and gals");
-static const string csmanurl("http://www.lesbonscomptes.com/upmpdcli");
-static const string csmodname("UpMPDCli UPnP-MPD gateway");
-static const string csmodurl("http://www.lesbonscomptes.com/upmpdcli");
-static const string csprodname("Upmpdcli");
-
 bool OHProduct::makestate(unordered_map<string, string> &st)
 {
     st.clear();
 
-    st["ManufacturerName"] = csmanname;
-    st["ManufacturerInfo"] = csmaninfo;
-    st["ManufacturerUrl"] = csmanurl;
-    st["ManufacturerImageUri"] = "";
-    st["ModelName"] = csmodname;
-    st["ModelInfo"] = csversion;
-    st["ModelUrl"] = csmodurl;
-    st["ModelImageUri"] = "";
-    st["ProductRoom"] = m_roomOrName;
-    st["ProductName"] = csprodname;
-    st["ProductInfo"] = csversion;
-    st["ProductUrl"] = "";
-    st["ProductImageUri"] = "";
+    st["ManufacturerName"] = m_ohProductDesc.manufacturer.name;
+    st["ManufacturerInfo"] = m_ohProductDesc.manufacturer.info;
+    st["ManufacturerUrl"] = m_ohProductDesc.manufacturer.url;
+    st["ManufacturerImageUri"] = m_ohProductDesc.manufacturer.imageUri;
+    st["ModelName"] = m_ohProductDesc.model.name;
+    st["ModelInfo"] = m_ohProductDesc.model.info;
+    st["ModelUrl"] = m_ohProductDesc.model.url;
+    st["ModelImageUri"] = m_ohProductDesc.model.imageUri;
+    st["ProductRoom"] = m_ohProductDesc.room;
+    st["ProductName"] = m_ohProductDesc.product.name;
+    st["ProductInfo"] = m_ohProductDesc.product.info;
+    st["ProductUrl"] = m_ohProductDesc.product.url;
+    st["ProductImageUri"] = m_ohProductDesc.product.imageUri;
     st["Standby"] = m_standby ? "1" : "0";
     st["SourceCount"] = SoapHelp::i2s(o_sources.size());
     st["SourceXml"] = csxml;
@@ -168,31 +160,31 @@ bool OHProduct::makestate(unordered_map<string, string> &st)
 int OHProduct::manufacturer(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::manufacturer" << endl);
-    data.addarg("Name", csmanname);
-    data.addarg("Info", csmaninfo);
-    data.addarg("Url", csmanurl);
-    data.addarg("ImageUri", "");
+    data.addarg("Name", m_ohProductDesc.manufacturer.name);
+    data.addarg("Info", m_ohProductDesc.manufacturer.info);
+    data.addarg("Url", m_ohProductDesc.manufacturer.url);
+    data.addarg("ImageUri", m_ohProductDesc.manufacturer.imageUri);
     return UPNP_E_SUCCESS;
 }
 
 int OHProduct::model(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::model" << endl);
-    data.addarg("Name", csmodname);
-    data.addarg("Info", csversion);
-    data.addarg("Url", csmodurl);
-    data.addarg("ImageUri", "");
+    data.addarg("Name", m_ohProductDesc.model.name);
+    data.addarg("Info", m_ohProductDesc.model.info);
+    data.addarg("Url", m_ohProductDesc.model.url);
+    data.addarg("ImageUri", m_ohProductDesc.model.imageUri);
     return UPNP_E_SUCCESS;
 }
 
 int OHProduct::product(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::product" << endl);
-    data.addarg("Room", m_roomOrName);
-    data.addarg("Name", csprodname);
-    data.addarg("Info", csversion);
-    data.addarg("Url", "");
-    data.addarg("ImageUri", "");
+    data.addarg("Room", m_ohProductDesc.room);
+    data.addarg("Name", m_ohProductDesc.product.name);
+    data.addarg("Info", m_ohProductDesc.product.info);
+    data.addarg("Url", m_ohProductDesc.product.url);
+    data.addarg("ImageUri", m_ohProductDesc.product.imageUri);
     return UPNP_E_SUCCESS;
 }
 
@@ -360,7 +352,7 @@ int OHProduct::source(const SoapIncoming& sc, SoapOutgoing& data)
         LOGERR("OHProduct::source: bad index: " << sindex << endl);
         return UPNP_E_INVALID_PARAM;
     }
-    data.addarg("SystemName", m_roomOrName);
+    data.addarg("SystemName", m_ohProductDesc.room);
     data.addarg("Type", o_sources[sindex].first);
     data.addarg("Name", o_sources[sindex].second);
     string visible = o_sources[sindex].first.compare("Receiver") ? "1" : "0";

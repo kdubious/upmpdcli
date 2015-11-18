@@ -20,6 +20,7 @@
 #include <string>                       // for string
 #include <vector>                       // for vector
 
+#include "upmpd.hxx"                    // for ohProductDesc_t
 #include "libupnpp/device/device.hxx"   // for UpnpService
 #include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
@@ -30,7 +31,7 @@ using namespace UPnPP;
 
 class OHProduct : public OHService {
 public:
-    OHProduct(UpMpd *dev, const std::string& friendlyname);
+    OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc);
     virtual ~OHProduct();
     
     int iSetSourceIndex(int index);
@@ -56,7 +57,7 @@ private:
 
     int iSrcNameToIndex(const std::string& nm);
     
-    std::string m_roomOrName;
+    ohProductDesc_t& m_ohProductDesc;
     int m_sourceIndex;
     bool m_standby;
 };

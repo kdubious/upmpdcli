@@ -94,6 +94,30 @@ Usage(FILE *fp = stderr)
 
 static const string dfltFriendlyName("UpMpd");
 
+ohProductDesc_t ohProductDesc = {
+    // Manufacturer
+    {
+        "UpMPDCli heavy industries Co.",            // name
+        "Such nice guys and gals",                  // info
+        "http://www.lesbonscomptes.com/upmpdcli",   // url
+        ""                                          // imageUri
+    },
+    // Model
+    {
+        "UpMPDCli UPnP-MPD gateway",                // name
+        "",                                         // info
+        "http://www.lesbonscomptes.com/upmpdcli",   // url
+        ""                                          // imageUri
+    },
+    // Product
+    {
+        "Upmpdcli",                                 // name
+        PACKAGE_VERSION,                            // info
+        "",                                         // url
+        ""                                          // imageUri
+    }
+};
+
 // This is global
 string g_protocolInfo;
 
@@ -275,6 +299,27 @@ int main(int argc, char *argv[])
         g_config->get("sc2mpd", sc2mpdpath);
         if (g_config->get("ohmetasleep", value))
             opts.ohmetasleep = atoi(value.c_str());
+        g_config->get("ohmanufacturername", ohProductDesc.manufacturer.name);
+        g_config->get("ohmanufacturerinfo", ohProductDesc.manufacturer.info);
+        g_config->get("ohmanufacturerurl", ohProductDesc.manufacturer.url);
+        g_config->get("ohmanufacturerimageuri", ohProductDesc.manufacturer.imageUri);
+        g_config->get("ohmodelname", ohProductDesc.model.name);
+        g_config->get("ohmodelinfo", ohProductDesc.model.info);
+        g_config->get("ohmodelurl", ohProductDesc.model.url);
+        g_config->get("ohmodelimageUri", ohProductDesc.model.imageUri);
+        g_config->get("ohproductname", ohProductDesc.product.name);
+        g_config->get("ohproductinfo", ohProductDesc.product.info);
+        g_config->get("ohproducturl", ohProductDesc.product.url);
+        g_config->get("ohproductimageuri", ohProductDesc.product.imageUri);
+        g_config->get("ohproductroom", ohProductDesc.room);
+        // ProductName is set to ModelName by default
+        if (ohProductDesc.product.name.empty()) {
+          ohProductDesc.product.name = ohProductDesc.model.name;
+        }
+        // ProductRoom is set to "Main Room" by default
+        if (ohProductDesc.room.empty()) {
+          ohProductDesc.room = "Main Room";
+        }
 
         g_config->get("scsenderpath", senderpath);
         if (g_config->get("scsendermpdport", value))
@@ -504,7 +549,7 @@ int main(int argc, char *argv[])
     if (!enableAV)
         opts.options |= UpMpd::upmpdNoAV;
     // Initialize the UPnP device object.
-    UpMpd device(string("uuid:") + UUID, friendlyname, 
+    UpMpd device(string("uuid:") + UUID, friendlyname, ohProductDesc,
                  files, mpdclip, opts);
     dev = &device;
 

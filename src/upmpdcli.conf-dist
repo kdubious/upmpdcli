@@ -71,6 +71,53 @@ ohmetapersist = 1
 # <command> 85.
 # onvolumechange =
 
+### Parameters for the OpenHome service
+
+# Manufacturer name. Does not vary at run-time.
+#ohmanufacturername = UpMPDCli heavy industries Co.
+
+# Manufacturer information. Does not vary at run-time.
+#ohmanufacturerinfo = Such nice guys and gals
+
+# URL for manufacturer web site. Does not vary at run-time.
+#ohmanufacturerurl = http://www.lesbonscomptes.com/upmpdcli
+
+# Uri for manufacturer’s logo. Does not vary at run-time.
+#ohmanufacturerimageuri =
+
+# Model name. Does not vary at run-time.
+#ohmodelname = UpMPDCli UPnP-MPD gateway
+
+# Model information. Does not vary at run-time.
+#ohmodelinfo =
+
+# URL for model web site. Does not vary at run-time.
+#ohmodelurl = http://www.lesbonscomptes.com/upmpdcli
+
+# Uri for model’s icon. Does not vary at run-time.
+#ohmodelimageuri =
+
+# User-visible product name. By default this is set to ModelName.
+# Note that the UPnP friendly name is derived by combining this with Room name
+# in the form Room : Name
+#ohproductname = Upmpdcli
+
+# The name of the room where the Product is located. Set to “Main Room” by
+# default.
+# ProductRoom is used to group the Product with other related Products in the
+# same physical room (e.g. a source with a pre-amp). Products which are
+# physically linked must always share the same ProductRoom name.
+#ohproductroom = Main Room
+
+# Product information. Does not vary at run-time.
+#ohproductinfo =
+
+# URL for product web site. This may be the UPnP presentation page.
+#ohproducturl =
+
+# Uri for product image. Does not vary at run-time.
+#ohproductimageuri =
+
 # Mimimum interval (Seconds) between 2 saves of the cache. Setting this may
 # improve playlist load speed on a slow device. The default is to start a
 # new save as soon as the previous one is done (if the list changed again

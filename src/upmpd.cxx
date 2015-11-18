@@ -68,6 +68,7 @@ bool OHService::getEventData(bool all, vector<string>& names,
 // Note: if we ever need this to work without cxx11, there is this:
 // http://www.tutok.sk/fastgl/callback.html
 UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
+             ohProductDesc_t& ohProductDesc,
              const unordered_map<string, VDirContent>& files,
              MPDCli *mpdcli, Options opts)
     : UpnpDevice(deviceid, files), m_mpdcli(mpdcli), m_mpds(0),
@@ -120,10 +121,8 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
             m_sndrcv = new SenderReceiver(this, opts.senderpath,
                                           opts.sendermpdport);
         }
-
-        // Create ohpr last, so that it can ask questions to other
-        // services or check their existence
-        m_ohpr = new OHProduct(this, friendlyname);
+        // Create ohpr last, so that it can ask questions to other services
+        m_ohpr = new OHProduct(this, ohProductDesc);
         m_services.push_back(m_ohpr);
     }
 }
