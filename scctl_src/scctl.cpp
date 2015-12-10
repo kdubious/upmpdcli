@@ -19,7 +19,7 @@
  * Songcast UPnP controller. 
  *
  * This can list the state of all Receivers, tell
- * a Receiver to play the same URI as another one (master/slave,
+ * a Receiver to play the same URI as another one (master/slave),
  * except that the slaves don't really follow the master state, they
  * will just keep playing the same URI), or tell a Receiver to return
  * to Playlist operation.
@@ -32,6 +32,7 @@
  * first tries to contact the server, and does things itself if no
  * server is found (encurring 2-3 S of timeout in the latter case).
  */
+#include "libupnpp/config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,300 +46,58 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-using namespace std;
 
 #include "libupnpp/upnpplib.hxx"
 #include "libupnpp/log.hxx"
 #include "libupnpp/control/mediarenderer.hxx"
 #include "libupnpp/control/discovery.hxx"
+#include "libupnpp/control/linnsongcast.hxx"
 
 #include "../src/netcon.h"
 #include "../src/upmpdutils.hxx"
 
 using namespace UPnPClient;
 using namespace UPnPP;
-
-UPnPDeviceDirectory *superdir;
-
-MRDH getRenderer(const string& name)
-{
-    if (superdir == 0) {
-        superdir = UPnPDeviceDirectory::getTheDir();
-    }
-
-    UPnPDeviceDesc ddesc;
-    if (superdir->getDevByUDN(name, ddesc)) {
-        return MRDH(new MediaRenderer(ddesc));
-    } else if (superdir->getDevByFName(name, ddesc)) {
-        return MRDH(new MediaRenderer(ddesc));
-    } 
-    cerr << "getDevByFname failed for " << name << endl;
-    return MRDH();
-}
-
-struct SongcastState {
-    string nm;
-    string UDN;
-    enum SCState {SCS_GENERROR, SCS_NOOH, SCS_NOTRECEIVER,
-                  SCS_STOPPED, SCS_PLAYING};
-    SCState state;
-    string uri;
-    string meta;
-    int receiverSourceIndex;
-    string reason;
-
-    OHPRH prod;
-    OHRCH rcv;
-
-    SongcastState() 
-        : state(SCS_GENERROR), receiverSourceIndex(-1) {
-    }
-
-    void reset() {
-        nm.clear();
-        state = SongcastState::SCS_GENERROR;
-        receiverSourceIndex = -1;
-        reason.clear();
-        uri.clear();
-        meta.clear();
-        prod.reset();
-        rcv.reset();
-    }
-};
-
-void getSongcastState(const string& nm, SongcastState& st, bool live = true)
-{
-    st.reset();
-    st.nm = nm;
-
-    MRDH rdr = getRenderer(nm);
-    if (!rdr) {
-        st.reason = nm + " not a media renderer?";
-        return;
-    }
-    st.nm = rdr->desc()->friendlyName;
-    st.UDN = rdr->desc()->UDN;
-
-    OHPRH prod = rdr->ohpr();
-    if (!prod) {
-        st.state = SongcastState::SCS_NOOH;
-        st.reason =  nm + ": device has no OHProduct service";
-        return;
-    }
-    int index;
-    if (prod->sourceIndex(&index)) {
-        st.reason = nm + " : sourceIndex failed";
-        return;
-    }
-
-    vector<OHProduct::Source> sources;
-    if (prod->getSources(sources) || sources.size() == 0) {
-        st.reason = nm + ": getSources failed";
-        return;
-    }
-    unsigned int rcvi = 0;
-    for (; rcvi < sources.size(); rcvi++) {
-        if (!sources[rcvi].name.compare("Receiver"))
-            break;
-    }
-    if (rcvi == sources.size()) {
-        st.state = SongcastState::SCS_NOOH;
-        st.reason = nm +  " has no Receiver service";
-        return;
-    }
-    st.receiverSourceIndex = int(rcvi);
-
-    if (index < 0 || index >= int(sources.size())) {
-        st.reason = nm +  ": bad index " + SoapHelp::i2s(index) +
-            " not inside sources of size " +  SoapHelp::i2s(sources.size());
-        return;
-    }
-
-    // Looks like the device has a receiver service. We may have to return a 
-    // handle for it.
-    OHRCH rcv = rdr->ohrc();
-
-    string sname = sources[index].name;
-    if (sname.compare("Receiver")) {
-        st.state = SongcastState::SCS_NOTRECEIVER;
-        st.reason = nm +  " not in receiver mode ";
-        goto out;
-    }
-
-    if (!rcv) {
-        st.reason = nm +  ": no receiver service??";
-        goto out;
-    }
-    if (rcv->sender(st.uri, st.meta)) {
-        st.reason = nm +  ": Receiver::Sender failed";
-        goto out;
-    }
-
-    OHPlaylist::TPState tpst;
-    if (rcv->transportState(&tpst)) {
-        st.reason = nm +  ": Receiver::transportState() failed";
-        goto out;
-    }
-
-    if (tpst == OHPlaylist::TPS_Playing) {
-        st.state = SongcastState::SCS_PLAYING;
-    } else {
-        st.state = SongcastState::SCS_STOPPED;
-    }
-out:
-    if (live) {
-        st.prod = prod;
-        st.rcv = rcv;
-    }
-        
-    return;
-}
-
-void listReceivers(vector<SongcastState>& vscs)
-{
-    vector<UPnPDeviceDesc> vdds;
-    if (!MediaRenderer::getDeviceDescs(vdds)) {
-        cerr << "listReceivers::getDeviceDescs failed" << endl;
-        return;
-    }
-
-    for (auto& entry : vdds) {
-        SongcastState st;
-        getSongcastState(entry.UDN, st, false);
-        if (st.state == SongcastState::SCS_NOTRECEIVER || 
-            st.state == SongcastState::SCS_PLAYING ||
-            st.state == SongcastState::SCS_STOPPED) {
-            vscs.push_back(st);
-        }
-    }
-}
-
-bool setReceiverPlaying(const string& nm, SongcastState& st, 
-                        const string& uri, const string& meta)
-{
-    if (!st.rcv || !st.prod) {
-        st.reason = nm + " : null handle ??";
-        return false;
-    }
-
-    if (st.rcv->setSender(uri, meta)) {
-        st.reason = nm + " Receiver::setSender() failed";
-        return false;
-    }
-    if (st.prod->setSourceIndex(st.receiverSourceIndex)) {
-        st.reason = nm + " : can't set source index to " +
-            SoapHelp::i2s(st.receiverSourceIndex);
-        return false;
-    }
-    if (st.rcv->play()) {
-        st.reason = nm + " Receiver::play() failed";
-        return false;
-    }
-    return true;
-}
-
-bool stopReceiver(const string& nm, SongcastState st)
-{
-    if (!st.rcv || !st.prod) {
-        st.reason = nm + " : null handle ??";
-        return false;
-    }
-    if (st.rcv->stop()) {
-        st.reason = nm + " Receiver::play() failed";
-        return false;
-    }
-    if (st.prod->setSourceIndex(0)) {
-        st.reason = nm + " : can't set source index to " +
-            SoapHelp::i2s(st.receiverSourceIndex);
-        return false;
-    }
-    return true;
-}
-
-void ohSongcast(const string& masterName, const vector<string>& slaves)
-{
-    SongcastState mstate;
-    getSongcastState(masterName, mstate);
-    if (mstate.state != SongcastState::SCS_PLAYING) {
-        cerr << "Required master not in Receiver Playing mode" << endl;
-        return;
-    }
-
-    // Note: sequence sent from windows songcast when setting up a receiver:
-    //   Product::SetSourceIndex / Receiver::SetSender / Receiver::Play
-    // When stopping:
-    //   Receiver::Stop / Product::SetStandby
-    for (auto& sl: slaves) {
-        cerr << "Setting up " << sl << endl;
-        SongcastState sstate;
-        getSongcastState(sl, sstate);
-
-        switch (sstate.state) {
-        case SongcastState::SCS_GENERROR:
-        case SongcastState::SCS_NOOH:
-            cerr << sl << sstate.reason << endl;
-            continue;
-        case SongcastState::SCS_STOPPED:
-        case SongcastState::SCS_PLAYING:
-            cerr << sl << ": already in receiver mode" << endl;
-            continue;
-        case SongcastState::SCS_NOTRECEIVER: 
-            if (setReceiverPlaying(sl, sstate, mstate.uri, mstate.meta)) {
-                cerr << sl << " set up for playing " << mstate.uri << endl;
-            } else {
-                cerr << sstate.reason << endl;
-            }
-        }
-    }
-}
-
-void ohNoSongcast(const vector<string>& slaves)
-{
-    for (auto& sl: slaves) {
-        cerr << "Songcast: resetting " << sl << endl;
-        SongcastState sstate;
-        getSongcastState(sl, sstate);
-
-        switch (sstate.state) {
-        case SongcastState::SCS_GENERROR:
-        case SongcastState::SCS_NOOH:
-            cerr << sl << sstate.reason << endl;
-            continue;
-        case SongcastState::SCS_NOTRECEIVER: 
-            cerr << sl << ": not in receiver mode" << endl;
-            continue;
-        case SongcastState::SCS_STOPPED:
-        case SongcastState::SCS_PLAYING:
-            if (stopReceiver(sl, sstate)) {
-                cerr << sl << " back from receiver mode " << endl;
-            } else {
-                cerr << sstate.reason << endl;
-            }
-        }
-    }
-}
+using namespace std;
+using namespace Songcast;
 
 string showReceivers()
 {
-    vector<SongcastState> vscs;
+    vector<ReceiverState> vscs;
     listReceivers(vscs);
     ostringstream out;
 
     for (auto& scs: vscs) {
         switch (scs.state) {
-        case SongcastState::SCS_GENERROR:    out << "Error ";break;
-        case SongcastState::SCS_NOOH:        out << "Nooh  ";break;
-        case SongcastState::SCS_NOTRECEIVER: out << "Off   ";break;
-        case SongcastState::SCS_STOPPED:     out << "Stop  ";break;
-        case SongcastState::SCS_PLAYING:     out << "Play  ";break;
+        case ReceiverState::SCRS_GENERROR:    out << "Error ";break;
+        case ReceiverState::SCRS_NOOH:        out << "Nooh  ";break;
+        case ReceiverState::SCRS_NOTRECEIVER: out << "Off   ";break;
+        case ReceiverState::SCRS_STOPPED:     out << "Stop  ";break;
+        case ReceiverState::SCRS_PLAYING:     out << "Play  ";break;
         }
         out << scs.nm << " ";
         out << scs.UDN << " ";
-        if (scs.state == SongcastState::SCS_PLAYING) {
+        if (scs.state == ReceiverState::SCRS_PLAYING) {
             out << scs.uri;
-        } else if (scs.state == SongcastState::SCS_GENERROR) {
+        } else if (scs.state == ReceiverState::SCRS_GENERROR) {
             out << scs.reason;
         }
+        out << endl;
+    }
+    return out.str();
+}
+
+string showSenders()
+{
+    vector<SenderState> vscs;
+    listSenders(vscs);
+    ostringstream out;
+
+    for (auto& scs: vscs) {
+        out << scs.nm << " ";
+        out << scs.UDN << " ";
+        out << scs.reason << " ";
+        out << scs.uri;
         out << endl;
     }
     return out.str();
@@ -347,13 +106,17 @@ string showReceivers()
 static char *thisprog;
 static char usage [] =
 " -l List renderers with Songcast Receiver capability\n"
+" -L List Songcast Senders\n"
 " -s <master> <slave> [slave ...] : Set up the slaves renderers as Songcast\n"
-"    Receivers and make them play from the same uri as the master\n"
+"    Receivers and make them play from the same uri as the master receiver\n"
 " -x <renderer> [renderer ...] Reset renderers from Songcast to Playlist\n"
 " -S Run as server\n"
 " -f If no server is found, scctl will fork one after performing the\n"
 "    requested command, so that the next execution will not have to wait for\n"
 "    the discovery timeout.n"
+" -r <sender> <renderer> <renderer> : set up the renderers in Receiver mode\n"
+"    playing data from the sender. This is like -s but we get the uri from \n"
+"    the sender instead of a sibling receiver\n"
 " -h This help.\n"
 "\n"
 "Renderers may be designated by friendly name or UUID\n"
@@ -374,6 +137,8 @@ static int   op_flags;
 #define OPT_h    0x10
 #define OPT_f    0x20
 #define OPT_p    0x40
+#define OPT_r    0x80
+#define OPT_L    0x100
 
 int runserver();
 bool tryserver(int flags, int argc, char *argv[]);
@@ -383,14 +148,40 @@ int main(int argc, char *argv[])
     thisprog = argv[0];
 
     int ret;
-    while ((ret = getopt(argc, argv, "fhlsSx")) != -1) {
+    while ((ret = getopt(argc, argv, "fhLlrsSx")) != -1) {
         switch (ret) {
         case 'f': op_flags |= OPT_f; break;
         case 'h': Usage(stdout); break;
-        case 'l': op_flags |= OPT_l; break;
-        case 's': op_flags |= OPT_s; break;
-        case 'S': op_flags |= OPT_S; break;
-        case 'x': op_flags |= OPT_x; break;
+        case 'l':
+            if (op_flags & ~OPT_f)
+                Usage();
+            op_flags |= OPT_l;
+            break;
+        case 'L':
+            if (op_flags & ~OPT_f)
+                Usage();
+            op_flags |= OPT_L;
+            break;
+        case 'r':
+            if (op_flags & ~OPT_f)
+                Usage();
+            op_flags |= OPT_r;
+            break;
+        case 's':
+            if (op_flags & ~OPT_f)
+                Usage();
+            op_flags |= OPT_s;
+            break;
+        case 'S':
+            if (op_flags & ~OPT_f)
+                Usage();
+            op_flags |= OPT_S;
+            break;
+        case 'x':
+            if (op_flags & ~OPT_f)
+                Usage();
+            op_flags |= OPT_x;
+            break;
         default: Usage();
         }
     }
@@ -418,38 +209,35 @@ int main(int argc, char *argv[])
     }
     // mylib->setLogFileName("/tmp/libupnp.log");
 
-
+    vector<string> args;
+    while (optind < argc) {
+        args.push_back(argv[optind++]);
+    }
+    
     if ((op_flags & OPT_l)) {
-        if (op_flags & (OPT_s|OPT_x)) {
-            Usage();
-        }
-        if (optind < argc)
+        if (args.size())
             Usage();
         string out = showReceivers();
         cout << out;
+    } else if ((op_flags & OPT_L)) {
+        if (args.size())
+            Usage();
+        string out = showSenders();
+        cout << out;
+    } else if ((op_flags & OPT_r)) {
+        if (args.size() < 2)
+            Usage();
+        setReceiversFromSender(args[0], vector<string>(args.begin() + 1,
+                                                       args.end()));
     } else if ((op_flags & OPT_s)) {
-        if (op_flags & (OPT_l|OPT_x)) {
+        if (args.size() < 2)
             Usage();
-        }
-        if (optind > argc - 2)
-            Usage();
-        string master = argv[optind++];
-        vector<string> slaves;
-        while (optind < argc) {
-            slaves.push_back(argv[optind++]);
-        }
-        ohSongcast(master, slaves);
+        setReceiversFromReceiver(args[0], vector<string>(args.begin()+1,
+                                                         args.end()));
     } else if ((op_flags & OPT_x)) {
-        if (op_flags & (OPT_l|OPT_s)) {
+        if (args.size() < 1)
             Usage();
-        }
-        if (optind > argc - 1)
-            Usage();
-        vector<string> slaves;
-        while (optind < argc) {
-            slaves.push_back(argv[optind++]);
-        }
-        ohNoSongcast(slaves);
+        stopReceivers(args);
     } else if ((op_flags & OPT_S)) {
         exit(runserver());
     } else {
@@ -593,6 +381,15 @@ int MyNetconServLis::cando(Netcon::Event reason)
         out = "Ok\n";
     } else if (opflags & OPT_l) {
         out = showReceivers();
+    } else if (opflags & OPT_r) {
+        if (toks.size() < 3)
+            return 1;
+        vector<string>::iterator beg = toks.begin();
+        beg++;
+        string sender = *beg;
+        beg++;
+        vector<string> receivers(beg, toks.end());
+        setReceiversFromSender(sender, receivers);
     } else if (opflags & OPT_s) {
         if (toks.size() < 3)
             return 1;
@@ -601,14 +398,14 @@ int MyNetconServLis::cando(Netcon::Event reason)
         string master = *beg;
         beg++;
         vector<string> slaves(beg, toks.end());
-        ohSongcast(master, slaves);
+        setReceiversFromReceiver(master, slaves);
     } else if (opflags & OPT_x) {
         if (toks.size() < 2)
             return 1;
         vector<string>::iterator beg = toks.begin();
         beg++;
         vector<string> slaves(beg, toks.end());
-        ohNoSongcast(slaves);
+        stopReceivers(slaves);
     } else {
         LOGERR("scctl: server: bad cmd:" << toks[0] << endl);
         return 1;
