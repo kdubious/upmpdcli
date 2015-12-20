@@ -26,26 +26,28 @@
 #include "mpdcli.hxx"
 
 class UpMpd;
-class UpMpdRenderCtl;
 
 using namespace UPnPP;
 
 class OHPlaylist : public UPnPProvider::UpnpService {
 public:
-    OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl, unsigned int cachesavesleep);
+    OHPlaylist(UpMpd *dev, unsigned int cachesavesleep);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
-    virtual bool cacheFind(const std::string& uri, std:: string& meta);
+    bool cacheFind(const std::string& uri, std:: string& meta);
 
     // Internal non-soap versions of some of the interface for use by
     // e.g. ohreceiver
-    virtual bool insertUri(int afterid, const std::string& uri, 
-                           const std::string& metadata, int *newid = 0);
-    virtual bool ireadList(const std::vector<int>&, std::vector<UpSong>&);
-    virtual bool iidArray(std::string& idarray, int *token);
-    virtual bool urlMap(std::unordered_map<int, std::string>& umap);
+    bool insertUri(int afterid, const std::string& uri, 
+                   const std::string& metadata, int *newid = 0);
+    bool ireadList(const std::vector<int>&, std::vector<UpSong>&);
+    bool iidArray(std::string& idarray, int *token);
+    bool urlMap(std::unordered_map<int, std::string>& umap);
 
+    int iStop();
+    void resetQVers();
+    
 private:
     int play(const SoapIncoming& sc, SoapOutgoing& data);
     int pause(const SoapIncoming& sc, SoapOutgoing& data);

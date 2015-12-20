@@ -31,7 +31,7 @@ using namespace UPnPP;
 
 class OHVolume : public UPnPProvider::UpnpService {
 public:
-    OHVolume(UpMpd *dev, UpMpdRenderCtl *ctl);
+    OHVolume(UpMpd *dev);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
@@ -49,7 +49,6 @@ private:
     // State variable storage
     std::unordered_map<std::string, std::string> m_state;
     UpMpd *m_dev;
-    UpMpdRenderCtl *m_ctl;
 };
 
 #endif /* _OHVOLUME_H_X_INCLUDED_ */

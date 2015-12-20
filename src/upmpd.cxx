@@ -62,32 +62,29 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
              MPDCli *mpdcli, Options opts)
     : UpnpDevice(deviceid, files), m_mpdcli(mpdcli), m_mpds(0),
       m_options(opts.options),
-      m_mcachefn(opts.cachefn)
+      m_mcachefn(opts.cachefn),
+      m_rdctl(0), m_avt(0), m_ohpr(0), m_ohpl(0), m_ohrcv(0)
 {
     bool avtnoev = (m_options & upmpdNoAV) != 0; 
     // Note: the order is significant here as it will be used when
     // calling the getStatus() methods, and we want AVTransport to
     // update the mpd status for OHInfo
-    UpMpdRenderCtl *rdctl = new UpMpdRenderCtl(this, avtnoev);
-    m_services.push_back(rdctl);
-    UpMpdAVTransport* avt = new UpMpdAVTransport(this, avtnoev);
-    m_services.push_back(avt);
+    m_rdctl = new UpMpdRenderCtl(this, avtnoev);
+    m_services.push_back(m_rdctl);
+    m_avt = new UpMpdAVTransport(this, avtnoev);
+    m_services.push_back(m_avt);
     m_services.push_back(new UpMpdConMan(this));
-    bool ohReceiver = (m_options & upmpdOhReceiver) != 0; 
+    bool haveReceiver = (m_options & upmpdOhReceiver) != 0; 
     if (m_options & upmpdDoOH) {
-        OHProduct *ohpr = new OHProduct(this, friendlyname, ohReceiver);
-        m_services.push_back(ohpr);
+        m_ohpr = new OHProduct(this, friendlyname, haveReceiver);
+        m_services.push_back(m_ohpr);
         m_services.push_back(new OHInfo(this));
         m_services.push_back(new OHTime(this));
-        m_services.push_back(new OHVolume(this, rdctl));
-        OHPlaylist *ohpl = new OHPlaylist(this, rdctl, opts.ohmetasleep);
-        m_services.push_back(ohpl);
-        if (avt)
-            avt->setOHP(ohpl);
-        if (ohReceiver) {
+        m_services.push_back(new OHVolume(this));
+        m_ohpl = new OHPlaylist(this, opts.ohmetasleep);
+        m_services.push_back(m_ohpl);
+        if (haveReceiver) {
             struct OHReceiverParams parms;
-            parms.pl = ohpl;
-            parms.pr = ohpr;
             if (opts.schttpport)
                 parms.httpport = opts.schttpport;
             if (!opts.scplaymethod.empty()) {
@@ -97,7 +94,8 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
                     parms.pm = OHReceiverParams::OHRP_MPD;
                 }
             }
-            m_services.push_back(new OHReceiver(this, parms));
+            m_ohrcv = new OHReceiver(this, parms);
+            m_services.push_back(m_ohrcv);
         }
     }
 }

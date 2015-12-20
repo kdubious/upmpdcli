@@ -43,7 +43,7 @@ using namespace std::placeholders;
 static const string sTpProduct("urn:av-openhome-org:service:Playlist:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Playlist");
 
-OHPlaylist::OHPlaylist(UpMpd *dev, UpMpdRenderCtl *ctl, unsigned int cssleep)
+OHPlaylist::OHPlaylist(UpMpd *dev, unsigned int cssleep)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
       m_cachedirty(false), m_mpdqvers(-1)
 {
@@ -295,12 +295,16 @@ int OHPlaylist::pause(const SoapIncoming& sc, SoapOutgoing& data)
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
-int OHPlaylist::stop(const SoapIncoming& sc, SoapOutgoing& data)
+int OHPlaylist::iStop()
 {
-    LOGDEB("OHPlaylist::stop" << endl);
     bool ok = m_dev->m_mpdcli->stop();
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
+}
+int OHPlaylist::stop(const SoapIncoming& sc, SoapOutgoing& data)
+{
+    LOGDEB("OHPlaylist::stop" << endl);
+    return iStop();
 }
 
 int OHPlaylist::next(const SoapIncoming& sc, SoapOutgoing& data)
@@ -588,6 +592,11 @@ int OHPlaylist::insert(const SoapIncoming& sc, SoapOutgoing& data)
     }
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
+}
+
+void OHPlaylist::resetQVers()
+{
+    m_mpdqvers = -1;
 }
 
 bool OHPlaylist::insertUri(int afterid, const string& uri, 

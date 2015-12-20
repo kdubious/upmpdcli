@@ -35,10 +35,8 @@ class OHProduct;
 struct OHReceiverParams {
     enum PlayMethod {OHRP_MPD, OHRP_ALSA};
     PlayMethod pm;
-    OHPlaylist *pl;
-    OHProduct *pr;
     int httpport;
-    OHReceiverParams() : pm(OHRP_MPD), pl(0), pr(0), httpport(8768) {}
+    OHReceiverParams() : pm(OHRP_MPD), httpport(8768) {}
 };
 
 class OHReceiver : public UPnPProvider::UpnpService {
@@ -48,7 +46,9 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
 
-    virtual bool iStop();
+    bool iStop();
+    bool iPlay();
+    bool iSetSender(const std::string& uri, const std::string& meta);
 
 private:
     int play(const SoapIncoming& sc, SoapOutgoing& data);
@@ -60,6 +60,7 @@ private:
 
     bool makestate(std::unordered_map<std::string, std::string> &st);
     void maybeWakeUp(bool ok);
+
     // State variable storage (previous state)
     std::unordered_map<std::string, std::string> m_state;
     // Current
@@ -67,9 +68,6 @@ private:
     std::string m_metadata;
 
     UpMpd *m_dev;
-    OHPlaylist *m_pl;
-    OHProduct *m_pr;
-
     std::shared_ptr<ExecCmd> m_cmd;
     int m_httpport;
     std::string m_httpuri;

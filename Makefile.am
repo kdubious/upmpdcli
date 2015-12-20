@@ -10,20 +10,20 @@ bin_PROGRAMS = upmpdcli scctl
 upmpdcli_SOURCES = \
      src/avtransport.cxx \
      src/avtransport.hxx \
-     src/execmd.cpp \
-     src/execmd.h \
-     src/httpfs.cxx \
-     src/httpfs.hxx \
-     src/netcon.cpp \
-     src/netcon.h \
      src/closefrom.cpp \
      src/closefrom.h \
      src/conftree.cxx \
      src/conftree.hxx \
      src/conman.cxx \
      src/conman.hxx \
+     src/execmd.cpp \
+     src/execmd.h \
+     src/httpfs.cxx \
+     src/httpfs.hxx \
      src/mpdcli.cxx \
      src/mpdcli.hxx \
+     src/netcon.cpp \
+     src/netcon.h \
      src/ohinfo.cxx \
      src/ohinfo.hxx \
      src/ohmetacache.cxx \
@@ -31,9 +31,11 @@ upmpdcli_SOURCES = \
      src/ohplaylist.cxx \
      src/ohplaylist.hxx \
      src/ohproduct.cxx \
-     src/ohreceiver.hxx \
-     src/ohreceiver.cxx \
      src/ohproduct.hxx \
+     src/ohreceiver.cxx \
+     src/ohreceiver.hxx \
+     src/ohsndrcv.cxx \
+     src/ohsndrcv.hxx \
      src/ohtime.cxx \
      src/ohtime.hxx \
      src/ohvolume.cxx \

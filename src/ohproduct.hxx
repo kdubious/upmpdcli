@@ -24,16 +24,18 @@
 #include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
 class UpMpd;
-
+class SenderReceiver;
 using namespace UPnPP;
 
 class OHProduct : public UPnPProvider::UpnpService {
 public:
     OHProduct(UpMpd *dev, const std::string& friendlyname, bool hasRcv);
-
+    virtual ~OHProduct();
+    
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
     int iSetSourceIndex(int index);
+    int iSetSourceIndexByName(const std::string& nm);
 private:
     int manufacturer(const SoapIncoming& sc, SoapOutgoing& data);
     int model(const SoapIncoming& sc, SoapOutgoing& data);
@@ -49,7 +51,10 @@ private:
     int attributes(const SoapIncoming& sc, SoapOutgoing& data);
     int sourceXMLChangeCount(const SoapIncoming& sc, SoapOutgoing& data);
 
+    int iSrcNameToIndex(const std::string& nm);
+    
     UpMpd *m_dev;
+    SenderReceiver *m_sndrcv;
     std::string m_roomOrName;
     int m_sourceIndex;
     bool m_standby;

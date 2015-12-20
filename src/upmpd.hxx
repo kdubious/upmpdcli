@@ -33,6 +33,13 @@ extern std::string g_protocolInfo;
 
 using namespace UPnPProvider;
 
+class UpMpdRenderCtl;
+class UpMpdAVTransport;
+class OHInfo;
+class OHPlaylist;
+class OHProduct;
+class OHReceiver;
+
 // The UPnP MPD frontend device with its services
 class UpMpd : public UpnpDevice {
 public:
@@ -40,8 +47,11 @@ public:
     friend class UpMpdAVTransport;
     friend class OHInfo;
     friend class OHPlaylist;
+    friend class OHProduct;
     friend class OHReceiver;
-
+    friend class OHVolume;
+    friend class SenderReceiver;
+    
     enum OptFlags {
         upmpdNone = 0,
         // If set, the MPD queue belongs to us, we shall clear
@@ -89,6 +99,11 @@ private:
     const MpdStatus *m_mpds;
     unsigned int m_options;
     std::string m_mcachefn;
+    UpMpdRenderCtl *m_rdctl;
+    UpMpdAVTransport *m_avt;
+    OHProduct *m_ohpr;
+    OHPlaylist *m_ohpl;
+    OHReceiver *m_ohrcv;
     std::vector<UpnpService*> m_services;
 };
 

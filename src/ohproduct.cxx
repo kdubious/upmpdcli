@@ -26,13 +26,16 @@
 #include <string>                       // for string, operator<<, etc
 #include <utility>                      // for pair
 #include <vector>                       // for vector
-
+#include <utility>
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
 #include "libupnpp/log.hxx"             // for LOGDEB
 #include "libupnpp/soaphelp.hxx"        // for SoapOutgoing, SoapIncoming
 
 #include "upmpd.hxx"                    // for UpMpd
+#include "ohplaylist.hxx"
+#include "ohreceiver.hxx"
+#include "ohsndrcv.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -41,22 +44,27 @@ static const string sTpProduct("urn:av-openhome-org:service:Product:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Product");
 
 static string csxml("<SourceList>\n");
-static vector<string> o_sources;
+
+// (Type, Name) list
+static vector<pair<string, string> > o_sources;
 
 OHProduct::OHProduct(UpMpd *dev, const string& friendlyname, bool hasRcv)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
+      m_sndrcv(new SenderReceiver(dev)),
       m_roomOrName(friendlyname), m_sourceIndex(0)
 {
     // Playlist must stay first.
-    o_sources.push_back("Playlist");
+    o_sources.push_back(pair<string,string>("Playlist","Playlist"));
     //o_sources.push_back("UpnpAv");
-    if (hasRcv) 
-        o_sources.push_back("Receiver");
+    if (hasRcv) {
+        o_sources.push_back(pair<string,string>("Receiver","Receiver"));
+        o_sources.push_back(pair<string,string>("Playlist", "Sender"));
+    }
 
     for (auto it = o_sources.begin(); it != o_sources.end(); it++) {
         csxml += string(" <Source>\n") +
-            "  <Name>" + *it + "</Name>\n" +
-            "  <Type>" + *it + "</Type>\n" +
+            "  <Name>" + it->second + "</Name>\n" +
+            "  <Type>" + it->first + "</Type>\n" +
             "  <Visible>1</Visible>\n" +
             "  </Source>\n";
     }
@@ -90,6 +98,10 @@ OHProduct::OHProduct(UpMpd *dev, const string& friendlyname, bool hasRcv)
                           bind(&OHProduct::sourceXMLChangeCount, this, _1, _2));
 }
 
+OHProduct::~OHProduct()
+{
+    delete m_sndrcv;
+}
 
 static const string csattrs("Info Time Volume");
 static const string csversion(PACKAGE_VERSION);
@@ -200,17 +212,54 @@ int OHProduct::sourceIndex(const SoapIncoming& sc, SoapOutgoing& data)
     return UPNP_E_SUCCESS;
 }
 
+int OHProduct::iSrcNameToIndex(const string& nm)
+{
+    for (unsigned int i = 0; i < o_sources.size(); i++) {
+        if (!nm.compare(o_sources[i].second)) {
+            return int(i);
+        }
+    }
+    return -1;
+}
+
 int OHProduct::iSetSourceIndex(int sindex)
 {
-    LOGDEB("OHProduct::iSetSourceIndex: " << sindex << endl);
+    LOGDEB("OHProduct::iSetSourceIndex: current " << m_sourceIndex <<
+           " new " << sindex << endl);
     if (sindex < 0 || sindex >= int(o_sources.size())) {
         LOGERR("OHProduct::setSourceIndex: bad index: " << sindex << endl);
         return UPNP_E_INVALID_PARAM;
     }
-    m_sourceIndex = sindex;
-    m_dev->loopWakeup();
+    if (m_sourceIndex != sindex) {
+
+        const MpdStatus& mpds = m_dev->getMpdStatus();
+        int savedms = mpds.songelapsedms;
+
+        string curnm = o_sources[m_sourceIndex].second;
+        if (!curnm.compare("Playlist") && m_dev->m_ohpl) {
+            LOGDEB("OHProduct::iSetSourceIndex: stopping OHPL\n");
+            m_dev->m_ohpl->iStop();
+        } else if (!curnm.compare("Receiver") && m_dev->m_ohrcv) {
+            LOGDEB("OHProduct::iSetSourceIndex: stopping Receiver\n");
+            m_dev->m_ohrcv->iStop();
+        } else if (!curnm.compare("Sender") && m_sndrcv) {
+            LOGDEB("OHProduct::iSetSourceIndex: stopping Sender/Receiver\n");
+            m_sndrcv->stop();
+        }
+
+        string newnm = o_sources[sindex].second;
+        if (!newnm.compare("Playlist")) {
+        } else if (!newnm.compare("Receiver")) {
+        } else if (!newnm.compare("Sender")) {
+            m_sndrcv->start(savedms);
+        }
+
+        m_sourceIndex = sindex;
+        m_dev->loopWakeup();
+    }
     return UPNP_E_SUCCESS;
 }
+
 int OHProduct::setSourceIndex(const SoapIncoming& sc, SoapOutgoing&)
 {
     LOGDEB("OHProduct::setSourceIndex" << endl);
@@ -221,6 +270,17 @@ int OHProduct::setSourceIndex(const SoapIncoming& sc, SoapOutgoing&)
     return iSetSourceIndex(sindex);
 }
 
+int OHProduct::iSetSourceIndexByName(const string& name)
+{
+    LOGDEB("OHProduct::iSetSourceIndexByName: " << name << endl);
+    int i = iSrcNameToIndex(name);
+    if (i >= 0) {
+        return iSetSourceIndex(i);
+    } 
+    LOGERR("OHProduct::iSetSourceIndexByName: no such name: " << name << endl);
+    return UPNP_E_INVALID_PARAM;
+}
+
 int OHProduct::setSourceIndexByName(const SoapIncoming& sc, SoapOutgoing& data)
 {
 
@@ -229,15 +289,7 @@ int OHProduct::setSourceIndexByName(const SoapIncoming& sc, SoapOutgoing& data)
         LOGERR("OHProduct::setSourceIndexByName: no Value" << endl);
         return UPNP_E_INVALID_PARAM;
     }
-    LOGDEB("OHProduct::setSourceIndexByName: " << name << endl);
-    for (unsigned int i = 0; i < o_sources.size(); i++) {
-        if (o_sources[i] == name) {
-            return iSetSourceIndex(i);
-        }
-    }
-            
-    LOGERR("OHProduct::setSoaurceIndexByName: no such name: " << name << endl);
-    return UPNP_E_INVALID_PARAM;
+    return iSetSourceIndexByName(name);
 }
 
 int OHProduct::source(const SoapIncoming& sc, SoapOutgoing& data)
@@ -253,8 +305,8 @@ int OHProduct::source(const SoapIncoming& sc, SoapOutgoing& data)
         return UPNP_E_INVALID_PARAM;
     }
     data.addarg("SystemName", m_roomOrName);
-    data.addarg("Type", o_sources[sindex]);
-    data.addarg("Name", o_sources[sindex]);
+    data.addarg("Type", o_sources[sindex].first);
+    data.addarg("Name", o_sources[sindex].second);
     data.addarg("Visible", "1");
     return UPNP_E_SUCCESS;
 }

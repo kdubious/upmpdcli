@@ -44,8 +44,7 @@ static const string sIdProduct("urn:av-openhome-org:serviceId:Receiver");
 
 OHReceiver::OHReceiver(UpMpd *dev, const OHReceiverParams& parms)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), 
-      m_pl(parms.pl), m_pr(parms.pr), m_httpport(parms.httpport),
-      m_pm(parms.pm)
+      m_httpport(parms.httpport), m_pm(parms.pm)
 {
     dev->addActionMapping(this, "Play", 
                           bind(&OHReceiver::play, this, _1, _2));
@@ -135,22 +134,21 @@ void OHReceiver::maybeWakeUp(bool ok)
         m_dev->loopWakeup();
 }
 
-int OHReceiver::play(const SoapIncoming& sc, SoapOutgoing& data)
+bool OHReceiver::iPlay()
 {
-    LOGDEB("OHReceiver::play" << endl);
     bool ok = false;
 
-    if (!m_pl) {
+    if (!m_dev->m_ohpl) {
         LOGERR("OHReceiver::play: no playlist service" << endl);
-        return UPNP_E_INTERNAL_ERROR;
+        return false;
     }
     if (m_uri.empty()) {
         LOGERR("OHReceiver::play: no uri" << endl);
-        return UPNP_E_INTERNAL_ERROR;
+        return false;
     }
     if (m_metadata.empty()) {
         LOGERR("OHReceiver::play: no metadata" << endl);
-        return UPNP_E_INTERNAL_ERROR;
+        return false;
     }
 
     m_dev->m_mpdcli->stop();
@@ -192,12 +190,13 @@ int OHReceiver::play(const SoapIncoming& sc, SoapOutgoing& data)
         // it gets there, which should be more or less instantaneous
         int timeo = 15;
         if (m_cmd->getline(line, timeo) < 0) {
-            LOGERR("OHReceiver: mpd mode: sc2mpd still not ready to play after " << timeo << " seconds\n");
+            LOGERR("OHReceiver: mpd mode: sc2mpd still not ready to play after "
+                   << timeo << " seconds\n");
             goto out;
         }
         LOGDEB("OHReceiver: sc2mpd sent: " << line);
         // And insert the appropriate uri in the mpd playlist
-        if (!m_pl->urlMap(urlmap)) {
+        if (!m_dev->m_ohpl->urlMap(urlmap)) {
             LOGERR("OHReceiver::play: urlMap() failed" <<endl);
             goto out;
         }
@@ -207,8 +206,8 @@ int OHReceiver::play(const SoapIncoming& sc, SoapOutgoing& data)
             }
         }
         if (id == -1) {
-            ok = m_pl->insertUri(0, m_httpuri, SoapHelp::xmlUnquote(m_metadata),
-                                 &id);
+            ok = m_dev->m_ohpl->insertUri(0, m_httpuri,
+                                          SoapHelp::xmlUnquote(m_metadata),&id);
             if (!ok) {
                 LOGERR("OHReceiver::play: insertUri() failed\n");
                 goto out;
@@ -227,7 +226,15 @@ out:
         iStop();
     }
     maybeWakeUp(ok);
-    LOGDEB("OHReceiver::play: returning\n");
+    return ok;
+}
+
+int OHReceiver::play(const SoapIncoming& sc, SoapOutgoing& data)
+{
+    LOGDEB("OHReceiver::play" << endl);
+    bool ok = iPlay();
+    if (ok && m_dev->m_ohpr)
+        m_dev->m_ohpr->iSetSourceIndexByName("Receiver");
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
@@ -242,9 +249,8 @@ bool OHReceiver::iStop()
 
     unordered_map<int, string> urlmap;
     // Remove our bogus URi from the playlist
-    if (!m_pl->urlMap(urlmap)) {
+    if (!m_dev->m_ohpl->urlMap(urlmap)) {
         LOGERR("OHReceiver::stop: urlMap() failed" <<endl);
-        return false;
     }
     for (auto it = urlmap.begin(); it != urlmap.end(); it++) {
         if (it->second == m_httpuri) {
@@ -257,18 +263,33 @@ bool OHReceiver::iStop()
     // another CP could just set it to what it wants, but Bubble at
     // least won't do a thing with the renderer as long as the source
     // is set to receiver.
-    if (m_pr)
-        m_pr->iSetSourceIndex(0);
+    if (m_dev->m_ohpr)
+        m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
 
+    maybeWakeUp(true);
     return true;
 }
 
 int OHReceiver::stop(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHReceiver::stop" << endl);
-    bool ok = iStop();
-    maybeWakeUp(ok);
-    return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
+    return iStop() ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
+}
+
+bool OHReceiver::iSetSender(const string& uri, const string& metadata)
+{
+    // Only do something if data changes, and then first stop any
+    // current playing. We probably should not receive this if we're
+    // not in the stopped state, but just in case...
+    if (m_uri.compare(uri) || m_metadata.compare(metadata)) {
+        if (m_cmd)
+            iStop();
+        m_uri = uri;
+        m_metadata = metadata;
+        LOGDEB("OHReceiver::setSender: uri [" << m_uri << "] meta [" << 
+               m_metadata << "]" << endl);
+    }
+    return true;
 }
 
 int OHReceiver::setSender(const SoapIncoming& sc, SoapOutgoing& data)
@@ -276,17 +297,8 @@ int OHReceiver::setSender(const SoapIncoming& sc, SoapOutgoing& data)
     LOGDEB("OHReceiver::setSender" << endl);
     string uri, metadata;
     bool ok = sc.get("Uri", &uri) && sc.get("Metadata", &metadata);
-
-    // Only do something if data changes, and then first stop any
-    // current playing. We probably should not receive this if we're
-    // not in the stopped state, but just in case...
-    if (ok && (m_uri.compare(uri) || m_metadata.compare(metadata))) {
-        if (m_cmd)
-            iStop();
-        m_uri = uri;
-        m_metadata = metadata;
-        LOGDEB("OHReceiver::setSender: uri [" << m_uri << "] meta [" << 
-               m_metadata << "]" << endl);
+    if (ok) {
+        ok = iSetSender(uri, metadata);
     }
 
     maybeWakeUp(ok);
