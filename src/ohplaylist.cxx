@@ -95,7 +95,6 @@ OHPlaylist::OHPlaylist(UpMpd *dev, unsigned int cssleep)
                           bind(&OHPlaylist::idArrayChanged, this, _1, _2));
     dev->addActionMapping(this, "ProtocolInfo",
                           bind(&OHPlaylist::protocolInfo, this, _1, _2));
-    dev->m_mpdcli->consume(false);
     
     if ((dev->m_options & UpMpd::upmpdOhMetaPersist)) {
         dmcacheSetOpts(cssleep);
@@ -289,6 +288,8 @@ void OHPlaylist::maybeWakeUp(bool ok)
 int OHPlaylist::play(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::play" << endl);
+    m_dev->m_mpdcli->consume(false);
+    m_dev->m_mpdcli->single(false);
     bool ok = m_dev->m_mpdcli->play();
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
