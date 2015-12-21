@@ -248,6 +248,13 @@ bool OHPlaylist::makestate(unordered_map<string, string> &st)
     return true;
 }
 
+void OHPlaylist::refreshState()
+{
+    m_mpdqvers = -1;
+    unordered_map<string, string> st;
+    makestate(st);
+}
+
 bool OHPlaylist::getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values)
 {
@@ -592,11 +599,6 @@ int OHPlaylist::insert(const SoapIncoming& sc, SoapOutgoing& data)
     }
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
-}
-
-void OHPlaylist::resetQVers()
-{
-    m_mpdqvers = -1;
 }
 
 bool OHPlaylist::insertUri(int afterid, const string& uri, 

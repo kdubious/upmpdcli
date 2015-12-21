@@ -46,7 +46,7 @@ public:
     bool urlMap(std::unordered_map<int, std::string>& umap);
 
     int iStop();
-    void resetQVers();
+    void refreshState();
     
 private:
     int play(const SoapIncoming& sc, SoapOutgoing& data);

@@ -46,11 +46,11 @@ public:
         if (dev && origmpd) {
             dev->m_mpdcli = origmpd;
             origmpd = 0;
-            if (dev->m_ohpl) {
-                dev->m_ohpl->resetQVers();
-            }
             if (dev->m_ohrcv) {
                 dev->m_ohrcv->iStop();
+            }
+            if (dev->m_ohpl) {
+                dev->m_ohpl->refreshState();
             }
         }
         delete mpd;
@@ -60,6 +60,8 @@ public:
     MPDCli *mpd;
     MPDCli *origmpd;
     ExecCmd *cmd;
+    string uri;
+    string meta;
 };
 
 
@@ -74,6 +76,39 @@ SenderReceiver::~SenderReceiver()
         delete m;
 }
 
+static bool copyMpd(MPDCli *src, MPDCli *dest, int seekms)
+{
+    if (!src || !dest) {
+        LOGERR("copyMpd: src or dest is null\n");
+        return false;
+    }
+
+    // Playing state. If playing is stopped at this point elapsedms is
+    // lost which is why we get it as a parameter
+    MpdStatus mpds = src->getStatus();
+    if (seekms < 0) {
+        seekms = mpds.songelapsedms;
+    }
+    // Playlist from source mpd
+    vector<UpSong> playlist;
+    if (!src->getQueueData(playlist)) {
+        LOGERR("copyMpd: can't retrieve current playlist\n");
+        return false;
+    }
+    // Copy the playlist to dest
+    dest->clearQueue();
+    for (unsigned int i = 0; i < playlist.size(); i++) {
+        if (dest->insert(playlist[i].uri, i, playlist[i]) < 0) {
+            LOGERR("copyMpdt: mpd->insert failed\n");
+            return false;
+        }
+    }
+    dest->play(mpds.songpos);
+    dest->setVolume(mpds.volume);
+    dest->seek(seekms/1000);
+    return true;
+}
+
 bool SenderReceiver::start(int seekms)
 {
     LOGDEB("SenderReceiver::start. seekms " << seekms << endl);
@@ -83,78 +118,60 @@ bool SenderReceiver::start(int seekms)
         return false;
     }
     
-    // Playing state. Playing is stopped at this point (source switch), so
-    // we get the elapsedms (would be 0) as input param.
-    MpdStatus mpds = m->dev->getMpdStatusNoUpdate();
-
-    // Retrieve the current playlist from the normal MPD
-    vector<UpSong> playlist;
-    if (!m->dev->m_mpdcli || !m->dev->m_mpdcli->getQueueData(playlist)) {
-        LOGERR("SenderReceiver::start: can't retrieve current playlist\n");
-        return false;
-    }
-
     // Stop MPD Play (normally already done)
     m->dev->m_mpdcli->stop();
 
-    // Start fifo MPD and Sender
-    m->cmd = new ExecCmd();
-    vector<string> args;
-    args.push_back("-p");
-    args.push_back(SoapHelp::i2s(mpdport));
-    m->cmd->startExec(makesendercmd, args, false, true);
+    if (!m->cmd) {
+        // First time: Start fifo MPD and Sender
+        m->cmd = new ExecCmd();
+        vector<string> args;
+        args.push_back("-p");
+        args.push_back(SoapHelp::i2s(mpdport));
+        args.push_back("-f");
+        args.push_back(m->dev->m_friendlyname);
+        m->cmd->startExec(makesendercmd, args, false, true);
 
-    string output;
-    if (!m->cmd->getline(output)) {
-        LOGERR("SenderReceiver::start: makesender command failed\n");
-        m->clear();
-        return false;
-    }
-    LOGDEB("SenderReceiver::start got [" << output << "] from script\n");
+        string output;
+        if (!m->cmd->getline(output)) {
+            LOGERR("SenderReceiver::start: makesender command failed\n");
+            m->clear();
+            return false;
+        }
+        LOGDEB("SenderReceiver::start got [" << output << "] from script\n");
 
-    // Output is like [Ok mpdport URI base64-encoded-uri METADATA b64-meta]
-    vector<string> toks;
-    stringToTokens(output, toks);
-    if (toks.size() != 6 || toks[0].compare("Ok")) {
-        LOGERR("SenderReceiver::start: bad output from script: " << output
-               << endl);
-        m->clear();
-        return false;
-    }
-    string uri = base64_decode(toks[3]);
-    string meta = base64_decode(toks[5]);
-    
-    // Connect to the new MPD, and copy the playlist
-    m->mpd = new MPDCli("localhost", mpdport);
-    if (!m->mpd || !m->mpd->ok()) {
-        LOGERR("SenderReceiver::start: can't connect to new MPD\n");
-        m->clear();
-        return false;
-    }
-    for (unsigned int i = 0; i < playlist.size(); i++) {
-        if (m->mpd->insert(playlist[i].uri, i, playlist[i]) < 0) {
-            LOGERR("SenderReceiver::start: mpd->insert failed\n");
+        // Output is like [Ok mpdport URI base64-encoded-uri METADATA b64-meta]
+        vector<string> toks;
+        stringToTokens(output, toks);
+        if (toks.size() != 6 || toks[0].compare("Ok")) {
+            LOGERR("SenderReceiver::start: bad output from script: " << output
+                   << endl);
+            m->clear();
+            return false;
+        }
+        m->uri = base64_decode(toks[3]);
+        m->meta = base64_decode(toks[5]);
+
+        // Connect to the new MPD
+        m->mpd = new MPDCli("localhost", mpdport);
+        if (!m->mpd || !m->mpd->ok()) {
+            LOGERR("SenderReceiver::start: can't connect to new MPD\n");
             m->clear();
             return false;
         }
     }
     
     // Start our receiver
-    if (!m->dev->m_ohrcv->iSetSender(uri, meta) ||
+    if (!m->dev->m_ohrcv->iSetSender(m->uri, m->meta) ||
         !m->dev->m_ohrcv->iPlay()) {
         m->clear();
         return false;
     }
 
-    // Replace the original mpd and play
+    // Copy mpd state 
+    copyMpd(m->dev->m_mpdcli, m->mpd, seekms);
     m->origmpd = m->dev->m_mpdcli;
     m->dev->m_mpdcli = m->mpd;
-    LOGDEB("SenderReceiver::starting new mpd. songelapsedms: " <<
-           mpds.songelapsedms << endl);
-    m->mpd->setVolume(mpds.volume);
-    m->mpd->play(mpds.songpos);
-    m->mpd->seek(seekms/1000);
-    m->mpd->setVolume(mpds.volume);
+
     return true;
 }
 
@@ -162,6 +179,17 @@ bool SenderReceiver::stop()
 {
     LOGDEB("SenderReceiver::stop()\n");
     // Do we want to transfer the playlist back ? Probably we do.
-    m->clear();
+    if (!m->dev || !m->origmpd || !m->mpd || !m->dev->m_ohpl ||
+        !m->dev->m_ohrcv) {
+        LOGERR("SenderReceiver::stop: bad state: dev/origmpd/mpd null\n");
+        return false;
+    }
+    copyMpd(m->mpd, m->origmpd, -1);
+    m->mpd->stop();
+    m->dev->m_mpdcli = m->origmpd;
+    m->origmpd = 0;
+    m->dev->m_ohrcv->iStop();
+    m->dev->m_ohpl->refreshState();
+
     return true;
 }

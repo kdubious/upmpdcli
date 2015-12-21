@@ -151,8 +151,6 @@ bool OHReceiver::iPlay()
         return false;
     }
 
-    m_dev->m_mpdcli->stop();
-
     int id = -1;
     unordered_map<int, string> urlmap;
     string line;
@@ -185,6 +183,8 @@ bool OHReceiver::iPlay()
     }
 
     if (m_pm == OHReceiverParams::OHRP_MPD) {
+        m_dev->m_mpdcli->stop();
+
         // Wait for sc2mpd to signal ready, then play.
         // sc2mpd writes a single line to stdout "CONNECTED" when
         // it gets there, which should be more or less instantaneous
@@ -225,7 +225,6 @@ out:
     if (!ok) {
         iStop();
     }
-    maybeWakeUp(ok);
     return ok;
 }
 
@@ -235,6 +234,7 @@ int OHReceiver::play(const SoapIncoming& sc, SoapOutgoing& data)
     bool ok = iPlay();
     if (ok && m_dev->m_ohpr)
         m_dev->m_ohpr->iSetSourceIndexByName("Receiver");
+    maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
@@ -245,18 +245,29 @@ bool OHReceiver::iStop()
         m_cmd->zapChild();
         m_cmd = shared_ptr<ExecCmd>();
     }
-    m_dev->m_mpdcli->stop();
 
-    unordered_map<int, string> urlmap;
-    // Remove our bogus URi from the playlist
-    if (!m_dev->m_ohpl->urlMap(urlmap)) {
-        LOGERR("OHReceiver::stop: urlMap() failed" <<endl);
-    }
-    for (auto it = urlmap.begin(); it != urlmap.end(); it++) {
-        if (it->second == m_httpuri) {
-            m_dev->m_mpdcli->deleteId(it->first);
+    if (m_pm == OHReceiverParams::OHRP_MPD) {
+        m_dev->m_mpdcli->stop();
+        unordered_map<int, string> urlmap;
+        // Remove our bogus URi from the playlist
+        if (!m_dev->m_ohpl->urlMap(urlmap)) {
+            LOGERR("OHReceiver::stop: urlMap() failed" <<endl);
+        }
+        for (auto it = urlmap.begin(); it != urlmap.end(); it++) {
+            if (it->second == m_httpuri) {
+                m_dev->m_mpdcli->deleteId(it->first);
+            }
         }
     }
+    
+    return true;
+}
+
+int OHReceiver::stop(const SoapIncoming& sc, SoapOutgoing& data)
+{
+    LOGDEB("OHReceiver::stop" << endl);
+    iStop();
+
     // At least the songcast windows driver never resets the source
     // index (it does call stop when it deconnects).
     // I guess that there is no reason to reset the source, and
@@ -267,13 +278,7 @@ bool OHReceiver::iStop()
         m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
 
     maybeWakeUp(true);
-    return true;
-}
-
-int OHReceiver::stop(const SoapIncoming& sc, SoapOutgoing& data)
-{
-    LOGDEB("OHReceiver::stop" << endl);
-    return iStop() ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
+    return UPNP_E_SUCCESS;
 }
 
 bool OHReceiver::iSetSender(const string& uri, const string& metadata)

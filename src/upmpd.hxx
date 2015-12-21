@@ -105,6 +105,7 @@ private:
     OHPlaylist *m_ohpl;
     OHReceiver *m_ohrcv;
     std::vector<UpnpService*> m_services;
+    std::string m_friendlyname;
 };
 
 #endif /* _UPMPD_H_X_INCLUDED_ */
