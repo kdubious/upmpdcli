@@ -58,7 +58,7 @@ OHProduct::OHProduct(UpMpd *dev, const string& friendlyname, bool hasRcv)
     //o_sources.push_back("UpnpAv");
     if (hasRcv) {
         o_sources.push_back(pair<string,string>("Receiver","Receiver"));
-        o_sources.push_back(pair<string,string>("Playlist", "Sender"));
+        o_sources.push_back(pair<string,string>("Playlist", "SenderReceiver"));
     }
 
     for (auto it = o_sources.begin(); it != o_sources.end(); it++) {

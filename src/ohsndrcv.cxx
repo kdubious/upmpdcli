@@ -31,7 +31,7 @@ using namespace std;
 using namespace std::placeholders;
 using namespace UPnPP;
 
-static const string makesendercmd("scmakesender.py");
+static const string makesendercmd("scmakempdsender.py");
 static int mpdport = 6700;
 
 class SenderReceiver::Internal {
