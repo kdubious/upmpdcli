@@ -174,11 +174,11 @@ static bool read_protocolinfo(const string& fn, string& out)
 bool initHttpFs(unordered_map<string, VDirContent>& files,
                 const string& datadir,
                 const string& UUID, const string& friendlyname, 
-                bool enableAV, bool enableOH, 
+                bool enableAV, bool enableOH, bool enableReceiver,
                 const string& iconpath, const string& presentationhtml)
 {
     if (enableOH) {
-        if (!g_sc2mpd_path.empty()) {
+        if (enableReceiver) {
             ohxmlfilenames.push_back("OHReceiver.xml");
         }
         xmlfilenames.insert(xmlfilenames.end(), ohxmlfilenames.begin(),
@@ -223,7 +223,7 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
                 data = regsub1("@UPNPAV@", data, "");
             }
             if (enableOH) {
-                if (!g_sc2mpd_path.empty()) {
+                if (enableReceiver) {
                     ohDesc += ohDescReceive;
                 }
                 data = regsub1("@OPENHOME@", data, ohDesc);

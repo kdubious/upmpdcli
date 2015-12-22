@@ -50,6 +50,7 @@
 #include "upmpdutils.hxx"               // for path_cat, Pidfile, regsub1, etc
 #include "execmd.h"
 #include "httpfs.hxx"
+#include "ohsndrcv.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -63,7 +64,7 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
     : UpnpDevice(deviceid, files), m_mpdcli(mpdcli), m_mpds(0),
       m_options(opts.options),
       m_mcachefn(opts.cachefn),
-      m_rdctl(0), m_avt(0), m_ohpr(0), m_ohpl(0), m_ohrcv(0),
+      m_rdctl(0), m_avt(0), m_ohpr(0), m_ohpl(0), m_ohrcv(0), m_sndrcv(0),
       m_friendlyname(friendlyname)
 {
     bool avtnoev = (m_options & upmpdNoAV) != 0; 
@@ -75,16 +76,14 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
     m_avt = new UpMpdAVTransport(this, avtnoev);
     m_services.push_back(m_avt);
     m_services.push_back(new UpMpdConMan(this));
-    bool haveReceiver = (m_options & upmpdOhReceiver) != 0; 
+
     if (m_options & upmpdDoOH) {
-        m_ohpr = new OHProduct(this, friendlyname, haveReceiver);
-        m_services.push_back(m_ohpr);
         m_services.push_back(new OHInfo(this));
         m_services.push_back(new OHTime(this));
         m_services.push_back(new OHVolume(this));
         m_ohpl = new OHPlaylist(this, opts.ohmetasleep);
         m_services.push_back(m_ohpl);
-        if (haveReceiver) {
+        if (m_options & upmpdOhReceiver) {
             struct OHReceiverParams parms;
             if (opts.schttpport)
                 parms.httpport = opts.schttpport;
@@ -95,14 +94,24 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
                     parms.pm = OHReceiverParams::OHRP_MPD;
                 }
             }
+            parms.sc2mpdpath = opts.sc2mpdpath;
             m_ohrcv = new OHReceiver(this, parms);
             m_services.push_back(m_ohrcv);
         }
+        if (m_options& upmpdOhSenderReceiver) {
+            // Note: this is not an UPnP service
+            m_sndrcv = new SenderReceiver(this, opts.senderpath,
+                                          opts.sendermpdport);
+        }
+        // Create ohpr last, so that it can ask questions to other services
+        m_ohpr = new OHProduct(this, friendlyname);
+        m_services.push_back(m_ohpr);
     }
 }
 
 UpMpd::~UpMpd()
 {
+    delete m_sndrcv;
     for (vector<UpnpService*>::iterator it = m_services.begin();
          it != m_services.end(); it++) {
         delete(*it);
@@ -171,9 +180,6 @@ static string datadir(DATADIR "/");
 // Global
 string g_configfilename(CONFIGDIR "/upmpdcli.conf");
 
-// Path for the sc2mpd command, or empty
-string g_sc2mpd_path;
-
 static void onsig(int)
 {
     LOGDEB("Got sig" << endl);
@@ -197,9 +203,19 @@ static void setupsigs()
 
 int main(int argc, char *argv[])
 {
+    // Path for the sc2mpd command, or empty
+    string sc2mpdpath;
+
+    // Sender mode: path for the command creating the mpd and mpd2sc
+    // processes, and port for the auxiliary mpd.
+    string senderpath;
+    int sendermpdport = 6700;
+
+    // Main MPD parameters
     string mpdhost("localhost");
     int mpdport = 6600;
     string mpdpassword;
+
     string logfilename;
     int loglevel(Logger::LLINF);
     string friendlyname(dfltFriendlyName);
@@ -328,21 +344,19 @@ int main(int argc, char *argv[])
         if (config.get("schttpport", value))
             opts.schttpport = atoi(value.c_str());
         config.get("scplaymethod", opts.scplaymethod);
-        config.get("sc2mpd", g_sc2mpd_path);
+        config.get("sc2mpd", sc2mpdpath);
         if (config.get("ohmetasleep", value))
             opts.ohmetasleep = atoi(value.c_str());
+
+        config.get("scsenderpath", senderpath);
+        if (config.get("scsendermpdport", value))
+            sendermpdport = atoi(value.c_str());
     }
     if (Logger::getTheLog(logfilename) == 0) {
         cerr << "Can't initialize log" << endl;
         return 1;
     }
     Logger::getTheLog("")->setLogLevel(Logger::LogLevel(loglevel));
-
-    if (g_sc2mpd_path.empty()) {
-        // Do we have an sc2mpd command installed (for songcast)?
-        if (!ExecCmd::which("sc2mpd", g_sc2mpd_path))
-            g_sc2mpd_path.clear();
-    }
 
     Pidfile pidfile(pidfilename);
 
@@ -433,13 +447,46 @@ int main(int argc, char *argv[])
 
 //// Dropped root 
 
-    if (!g_sc2mpd_path.empty()) {
-        if (access(g_sc2mpd_path.c_str(), X_OK|R_OK) != 0) {
-            LOGERR("Specified path for sc2mpd: " << g_sc2mpd_path << 
+    if (sc2mpdpath.empty()) {
+        // Do we have an sc2mpd command installed (for songcast)?
+        if (!ExecCmd::which("sc2mpd", sc2mpdpath))
+            sc2mpdpath.clear();
+    }
+    if (senderpath.empty()) {
+        // Do we have an scmakempdsender command installed (for
+        // starting the songcast sender and its auxiliary mpd)?
+        if (!ExecCmd::which("scmakempdsender", senderpath))
+            senderpath.clear();
+    }
+    
+    if (!sc2mpdpath.empty()) {
+        // Check if sc2mpd is actually there
+        if (access(sc2mpdpath.c_str(), X_OK|R_OK) != 0) {
+            LOGERR("Specified path for sc2mpd: " << sc2mpdpath << 
                    " is not executable" << endl);
-            g_sc2mpd_path.clear();
+            sc2mpdpath.clear();
         }
     }
+
+    if (!senderpath.empty()) {
+        // Check that both the starter script and the mpd2sc sender
+        // command are executable. We'll assume that mpd is ok
+        if (access(senderpath.c_str(), X_OK|R_OK) != 0) {
+            LOGERR("The specified path for the sender starter script: ["
+                   << senderpath <<
+                   "] is not executable, disabling the sender mode.\n");
+            senderpath.clear();
+        } else {
+            string path;
+            if (!ExecCmd::which("mpd2sc", path)) {
+                LOGERR("Sender starter was specified and found but the mpd2sc "
+                       "command is not found (or executable). Disabling "
+                       "the sender mode.\n");
+                senderpath.clear();
+            }
+        }
+    }
+
 
     // Initialize MPD client object. Retry until it works or power fail.
     MPDCli *mpdclip = 0;
@@ -504,7 +551,8 @@ int main(int argc, char *argv[])
     // Initialize the data we serve through HTTP (device and service
     // descriptions, icons, presentation page, etc.)
     unordered_map<string, VDirContent> files;
-    if (!initHttpFs(files, datadir, UUID, friendlyname, enableAV, enableOH, 
+    if (!initHttpFs(files, datadir, UUID, friendlyname, enableAV, enableOH,
+                    !senderpath.empty(),
                     iconpath, presentationhtml)) {
         exit(1);
     }
@@ -515,8 +563,16 @@ int main(int argc, char *argv[])
         opts.options |= UpMpd::upmpdDoOH;
     if (ohmetapersist)
         opts.options |= UpMpd::upmpdOhMetaPersist;
-    if (!g_sc2mpd_path.empty())
+    if (!sc2mpdpath.empty()) {
+        opts.sc2mpdpath = sc2mpdpath;
         opts.options |= UpMpd::upmpdOhReceiver;
+    }
+    if (!senderpath.empty()) {
+        opts.options |= UpMpd::upmpdOhSenderReceiver;
+        opts.senderpath = senderpath;
+        opts.sendermpdport = sendermpdport;
+    }
+
     if (!enableAV)
         opts.options |= UpMpd::upmpdNoAV;
     // Initialize the UPnP device object.

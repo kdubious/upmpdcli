@@ -44,7 +44,7 @@ static const string sIdProduct("urn:av-openhome-org:serviceId:Receiver");
 
 OHReceiver::OHReceiver(UpMpd *dev, const OHReceiverParams& parms)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), 
-      m_httpport(parms.httpport), m_pm(parms.pm)
+      m_httpport(parms.httpport), m_sc2mpdpath(parms.sc2mpdpath), m_pm(parms.pm)
 {
     dev->addActionMapping(this, "Play", 
                           bind(&OHReceiver::play, this, _1, _2));
@@ -172,10 +172,10 @@ bool OHReceiver::iPlay()
         args.push_back(g_configfilename);
     }
         
-    LOGDEB("OHReceiver::play: executing " << g_sc2mpd_path << endl);
-    ok = m_cmd->startExec(g_sc2mpd_path, args, false, true) >= 0;
+    LOGDEB("OHReceiver::play: executing " << m_sc2mpdpath << endl);
+    ok = m_cmd->startExec(m_sc2mpdpath, args, false, true) >= 0;
     if (!ok) {
-        LOGERR("OHReceiver::play: executing " << g_sc2mpd_path << " failed" 
+        LOGERR("OHReceiver::play: executing " << m_sc2mpdpath << " failed" 
                << endl);
         goto out;
     } else {

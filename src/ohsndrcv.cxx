@@ -31,13 +31,11 @@ using namespace std;
 using namespace std::placeholders;
 using namespace UPnPP;
 
-static const string makesendercmd("scmakempdsender.py");
-static int mpdport = 6700;
-
 class SenderReceiver::Internal {
 public:
-    Internal(UpMpd *dv)
-        : dev(dv), mpd(0), origmpd(0), cmd(0) {
+    Internal(UpMpd *dv, const string& starterpath, int port)
+        : dev(dv), mpd(0), origmpd(0), sender(0), makesendercmd(starterpath),
+          mpdport(port) {
     }
     ~Internal() {
         clear();
@@ -54,20 +52,22 @@ public:
             }
         }
         delete mpd;
-        delete cmd;
+        delete sender;
     }
     UpMpd *dev;
     MPDCli *mpd;
     MPDCli *origmpd;
-    ExecCmd *cmd;
+    ExecCmd *sender;
     string uri;
     string meta;
+    string makesendercmd;
+    int mpdport;
 };
 
 
-SenderReceiver::SenderReceiver(UpMpd *dev)
+SenderReceiver::SenderReceiver(UpMpd *dev, const string& starterpath, int port)
 {
-    m = new Internal(dev);
+    m = new Internal(dev, starterpath, port);
 }
 
 SenderReceiver::~SenderReceiver()
@@ -121,18 +121,18 @@ bool SenderReceiver::start(int seekms)
     // Stop MPD Play (normally already done)
     m->dev->m_mpdcli->stop();
 
-    if (!m->cmd) {
+    if (!m->sender) {
         // First time: Start fifo MPD and Sender
-        m->cmd = new ExecCmd();
+        m->sender = new ExecCmd();
         vector<string> args;
         args.push_back("-p");
-        args.push_back(SoapHelp::i2s(mpdport));
+        args.push_back(SoapHelp::i2s(m->mpdport));
         args.push_back("-f");
         args.push_back(m->dev->m_friendlyname);
-        m->cmd->startExec(makesendercmd, args, false, true);
+        m->sender->startExec(m->makesendercmd, args, false, true);
 
         string output;
-        if (!m->cmd->getline(output)) {
+        if (!m->sender->getline(output)) {
             LOGERR("SenderReceiver::start: makesender command failed\n");
             m->clear();
             return false;
@@ -152,7 +152,7 @@ bool SenderReceiver::start(int seekms)
         m->meta = base64_decode(toks[5]);
 
         // Connect to the new MPD
-        m->mpd = new MPDCli("localhost", mpdport);
+        m->mpd = new MPDCli("localhost", m->mpdport);
         if (!m->mpd || !m->mpd->ok()) {
             LOGERR("SenderReceiver::start: can't connect to new MPD\n");
             m->clear();

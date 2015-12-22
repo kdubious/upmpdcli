@@ -24,12 +24,11 @@
 #include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
 class UpMpd;
-class SenderReceiver;
 using namespace UPnPP;
 
 class OHProduct : public UPnPProvider::UpnpService {
 public:
-    OHProduct(UpMpd *dev, const std::string& friendlyname, bool hasRcv);
+    OHProduct(UpMpd *dev, const std::string& friendlyname);
     virtual ~OHProduct();
     
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
@@ -54,7 +53,6 @@ private:
     int iSrcNameToIndex(const std::string& nm);
     
     UpMpd *m_dev;
-    SenderReceiver *m_sndrcv;
     std::string m_roomOrName;
     int m_sourceIndex;
     bool m_standby;

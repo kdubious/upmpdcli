@@ -39,11 +39,14 @@
  * allows controlling this from any CP implementing setSource.
  */
 
+#include <string>
+
 class UpMpd;
 
 class SenderReceiver {
 public:
-    SenderReceiver(UpMpd *dev);
+    SenderReceiver(UpMpd *dev, const std::string& senderstarterpath,
+                   int mpdport);
     ~SenderReceiver();
     bool start(int seekms);
     bool stop();

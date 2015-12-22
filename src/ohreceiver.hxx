@@ -36,6 +36,7 @@ struct OHReceiverParams {
     enum PlayMethod {OHRP_MPD, OHRP_ALSA};
     PlayMethod pm;
     int httpport;
+    std::string sc2mpdpath;
     OHReceiverParams() : pm(OHRP_MPD), httpport(8768) {}
 };
 
@@ -49,7 +50,8 @@ public:
     bool iStop();
     bool iPlay();
     bool iSetSender(const std::string& uri, const std::string& meta);
-
+    OHReceiverParams::PlayMethod playMethod() {return m_pm;}
+    
 private:
     int play(const SoapIncoming& sc, SoapOutgoing& data);
     int stop(const SoapIncoming& sc, SoapOutgoing& data);
@@ -70,6 +72,7 @@ private:
     UpMpd *m_dev;
     std::shared_ptr<ExecCmd> m_cmd;
     int m_httpport;
+    std::string m_sc2mpdpath;
     std::string m_httpuri;
     OHReceiverParams::PlayMethod m_pm;
 };

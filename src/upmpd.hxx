@@ -28,7 +28,6 @@ class MPDCli;
 class MpdStatus;
 
 extern std::string g_configfilename;
-extern std::string g_sc2mpd_path;
 extern std::string g_protocolInfo;
 
 using namespace UPnPProvider;
@@ -39,6 +38,7 @@ class OHInfo;
 class OHPlaylist;
 class OHProduct;
 class OHReceiver;
+class SenderReceiver;
 
 // The UPnP MPD frontend device with its services
 class UpMpd : public UpnpDevice {
@@ -65,15 +65,21 @@ public:
         // sc2mpd was found: advertise songcast receiver
         upmpdOhReceiver = 8,
         // Do not publish UPnP AV services (avtransport and renderer).
-        upmpdNoAV = 16
+        upmpdNoAV = 16,
+        // mpd2sc et al were found: advertise songcast sender/receiver mode
+        upmpdOhSenderReceiver = 32,
     };
     struct Options {
-        Options() : options(upmpdNone), ohmetasleep(0), schttpport(0) {}
+        Options() : options(upmpdNone), ohmetasleep(0), schttpport(0),
+                    sendermpdport(0) {}
         unsigned int options;
         std::string  cachefn;
         unsigned int ohmetasleep;
         int schttpport;
         std::string scplaymethod;
+        std::string sc2mpdpath;
+        std::string senderpath;
+        int sendermpdport;
     };
     UpMpd(const std::string& deviceid, const std::string& friendlyname,
           const std::unordered_map<std::string, VDirContent>& files,
@@ -104,6 +110,7 @@ private:
     OHProduct *m_ohpr;
     OHPlaylist *m_ohpl;
     OHReceiver *m_ohrcv;
+    SenderReceiver *m_sndrcv;
     std::vector<UpnpService*> m_services;
     std::string m_friendlyname;
 };

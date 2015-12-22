@@ -331,7 +331,8 @@ bool MPDCli::setVolume(int volume, bool isMute)
         return false;
     }
 
-    // MPD does not want to set the volume if not active.
+    // ??MPD does not want to set the volume if not active.??
+    // This does not seem to be the case with recent MPD versions
     if (!(m_stat.state == MpdStatus::MPDS_PLAY) &&
         !(m_stat.state == MpdStatus::MPDS_PAUSE)) {
         LOGINF("MPDCli::setVolume: not active" << endl);

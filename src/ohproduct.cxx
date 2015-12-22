@@ -48,17 +48,26 @@ static string csxml("<SourceList>\n");
 // (Type, Name) list
 static vector<pair<string, string> > o_sources;
 
-OHProduct::OHProduct(UpMpd *dev, const string& friendlyname, bool hasRcv)
+OHProduct::OHProduct(UpMpd *dev, const string& friendlyname)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
-      m_sndrcv(new SenderReceiver(dev)),
       m_roomOrName(friendlyname), m_sourceIndex(0)
 {
     // Playlist must stay first.
     o_sources.push_back(pair<string,string>("Playlist","Playlist"));
     //o_sources.push_back("UpnpAv");
-    if (hasRcv) {
+    if (m_dev->m_ohrcv) {
         o_sources.push_back(pair<string,string>("Receiver","Receiver"));
-        o_sources.push_back(pair<string,string>("Playlist", "SenderReceiver"));
+        if (m_dev->m_sndrcv &&
+            m_dev->m_ohrcv->playMethod() == OHReceiverParams::OHRP_ALSA) {
+            // It might be possible to make things work with the MPD
+            // play method but this would be complicated (the mpd we
+            // want to get playing from sc2mpd HTTP is the
+            // original/saved one, not the current one, which is doing
+            // the playing and sending to the fifo, so we'd need to
+            // tell ohreceiver about using the right one.
+            o_sources.push_back(pair<string,string>("Playlist",
+                                                    "SenderReceiver"));
+        }
     }
 
     for (auto it = o_sources.begin(); it != o_sources.end(); it++) {
@@ -100,7 +109,6 @@ OHProduct::OHProduct(UpMpd *dev, const string& friendlyname, bool hasRcv)
 
 OHProduct::~OHProduct()
 {
-    delete m_sndrcv;
 }
 
 static const string csattrs("Info Time Volume");
@@ -242,16 +250,16 @@ int OHProduct::iSetSourceIndex(int sindex)
         } else if (!curnm.compare("Receiver") && m_dev->m_ohrcv) {
             LOGDEB("OHProduct::iSetSourceIndex: stopping Receiver\n");
             m_dev->m_ohrcv->iStop();
-        } else if (!curnm.compare("Sender") && m_sndrcv) {
+        } else if (!curnm.compare("SenderReceiver") && m_dev->m_sndrcv) {
             LOGDEB("OHProduct::iSetSourceIndex: stopping Sender/Receiver\n");
-            m_sndrcv->stop();
+            m_dev->m_sndrcv->stop();
         }
 
         string newnm = o_sources[sindex].second;
         if (!newnm.compare("Playlist")) {
         } else if (!newnm.compare("Receiver")) {
-        } else if (!newnm.compare("Sender")) {
-            m_sndrcv->start(savedms);
+        } else if (!newnm.compare("SenderReceiver")) {
+            m_dev->m_sndrcv->start(savedms);
         }
 
         m_sourceIndex = sindex;
