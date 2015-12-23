@@ -1,6 +1,6 @@
 Summary:        UPnP Media Renderer front-end to MPD, the Music Player Daemon
 Name:           upmpdcli
-Version:        0.12.0
+Version:        0.13.0
 Release:        1%{?dist}
 Group:          Applications/Multimedia
 License:        GPLv2+
@@ -66,6 +66,9 @@ install -D -m644 systemd/upmpdcli.service \
 %systemd_postun_with_restart upmpdcli.service 
 
 %changelog
+* Wed Dec 23 2015 J.F. Dockes <jf@dockes.org> - 0.13.0
+- many changes since 0.8... Specific in 0.13: turn off mpd 'single' if set
+  and support OpenHome Sender mode.
 * Mon Jun 09 2014 J.F. Dockes <jf@dockes.org> - 0.8.4
 - Separated libupnpp
 * Mon Jun 09 2014 J.F. Dockes <jf@dockes.org> - 0.7.1
