@@ -1,11 +1,13 @@
-upmpdcli (0.13.0-1) unstable; urgency=low
+upmpdcli (0.13.1-1) unstable; urgency=low
 
   * Turn off MPD "single" mode if it was set by some other app !
   * Add support for the new sc2mpd/mpd2sc Sender mode. This allows sharing
     the audio with multiple synchronized other upmpdcli/sc2mpd instances
     (multiroom) 
-
- -- Jean-Francois Dockes <jf@dockes.org>  Wed, 23 Dec 2015 11:06:00 +0200
+  * Fix random initial value for ohproduct standby variable
+  * Fix eventing for ohproduct
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Wed, 23 Dec 2015 16:30:00 +0200
 
 upmpdcli (0.12.0-1) unstable; urgency=low
 
