@@ -33,6 +33,7 @@
 #include "libupnpp/soaphelp.hxx"        // for SoapOutgoing, SoapIncoming
 
 #include "upmpd.hxx"                    // for UpMpd
+#include "upmpdutils.hxx"                    // for UpMpd
 #include "ohplaylist.hxx"
 #include "ohreceiver.hxx"
 #include "ohsndrcv.hxx"
@@ -50,7 +51,7 @@ static vector<pair<string, string> > o_sources;
 
 OHProduct::OHProduct(UpMpd *dev, const string& friendlyname)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
-      m_roomOrName(friendlyname), m_sourceIndex(0)
+      m_roomOrName(friendlyname), m_sourceIndex(0), m_standby(false)
 {
     // Playlist must stay first.
     o_sources.push_back(pair<string,string>("Playlist","Playlist"));
@@ -120,34 +121,53 @@ static const string csmodname("UpMPDCli UPnP-MPD gateway");
 static const string csmodurl("http://www.lesbonscomptes.com/upmpdcli");
 static const string csprodname("Upmpdcli");
 
+bool OHProduct::makestate(unordered_map<string, string> &st)
+{
+    st.clear();
+
+    st["ManufacturerName"] = csmanname;
+    st["ManufacturerInfo"] = csmaninfo;
+    st["ManufacturerUrl"] = csmanurl;
+    st["ManufacturerImageUri"] = "";
+    st["ModelName"] = csmodname;
+    st["ModelInfo"] = csversion;
+    st["ModelUrl"] = csmodurl;
+    st["ModelImageUri"] = "";
+    st["ProductRoom"] = m_roomOrName;
+    st["ProductName"] = csprodname;
+    st["ProductInfo"] = csversion;
+    st["ProductUrl"] = "";
+    st["ProductImageUri"] = "";
+    st["Standby"] = m_standby ? "1" : "0";
+    st["SourceCount"] = SoapHelp::i2s(o_sources.size());
+    st["SourceXml"] = csxml;
+    st["SourceIndex"] = SoapHelp::i2s(m_sourceIndex);
+    st["Attributes"] = csattrs;
+
+    return true;
+}
+
 bool OHProduct::getEventData(bool all, std::vector<std::string>& names, 
                              std::vector<std::string>& values)
 {
     //LOGDEB("OHProduct::getEventData" << endl);
-    // Our data never changes, so if this is not an unconditional
-    // request, we return nothing.
+
+    unordered_map<string, string> state;
+    makestate(state);
+
+    unordered_map<string, string> changed;
     if (all) {
-        names.push_back("ManufacturerName"); values.push_back(csmanname);
-        names.push_back("ManufacturerInfo"); values.push_back(csmaninfo);
-        names.push_back("ManufacturerUrl");  values.push_back(csmanurl);
-        names.push_back("ManufacturerImageUri"); values.push_back("");
-        names.push_back("ModelName"); values.push_back(csmodname);
-        names.push_back("ModelInfo"); values.push_back(csversion);
-        names.push_back("ModelUrl");  values.push_back(csmodurl);
-        names.push_back("ModelImageUri"); values.push_back("");
-        names.push_back("ProductRoom"); values.push_back(m_roomOrName);
-        names.push_back("ProductName"); values.push_back(csprodname);
-        names.push_back("ProductInfo"); values.push_back(csversion);
-        names.push_back("ProductUrl"); values.push_back("");
-        names.push_back("ProductImageUri"); values.push_back("");
-        names.push_back("Standby"); values.push_back(m_standby?"1":"0");
-        names.push_back("SourceCount"); 
-        values.push_back(SoapHelp::i2s(o_sources.size()));
-        names.push_back("SourceXml"); values.push_back(csxml);
-        names.push_back("SourceIndex"); 
-        values.push_back(SoapHelp::i2s(m_sourceIndex));
-        names.push_back("Attributes");values.push_back(csattrs);
+        changed = state;
+    } else {
+        changed = diffmaps(m_state, state);
     }
+    m_state = state;
+
+    for (auto it = changed.begin(); it != changed.end(); it++) {
+        names.push_back(it->first);
+        values.push_back(it->second);
+    }
+
     return true;
 }
 

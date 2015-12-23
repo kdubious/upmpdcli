@@ -51,7 +51,9 @@ private:
     int sourceXMLChangeCount(const SoapIncoming& sc, SoapOutgoing& data);
 
     int iSrcNameToIndex(const std::string& nm);
+    bool makestate(std::unordered_map<std::string, std::string> &st);
     
+    std::unordered_map<std::string, std::string> m_state;
     UpMpd *m_dev;
     std::string m_roomOrName;
     int m_sourceIndex;
