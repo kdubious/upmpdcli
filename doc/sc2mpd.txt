@@ -1,0 +1,282 @@
+= sc2mpd: helper for upmpdcli Songcast support
+
+The *sc2mpd* auxiliary process implements part of Linn *Songcast* support
+for the *upmdcli* UPnP MPD front-end. Specifically, it implements a
+*Songcast* _Receiver_ service, managed by *upmpdcli*.
+
+To use it, you need the
+link:http://www.linn.co.uk/software#songcast[Linn Songcast application] 
+installed on a Microsoft Windows or Apple Mac OS X PC. See
+xref:whatis_songcast[further] for more explanations about what this does.
+Not all Songcast versions work well with upmpdcli. Lately I've had good
+luck with
+http://oss.linn.co.uk/Releases/Songcast/Davaar/Songcast_4.4.190_win.exe[4.4.190]
+but not with the 4.5 ones.
+
+Warning: *there is no software volume control* of the Songcast Receivers
+for now: use either a local mixer or the little round things on the power
+amps. Set it low when experimenting !
+
+There are Debian Wheezy *sc2mpd*
+packages in the *upmpdcli* repository for i386, amd64 and Raspberry Pi
+(Raspbian): see the link:downloads.html[upmpdcli download page], so you do
+not need to build any software if you use these systems.
+
+NOTE: you know what Songcast is and have a Rasberry PI which wants to play:
+xref:rpi_quick[quick install for the Raspberry PI]  (also works for i386
+and amd64 Debian Wheezy).
+
+NOTE: this does not work too well on Raspberry Pis using an USB DAC (YMMV
+of course). As far as I can see the data rate of the uncompressed stream is
+just too much for the poor Pi Ethernet/USB chip. Things work just fine with
+an I2S DAC (or on HDMI I suppose).
+
+
+[[whatis_songcast]]
+== What is Linn Songcast
+
+*Songcast* is a protocol for transporting audio streams across the network,
+developped by link:http://oss.linn.co.uk/trac/wiki/Songcast[Linn] as a
+series of open-source libraries and applications.
+
+The protocol links two types of entities:
+
+ - A *Songcast* _Sender_ generates an audio stream (Windows or Mac).
+ - *Songcast* _Receivers_ receive and play the stream.
+
+There are *Songcast* applications (_Senders_) for Windows and Mac OS X
+(nothing for Linux, iOS or Android for now). The *Songcast* application
+captures and forward the system audio stream to a remote *Songcast*
+_Receiver_.
+
+*Any* application on the desktop (Windows Media Player, Spotify, Tidal,
+etc.) will transparently play to the remote device, without any need to
+know about *Songcast*. *_Any_* audio service available on Windows or the
+Mac can be forwarded to one or link:scmulti.html[many] audio players around
+the house.
+
+The *Songcast* streams are real-time audio data, which can go straight
+to an audio card for playing.
+
+Controlling the streams (connecting, starting, stopping) is
+done through an UPnP service named OpenHome __Receiver__, which runs on an
+UPnP Media Renderer implementing the OpenHome services (e.g. *upmpdcli*).
+
+
+== Implementation of Songcast support in upmpdcli
+
+*upmpdcli* implements the _Receiver_ service, and uses an auxiliary process
+(*sc2mpd*) for transporting the audio data. *sc2mpd* is a slight
+modification of the sample program which comes with the Linn Songcast
+open-source implementation
+
+*sc2mpd* can play the audio stream in two modes:
+
+ - By offering a local HTTP interface (based on _libmicrohttpd_) from which
+   *mpd* will play the stream.
+ - By directly using the *alsa* audio driver.
+
+What approach is used is decided by a parameter in the upmpdcli
+configuration file: `scplaymethod` (see <<Configuration>> further)
+ 
+Control:
+
+- If *upmpdcli* finds an executable *sc2mpd* command in the PATH when
+  starting up, it advertises a _Receiver_ service.
+
+- The *Songcast* application on the desktop finds out about the
+  _Receiver_ through the normal UPnP mechanisms and can be instructed to
+  use it. It then tells the _Receiver_ in *upmpdcli* to start playing.
+
+- *upmdpcli* starts the *sc2mpd* process, which gets ready to receive data
+  through Songcast, and either play it directly or make it available
+  through HTTP.
+
+- If the _`mpd`_ method is in use, *upmpdcli* instructs *mpd* to play the
+  URL for the *sc2mpd* output.
+
+When using _`mpd`_ more bufferisation occurs and there may be a significant
+delay (up to around 10S) between the time when Songcast is activated and
+the time sound appears. 
+
+NOTE:: When using _`mpd`_, from a Mac (24 bits audio) you need *mpd 0.19*,
+configured with `--disable-audiofile`, else you risk producing high volume
+noise.  As Debian and Ubuntu tend to lag quite bit on MPD progresses, I
+have set up link:downloads.html#mpd[backport repositories] for
+appropriately configured recent mpd versions (currently 0.19.9), for
+Ubuntu, Debian i386/amd64 and Raspbian.
+
+Given the bufferisation and delay control issues when going through MPD,
+only the _`alsa`_ method is usable in multi-room configurations. Even with a
+single player, the _`mpd`_ method will experience skips from time to
+time. The reasons are explained in the link:scmulti.html[multi-room]
+page.
+
+
+[[rpi_quick]]
+== Quick install for Debian Wheezy systems
+
+There are packages available for Raspbian and Debian Wheezy i386 and amd64.
+
+So add the repositories:
+
+    echo deb http://www.lesbonscomptes.com/upmpdcli/downloads/debian/ unstable main | sudo tee /etc/apt/sources.list.d/upmpdcli.list 
+    echo deb-src http://www.lesbonscomptes.com/upmpdcli/downloads/debian/ unstable main | sudo tee -a /etc/apt/sources.list.d/upmpdcli.list 
+    echo deb http://www.lesbonscomptes.com/upmpdcli/downloads/mpd-debian/ unstable main  | sudo tee -a /etc/apt/sources.list.d/upmpdcli.list 
+    echo deb-src http://www.lesbonscomptes.com/upmpdcli/downloads/mpd-debian/ unstable main  | sudo tee -a /etc/apt/sources.list.d/upmpdcli.list 
+
+Install (the mpd and libupnp versions in the repo have bug fixes):
+
+    sudo apt-get update 
+    sudo apt-get install upmpdcli sc2mpd mpd libupnp6
+
+And see the next section for configuring.
+
+[[Configuration]]
+== Configuration
+
+=== On the Receiver side
+No configuration is necessary by default: if *sc2mpd* is present,
+*upmpdcli* will advertise the Songcast capability, and any host with a
+Songcast sender installed should be able to use it.
+
+However, you can set a number of values in the upmpdcli configuration file
+(you *must* set the *upmpdcli* `-c` option for *sc2mpd* to see them, the
+environment variable will not work):
+
+sclogfilename:: 
+Name of the file which will receive *sc2mpd* log messages. `stderr` by
+default. This _can't be_ the same file used by *upmpdcli*.
+
+scloglevel:: 
+Log verbosity.  
+
+scplaymethod:: 
+Used by *upmpdcli* and *sc2mpd*.  This decides how audio is played, with 2
+possible values, _`alsa`_ or _`mpd`_. Using _`mpd`_ is somewhat easier, but
+unusable in link:scmulti.html[multi-room] configurations, and you risk
+small drops even in single-player settings.
+
+scalsadevice:: 
+If the _`alsa`_ method is set, the `scalsadevice`
+parameter defines the interface name. Use `aplay -L` to find the
+appropriate name. Also check that user _`upmpdcli`_ belongs to the
+_`audio`_ group.
+
+sccvttype::
+If the _`alsa`_ play method is used, this defines the libsamplerate
+converter type. See http://www.mega-nerd.com/SRC/api_misc.html#Converters.
+The default is to use SRC_CVT_FASTEST, resulting in around 24% CPU usage
+for sc2mpd processing a 16 bits stream on a Raspberry Pi 1. The value can
+be specified either as a string (e.g SRC_SINC_FASTEST), or a value (e.g 2).
+
+schttpport:: 
+If the _`mpd`_ method is set, this defines the HTTP port used by *mpd* to
+connect to *sc2mpd*. 8768 by default. This must be an available port on
+`localhost`, and it will only accept connections from `localhost`.
+
+sc2mpd:: 
+Used by *upmpdcli*. Path for the *sc2mpd* executable file
+(e.g. `/usr/local/bin/sc2mpd`). Only useful if *sc2mpd* was not installed
+to a location in the executable $PATH set for the init scripts. Typically
+only `/bin` and `/usr/bin` are in there. This allows *upmpdcli* to find
+*sc2mpd* if it is not in the standard location.
+
+=== On the Sender (Windows/Mac) side
+
+Not all versions of Songcast work well with sc2mpd. Lately, I have had good
+luck with 4.4.190, but not 4.5.298. You will find
+http://oss.linn.co.uk/Releases/Songcast/Davaar/[all the Songcast installers
+here]
+
+I could not get IP multicast to work with WIFI Receivers (the sound drops
+constantly).
+
+There are well-known problems with multicast and WIFI (see for example
+http://superuser.com/questions/730288/why-do-some-wifi-routers-block-multicast-packets-going-from-wired-to-wireless[this
+superuser.com question] 
+for detailed explanations). This seems to be dependant on the WIFI hardware
+(router/access points) used, so maybe you will have more luck than me.
+
+If some of your Receivers use WIFI, and you experience sound issues, check
+that "Unicast" is selected in the Songcast configuration "advanced" panel
+on the desktop.
+
+Under most conditions, WIFI data rates should be more than sufficient to
+transport Songcast streams (a bit over 1 Mbit/S for 48k/24bits, 700 Kbits/S
+for 44.1k/16 bits).
+
+However, Songcast is probably best transported over a wired connection. If
+you are doing this over WIFI and experiencing glitches, the wireless is the
+first suspect.
+
+== Building sc2mpd
+
+There are two parts in building *sc2mpd*:
+
+- Building the Openhome libraries
+- Building *sc2mpd* proper
+
+First download a
+link:http://www.lesbonscomptes.com/upmpdcli/downloads.html[*sc2mpd*
+release] or clone the *sc2mpd*
+link:http://www.github.com/medoc92/sc2mpd[Github repository]. 
+
+
+=== Building the OpenHome libraries
+
+Building the Openhome libraries is a bit of a black art for a number of
+understandable reasons:
+
+- There are no released distributions for the OpenHome libraries, but
+  only a number of git repositories for the different components. The state
+  of the repositories is not completely consistent at all times (there will
+  be moments when a component will not build with another).
+- The OpenHome build system is very complicated because it works on
+  multiple platforms and multiple language bindings.
+
+The *sc2mpd* source comes with a shell script named _ohbuild.sh_ to help
+with this. It has several functions:
+ - Cloning the OpenHome and checking out verified revisions
+ - Applying a few minor patches to ensure that the build will work in a
+   simplified environment (e.g. without a c# compiler).
+ - Creating a tar file of a compact trimmed tree.
+ - Running the build either from the cloned tree or the tar file.
+
+The tar functions are mostly useful to help with building packages. For a
+normal build, the procedure would be as follows:
+
+    cd sc2mpd
+    mkdir /my/place/for/openhome
+    sh ohbuild.sh -b /my/place/for/openhome
+
+
+=== Building sc2mpd
+
+*sc2mpd* depends on a number of libraries:
+
+- The link:http://www.gnu.org/software/libmicrohttpd/[microhttpd]
+  library. Install the development and runtime packages which are currently
+  named _libmicrohttpd-dev_ and _libmicrohttpd10_ on Debian-derived systems
+  (use _libmicrohttpd_ and _libmicrohttpd-devel_ for Fedora).
+- The link:http://www.mega-nerd.com/SRC/[libsamplerate]
+  library. _libsamplerate0_ on debian-derived systems.
+- The *libasound* Alsa interface library (_libasound2_).
+
+Once OpenHome is built and the auxiliary library development packages are
+installed, build *sc2mpd*, using the following commands inside the
+_sc2mpd_ directory:
+
+    sh autogen.sh
+    ./configure --prefix=/usr --with-openhome=/my/place/for/openhome
+    make
+    sudo make install
+
+The build uses static Openhome libraries, so you can move the executable to
+another machine without needing the Openhome directory (don't forget to
+install the _libmicrohttpd_, _libsamplerate_ and _libasound_ runtimes
+though).
+
+After restarting *upmpdcli*, it should advertise the _Receiver_ service and
+appear in the Songcast Sender menus.
+

@@ -11,11 +11,9 @@ the Songcast advanced configuration panel on the desktop.
 == Multiple Receivers
 
 Multiple *Songcast* _Receiver_ hosts can connect to the same _Sender_, so
-that they will all be playing the same audio. They form a group only in the
-sense that they play from the same URI, and are not otherwise linked.
+that they will all be playing the same audio. 
 
-The Mac and Windows *Songcast* apps only let you activate one  
-_Receiver_ though.
+The Mac and Windows *Songcast* apps only let you activate one _Receiver_.
 
 The *upmpdcli* package now includes the *scctl* command line utility, which
 can list the state of the local *Songcast* _Receivers_, make a _Receiver_

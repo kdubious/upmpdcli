@@ -3,7 +3,7 @@
 .txt.html:
 	asciidoc $<
 
-all: upmpdcli.html scmulti.html upmpdcli-or-mpdupnp.html \
+all: upmpdcli.html sc2mpd.html scmulti.html upmpdcli-or-mpdupnp.html \
      releases.html
 
 clean:
