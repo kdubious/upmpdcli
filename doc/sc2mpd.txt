@@ -64,7 +64,29 @@ need to take a look at a bit more documentation:
  - link:upmpdcli.html[upmpdcli documentation], look for _friendlyname_.
  - link:scmulti.html[audio synchronization issues and *sc2mpd*
    configuration].
-   
+
+== Upmpdcli Sender mode
+
+You can set *umpdcli* in _Sender_ mode from an OpenHome-capable Control
+Point, by selecting the Source of type `Playlist`, name `SenderReceiver`.
+
+This can be done for example from the
+link:http://www.lesbonscomptes.com/upplay/index.html[upplay]
+`File`->`Select Source` menu entry.
+
+When entering this mode, *upmpdcli* will start an auxiliary MPD process
+(after stopping the main one), configured to send audio to the *mpd2sc*
+OpenHome _Sender_ process. It will then also start its own Songcast
+_Receiver_ mode, transfer the playlist, stop the main MPD and start the
+auxiliary one...
+
+The resulting state is that the *upmpdcli* instance can be managed in
+Playlist mode from the Control Point. The audio is played locally through
+the Songcast _Receiver_. Other _Receivers_ can be connected and will play
+in good synchronization.
+
+image::upmpdcli-sender-receiver.png["Sender/Receiver mode"]
+
 [[whatis_songcast]]
 == More Details on Songcast
 
@@ -112,6 +134,13 @@ WavSender sample program.
  - By offering a local HTTP interface (based on _libmicrohttpd_) from which
    *mpd* will play the stream.
  - By directly using the *alsa* audio driver.
+
+.Upmpdcli _Receiver_ in `alsa` and `mpd` modes
+[options="header"]
+|=============
+|`alsa`|`mpd`
+|image:upmpdcli-receiver-alsa.png[Upmpdcli Receiver, alsa mode]|image:upmpdcli-receiver-mpd.png[Upmpdcli Receiver, mpd mode]
+|=============
 
 What approach is used is decided by a parameter in the upmpdcli
 configuration file: `scplaymethod` (see <<Configuration>> further)

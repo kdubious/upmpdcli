@@ -30,7 +30,6 @@ This has only be tested with *upmpdcli* and its link:sc2mpd.html[sc2mpd]
 *Songcast* auxiliary process as Receiver implementation, but I'd guess that
 there is a good chance it would work with others.
 
-
 == Synchronisation issues
 
 The short version is: all *sc2mpd* instances must be configured to play
