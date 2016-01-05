@@ -2,10 +2,11 @@
 
 == Upmpdcli 0.13
 
-- Support new sc2mpd/mpd2sc Sender/Receiver mode, allowing broadcasting the
-  audio to multiple Songcast receivers (typically other upmpdcli/sc2mpd
-  instances but should also work with other types).
-
+- Support the new sc2mpd/mpd2sc Sender/Receiver mode, allowing broadcasting
+  the audio from the Linux host to multiple Songcast receivers (typically
+  other upmpdcli/sc2mpd instances but should also work with other
+  types). Previous versions needed a Windows or Mac Sender for multiroom
+  audio.
 - Fix bug where we did not clear mpd "single" mode, resulting in needing to
   hit play after each track (in openhome playlist mode).
 - Fix random initial value for ohproduct standby state variable (0.13.1)

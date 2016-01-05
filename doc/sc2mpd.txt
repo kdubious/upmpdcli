@@ -43,14 +43,14 @@ control panel).
 
 WARNING: There is *no software volume control* for the *upmpdcli* Songcast
 Receivers for now: use either a local mixer or the little round things on
-the power amps. Set it low when experimenting !
+the pre-amps. Set the volume low when experimenting !
 
-NOTE: Not all Songcast versions work well with upmpdcli. Lately I've had
-good luck with
+NOTE: Not all Windows Songcast versions work well with upmpdcli. Lately
+I've had good luck with
 http://oss.linn.co.uk/Releases/Songcast/Davaar/Songcast_4.4.190_win.exe[4.4.190]
-but not with the 4.5 ones (it's possible to get them to work with *upmpdcli*
-from the *upplay* control panel, but the Windows app claims that the
-*upmpdcli* receiver is unavailable.).
+but not with the 4.5 ones (it's possible to get them to work with
+*upmpdcli* from the *upplay* control panel, but the Windows app claims that
+the *upmpdcli* receiver is unavailable.).
 
 NOTE: The receiver side does not work too well on Raspberry Pis using an
 USB DAC (as far as I could see). The reason may be that the data rate of
