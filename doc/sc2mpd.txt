@@ -55,7 +55,9 @@ the *upmpdcli* receiver is unavailable.).
 NOTE: The receiver side does not work too well on Raspberry Pis using an
 USB DAC (as far as I could see). The reason may be that the data rate of
 the uncompressed stream is just too much for the poor Pi Ethernet/USB
-chip. Things work just fine with an I2S DAC (or on HDMI probably).
+chip. Things work just fine with an I2S DAC (or on HDMI probably). When on
+WIFI, the results are sometimes irregular too, depending on the quality of
+the connection.
 
 When using multiple _Receiver_ instances, you need to at least customize
 their names, and you want to take care of synchronization issues. You will
@@ -70,7 +72,12 @@ need to take a look at a bit more documentation:
 You can set *umpdcli* in _Sender_ mode from an OpenHome-capable Control
 Point, by selecting the Source of type `Playlist`, name `SenderReceiver`.
 
-This can be done for example from the
+The *sc2mpd* configuration must be set to play directly to Alsa for the
+SenderReceiver source to appear. See the
+link:sc2mpd.html#Configuration[configuration section], and
+link:scmulti.html[the page about synchronisation].
+
+Selecting the source can be done, for example, from the
 link:http://www.lesbonscomptes.com/upplay/index.html[upplay]
 `File`->`Select Source` menu entry.
 
