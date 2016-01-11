@@ -33,6 +33,9 @@
 #include "upmpd.hxx"                    // for UpMpd, etc
 #include "upmpdutils.hxx"               // for didlmake, mapget
 
+// For testing upplay with a dumb renderer.
+// #define NO_SETNEXT
+
 using namespace std;
 using namespace std::placeholders;
 
@@ -86,6 +89,10 @@ UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev, bool noev)
                                  this, _1, _2, 1));
 
 //    dev->m_mpdcli->consume(true);
+#ifdef NO_SETNEXT
+    // If no setnext, fake stopping at each track
+    m_dev->m_mpdcli->single(true);
+#endif
 }
 
 // Translate MPD mode flags to UPnP Play mode
@@ -219,6 +226,10 @@ bool UpMpdAVTransport::tpstateMToU(unordered_map<string, string>& status)
     status["AbsoluteTimePosition"] = is_song?
         upnpduration(mpds.songelapsedms) : "0:00:00";
 
+#ifdef NO_SETNEXT
+    status["NextAVTransportURI"] = "NOT_IMPLEMENTED";
+    status["NextAVTransportURIMetaData"] = "NOT_IMPLEMENTED";
+#else
     status["NextAVTransportURI"] = mpds.nextsong.uri;
     if ((m_dev->m_options & UpMpd::upmpdOwnQueue)) {
         status["NextAVTransportURIMetaData"] = is_song ? m_nextMetadata : "";
@@ -226,6 +237,7 @@ bool UpMpdAVTransport::tpstateMToU(unordered_map<string, string>& status)
         status["NextAVTransportURIMetaData"] = is_song ?
             didlmake(mpds.nextsong) : "";
     }
+#endif
 
     status["PlaybackStorageMedium"] = playmedium;
     status["PossiblePlaybackStorageMedia"] = "HDD,NETWORK";
@@ -294,7 +306,13 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
                                         bool setnext)
 {
     // pretend not to support setnext:
-    //if (setnext) return UPNP_E_INVALID_PARAM;
+#ifdef NO_SETNEXT
+    if (setnext) {
+        LOGERR("SetNextAVTransportURI: faking error\n");
+        return UPNP_E_INVALID_PARAM;
+    }
+#endif
+
     string uri;
     bool found = setnext? sc.get("NextURI", &uri) : sc.get("CurrentURI", &uri);
     if (!found) {
@@ -603,6 +621,7 @@ int UpMpdAVTransport::setPlayMode(const SoapIncoming& sc, SoapOutgoing& data)
     if (!sc.get("NewPlayMode", &playmode)) {
         return UPNP_E_INVALID_PARAM;
     }
+    LOGDEB("UpMpdAVTransport::setPlayMode: " << playmode << endl);
 
     bool ok;
     if (!playmode.compare("NORMAL")) {
