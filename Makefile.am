@@ -32,6 +32,8 @@ upmpdcli_SOURCES = \
      src/ohplaylist.hxx \
      src/ohproduct.cxx \
      src/ohproduct.hxx \
+     src/ohradio.cxx \
+     src/ohradio.hxx \
      src/ohreceiver.cxx \
      src/ohreceiver.hxx \
      src/ohsndrcv.cxx \
@@ -62,6 +64,7 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/RenderingControl.xml src/ConnectionManager.xml \
                   src/OHProduct.xml src/OHInfo.xml src/OHTime.xml \
                   src/OHVolume.xml src/OHPlaylist.xml src/OHReceiver.xml \
+                  src/OHRadio.xml \
                   src/protocolinfo.txt src/presentation.html
 
 EXTRA_DIST = web.tar.gz systemd/upmpdcli.service

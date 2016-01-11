@@ -28,6 +28,8 @@ class MPDCli;
 class MpdStatus;
 
 extern std::string g_configfilename;
+class ConfSimple;
+extern ConfSimple *g_config;
 extern std::string g_protocolInfo;
 
 using namespace UPnPProvider;
@@ -39,6 +41,7 @@ class OHPlaylist;
 class OHProduct;
 class OHReceiver;
 class SenderReceiver;
+class OHRadio;
 
 // The UPnP MPD frontend device with its services
 class UpMpd : public UpnpDevice {
@@ -51,6 +54,7 @@ public:
     friend class OHReceiver;
     friend class OHVolume;
     friend class SenderReceiver;
+    friend class OHRadio;
     
     enum OptFlags {
         upmpdNone = 0,
@@ -74,6 +78,7 @@ public:
                     sendermpdport(0) {}
         unsigned int options;
         std::string  cachefn;
+        std::string  radioconf;
         unsigned int ohmetasleep;
         int schttpport;
         std::string scplaymethod;
@@ -109,6 +114,7 @@ private:
     UpMpdAVTransport *m_avt;
     OHProduct *m_ohpr;
     OHPlaylist *m_ohpl;
+    OHRadio *m_ohrd;
     OHReceiver *m_ohrcv;
     SenderReceiver *m_sndrcv;
     std::vector<UpnpService*> m_services;

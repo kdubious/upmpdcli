@@ -88,6 +88,13 @@ static string ohDesc(
     "  <controlURL>/ctl/OHPlaylist</controlURL>"
     "  <eventSubURL>/evt/OHPlaylist</eventSubURL>"
     "</service>"
+    "<service>"
+    "  <serviceType>urn:av-openhome-org:service:Radio:1</serviceType>"
+    "  <serviceId>urn:av-openhome-org:serviceId:Radio</serviceId>"
+    "  <SCPDURL>/upmpd/OHRadio.xml</SCPDURL>"
+    "  <controlURL>/ctl/OHRadio</controlURL>"
+    "  <eventSubURL>/evt/OHRadio</eventSubURL>"
+    "</service>"
     );
 
 // We only advertise the Openhome Receiver service if the sc2mpd
@@ -129,7 +136,7 @@ static vector<const char *> xmlfilenames =
 static vector<const char *> ohxmlfilenames = 
 {
     "OHProduct.xml", "OHInfo.xml", "OHTime.xml", "OHVolume.xml", 
-    "OHPlaylist.xml",
+    "OHPlaylist.xml", "OHRadio.xml"
 };
 
 /** Read protocol info file. This contains the connection manager

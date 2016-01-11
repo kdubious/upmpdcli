@@ -37,17 +37,18 @@
 #include "libupnpp/log.hxx"             // for LOGFAT, LOGERR, Logger, etc
 #include "libupnpp/upnpplib.hxx"        // for LibUPnP
 
-#include "avtransport.hxx"              // for UpMpdAVTransport
-#include "conman.hxx"                   // for UpMpdConMan
-#include "mpdcli.hxx"                   // for MPDCli
-#include "ohinfo.hxx"                   // for OHInfo
-#include "ohplaylist.hxx"               // for OHPlaylist
-#include "ohproduct.hxx"                // for OHProduct
+#include "avtransport.hxx"
+#include "conman.hxx"
+#include "mpdcli.hxx"
+#include "ohinfo.hxx"
+#include "ohplaylist.hxx"
+#include "ohradio.hxx"
+#include "ohproduct.hxx"
 #include "ohreceiver.hxx"
-#include "ohtime.hxx"                   // for OHTime
-#include "ohvolume.hxx"                 // for OHVolume
-#include "renderctl.hxx"                // for UpMpdRenderCtl
-#include "upmpdutils.hxx"               // for path_cat, Pidfile, regsub1, etc
+#include "ohtime.hxx"
+#include "ohvolume.hxx"
+#include "renderctl.hxx"
+#include "upmpdutils.hxx"
 #include "execmd.h"
 #include "httpfs.hxx"
 #include "ohsndrcv.hxx"
@@ -83,6 +84,8 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
         m_services.push_back(new OHVolume(this));
         m_ohpl = new OHPlaylist(this, opts.ohmetasleep);
         m_services.push_back(m_ohpl);
+        m_ohrd = new OHRadio(this);
+        m_services.push_back(m_ohrd);
         if (m_options & upmpdOhReceiver) {
             struct OHReceiverParams parms;
             if (opts.schttpport)
@@ -179,6 +182,7 @@ static string datadir(DATADIR "/");
 
 // Global
 string g_configfilename(CONFIGDIR "/upmpdcli.conf");
+ConfSimple *g_config;
 
 static void onsig(int)
 {
@@ -296,60 +300,61 @@ int main(int argc, char *argv[])
     string onstop;
     string onvolumechange;
     if (!g_configfilename.empty()) {
-        ConfSimple config(g_configfilename.c_str(), 1, true);
-        if (!config.ok()) {
+        g_config = new ConfSimple(g_configfilename.c_str(), 1, true);
+        if (!g_config || !g_config->ok()) {
             cerr << "Could not open config: " << g_configfilename << endl;
             return 1;
         }
+
         string value;
         if (!(op_flags & OPT_d))
-            config.get("logfilename", logfilename);
+            g_config->get("logfilename", logfilename);
         if (!(op_flags & OPT_f))
-            config.get("friendlyname", friendlyname);
-        if (!(op_flags & OPT_l) && config.get("loglevel", value))
+            g_config->get("friendlyname", friendlyname);
+        if (!(op_flags & OPT_l) && g_config->get("loglevel", value))
             loglevel = atoi(value.c_str());
         if (!(op_flags & OPT_h))
-            config.get("mpdhost", mpdhost);
-        if (!(op_flags & OPT_p) && config.get("mpdport", value)) {
+            g_config->get("mpdhost", mpdhost);
+        if (!(op_flags & OPT_p) && g_config->get("mpdport", value)) {
             mpdport = atoi(value.c_str());
         }
-        config.get("mpdpassword", mpdpassword);
-        if (!(op_flags & OPT_q) && config.get("ownqueue", value)) {
+        g_config->get("mpdpassword", mpdpassword);
+        if (!(op_flags & OPT_q) && g_config->get("ownqueue", value)) {
             ownqueue = atoi(value.c_str()) != 0;
         }
-        if (config.get("openhome", value)) {
+        if (g_config->get("openhome", value)) {
             enableOH = atoi(value.c_str()) != 0;
         }
-        if (config.get("upnpav", value)) {
+        if (g_config->get("upnpav", value)) {
             enableAV = atoi(value.c_str()) != 0;
         }
-        if (config.get("ohmetapersist", value)) {
+        if (g_config->get("ohmetapersist", value)) {
             ohmetapersist = atoi(value.c_str()) != 0;
         }
-        config.get("iconpath", iconpath);
-        config.get("presentationhtml", presentationhtml);
-        config.get("cachedir", cachedir);
-        config.get("onstart", onstart);
-        config.get("onstop", onstop);
-        config.get("onvolumechange", onvolumechange);
+        g_config->get("iconpath", iconpath);
+        g_config->get("presentationhtml", presentationhtml);
+        g_config->get("cachedir", cachedir);
+        g_config->get("onstart", onstart);
+        g_config->get("onstop", onstop);
+        g_config->get("onvolumechange", onvolumechange);
         if (!(op_flags & OPT_i)) {
-            config.get("upnpiface", iface);
+            g_config->get("upnpiface", iface);
             if (iface.empty()) {
-                config.get("upnpip", upnpip);
+                g_config->get("upnpip", upnpip);
             }
         }
-        if (!(op_flags & OPT_P) && config.get("upnpport", value)) {
+        if (!(op_flags & OPT_P) && g_config->get("upnpport", value)) {
             upport = atoi(value.c_str());
         }
-        if (config.get("schttpport", value))
+        if (g_config->get("schttpport", value))
             opts.schttpport = atoi(value.c_str());
-        config.get("scplaymethod", opts.scplaymethod);
-        config.get("sc2mpd", sc2mpdpath);
-        if (config.get("ohmetasleep", value))
+        g_config->get("scplaymethod", opts.scplaymethod);
+        g_config->get("sc2mpd", sc2mpdpath);
+        if (g_config->get("ohmetasleep", value))
             opts.ohmetasleep = atoi(value.c_str());
 
-        config.get("scsenderpath", senderpath);
-        if (config.get("scsendermpdport", value))
+        g_config->get("scsenderpath", senderpath);
+        if (g_config->get("scsendermpdport", value))
             sendermpdport = atoi(value.c_str());
     }
     if (Logger::getTheLog(logfilename) == 0) {

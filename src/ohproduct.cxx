@@ -32,9 +32,10 @@
 #include "libupnpp/log.hxx"             // for LOGDEB
 #include "libupnpp/soaphelp.hxx"        // for SoapOutgoing, SoapIncoming
 
-#include "upmpd.hxx"                    // for UpMpd
-#include "upmpdutils.hxx"                    // for UpMpd
+#include "upmpd.hxx"
+#include "upmpdutils.hxx"
 #include "ohplaylist.hxx"
+#include "ohradio.hxx"
 #include "ohreceiver.hxx"
 #include "ohsndrcv.hxx"
 
@@ -55,7 +56,7 @@ OHProduct::OHProduct(UpMpd *dev, const string& friendlyname)
 {
     // Playlist must stay first.
     o_sources.push_back(pair<string,string>("Playlist","Playlist"));
-    //o_sources.push_back("UpnpAv");
+    o_sources.push_back(pair<string, string>("Radio", "Radio"));
     if (m_dev->m_ohrcv) {
         o_sources.push_back(pair<string,string>("Receiver","Receiver"));
         if (m_dev->m_sndrcv &&
@@ -270,6 +271,9 @@ int OHProduct::iSetSourceIndex(int sindex)
         } else if (!curnm.compare("Receiver") && m_dev->m_ohrcv) {
             LOGDEB("OHProduct::iSetSourceIndex: stopping Receiver\n");
             m_dev->m_ohrcv->iStop();
+        } else if (!curnm.compare("Radio") && m_dev->m_ohrd) {
+            LOGDEB("OHProduct::iSetSourceIndex: stopping Radio\n");
+            m_dev->m_ohrd->iStop();
         } else if (!curnm.compare("SenderReceiver") && m_dev->m_sndrcv) {
             LOGDEB("OHProduct::iSetSourceIndex: stopping Sender/Receiver\n");
             m_dev->m_sndrcv->stop();
