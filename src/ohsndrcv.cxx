@@ -132,7 +132,7 @@ bool SenderReceiver::start(int seekms)
         m->sender->startExec(m->makesendercmd, args, false, true);
 
         string output;
-        if (!m->sender->getline(output)) {
+        if (m->sender->getline(output) <= 0) {
             LOGERR("SenderReceiver::start: makesender command failed\n");
             m->clear();
             return false;

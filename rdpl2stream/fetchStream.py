@@ -9,20 +9,17 @@ from StreamDecoder import StreamDecoder
 class myCfg:
     def __init__(self):
         self.cf = dict()
-        self.cf["url_timeout"] = "20"
-
+        self.cf["url_timeout"] = "10"
     def getConfigValue(self, s):
         if s in self.cf:
             return self.cf[s]
         else:
             return None
-
     def setConfigValue(self, s, v):
         self.cf[s] = v
 
 
-
-logger = logging.getLogger('radiotray')
+logger = logging.getLogger('upmpdcli')
 logger.setLevel(logging.ERROR)
 handler = logging.StreamHandler()
 #handler = logging.NullHandler()
@@ -31,9 +28,7 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-
 decoder = StreamDecoder(myCfg())
-
 
 urlInfo = decoder.getMediaStreamInfo(sys.argv[1])
 

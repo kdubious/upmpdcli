@@ -67,16 +67,21 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/OHRadio.xml \
                   src/protocolinfo.txt src/presentation.html
 
-EXTRA_DIST = web.tar.gz systemd/upmpdcli.service
+EXTRA_DIST = web.tar.gz rdpl2stream.tar.gz systemd/upmpdcli.service
 
 web.tar.gz: bogus
 	if test -d $(srcdir)/web; then \
            (cd $(srcdir); tar cvzf - web) > web.tar.gz; fi
 
+rdpl2stream.tar.gz: bogus
+	if test -d $(srcdir)/rdpl2stream; then \
+           (cd $(srcdir); tar cvzf - rdpl2stream) > rdpl2stream.tar.gz; fi
+
 bogus:
 
-install-data-hook: web.tar.gz
+install-data-hook: web.tar.gz rdpl2stream.tar.gz
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < web.tar.gz 
+	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < rdpl2stream.tar.gz
 
 dist_sysconf_DATA = src/upmpdcli.conf
 

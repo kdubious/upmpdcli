@@ -178,7 +178,7 @@ string g_protocolInfo;
 // Static for cleanup in sig handler.
 static UpnpDevice *dev;
 
-static string datadir(DATADIR "/");
+string g_datadir(DATADIR "/");
 
 // Global
 string g_configfilename(CONFIGDIR "/upmpdcli.conf");
@@ -556,7 +556,7 @@ int main(int argc, char *argv[])
     // Initialize the data we serve through HTTP (device and service
     // descriptions, icons, presentation page, etc.)
     unordered_map<string, VDirContent> files;
-    if (!initHttpFs(files, datadir, UUID, friendlyname, enableAV, enableOH,
+    if (!initHttpFs(files, g_datadir, UUID, friendlyname, enableAV, enableOH,
                     !senderpath.empty(),
                     iconpath, presentationhtml)) {
         exit(1);

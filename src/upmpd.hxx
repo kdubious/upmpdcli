@@ -28,6 +28,7 @@ class MPDCli;
 class MpdStatus;
 
 extern std::string g_configfilename;
+extern std::string g_datadir;
 class ConfSimple;
 extern ConfSimple *g_config;
 extern std::string g_protocolInfo;

@@ -37,6 +37,7 @@
 #include "upmpd.hxx"
 #include "upmpdutils.hxx"
 #include "conftree.hxx"
+#include "execmd.h"
 
 using namespace std;
 using namespace std::placeholders;
@@ -227,8 +228,6 @@ int OHRadio::channelsMax(const SoapIncoming& sc, SoapOutgoing& data)
 int OHRadio::play(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHRadio::play" << endl);
-    m_dev->m_mpdcli->consume(false);
-    m_dev->m_mpdcli->single(false);
     bool ok = m_dev->m_mpdcli->play();
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
@@ -324,15 +323,59 @@ int OHRadio::setId(const SoapIncoming& sc, SoapOutgoing& data)
     LOGDEB("OHRadio::setId" << endl);
     int id;
     bool ok = sc.get("Value", &id);
-    if (ok) {
-        m_id = id;
-        maybeWakeUp(ok);
+    if (!ok) {
+        return UPNP_E_INTERNAL_ERROR;
     }
+    if (id <= 0 || id > int(o_radios.size())) {
+        LOGDEB("OHRadio::setId: bad value " << id << endl);
+        return UPNP_E_INTERNAL_ERROR;
+    }
+
+    string uri = o_radios[id].uri;
+
+    string cmdpath = path_cat(g_datadir, "rdpl2stream");
+    cmdpath = path_cat(cmdpath, "fetchStream.py");
+    ExecCmd cmd;
+    vector<string> args;
+    args.push_back(uri);
+    LOGDEB("OHRadio::setId: EXECUTING: " <<
+               cmdpath << " " << args[0] << endl);
+
+    if (cmd.startExec(cmdpath, args, false, true) < 0) {
+        LOGDEB("OHRadio::setId: startExec failed for " <<
+               cmdpath << " " << args[0] << endl);
+        return UPNP_E_INTERNAL_ERROR;
+    }
+        
+    string audiourl;
+    if (cmd.getline(audiourl, 10) < 0) {
+        LOGDEB("OHRadio::setId: could not get audio url\n");
+        return UPNP_E_INTERNAL_ERROR;
+    }
+    trimstring(audiourl, "\r\n");
+    if (audiourl.empty()) {
+        LOGDEB("OHRadio::setId: audio url empty\n");
+        return UPNP_E_INTERNAL_ERROR;
+    }
+
+    m_dev->m_mpdcli->clearQueue();
+    int curpos = 0;
+    UpSong song;
+    song.album = o_radios[m_id].title;
+    song.uri = o_radios[m_id].uri;
+    int songid = m_dev->m_mpdcli->insert(audiourl, curpos, song);
+    if (songid < 0) {
+        return UPNP_E_INTERNAL_ERROR;
+    }
+    m_dev->m_mpdcli->play(curpos);
+    
+    m_id = id;
+    maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
-// Return current Id. Not the same as for playlist, this is our internal channel
-// id, nothing to do with mpd's
+// Return current Id. Not the same as for playlist, this is our
+// internal channel id, nothing to do with mpd's
 int OHRadio::id(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHRadio::id" << endl);
