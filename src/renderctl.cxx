@@ -83,7 +83,7 @@ UpMpdRenderCtl::UpMpdRenderCtl(UpMpd *dev, bool noev)
 
 bool UpMpdRenderCtl::rdstateMToU(unordered_map<string, string>& status)
 {
-    const MpdStatus &mpds = m_dev->getMpdStatus();
+    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
 
     int volume = m_desiredvolume >= 0 ? m_desiredvolume : mpds.volume;
     if (volume < 0)

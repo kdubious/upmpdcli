@@ -246,7 +246,7 @@ bool MPDCli::checkForCommand(const string& cmdname)
 
 bool MPDCli::statSong(UpSong& upsong, int pos, bool isid)
 {
-    //LOGDEB("MPDCli::statSong. isid " << isid << " id/pos " << pos << endl);
+    //LOGDEB1("MPDCli::statSong. isid " << isid << " id/pos " << pos << endl);
     if (!ok())
         return false;
 
@@ -272,7 +272,7 @@ bool MPDCli::statSong(UpSong& upsong, int pos, bool isid)
 
 UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
 {
-    LOGDEB1("MPDCli::mapSong" << endl);
+    //LOGDEB1("MPDCli::mapSong" << endl);
     const char *cp;
 
     cp = mpd_song_get_uri(song);
@@ -657,7 +657,7 @@ bool MPDCli::statId(int id)
 
 bool MPDCli::getQueueSongs(vector<mpd_song*>& songs)
 {
-    LOGDEB1("MPDCli::getQueueSongs" << endl);
+    //LOGDEB1("MPDCli::getQueueSongs" << endl);
     songs.clear();
 
     RETRY_CMD(mpd_send_list_queue_meta(M_CONN));
@@ -686,7 +686,7 @@ void MPDCli::freeSongs(vector<mpd_song*>& songs)
 
 bool MPDCli::getQueueData(std::vector<UpSong>& vdata)
 {
-    //LOGDEB("MPDCli::getQueueData" << endl);
+    LOGDEB("MPDCli::getQueueData" << endl);
     vector<mpd_song*> songs;
     if (!getQueueSongs(songs)) {
         return false;

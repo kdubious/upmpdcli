@@ -139,7 +139,7 @@ static string mpdstatusToTransportState(MpdStatus::State st)
 // special (it's reserved in o_radios too).
 bool OHRadio::makeIdArray(string& out)
 {
-    LOGDEB1("OHRadio::makeIdArray\n");
+    //LOGDEB1("OHRadio::makeIdArray\n");
     string out1;
     for (unsigned int val = 1; val < o_radios.size(); val++) {
         out1 += (unsigned char) ((val & 0xff000000) >> 24);
@@ -298,7 +298,7 @@ int OHRadio::channel(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHRadio::setChannel(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    LOGDEB("OHRadio::setId" << endl);
+    LOGDEB("OHRadio::setChannel" << endl);
     string uri, metadata;
     bool ok = sc.get("Uri", &uri) && sc.get("Metadata", &metadata);
     if (ok) {

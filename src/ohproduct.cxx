@@ -38,6 +38,7 @@
 #include "ohradio.hxx"
 #include "ohreceiver.hxx"
 #include "ohsndrcv.hxx"
+#include "ohinfo.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -264,6 +265,7 @@ int OHProduct::iSetSourceIndex(int sindex)
         const MpdStatus& mpds = m_dev->getMpdStatus();
         int savedms = mpds.songelapsedms;
 
+        m_dev->m_ohif->setMetatext("");
         string curnm = o_sources[m_sourceIndex].second;
         if (!curnm.compare("Playlist") && m_dev->m_ohpl) {
             LOGDEB("OHProduct::iSetSourceIndex: stopping OHPL\n");

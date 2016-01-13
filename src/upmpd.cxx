@@ -71,11 +71,11 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
     bool avtnoev = (m_options & upmpdNoAV) != 0; 
     // Note: the order is significant here as it will be used when
     // calling the getStatus() methods, and we want AVTransport to
-    // update the mpd status for OHInfo
-    m_rdctl = new UpMpdRenderCtl(this, avtnoev);
-    m_services.push_back(m_rdctl);
+    // update the mpd status for everybody
     m_avt = new UpMpdAVTransport(this, avtnoev);
     m_services.push_back(m_avt);
+    m_rdctl = new UpMpdRenderCtl(this, avtnoev);
+    m_services.push_back(m_rdctl);
     m_services.push_back(new UpMpdConMan(this));
 
     if (m_options & upmpdDoOH) {

@@ -354,7 +354,7 @@ int OHPlaylist::setRepeat(const SoapIncoming& sc, SoapOutgoing& data)
 int OHPlaylist::repeat(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::repeat" << endl);
-    const MpdStatus &mpds =  m_dev->getMpdStatus();
+    const MpdStatus &mpds =  m_dev->getMpdStatusNoUpdate();
     data.addarg("Value", mpds.rept? "1" : "0");
     return UPNP_E_SUCCESS;
 }
@@ -376,7 +376,7 @@ int OHPlaylist::setShuffle(const SoapIncoming& sc, SoapOutgoing& data)
 int OHPlaylist::shuffle(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::shuffle" << endl);
-    const MpdStatus &mpds =  m_dev->getMpdStatus();
+    const MpdStatus &mpds =  m_dev->getMpdStatusNoUpdate();
     data.addarg("Value", mpds.random ? "1" : "0");
     return UPNP_E_SUCCESS;
 }
@@ -698,6 +698,7 @@ bool OHPlaylist::iidArray(string& idarray, int *token)
 
 bool OHPlaylist::urlMap(unordered_map<int, string>& umap)
 {
+    //LOGDEB1("OHPlaylist::urlMap\n");
     string sarray; 
     if (iidArray(sarray, 0)) {
         vector<int> ids;

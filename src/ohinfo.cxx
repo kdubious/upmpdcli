@@ -174,6 +174,6 @@ int OHInfo::metatext(const SoapIncoming& sc, SoapOutgoing& data)
 
 void OHInfo::setMetatext(const string& metatext)
 {
-    LOGDEB("OHInfo::setMetatext: " << metatext << endl);
+    //LOGDEB1("OHInfo::setMetatext: " << metatext << endl);
     m_metatext = metatext;
 }
