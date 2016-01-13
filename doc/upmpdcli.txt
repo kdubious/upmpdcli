@@ -90,6 +90,26 @@ overwritten during an upgrade, if you are upgrading to 0.7.x from an
 earlier version and you want to enable the services, you need to set the
 option in the configuration file.
 
+=== OpenHome Radio service
+
+Recent Upmpdcli versions (after 0.13) implement an OpenHome Radio service
+which allows selecting and listening to internet radio stations. The
+stations are defined at the end of the configuration file in the following
+way:
+
+----
+[radio The name of the radio]
+url = http//www.myradio.com/path/to/the/playlist.pls
+artUrl = http//www.myradio.com/path/to/the/icon.png
+----
+
+`artUrl` is optional. None of the non-radio parameters can be defined after
+the first `[radio ...]` section (they would not be found).
+
+The default config file contains a bunch of radio entries, copied from the
+radiotray app. Replace with your own !
+
+
 [[upmpdcli.songcast]]
 == Songcast integration
 
