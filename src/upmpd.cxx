@@ -148,6 +148,7 @@ static int op_flags;
 #define OPT_i     0x200
 #define OPT_P     0x400
 #define OPT_O     0x800
+#define OPT_v     0x1000
 
 static const char usage[] = 
     "-c configfile \t configuration file to use\n"
@@ -161,15 +162,25 @@ static const char usage[] =
     "-i iface    \t specify network interface name to be used for UPnP\n"
     "-P upport    \t specify port number to be used for UPnP\n"
     "-O 0|1\t decide if we run and export the OpenHome services\n"
+    "-v      \tprint version info\n"
     "\n"
     ;
 
 static void
-Usage(void)
+versionInfo(FILE *fp)
 {
-    fprintf(stderr, "%s: usage:\n%s", thisprog, usage);
+    fprintf(fp, "Upmpdcli %s %s\n",
+           UPMPDCLI_PACKAGE_VERSION, LibUPnP::versionString().c_str());
+}
+
+static void
+Usage(FILE *fp = stderr)
+{
+    fprintf(fp, "%s: usage:\n%s", thisprog, usage);
+    versionInfo(fp);
     exit(1);
 }
+
 
 static const string dfltFriendlyName("UpMpd");
 
@@ -286,6 +297,7 @@ int main(int argc, char *argv[])
                 mpdport = atoi(*(++argv)); argc--; goto b1;
             case 'q':   op_flags |= OPT_q; if (argc < 2)  Usage();
                 ownqueue = atoi(*(++argv)) != 0; argc--; goto b1;
+            case 'v': versionInfo(stdout); exit(0); break;
             default: Usage();   break;
             }
     b1: argc--; argv++;

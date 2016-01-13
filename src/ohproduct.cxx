@@ -115,7 +115,7 @@ OHProduct::~OHProduct()
 }
 
 static const string csattrs("Info Time Volume");
-static const string csversion(PACKAGE_VERSION);
+static const string csversion(UPMPDCLI_PACKAGE_VERSION);
 static const string csmanname("UpMPDCli heavy industries Co.");
 static const string csmaninfo("Such nice guys and gals");
 static const string csmanurl("http://www.lesbonscomptes.com/upmpdcli");
