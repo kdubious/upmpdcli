@@ -47,11 +47,12 @@ static const string sTpProduct("urn:av-openhome-org:service:Radio:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Radio");
 
 struct RadioMeta {
-    RadioMeta(const string& t, const string& u)
-        : title(t), uri(u) {
+    RadioMeta(const string& t, const string& u, const string& au)
+        : title(t), uri(u), artUri(au) {
     }
     string title;
     string uri;
+    string artUri;
 };
 
 static vector<RadioMeta> o_radios;
@@ -98,17 +99,18 @@ OHRadio::OHRadio(UpMpd *dev)
 void OHRadio::readRadios()
 {
     // Id 0 means no selection
-    o_radios.push_back(RadioMeta("Unknown radio", ""));
+    o_radios.push_back(RadioMeta("Unknown radio", "", ""));
     
     vector<string> allsubk = g_config->getSubKeys_unsorted();
     for (auto it = allsubk.begin(); it != allsubk.end(); it++) {
         LOGDEB("OHRadio::readRadios: subk " << *it << endl);
         if (it->find("radio ") == 0) {
-            string uri;
+            string uri, artUri;
             string title = it->substr(6);
             bool ok = g_config->get("url", uri, *it);
+            g_config->get("artUrl", artUri, *it);
             if (ok && !uri.empty()) {
-                o_radios.push_back(RadioMeta(title, uri));
+                o_radios.push_back(RadioMeta(title, uri, artUri));
                 LOGDEB("OHRadio::readRadios:RADIO: [" <<
                        title << "] uri [" << uri << "]\n");
             }
@@ -352,7 +354,7 @@ int OHRadio::id(const SoapIncoming& sc, SoapOutgoing& data)
     return UPNP_E_SUCCESS;
 }
 
-static string radioDidlMake(const string& uri, const string& title,
+static string radioDidlMake(const string& title, const string& uri,
                             const string& artUri)
 {
     string out("<DIDL-Lite xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n"
@@ -381,7 +383,8 @@ string OHRadio::metaForId(unsigned int id)
         if (0 && id == m_id) {
             meta = m_state["Metadata"];
         } else {
-            meta = radioDidlMake(o_radios[id].uri, o_radios[id].title, "");
+            meta = radioDidlMake(o_radios[id].title, o_radios[id].uri, 
+                                 o_radios[id].artUri);
         }
     }
     return meta;
