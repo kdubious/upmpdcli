@@ -36,10 +36,9 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names,
                               std::vector<std::string>& values);
     int iStop();
+
     // Source active ?
-    void setActive(bool onoff) {
-        m_active = onoff;
-    }
+    void setActive(bool onoff);
 
 private:
     int channel(const SoapIncoming& sc, SoapOutgoing& data);
@@ -70,7 +69,8 @@ private:
     std::unordered_map<std::string, std::string> m_state;
     UpMpd *m_dev;
     bool m_active;
-    unsigned int m_id;
+    unsigned int m_id; // Current channel id
+    int m_songid; // MPD song id for the radio uri, or 0
 };
 
 #endif /* _OHRADIO_H_X_INCLUDED_ */

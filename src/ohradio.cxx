@@ -58,7 +58,7 @@ static vector<RadioMeta> o_radios;
 
 OHRadio::OHRadio(UpMpd *dev)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), m_active(false),
-      m_id(0)
+      m_id(0), m_songid(0)
 {
     dev->addActionMapping(this, "Channel",
                           bind(&OHRadio::channel, this, _1, _2));
@@ -241,20 +241,33 @@ int OHRadio::setPlaying(const string& uri)
     }
 
     // Send url to mpd
-    m_dev->m_mpdcli->clearQueue();
+    //m_dev->m_mpdcli->clearQueue();
     UpSong song;
     song.album = o_radios[m_id].title;
     song.uri = o_radios[m_id].uri;
-    int songid = m_dev->m_mpdcli->insert(audiourl, 0, song);
-    if (songid < 0) {
+    if (m_songid > 0)
+        m_dev->m_mpdcli->deleteId(m_songid);
+    m_songid = m_dev->m_mpdcli->insert(audiourl, 0, song);
+    if (m_songid < 0) {
+        m_songid = 0;
         LOGDEB("OHRadio::setPlaying: mpd insert failed\n");
         return UPNP_E_INTERNAL_ERROR;
     }
+    m_dev->m_mpdcli->single(true);
     if (!m_dev->m_mpdcli->play(0)) {
         LOGDEB("OHRadio::setPlaying: mpd play failed\n");
         return UPNP_E_INTERNAL_ERROR;
     }
     return UPNP_E_SUCCESS;
+}
+
+void OHRadio::setActive(bool onoff) {
+    m_active = onoff;
+    if (!onoff) {
+        if (m_songid > 0)
+            m_dev->m_mpdcli->deleteId(m_songid);
+        m_dev->m_mpdcli->single(false);
+    }
 }
 
 int OHRadio::play(const SoapIncoming& sc, SoapOutgoing& data)
