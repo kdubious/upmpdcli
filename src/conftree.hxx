@@ -225,6 +225,10 @@ public:
     {
 	return getSubKeys();
     }
+    virtual vector<string> getSubKeys_unsorted(bool = false) const 
+    {
+	return m_subkeys_unsorted;
+    }
     virtual vector<string> getSubKeys() const;
     /** Test for subkey existence */
     virtual bool hasSubKey(const string& sk) const
@@ -274,6 +278,7 @@ private:
     // Configuration data submaps (one per subkey, the main data has a
     // null subkey)
     map<string, map<string, string> > m_submaps;
+    vector<string> m_subkeys_unsorted;
     // Presentation data. We keep the comments, empty lines and
     // variable and subkey ordering information in there (for
     // rewriting the file while keeping hand-edited information)

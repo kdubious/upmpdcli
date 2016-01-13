@@ -101,7 +101,7 @@ bool OHInfo::makestate(unordered_map<string, string> &st)
     makedetails(st["Duration"], st["BitRate"], st["BitDepth"],st["SampleRate"]);
     st["Lossless"] = "0";
     st["CodecName"] = "";
-    st["Metatext"] = "";
+    st["Metatext"] = m_metatext;
     return true;
 }
 
@@ -168,6 +168,12 @@ int OHInfo::details(const SoapIncoming& sc, SoapOutgoing& data)
 int OHInfo::metatext(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHInfo::metatext" << endl);
-    data.addarg("Value", "");
+    data.addarg("Value", m_state["Metatext"]);
     return UPNP_E_SUCCESS;
+}
+
+void OHInfo::setMetatext(const string& metatext)
+{
+    LOGDEB("OHInfo::setMetatext: " << metatext << endl);
+    m_metatext = metatext;
 }

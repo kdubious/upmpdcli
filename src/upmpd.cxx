@@ -79,7 +79,8 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
     m_services.push_back(new UpMpdConMan(this));
 
     if (m_options & upmpdDoOH) {
-        m_services.push_back(new OHInfo(this));
+        m_ohif = new OHInfo(this);
+        m_services.push_back(m_ohif);
         m_services.push_back(new OHTime(this));
         m_services.push_back(new OHVolume(this));
         m_ohpl = new OHPlaylist(this, opts.ohmetasleep);

@@ -36,6 +36,10 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names,
                               std::vector<std::string>& values);
     int iStop();
+    // Source active ?
+    void setActive(bool onoff) {
+        m_active = onoff;
+    }
 
 private:
     int channel(const SoapIncoming& sc, SoapOutgoing& data);
@@ -55,8 +59,9 @@ private:
     int stop(const SoapIncoming& sc, SoapOutgoing& data);
     int transportState(const SoapIncoming& sc, SoapOutgoing& data);
 
+    std::string metaForId(unsigned int id);
     void readRadios();
-    
+    int setPlaying(const std::string& uri);
     bool makeIdArray(std::string&);
     bool makestate(std::unordered_map<std::string, std::string>& st);
     void maybeWakeUp(bool ok);
@@ -64,6 +69,7 @@ private:
     // State variable storage
     std::unordered_map<std::string, std::string> m_state;
     UpMpd *m_dev;
+    bool m_active;
     unsigned int m_id;
 };
 

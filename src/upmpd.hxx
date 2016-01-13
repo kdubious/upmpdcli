@@ -116,6 +116,7 @@ private:
     OHProduct *m_ohpr;
     OHPlaylist *m_ohpl;
     OHRadio *m_ohrd;
+    OHInfo *m_ohif;
     OHReceiver *m_ohrcv;
     SenderReceiver *m_sndrcv;
     std::vector<UpnpService*> m_services;

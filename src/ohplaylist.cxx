@@ -36,6 +36,7 @@
 #include "mpdcli.hxx"                   // for MpdStatus, UpSong, MPDCli, etc
 #include "upmpd.hxx"                    // for UpMpd, etc
 #include "upmpdutils.hxx"               // for didlmake, diffmaps, etc
+#include "ohproduct.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -43,9 +44,10 @@ using namespace std::placeholders;
 static const string sTpProduct("urn:av-openhome-org:service:Playlist:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Playlist");
 
+// Playlist is the default oh service, so it's active when starting up
 OHPlaylist::OHPlaylist(UpMpd *dev, unsigned int cssleep)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
-      m_cachedirty(false), m_mpdqvers(-1)
+      m_active(true), m_cachedirty(false), m_mpdqvers(-1)
 {
     dev->addActionMapping(this, "Play", 
                           bind(&OHPlaylist::play, this, _1, _2));
@@ -259,6 +261,9 @@ bool OHPlaylist::getEventData(bool all, std::vector<std::string>& names,
 {
     //LOGDEB("OHPlaylist::getEventData" << endl);
 
+    if (!m_active)
+        return true;
+
     unordered_map<string, string> state;
 
     makestate(state);
@@ -288,6 +293,9 @@ void OHPlaylist::maybeWakeUp(bool ok)
 int OHPlaylist::play(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::play" << endl);
+    if (!m_active && m_dev->m_ohpr) {
+        m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
+    }
     m_dev->m_mpdcli->consume(false);
     m_dev->m_mpdcli->single(false);
     bool ok = m_dev->m_mpdcli->play();

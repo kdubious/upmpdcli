@@ -290,11 +290,18 @@ UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
         // " replacing [" << upsong.uri << "]" << endl);
         upsong.uri = "http://127.0.0.1/" + upsong.uri;
     }
+    cp = mpd_song_get_tag(song, MPD_TAG_NAME, 0);
+    if (cp != 0)
+        upsong.name = cp;
+    else
+        upsong.name.clear();
     cp = mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
     if (cp != 0)
         upsong.artist = cp;
     else
         upsong.artist.clear();
+    if (upsong.artist.empty())
+        upsong.artist = upsong.name;
     cp = mpd_song_get_tag(song, MPD_TAG_ALBUM, 0);
     if (cp != 0)
         upsong.album = cp;

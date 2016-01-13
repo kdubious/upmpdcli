@@ -107,6 +107,8 @@ void ConfSimple::parseinput(istream &input)
 		submapkey = path_tildexpand(line);
 	    else 
 		submapkey = line;
+            m_subkeys_unsorted.push_back(submapkey);
+            
 	    // No need for adding sk to order, will be done with first
 	    // variable insert. Also means that empty section are
 	    // expandable (won't be output when rewriting)

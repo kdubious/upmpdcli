@@ -51,6 +51,11 @@ public:
     bool iPlay();
     bool iSetSender(const std::string& uri, const std::string& meta);
     OHReceiverParams::PlayMethod playMethod() {return m_pm;}
+
+    // Source active ?
+    void setActive(bool onoff) {
+        m_active = onoff;
+    }
     
 private:
     int play(const SoapIncoming& sc, SoapOutgoing& data);
@@ -70,6 +75,7 @@ private:
     std::string m_metadata;
 
     UpMpd *m_dev;
+    bool   m_active;
     std::shared_ptr<ExecCmd> m_cmd;
     int m_httpport;
     std::string m_sc2mpdpath;

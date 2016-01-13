@@ -34,6 +34,7 @@ public:
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
+    void setMetatext(const std::string& metatext);
 private:
     int counters(const SoapIncoming& sc, SoapOutgoing& data);
     int track(const SoapIncoming& sc, SoapOutgoing& data);
@@ -47,6 +48,7 @@ private:
 
     // State variable storage
     std::unordered_map<std::string, std::string> m_state;
+    std::string m_metatext;
     UpMpd *m_dev;
 };
 

@@ -47,6 +47,11 @@ public:
 
     int iStop();
     void refreshState();
+
+    // Source active ?
+    void setActive(bool onoff) {
+        m_active = onoff;
+    }
     
 private:
     int play(const SoapIncoming& sc, SoapOutgoing& data);
@@ -77,10 +82,13 @@ private:
     bool makeIdArray(std::string&);
     bool makestate(std::unordered_map<std::string, std::string> &st);
     void maybeWakeUp(bool ok);
+
     // State variable storage
     std::unordered_map<std::string, std::string> m_state;
     UpMpd *m_dev;
 
+    bool m_active;
+    
     // Storage for song metadata, indexed by URL.  This used to be
     // indexed by song id, but this does not survive MPD restarts.
     // The data is the DIDL XML string.

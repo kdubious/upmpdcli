@@ -43,7 +43,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Receiver:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Receiver");
 
 OHReceiver::OHReceiver(UpMpd *dev, const OHReceiverParams& parms)
-    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), 
+    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), m_active(false),
       m_httpport(parms.httpport), m_sc2mpdpath(parms.sc2mpdpath), m_pm(parms.pm)
 {
     dev->addActionMapping(this, "Play", 
@@ -80,7 +80,8 @@ bool OHReceiver::makestate(unordered_map<string, string> &st)
         if (m_cmd) {
             int status;
             if (m_cmd->maybereap(&status)) {
-                LOGDEB("OHReceiver: sc2cmd exited with status " << status << endl);
+                LOGDEB("OHReceiver: sc2cmd exited with status " << status
+                       << endl);
                 m_cmd = shared_ptr<ExecCmd>(new ExecCmd());
             }
         }
@@ -105,7 +106,9 @@ bool OHReceiver::getEventData(bool all, std::vector<std::string>& names,
                               std::vector<std::string>& values)
 {
     //LOGDEB("OHReceiver::getEventData" << endl);
-
+    if (!m_active)
+        return true;
+    
     unordered_map<string, string> state;
 
     makestate(state);
@@ -231,9 +234,9 @@ out:
 int OHReceiver::play(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHReceiver::play" << endl);
-    bool ok = iPlay();
-    if (ok && m_dev->m_ohpr)
+    if (!m_active && m_dev->m_ohpr)
         m_dev->m_ohpr->iSetSourceIndexByName("Receiver");
+    bool ok = iPlay();
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }

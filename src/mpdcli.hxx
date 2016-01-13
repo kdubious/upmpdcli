@@ -36,6 +36,7 @@ public:
         duration_secs = mpdid = 0;
     }
     std::string uri;
+    std::string name; // only set for radios apparently
     std::string artist;
     std::string album;
     std::string title;
