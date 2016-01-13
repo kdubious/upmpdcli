@@ -73,7 +73,7 @@
       <argumentList>
         <argument>
           <name>Source</name>
-          <direction>out</direction>               
+          <direction>out</direction>
           <relatedStateVariable>SourceProtocolInfo</relatedStateVariable>
         </argument>
         <argument>

@@ -62,7 +62,6 @@
       </argumentList>
     </action>
   </actionList>
-  
   <serviceStateTable>
     <stateVariable sendEvents="yes">
       <name>Uri</name>
@@ -85,6 +84,6 @@
     <stateVariable sendEvents="yes">
       <name>ProtocolInfo</name>
       <dataType>string</dataType>
-    </stateVariable>        
+    </stateVariable>
   </serviceStateTable>
 </scpd>

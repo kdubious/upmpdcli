@@ -46,8 +46,7 @@
         <argument>
           <name>Token</name>
           <direction>out</direction>
-          <relatedStateVariable>
-          A_ARG_TYPE_IdArray_Token</relatedStateVariable>
+          <relatedStateVariable>A_ARG_TYPE_IdArray_Token</relatedStateVariable>
         </argument>
         <argument>
           <name>Array</name>
@@ -62,14 +61,12 @@
         <argument>
           <name>Token</name>
           <direction>in</direction>
-          <relatedStateVariable>
-          A_ARG_TYPE_IdArrayChanged_Token</relatedStateVariable>
+          <relatedStateVariable>A_ARG_TYPE_IdArrayChanged_Token</relatedStateVariable>
         </argument>
         <argument>
           <name>Value</name>
           <direction>out</direction>
-          <relatedStateVariable>
-          A_ARG_TYPE_IdArrayChanged_Value</relatedStateVariable>
+          <relatedStateVariable>A_ARG_TYPE_IdArrayChanged_Value</relatedStateVariable>
         </argument>
       </argumentList>
     </action>
@@ -112,14 +109,12 @@
         <argument>
           <name>IdList</name>
           <direction>in</direction>
-          <relatedStateVariable>
-          A_ARG_TYPE_ReadList_IdList</relatedStateVariable>
+          <relatedStateVariable>A_ARG_TYPE_ReadList_IdList</relatedStateVariable>
         </argument>
         <argument>
           <name>ChannelList</name>
           <direction>out</direction>
-          <relatedStateVariable>
-          A_ARG_TYPE_ReadList_ChannelList</relatedStateVariable>
+          <relatedStateVariable>A_ARG_TYPE_ReadList_ChannelList</relatedStateVariable>
         </argument>
       </argumentList>
     </action>
@@ -129,8 +124,7 @@
         <argument>
           <name>Value</name>
           <direction>in</direction>
-          <relatedStateVariable>
-          A_ARG_TYPE_SeekSecondAbsolute_Value</relatedStateVariable>
+          <relatedStateVariable>A_ARG_TYPE_SeekSecondAbsolute_Value</relatedStateVariable>
         </argument>
       </argumentList>
     </action>
@@ -140,8 +134,7 @@
         <argument>
           <name>Value</name>
           <direction>in</direction>
-          <relatedStateVariable>
-          A_ARG_TYPE_SeekSecondRelative_Value</relatedStateVariable>
+          <relatedStateVariable>A_ARG_TYPE_SeekSecondRelative_Value</relatedStateVariable>
         </argument>
       </argumentList>
     </action>
@@ -185,8 +178,7 @@
         <argument>
           <name>Value</name>
           <direction>out</direction>
-          <relatedStateVariable>
-          TransportState</relatedStateVariable>
+          <relatedStateVariable>TransportState</relatedStateVariable>
         </argument>
       </argumentList>
     </action>

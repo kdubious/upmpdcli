@@ -339,17 +339,36 @@ int OHRadio::id(const SoapIncoming& sc, SoapOutgoing& data)
     return UPNP_E_SUCCESS;
 }
 
+static string radioDidlMake(const string& uri, const string& title,
+                            const string& artUri)
+{
+    string out("<DIDL-Lite xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n"
+               "xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\"\n"
+               "xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\">\n"
+               "<item id=\"\" parentID=\"\" restricted=\"True\">\n"
+               "<dc:title>");
+    out += SoapHelp::xmlQuote(title);
+    out += "</dc:title>\n"
+        "<res protocolInfo=\"*:*:*:*\" bitrate=\"6000\">";
+    out += SoapHelp::xmlQuote(uri);
+    out += "</res>\n"
+        "<upnp:albumArtURI>";
+    out += SoapHelp::xmlQuote(artUri);
+    out += "</upnp:albumArtURI>\n"
+        "<upnp:class>object.item.audioItem</upnp:class>\n"
+        "</item>\n"
+        "</DIDL-Lite>\n";
+    return out;
+}
+
 string OHRadio::metaForId(unsigned int id)
 {
     string meta;
     if (id >= 0 && id  < o_radios.size()) {
-        if (id == m_id) {
+        if (0 && id == m_id) {
             meta = m_state["Metadata"];
         } else {
-            UpSong song;
-            song.title = o_radios[id].title;
-            song.uri = o_radios[id].uri;
-            meta = didlmake(song);
+            meta = radioDidlMake(o_radios[id].uri, o_radios[id].title, "");
         }
     }
     return meta;
@@ -360,10 +379,9 @@ int OHRadio::ohread(const SoapIncoming& sc, SoapOutgoing& data)
 {
     int id;
     bool ok = sc.get("Id", &id);
-    LOGDEB("OHRadio::read id " << id << endl);
     if (ok) {
+        LOGDEB("OHRadio::read id " << id << endl);
         if (id >= 0 && id  < int(o_radios.size())) {
-            data.addarg("Uri", o_radios[id].uri);
             string meta = metaForId(id);
             data.addarg("Metadata", meta);
         } else {
@@ -379,7 +397,6 @@ int OHRadio::ohread(const SoapIncoming& sc, SoapOutgoing& data)
 //  <TrackList>
 //    <Entry>
 //      <Id></Id>
-//      <Uri></Uri>
 //      <Metadata></Metadata>
 //    </Entry>
 //  </TrackList>

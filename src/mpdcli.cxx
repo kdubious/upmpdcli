@@ -326,8 +326,8 @@ UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
     upsong.duration_secs = mpd_song_get_duration(song);
     upsong.mpdid = mpd_song_get_id(song);
 
-    LOGDEB1("MPDCli::mapSong: got mpdid " << upsong.mpdid << " " << 
-            upsong.dump() << endl);
+//    LOGDEB1("MPDCli::mapSong: got mpdid " << upsong.mpdid << " " << 
+//            upsong.dump() << endl);
     return upsong;
 }
 
@@ -392,7 +392,7 @@ bool MPDCli::setVolume(int volume, bool isMute)
 
 int MPDCli::getVolume()
 {
-    LOGDEB1("MPDCli::getVolume" << endl);
+    //LOGDEB1("MPDCli::getVolume" << endl);
     return m_stat.volume >= 0 ? m_stat.volume : m_cachedvolume;
 }
 
