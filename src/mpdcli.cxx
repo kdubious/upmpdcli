@@ -244,6 +244,51 @@ bool MPDCli::checkForCommand(const string& cmdname)
     return found;
 }
 
+bool MPDCli::saveState(MpdState& st, int seekms)
+{
+    LOGDEB("MPDCli::saveState: seekms " << seekms << endl);
+    if (!updStatus()) {
+        LOGERR("MPDCli::saveState: can't retrieve current status\n");
+        return false;
+    }
+    st.status = m_stat;
+    if (seekms > 0) {
+        st.status.songelapsedms = seekms;
+    }
+    st.queue.clear();
+    if (!getQueueData(st.queue)) {
+        LOGERR("MPDCli::saveState: can't retrieve current playlist\n");
+        return false;
+    }
+    return true;
+}
+
+bool MPDCli::restoreState(const MpdState& st)
+{
+    LOGDEB("MPDCli::restoreState: seekms " << st.status.songelapsedms << endl);
+    clearQueue();
+    for (unsigned int i = 0; i < st.queue.size(); i++) {
+        if (insert(st.queue[i].uri, i, st.queue[i]) < 0) {
+            LOGERR("MPDCli::restoreState: insert failed\n");
+            return false;
+        }
+    }
+    repeat(st.status.rept);
+    random(st.status.random);
+    single(st.status.single);
+    consume(st.status.consume);
+    // If songelapsedms is set, we have to start playing to restore it
+    if (st.status.songelapsedms > 0 ||
+        st.status.state == MpdStatus::MPDS_PLAY) {
+        play(st.status.songpos);
+        setVolume(st.status.volume);
+        if (st.status.songelapsedms > 0)
+            seek(st.status.songelapsedms/1000);
+    }
+    return true;
+}
+
+
 bool MPDCli::statSong(UpSong& upsong, int pos, bool isid)
 {
     //LOGDEB1("MPDCli::statSong. isid " << isid << " id/pos " << pos << endl);

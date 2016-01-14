@@ -214,7 +214,7 @@ void OHRadio::maybeWakeUp(bool ok)
     }
 }
 
-int OHRadio::setPlaying(const string& uri)
+int OHRadio::setPlaying()
 {
     string cmdpath = path_cat(g_datadir, "rdpl2stream");
     cmdpath = path_cat(cmdpath, "fetchStream.py");
@@ -222,7 +222,7 @@ int OHRadio::setPlaying(const string& uri)
     // Execute the playlist parser
     ExecCmd cmd;
     vector<string> args;
-    args.push_back(uri);
+    args.push_back(o_radios[m_id].uri);
     LOGDEB("OHRadio::setPlaying: exec: " << cmdpath << " " << args[0] << endl);
     if (cmd.startExec(cmdpath, args, false, true) < 0) {
         LOGDEB("OHRadio::setPlaying: startExec failed for " <<
@@ -264,12 +264,14 @@ int OHRadio::setPlaying(const string& uri)
 }
 
 void OHRadio::setActive(bool onoff) {
-    m_active = onoff;
-    if (!onoff) {
-        if (m_songid > 0)
-            m_dev->m_mpdcli->deleteId(m_songid);
-        m_dev->m_mpdcli->single(false);
+    if (onoff) {
+        m_dev->m_mpdcli->saveState(m_mpdsavedstate, 0);
+        m_dev->m_mpdcli->clearQueue();
+    } else {
+        m_dev->m_mpdcli->clearQueue();
+        m_dev->m_mpdcli->restoreState(m_mpdsavedstate);
     }
+    m_active = onoff;
 }
 
 int OHRadio::play(const SoapIncoming& sc, SoapOutgoing& data)
@@ -278,7 +280,7 @@ int OHRadio::play(const SoapIncoming& sc, SoapOutgoing& data)
     if (!m_active && m_dev->m_ohpr) {
         m_dev->m_ohpr->iSetSourceIndexByName("Radio");
     }
-    int ret = setPlaying(o_radios[m_id].uri);
+    int ret = setPlaying();
     maybeWakeUp(ret == UPNP_E_SUCCESS);
     return ret;
 }

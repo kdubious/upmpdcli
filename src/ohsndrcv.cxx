@@ -52,7 +52,9 @@ public:
             }
         }
         delete mpd;
+        mpd = 0;
         delete sender;
+        sender = 0;
     }
     UpMpd *dev;
     MPDCli *mpd;
@@ -82,39 +84,16 @@ static bool copyMpd(MPDCli *src, MPDCli *dest, int seekms)
         LOGERR("copyMpd: src or dest is null\n");
         return false;
     }
-
-    // Playing state. If playing is stopped at this point elapsedms is
-    // lost which is why we get it as a parameter
-    MpdStatus mpds = src->getStatus();
-    if (seekms < 0) {
-        seekms = mpds.songelapsedms;
-    }
-    // Playlist from source mpd
-    vector<UpSong> playlist;
-    if (!src->getQueueData(playlist)) {
-        LOGERR("copyMpd: can't retrieve current playlist\n");
-        return false;
-    }
-    // Copy the playlist to dest
-    dest->clearQueue();
-    for (unsigned int i = 0; i < playlist.size(); i++) {
-        if (dest->insert(playlist[i].uri, i, playlist[i]) < 0) {
-            LOGERR("copyMpdt: mpd->insert failed\n");
-            return false;
-        }
-    }
-    dest->play(mpds.songpos);
-    dest->setVolume(mpds.volume);
-    dest->seek(seekms/1000);
-    return true;
+    MpdState st;
+    return src->saveState(st, seekms) && dest->restoreState(st);
 }
 
-bool SenderReceiver::start(int seekms)
+bool SenderReceiver::start(bool useradio, int seekms)
 {
     LOGDEB("SenderReceiver::start. seekms " << seekms << endl);
     
-    if (!m->dev || !m->dev->m_ohpl) {
-        LOGERR("SenderReceiver::start: no ohpl\n");
+    if (!m->dev || !m->dev->m_ohpl || !m->dev->m_ohrd) {
+        LOGERR("SenderReceiver::start: no dev or ohpl or ohrd ??\n");
         return false;
     }
     

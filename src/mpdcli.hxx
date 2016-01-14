@@ -84,6 +84,12 @@ public:
     int detailscounter;
 };
 
+// Complete Mpd State
+struct MpdState {
+    MpdStatus status;
+    std::vector<UpSong> queue;
+};
+
 class MPDCli {
 public:
     MPDCli(const std::string& host, int port = 6600, 
@@ -125,6 +131,11 @@ public:
         return m_stat;
     }
 
+    // Copy complete mpd state. If seekms is > 0, this is the value to
+    // save (sometimes useful if mpd was stopped)
+    bool saveState(MpdState& st, int seekms);
+    bool restoreState(const MpdState& st);
+    
 private:
     void *m_conn;
     bool m_ok;

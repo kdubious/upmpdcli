@@ -60,7 +60,7 @@ private:
 
     std::string metaForId(unsigned int id);
     void readRadios();
-    int setPlaying(const std::string& uri);
+    int setPlaying();
     bool makeIdArray(std::string&);
     bool makestate(std::unordered_map<std::string, std::string>& st);
     void maybeWakeUp(bool ok);
@@ -69,8 +69,12 @@ private:
     std::unordered_map<std::string, std::string> m_state;
     UpMpd *m_dev;
     bool m_active;
-    unsigned int m_id; // Current channel id
-    int m_songid; // MPD song id for the radio uri, or 0
+    // Current channel id set by setId
+    unsigned int m_id; 
+    // MPD song id for the radio uri, or 0
+    int m_songid;
+
+    MpdState m_mpdsavedstate;
 };
 
 #endif /* _OHRADIO_H_X_INCLUDED_ */

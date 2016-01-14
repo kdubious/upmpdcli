@@ -48,7 +48,7 @@ public:
     SenderReceiver(UpMpd *dev, const std::string& senderstarterpath,
                    int mpdport);
     ~SenderReceiver();
-    bool start(int seekms);
+    bool start(bool useradio, int seekms);
     bool stop();
 
     class Internal;
