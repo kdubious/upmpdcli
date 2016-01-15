@@ -80,11 +80,13 @@ rdpl2stream.tar.gz: bogus
 bogus:
 
 install-data-hook: web.tar.gz rdpl2stream.tar.gz
+	(cd $(DESTDIR)$(sysconfdir); test -f upmpdcli.conf || \
+        	mv upmpdcli.conf-dist upmpdcli.conf)
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < web.tar.gz 
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < rdpl2stream.tar.gz
 
-dist_sysconf_DATA = src/upmpdcli.conf
-
+dist_sysconf_DATA = src/upmpdcli.conf-dist
+            
 dist_man1_MANS = man/upmpdcli.1
 
 dist-hook:
