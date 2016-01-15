@@ -4,7 +4,7 @@
 	asciidoc $<
 
 all: upmpdcli.html sc2mpd.html scmulti.html upmpdcli-or-mpdupnp.html \
-     releases.html
+     releases.html mpdas-upnp.html
 
 clean:
 	rm -f *.html
