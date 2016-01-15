@@ -25,8 +25,8 @@
 #include <iostream>                     // for basic_ostream, operator<<, etc
 #include <utility>                      // for pair
 
-#include "libupnpp/log.hxx"             // for LOGERR, LOGDEB
-#include "workqueue.hxx"       // for WorkQueue
+#include "libupnpp/log.hxx"
+#include "libupnpp/workqueue.hxx"
 
 using namespace std;
 using namespace UPnPP;
