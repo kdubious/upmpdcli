@@ -216,6 +216,12 @@ void OHRadio::maybeWakeUp(bool ok)
 
 int OHRadio::setPlaying()
 {
+    if (m_id > o_radios.size() || o_radios[m_id].uri.empty()) {
+        LOGERR("OHRadio::setPlaying: called with bad id (" << m_id <<
+               ") or empty preset uri [" << o_radios[m_id].uri << "]\n");
+        return UPNP_E_INTERNAL_ERROR;
+    }
+    
     string cmdpath = path_cat(g_datadir, "rdpl2stream");
     cmdpath = path_cat(cmdpath, "fetchStream.py");
 
