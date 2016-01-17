@@ -1,6 +1,7 @@
 = Mpdas-UPnP: a Last.FM scrobbler for UPnP renderers
 
-*mpdas-upnp* is an extension to the *mpdas* MPD scrobbler.
+*mpdas-upnp* is an extension to the link:http://50hz.ws/mpdas/[mpdas] MPD
+scrobbler. 
 
 It will monitor either an MPD or UPnP renderer instance and send
 appropriate information about what is playing to Last.FM.
