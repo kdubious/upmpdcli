@@ -86,6 +86,11 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
         m_ohpl = new OHPlaylist(this, opts.ohmetasleep);
         m_services.push_back(m_ohpl);
         m_ohrd = new OHRadio(this);
+        if (m_ohrd && !m_ohrd->ok()) {
+            delete m_ohrd;
+            m_ohrd = 0;
+        }
+        
         m_services.push_back(m_ohrd);
         if (m_options & upmpdOhReceiver) {
             struct OHReceiverParams parms;
@@ -107,7 +112,9 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
             m_sndrcv = new SenderReceiver(this, opts.senderpath,
                                           opts.sendermpdport);
         }
-        // Create ohpr last, so that it can ask questions to other services
+
+        // Create ohpr last, so that it can ask questions to other
+        // services or check their existence
         m_ohpr = new OHProduct(this, friendlyname);
         m_services.push_back(m_ohpr);
     }

@@ -33,6 +33,10 @@ class OHRadio : public UPnPProvider::UpnpService {
 public:
     OHRadio(UpMpd *dev);
 
+    // We can only offer this if Python is available because of the
+    // stream uri fetching script. This is checked during construction.
+    bool ok() {return m_ok;}
+    
     virtual bool getEventData(bool all, std::vector<std::string>& names,
                               std::vector<std::string>& values);
     int iStop();
@@ -59,7 +63,7 @@ private:
     int transportState(const SoapIncoming& sc, SoapOutgoing& data);
 
     std::string metaForId(unsigned int id);
-    void readRadios();
+    bool readRadios();
     int setPlaying();
     bool makeIdArray(std::string&);
     bool makestate(std::unordered_map<std::string, std::string>& st);
@@ -75,6 +79,8 @@ private:
     int m_songid;
 
     MpdState m_mpdsavedstate;
+
+    bool m_ok;
 };
 
 #endif /* _OHRADIO_H_X_INCLUDED_ */

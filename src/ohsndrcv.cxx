@@ -92,8 +92,8 @@ bool SenderReceiver::start(bool useradio, int seekms)
 {
     LOGDEB("SenderReceiver::start. seekms " << seekms << endl);
     
-    if (!m->dev || !m->dev->m_ohpl || !m->dev->m_ohrd) {
-        LOGERR("SenderReceiver::start: no dev or ohpl or ohrd ??\n");
+    if (!m->dev || !m->dev->m_ohpl) {
+        LOGERR("SenderReceiver::start: no dev or ohpl??\n");
         return false;
     }
     

@@ -59,8 +59,20 @@ static vector<RadioMeta> o_radios;
 
 OHRadio::OHRadio(UpMpd *dev)
     : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), m_active(false),
-      m_id(0), m_songid(0)
+      m_id(0), m_songid(0), m_ok(false)
 {
+    // Need Python
+    string pypath;
+    if (!ExecCmd::which("python2", pypath)) {
+        LOGINF("OHRadio: python2 not found, no radio service will be created\n");
+        return;
+    }
+    if (!readRadios()) {
+        LOGINF("OHRadio: readRadios() failed, no radio service will be created\n");
+        return;
+    }
+    m_ok = true;
+    
     dev->addActionMapping(this, "Channel",
                           bind(&OHRadio::channel, this, _1, _2));
     dev->addActionMapping(this, "ChannelsMax",
@@ -93,10 +105,9 @@ OHRadio::OHRadio(UpMpd *dev)
                           bind(&OHRadio::stop, this, _1, _2));
     dev->addActionMapping(this, "TransportState",
                           bind(&OHRadio::transportState, this, _1, _2));
-    readRadios();
 }
 
-void OHRadio::readRadios()
+bool OHRadio::readRadios()
 {
     // Id 0 means no selection
     o_radios.push_back(RadioMeta("Unknown radio", "", ""));
@@ -116,7 +127,8 @@ void OHRadio::readRadios()
             }
         }
     }
-    LOGDEB("OHRadio::readRadios: " << o_radios.size() << " radios found\n")
+    LOGDEB("OHRadio::readRadios: " << o_radios.size() << " radios found\n");
+    return true;
 }
 
 static string mpdstatusToTransportState(MpdStatus::State st)
@@ -276,6 +288,7 @@ void OHRadio::setActive(bool onoff) {
     } else {
         m_dev->m_mpdcli->clearQueue();
         m_dev->m_mpdcli->restoreState(m_mpdsavedstate);
+        m_songid = 0;
     }
     m_active = onoff;
 }
