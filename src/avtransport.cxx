@@ -673,7 +673,7 @@ int UpMpdAVTransport::getCurrentTransportActions(const SoapIncoming& sc,
     default:
         tactions += ",Play";
     }
-    data.addarg("CurrentTransportActions", tactions);
+    data.addarg("Actions", tactions);
     return UPNP_E_SUCCESS;
 }
 
