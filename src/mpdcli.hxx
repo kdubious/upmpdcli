@@ -95,7 +95,7 @@ class MPDCli {
 public:
     MPDCli(const std::string& host, int port = 6600, 
            const std::string& pass="", const std::string& m_onstart="",
-           const std::string& m_onstop="",
+           const std::string& m_onplay="", const std::string& m_onstop="",
            const std::string& m_onvolumechange="");
     ~MPDCli();
     bool ok() {return m_ok && m_conn;}
@@ -150,6 +150,7 @@ private:
     int m_port;
     std::string m_password;
     std::string m_onstart;
+    std::string m_onplay;
     std::string m_onstop;
     std::string m_onvolumechange;
     regex_t m_tpuexpr;
