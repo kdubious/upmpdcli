@@ -167,7 +167,8 @@ bool MPDCli::updStatus()
     switch (mpd_status_get_state(mpds)) {
     case MPD_STATE_STOP:
         // Only execute onstop command if mpd was playing or paused
-        if (m_stat.state != MpdStatus::MPDS_STOP && !m_onstop.empty()) {
+        if (!m_onstop.empty() && (m_stat.state == MpdStatus::MPDS_PLAY ||
+                                  m_stat.state == MpdStatus::MPDS_PAUSE)) {
             if (system(m_onstop.c_str())) {
                 LOGERR("MPDCli::updStatus: " << m_onstop << " failed "<< endl);
             }
