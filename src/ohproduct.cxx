@@ -244,8 +244,8 @@ int OHProduct::sourceXML(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHProduct::sourceIndex(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    LOGDEB("OHProduct::sourceIndex" << endl);
     data.addarg("Value", SoapHelp::i2s(m_sourceIndex));
+    LOGDEB("OHProduct::sourceIndex: " << m_sourceIndex << endl);
     return UPNP_E_SUCCESS;
 }
 
