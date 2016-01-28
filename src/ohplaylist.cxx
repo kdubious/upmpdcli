@@ -290,6 +290,18 @@ void OHPlaylist::maybeWakeUp(bool ok)
         m_dev->loopWakeup();
 }
 
+void OHPlaylist::setActive(bool onoff)
+{
+    m_active = onoff;
+    if (m_active) {
+        m_dev->m_mpdcli->clearQueue();
+        m_dev->m_mpdcli->restoreState(m_mpdsavedstate);
+        maybeWakeUp(true);
+    } else {
+        m_dev->m_mpdcli->saveState(m_mpdsavedstate, 0);
+    }
+}
+
 int OHPlaylist::play(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::play" << endl);
@@ -436,6 +448,15 @@ int OHPlaylist::transportState(const SoapIncoming& sc, SoapOutgoing& data)
 int OHPlaylist::seekId(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::seekId" << endl);
+    if (!m_active) {
+        // If I'm not active, the ids in the playlist are those of
+        // another service (e.g. radio). If I activate myself and
+        // restore the playlist, the mpd ids are going to be different
+        // from what the caller may have in store. This just can't
+        // work as long as we use mpd ids directly.
+        LOGERR("OHPlaylist::seekId: not active" << endl);
+        return UPNP_E_INTERNAL_ERROR;
+    }
     int id;
     bool ok = sc.get("Value", &id);
     if (ok) {
@@ -449,6 +470,12 @@ int OHPlaylist::seekId(const SoapIncoming& sc, SoapOutgoing& data)
 int OHPlaylist::seekIndex(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::seekIndex" << endl);
+
+    // Unlike seekid, this should work as the indices are restored by
+    // mpdcli restorestate
+    if (!m_active && m_dev->m_ohpr) {
+        m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
+    }
     int pos;
     bool ok = sc.get("Value", &pos);
     if (ok) {
@@ -462,6 +489,9 @@ int OHPlaylist::seekIndex(const SoapIncoming& sc, SoapOutgoing& data)
 int OHPlaylist::id(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::id" << endl);
+    if (!m_active && m_dev->m_ohpr) {
+        m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
+    }
     const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
     data.addarg("Value", mpds.songid == -1 ? "0" : SoapHelp::i2s(mpds.songid));
     return UPNP_E_SUCCESS;
@@ -481,6 +511,11 @@ bool OHPlaylist::cacheFind(const string& uri, string& meta)
 // Returns a 800 fault code if the given id is not in the playlist. 
 int OHPlaylist::ohread(const SoapIncoming& sc, SoapOutgoing& data)
 {
+    if (!m_active) {
+        // See comment in seekId()
+        LOGERR("OHPlaylist::read: not active" << endl);
+        return UPNP_E_INTERNAL_ERROR;
+    }
     int id;
     bool ok = sc.get("Id", &id);
     LOGDEB("OHPlaylist::ohread id " << id << endl);
@@ -518,6 +553,11 @@ int OHPlaylist::ohread(const SoapIncoming& sc, SoapOutgoing& data)
 // Any ids not in the playlist are ignored. 
 int OHPlaylist::readList(const SoapIncoming& sc, SoapOutgoing& data)
 {
+    if (!m_active) {
+        // See comment in seekId()
+        LOGERR("OHPlaylist::readList: not active" << endl);
+        return UPNP_E_INTERNAL_ERROR;
+    }
     string sids;
     bool ok = sc.get("IdList", &sids);
     LOGDEB("OHPlaylist::readList: [" << sids << "]" << endl);
@@ -596,6 +636,20 @@ int OHPlaylist::insert(const SoapIncoming& sc, SoapOutgoing& data)
     if (ok)
         ok = ok && sc.get("Metadata", &metadata);
 
+    if (!m_active) {
+        // See comment in seekId()
+        // It's not clear if special-casing afterId == 0 is a good
+        // idea because it makes the device appear even more
+        // unpredictable. Otoh, it allows Bubble (basic, not DS) to
+        // switch to playlist by just adding tracks.
+        if (afterid == 0 && m_dev->m_ohpr) {
+            m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
+        } else {
+            LOGERR("OHPlaylist::insert: not active" << endl);
+            return UPNP_E_INTERNAL_ERROR;
+        }
+    }
+
     LOGDEB("OHPlaylist::insert: afterid " << afterid << " Uri " <<
            uri << " Metadata " << metadata << endl);
     if (ok) {
@@ -614,6 +668,10 @@ bool OHPlaylist::insertUri(int afterid, const string& uri,
                            const string& metadata, int *newid)
 {
     LOGDEB1("OHPlaylist::insertUri: " << uri << endl);
+    if (!m_active) {
+        LOGERR("OHPlaylist::insertUri: not active" << endl);
+        return UPNP_E_INTERNAL_ERROR;
+    }
     UpSong metaformpd;
     if (!uMetaToUpSong(metadata, &metaformpd)) {
         LOGERR("OHPlaylist::insert: failed to parse metadata " << " Uri [" 
@@ -636,6 +694,11 @@ bool OHPlaylist::insertUri(int afterid, const string& uri,
 int OHPlaylist::deleteId(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::deleteId" << endl);
+    if (!m_active) {
+        // See comment in seekId()
+        LOGERR("OHPlaylist::deleteId: not active" << endl);
+        return UPNP_E_INTERNAL_ERROR;
+    }
     int id;
     bool ok = sc.get("Value", &id);
     if (ok) {
@@ -655,6 +718,9 @@ int OHPlaylist::deleteId(const SoapIncoming& sc, SoapOutgoing& data)
 int OHPlaylist::deleteAll(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::deleteAll" << endl);
+    if (!m_active && m_dev->m_ohpr) {
+        m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
+    }
     bool ok = m_dev->m_mpdcli->clearQueue();
     m_mpdqvers = -1;
     maybeWakeUp(ok);
@@ -673,6 +739,9 @@ int OHPlaylist::tracksMax(const SoapIncoming& sc, SoapOutgoing& data)
 int OHPlaylist::idArray(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::idArray" << endl);
+    if (!m_active && m_dev->m_ohpr) {
+        m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
+    }
     string idarray;
     int token;
     if (iidArray(idarray, &token)) {

@@ -122,8 +122,8 @@ bool OHRadio::readRadios()
             g_config->get("artUrl", artUri, *it);
             if (ok && !uri.empty()) {
                 o_radios.push_back(RadioMeta(title, uri, artUri));
-                LOGDEB("OHRadio::readRadios:RADIO: [" <<
-                       title << "] uri [" << uri << "]\n");
+                LOGDEB("OHRadio::readRadios:RADIO: [" << title << "] uri [" <<
+                       uri << "] artUri [" << artUri << "]\n");
             }
         }
     }
@@ -282,15 +282,14 @@ int OHRadio::setPlaying()
 }
 
 void OHRadio::setActive(bool onoff) {
+    m_active = onoff;
     if (onoff) {
-        m_dev->m_mpdcli->saveState(m_mpdsavedstate, 0);
         m_dev->m_mpdcli->clearQueue();
+        maybeWakeUp(true);
     } else {
         m_dev->m_mpdcli->clearQueue();
-        m_dev->m_mpdcli->restoreState(m_mpdsavedstate);
         m_songid = 0;
     }
-    m_active = onoff;
 }
 
 int OHRadio::play(const SoapIncoming& sc, SoapOutgoing& data)
@@ -460,7 +459,9 @@ int OHRadio::readList(const SoapIncoming& sc, SoapOutgoing& data)
             string meta = metaForId(id);
             out += "<Entry><Id>";
             out += *it;
-            out += "</Id><Metadata>";
+            out += "</Id><Uri>";
+            out += SoapHelp::xmlQuote(o_radios[id].uri);
+            out += "</Uri><Metadata>";
             out += SoapHelp::xmlQuote(meta);
             out += "</Metadata></Entry>";
         }

@@ -49,9 +49,7 @@ public:
     void refreshState();
 
     // Source active ?
-    void setActive(bool onoff) {
-        m_active = onoff;
-    }
+    void setActive(bool onoff);
     
 private:
     int play(const SoapIncoming& sc, SoapOutgoing& data);
@@ -88,6 +86,7 @@ private:
     UpMpd *m_dev;
 
     bool m_active;
+    MpdState m_mpdsavedstate;
     
     // Storage for song metadata, indexed by URL.  This used to be
     // indexed by song id, but this does not survive MPD restarts.

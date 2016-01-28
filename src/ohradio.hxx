@@ -78,8 +78,6 @@ private:
     // MPD song id for the radio uri, or 0
     int m_songid;
 
-    MpdState m_mpdsavedstate;
-
     bool m_ok;
 };
 
