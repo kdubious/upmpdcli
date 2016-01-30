@@ -486,9 +486,11 @@ int OHPlaylist::seekIndex(const SoapIncoming& sc, SoapOutgoing& data)
 int OHPlaylist::id(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::id" << endl);
-    if (!m_active && m_dev->m_ohpr) {
-        m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
+    if (!m_active) {
+        LOGERR("OHPlaylist::id: not active" << endl);
+        return UPNP_E_INTERNAL_ERROR;
     }
+
     const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
     data.addarg("Value", mpds.songid == -1 ? "0" : SoapHelp::i2s(mpds.songid));
     return UPNP_E_SUCCESS;
@@ -736,8 +738,10 @@ int OHPlaylist::tracksMax(const SoapIncoming& sc, SoapOutgoing& data)
 int OHPlaylist::idArray(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::idArray" << endl);
-    if (!m_active && m_dev->m_ohpr) {
-        m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
+    if (!m_active) {
+        // See comment in seekId()
+        LOGERR("OHPlaylist::idArray: not active" << endl);
+        return UPNP_E_INTERNAL_ERROR;
     }
     string idarray;
     int token;
