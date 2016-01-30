@@ -47,6 +47,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Product:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Product");
 
 static string csxml("<SourceList>\n");
+static string csattrs("Info Time Volume");
 
 // (Type, Name) list
 static vector<pair<string, string> > o_sources;
@@ -62,6 +63,7 @@ OHProduct::OHProduct(UpMpd *dev, const string& friendlyname)
     }
     if (m_dev->m_ohrcv) {
         o_sources.push_back(pair<string,string>("Receiver", "Receiver"));
+        csattrs.append(" Receiver");
         if (m_dev->m_sndrcv &&
             m_dev->m_ohrcv->playMethod() == OHReceiverParams::OHRP_ALSA) {
             // It might be possible to make things work with the MPD
@@ -121,7 +123,6 @@ OHProduct::~OHProduct()
 {
 }
 
-static const string csattrs("Info Time Volume");
 static const string csversion(UPMPDCLI_PACKAGE_VERSION);
 static const string csmanname("UpMPDCli heavy industries Co.");
 static const string csmaninfo("Such nice guys and gals");

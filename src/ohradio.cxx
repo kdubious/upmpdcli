@@ -174,7 +174,7 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
     st["ChannelsMax"] = SoapHelp::i2s(o_radios.size());
     st["Id"] = SoapHelp::i2s(m_id);
     makeIdArray(st["IdArray"]);
-    if (m_id >= 0 && m_id < o_radios.size()) {
+    if (m_active && m_id >= 0 && m_id < o_radios.size()) {
         if (mpds.currentsong.album.empty()) {
             mpds.currentsong.album = o_radios[m_id].title;
         }
@@ -183,7 +183,8 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
         st["Metadata"] =  meta;
         m_dev->m_ohif->setMetatext(meta);
     } else {
-        LOGDEB("OHRadio::makestate: bad m_id " << m_id << endl);
+        if (m_active) 
+            LOGDEB("OHRadio::makestate: bad m_id " << m_id << endl);
         st["Metadata"] =  "";
         m_dev->m_ohif->setMetatext("");
     }

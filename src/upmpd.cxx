@@ -65,7 +65,7 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
     : UpnpDevice(deviceid, files), m_mpdcli(mpdcli), m_mpds(0),
       m_options(opts.options),
       m_mcachefn(opts.cachefn),
-      m_rdctl(0), m_avt(0), m_ohpr(0), m_ohpl(0), m_ohrcv(0), m_sndrcv(0),
+      m_rdctl(0), m_avt(0), m_ohpr(0), m_ohpl(0), m_ohrd(0), m_ohrcv(0), m_sndrcv(0),
       m_friendlyname(friendlyname)
 {
     bool avtnoev = (m_options & upmpdNoAV) != 0; 
@@ -90,8 +90,8 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
             delete m_ohrd;
             m_ohrd = 0;
         }
-        
-        m_services.push_back(m_ohrd);
+        if (m_ohrd)
+            m_services.push_back(m_ohrd);
         if (m_options & upmpdOhReceiver) {
             struct OHReceiverParams parms;
             if (opts.schttpport)

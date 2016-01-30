@@ -106,8 +106,6 @@ bool OHReceiver::getEventData(bool all, std::vector<std::string>& names,
                               std::vector<std::string>& values)
 {
     //LOGDEB("OHReceiver::getEventData" << endl);
-    if (!m_active)
-        return true;
     
     unordered_map<string, string> state;
 
