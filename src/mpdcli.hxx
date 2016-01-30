@@ -42,6 +42,7 @@ public:
     std::string title;
     std::string tracknum;
     std::string genre;
+    std::string artUri; // This does not come from mpd, but we sometimes add it
     unsigned int duration_secs;
     int mpdid;
     std::string dump() {

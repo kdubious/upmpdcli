@@ -178,6 +178,7 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
         if (mpds.currentsong.album.empty()) {
             mpds.currentsong.album = o_radios[m_id].title;
         }
+        mpds.currentsong.artUri = o_radios[m_id].artUri;
         string meta = didlmake(mpds.currentsong);
         st["Metadata"] =  meta;
         m_dev->m_ohif->setMetatext(meta);
@@ -196,9 +197,7 @@ bool OHRadio::getEventData(bool all, std::vector<std::string>& names,
                            std::vector<std::string>& values)
 {
     //LOGDEB("OHRadio::getEventData" << endl);
-    if (!m_active)
-        return true;
-    
+
     unordered_map<string, string> state;
 
     makestate(state);
@@ -283,7 +282,7 @@ int OHRadio::setPlaying()
 
 void OHRadio::setActive(bool onoff) {
     m_active = onoff;
-    if (onoff) {
+    if (m_active) {
         m_dev->m_mpdcli->clearQueue();
         maybeWakeUp(true);
     } else {

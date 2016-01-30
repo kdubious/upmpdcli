@@ -348,6 +348,13 @@ string didlmake(const UpSong& song)
         }
     }
 
+    {const string& val = song.artUri;
+        if (!val.empty()) {
+            ss << "<upnp:albumArtURI>" << SoapHelp::xmlQuote(val) << 
+                "</upnp:albumArtURI>";
+        }
+    }
+
     // TBD: the res element normally has size, sampleFrequency,
     // nrAudioChannels and protocolInfo attributes, which are bogus
     // for the moment. partly because MPD does not supply them.  And

@@ -148,7 +148,7 @@ static string translateIdArray(const vector<UpSong>& in)
 
 bool OHPlaylist::makeIdArray(string& out)
 {
-    LOGDEB1("OHPlaylist::makeIdArray\n");
+    //LOGDEB1("OHPlaylist::makeIdArray\n");
     const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
 
     if (mpds.qvers == m_mpdqvers) {
@@ -260,9 +260,6 @@ bool OHPlaylist::getEventData(bool all, std::vector<std::string>& names,
                               std::vector<std::string>& values)
 {
     //LOGDEB("OHPlaylist::getEventData" << endl);
-
-    if (!m_active)
-        return true;
 
     unordered_map<string, string> state;
 
