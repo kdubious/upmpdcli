@@ -53,7 +53,7 @@ static string csattrs("Info Time Volume");
 static vector<pair<string, string> > o_sources;
 
 OHProduct::OHProduct(UpMpd *dev, const string& friendlyname)
-    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
+    : OHService(sTpProduct, sIdProduct, dev),
       m_roomOrName(friendlyname), m_sourceIndex(0), m_standby(false)
 {
     // Playlist must stay first.
@@ -153,30 +153,6 @@ bool OHProduct::makestate(unordered_map<string, string> &st)
     st["SourceXml"] = csxml;
     st["SourceIndex"] = SoapHelp::i2s(m_sourceIndex);
     st["Attributes"] = csattrs;
-
-    return true;
-}
-
-bool OHProduct::getEventData(bool all, std::vector<std::string>& names, 
-                             std::vector<std::string>& values)
-{
-    //LOGDEB("OHProduct::getEventData" << endl);
-
-    unordered_map<string, string> state;
-    makestate(state);
-
-    unordered_map<string, string> changed;
-    if (all) {
-        changed = state;
-    } else {
-        changed = diffmaps(m_state, state);
-    }
-    m_state = state;
-
-    for (auto it = changed.begin(); it != changed.end(); it++) {
-        names.push_back(it->first);
-        values.push_back(it->second);
-    }
 
     return true;
 }

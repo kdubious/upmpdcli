@@ -40,7 +40,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Time:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Time");
 
 OHTime::OHTime(UpMpd *dev)
-    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev)
+    : OHService(sTpProduct, sIdProduct, dev)
 {
     dev->addActionMapping(this, "Time", bind(&OHTime::ohtime, this, _1, _2));
 }
@@ -68,30 +68,6 @@ bool OHTime::makestate(unordered_map<string, string> &st)
 {
     st.clear();
     getdata(st["TrackCount"], st["Duration"], st["Seconds"]);
-    return true;
-}
-
-bool OHTime::getEventData(bool all, std::vector<std::string>& names, 
-                          std::vector<std::string>& values)
-{
-    //LOGDEB("OHTime::getEventData" << endl);
-
-    unordered_map<string, string> state;
-    makestate(state);
-
-    unordered_map<string, string> changed;
-    if (all) {
-        changed = state;
-    } else {
-        changed = diffmaps(m_state, state);
-    }
-    m_state = state;
-
-    for (auto it = changed.begin(); it != changed.end(); it++) {
-        names.push_back(it->first);
-        values.push_back(it->second);
-    }
-
     return true;
 }
 

@@ -42,7 +42,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Volume:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Volume");
 
 OHVolume::OHVolume(UpMpd *dev)
-    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev)
+    : OHService(sTpProduct, sIdProduct, dev)
 {
     dev->addActionMapping(this,"Characteristics", 
                           bind(&OHVolume::characteristics, this, _1, _2));
@@ -78,28 +78,6 @@ bool OHVolume::makestate(unordered_map<string, string> &st)
     int volume = m_dev->m_rdctl->getvolume_i();
     st["Volume"] = SoapHelp::i2s(volume);
     st["Mute"] = volume == 0 ? "1" : "0";
-    return true;
-}
-
-bool OHVolume::getEventData(bool all, std::vector<std::string>& names, 
-                            std::vector<std::string>& values)
-{
-    //LOGDEB("OHVolume::getEventData" << endl);
-
-    unordered_map<string, string> state, changed;
-    makestate(state);
-    if (all) {
-        changed = state;
-    } else {
-        changed = diffmaps(m_state, state);
-    }
-    m_state = state;
-
-    for (auto it = changed.begin(); it != changed.end(); it++) {
-        names.push_back(it->first);
-        values.push_back(it->second);
-    }
-
     return true;
 }
 

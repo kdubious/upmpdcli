@@ -24,32 +24,30 @@
 #include "libupnpp/device/device.hxx"   // for UpnpService
 #include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
-class UpMpd;
+#include "ohservice.hxx"
 
 using namespace UPnPP;
 
-class OHInfo : public UPnPProvider::UpnpService {
+class OHInfo : public OHService {
 public:
     OHInfo(UpMpd *dev);
 
-    virtual bool getEventData(bool all, std::vector<std::string>& names, 
-                              std::vector<std::string>& values);
     void setMetatext(const std::string& metatext);
+
+protected:
+    virtual bool makestate(std::unordered_map<std::string, std::string>& state);
+
 private:
     int counters(const SoapIncoming& sc, SoapOutgoing& data);
     int track(const SoapIncoming& sc, SoapOutgoing& data);
     int details(const SoapIncoming& sc, SoapOutgoing& data);
     int metatext(const SoapIncoming& sc, SoapOutgoing& data);
 
-    bool makestate(std::unordered_map<std::string, std::string>& state);
     void urimetadata(std::string& uri, std::string& metadata);
     void makedetails(std::string &duration, std::string& bitrate,
                      std::string& bitdepth, std::string& samplerate);
 
-    // State variable storage
-    std::unordered_map<std::string, std::string> m_state;
     std::string m_metatext;
-    UpMpd *m_dev;
 };
 
 #endif /* _OHINFO_H_X_INCLUDED_ */

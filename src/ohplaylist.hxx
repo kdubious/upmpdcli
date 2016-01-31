@@ -23,18 +23,16 @@
 
 #include "libupnpp/device/device.hxx"   // for UpnpService
 #include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
-#include "mpdcli.hxx"
 
-class UpMpd;
+#include "mpdcli.hxx"
+#include "ohservice.hxx"
 
 using namespace UPnPP;
 
-class OHPlaylist : public UPnPProvider::UpnpService {
+class OHPlaylist : public OHService {
 public:
     OHPlaylist(UpMpd *dev, unsigned int cachesavesleep);
 
-    virtual bool getEventData(bool all, std::vector<std::string>& names, 
-                              std::vector<std::string>& values);
     bool cacheFind(const std::string& uri, std:: string& meta);
 
     // Internal non-soap versions of some of the interface for use by
@@ -50,7 +48,9 @@ public:
 
     // Source active ?
     void setActive(bool onoff);
-    
+
+protected:
+    virtual bool makestate(std::unordered_map<std::string, std::string> &st);
 private:
     int play(const SoapIncoming& sc, SoapOutgoing& data);
     int pause(const SoapIncoming& sc, SoapOutgoing& data);
@@ -78,12 +78,7 @@ private:
     int protocolInfo(const SoapIncoming& sc, SoapOutgoing& data);
 
     bool makeIdArray(std::string&);
-    bool makestate(std::unordered_map<std::string, std::string> &st);
     void maybeWakeUp(bool ok);
-
-    // State variable storage
-    std::unordered_map<std::string, std::string> m_state;
-    UpMpd *m_dev;
 
     bool m_active;
     MpdState m_mpdsavedstate;

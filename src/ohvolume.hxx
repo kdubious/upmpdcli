@@ -24,18 +24,13 @@
 #include "libupnpp/device/device.hxx"   // for UpnpService
 #include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
-class UpMpd;
-class UpMpdRenderCtl;
+#include "ohservice.hxx"
 
-using namespace UPnPP;
-
-class OHVolume : public UPnPProvider::UpnpService {
+class OHVolume : public OHService {
 public:
     OHVolume(UpMpd *dev);
 
-    virtual bool getEventData(bool all, std::vector<std::string>& names, 
-                              std::vector<std::string>& values);
-private:
+protected:
     int characteristics(const SoapIncoming& sc, SoapOutgoing& data);
     int setVolume(const SoapIncoming& sc, SoapOutgoing& data);
     int volume(const SoapIncoming& sc, SoapOutgoing& data);
@@ -45,10 +40,7 @@ private:
     int mute(const SoapIncoming& sc, SoapOutgoing& data);
     int setMute(const SoapIncoming& sc, SoapOutgoing& data);
 
-    bool makestate(std::unordered_map<std::string, std::string> &st);
-    // State variable storage
-    std::unordered_map<std::string, std::string> m_state;
-    UpMpd *m_dev;
+    virtual bool makestate(std::unordered_map<std::string, std::string> &st);
 };
 
 #endif /* _OHVOLUME_H_X_INCLUDED_ */

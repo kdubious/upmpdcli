@@ -24,12 +24,13 @@
 #include "libupnpp/device/device.hxx"
 #include "libupnpp/soaphelp.hxx"
 #include "mpdcli.hxx"
+#include "ohservice.hxx"
 
 class UpMpd;
 
 using namespace UPnPP;
 
-class OHRadio : public UPnPProvider::UpnpService {
+class OHRadio : public OHService {
 public:
     OHRadio(UpMpd *dev);
 
@@ -37,13 +38,14 @@ public:
     // stream uri fetching script. This is checked during construction.
     bool ok() {return m_ok;}
     
-    virtual bool getEventData(bool all, std::vector<std::string>& names,
-                              std::vector<std::string>& values);
     int iStop();
 
     // Source active ?
     void setActive(bool onoff);
 
+protected:
+    bool makestate(std::unordered_map<std::string, std::string>& st);
+    
 private:
     int channel(const SoapIncoming& sc, SoapOutgoing& data);
     int channelsMax(const SoapIncoming& sc, SoapOutgoing& data);
@@ -66,12 +68,8 @@ private:
     bool readRadios();
     int setPlaying();
     bool makeIdArray(std::string&);
-    bool makestate(std::unordered_map<std::string, std::string>& st);
     void maybeWakeUp(bool ok);
 
-    // State variable storage
-    std::unordered_map<std::string, std::string> m_state;
-    UpMpd *m_dev;
     bool m_active;
     // Current channel id set by setId
     unsigned int m_id; 

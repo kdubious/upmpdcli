@@ -25,6 +25,7 @@
 #include "libupnpp/device/device.hxx"   // for UpnpService
 #include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
+#include "ohservice.hxx"
 #include "execmd.h"
 
 using namespace UPnPP;
@@ -40,12 +41,9 @@ struct OHReceiverParams {
     OHReceiverParams() : pm(OHRP_MPD), httpport(8768) {}
 };
 
-class OHReceiver : public UPnPProvider::UpnpService {
+class OHReceiver : public OHService {
 public:
     OHReceiver(UpMpd *dev, const OHReceiverParams& parms);
-
-    virtual bool getEventData(bool all, std::vector<std::string>& names, 
-                              std::vector<std::string>& values);
 
     bool iStop();
     bool iPlay();
@@ -56,7 +54,9 @@ public:
     void setActive(bool onoff) {
         m_active = onoff;
     }
-    
+
+protected:
+    virtual bool makestate(std::unordered_map<std::string, std::string> &st);
 private:
     int play(const SoapIncoming& sc, SoapOutgoing& data);
     int stop(const SoapIncoming& sc, SoapOutgoing& data);
@@ -65,16 +65,12 @@ private:
     int protocolInfo(const SoapIncoming& sc, SoapOutgoing& data);
     int transportState(const SoapIncoming& sc, SoapOutgoing& data);
 
-    bool makestate(std::unordered_map<std::string, std::string> &st);
     void maybeWakeUp(bool ok);
 
-    // State variable storage (previous state)
-    std::unordered_map<std::string, std::string> m_state;
     // Current
     std::string m_uri;
     std::string m_metadata;
 
-    UpMpd *m_dev;
     bool   m_active;
     std::shared_ptr<ExecCmd> m_cmd;
     int m_httpport;

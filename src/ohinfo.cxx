@@ -40,7 +40,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Info:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Info");
 
 OHInfo::OHInfo(UpMpd *dev)
-    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev)
+    : OHService(sTpProduct, sIdProduct, dev)
 {
     dev->addActionMapping(this, "Counters", 
                           bind(&OHInfo::counters, this, _1, _2));
@@ -102,28 +102,6 @@ bool OHInfo::makestate(unordered_map<string, string> &st)
     st["Lossless"] = "0";
     st["CodecName"] = "";
     st["Metatext"] = m_metatext;
-    return true;
-}
-
-bool OHInfo::getEventData(bool all, std::vector<std::string>& names, 
-                             std::vector<std::string>& values)
-{
-    //LOGDEB("OHInfo::getEventData" << endl);
-
-    unordered_map<string, string> state, changed;
-    makestate(state);
-    if (all) {
-        changed = state;
-    } else {
-        changed = diffmaps(m_state, state);
-    }
-    m_state = state;
-
-    for (auto it = changed.begin(); it != changed.end(); it++) {
-        names.push_back(it->first);
-        values.push_back(it->second);
-    }
-
     return true;
 }
 

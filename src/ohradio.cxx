@@ -58,7 +58,7 @@ struct RadioMeta {
 static vector<RadioMeta> o_radios;
 
 OHRadio::OHRadio(UpMpd *dev)
-    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), m_active(false),
+    : OHService(sTpProduct, sIdProduct, dev), m_active(false),
       m_id(0), m_songid(0), m_ok(false)
 {
     // Need Python
@@ -191,31 +191,6 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
     st["ProtocolInfo"] = g_protocolInfo;
     st["TransportState"] =  mpdstatusToTransportState(mpds.state);
     st["Uri"] = mpds.currentsong.uri;
-    return true;
-}
-
-bool OHRadio::getEventData(bool all, std::vector<std::string>& names,
-                           std::vector<std::string>& values)
-{
-    //LOGDEB("OHRadio::getEventData" << endl);
-
-    unordered_map<string, string> state;
-
-    makestate(state);
-
-    unordered_map<string, string> changed;
-    if (all) {
-        changed = state;
-    } else {
-        changed = diffmaps(m_state, state);
-    }
-    m_state = state;
-
-    for (auto it = changed.begin(); it != changed.end(); it++) {
-        names.push_back(it->first);
-        values.push_back(it->second);
-    }
-
     return true;
 }
 

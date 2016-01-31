@@ -23,18 +23,22 @@
 #include "libupnpp/device/device.hxx"   // for UpnpService
 #include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
+#include "ohservice.hxx"
+
 class UpMpd;
 using namespace UPnPP;
 
-class OHProduct : public UPnPProvider::UpnpService {
+class OHProduct : public OHService {
 public:
     OHProduct(UpMpd *dev, const std::string& friendlyname);
     virtual ~OHProduct();
     
-    virtual bool getEventData(bool all, std::vector<std::string>& names, 
-                              std::vector<std::string>& values);
     int iSetSourceIndex(int index);
     int iSetSourceIndexByName(const std::string& nm);
+
+protected:
+    virtual bool makestate(std::unordered_map<std::string, std::string> &st);
+
 private:
     int manufacturer(const SoapIncoming& sc, SoapOutgoing& data);
     int model(const SoapIncoming& sc, SoapOutgoing& data);
@@ -51,10 +55,7 @@ private:
     int sourceXMLChangeCount(const SoapIncoming& sc, SoapOutgoing& data);
 
     int iSrcNameToIndex(const std::string& nm);
-    bool makestate(std::unordered_map<std::string, std::string> &st);
     
-    std::unordered_map<std::string, std::string> m_state;
-    UpMpd *m_dev;
     std::string m_roomOrName;
     int m_sourceIndex;
     bool m_standby;

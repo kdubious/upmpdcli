@@ -46,7 +46,7 @@ static const string sIdProduct("urn:av-openhome-org:serviceId:Playlist");
 
 // Playlist is the default oh service, so it's active when starting up
 OHPlaylist::OHPlaylist(UpMpd *dev, unsigned int cssleep)
-    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev),
+    : OHService(sTpProduct, sIdProduct, dev),
       m_active(true), m_cachedirty(false), m_mpdqvers(-1)
 {
     dev->addActionMapping(this, "Play", 
@@ -254,31 +254,6 @@ void OHPlaylist::refreshState()
     m_mpdqvers = -1;
     unordered_map<string, string> st;
     makestate(st);
-}
-
-bool OHPlaylist::getEventData(bool all, std::vector<std::string>& names, 
-                              std::vector<std::string>& values)
-{
-    //LOGDEB("OHPlaylist::getEventData" << endl);
-
-    unordered_map<string, string> state;
-
-    makestate(state);
-
-    unordered_map<string, string> changed;
-    if (all) {
-        changed = state;
-    } else {
-        changed = diffmaps(m_state, state);
-    }
-    m_state = state;
-
-    for (auto it = changed.begin(); it != changed.end(); it++) {
-        names.push_back(it->first);
-        values.push_back(it->second);
-    }
-
-    return true;
 }
 
 void OHPlaylist::maybeWakeUp(bool ok)

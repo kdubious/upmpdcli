@@ -43,7 +43,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Receiver:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Receiver");
 
 OHReceiver::OHReceiver(UpMpd *dev, const OHReceiverParams& parms)
-    : UpnpService(sTpProduct, sIdProduct, dev), m_dev(dev), m_active(false),
+    : OHService(sTpProduct, sIdProduct, dev), m_active(false),
       m_httpport(parms.httpport), m_sc2mpdpath(parms.sc2mpdpath), m_pm(parms.pm)
 {
     dev->addActionMapping(this, "Play", 
@@ -99,33 +99,6 @@ bool OHReceiver::makestate(unordered_map<string, string> &st)
     else 
         st["TransportState"] = "Stopped";
     st["ProtocolInfo"] = o_protocolinfo;
-    return true;
-}
-
-bool OHReceiver::getEventData(bool all, std::vector<std::string>& names, 
-                              std::vector<std::string>& values)
-{
-    //LOGDEB("OHReceiver::getEventData" << endl);
-    
-    unordered_map<string, string> state;
-
-    makestate(state);
-
-    unordered_map<string, string> changed;
-    if (all) {
-        changed = state;
-    } else {
-        changed = diffmaps(m_state, state);
-    }
-    m_state = state;
-
-    for (auto it = changed.begin(); it != changed.end(); it++) {
-        //LOGDEB("OHReceiver::getEventData: changed: " << it->first <<
-        // " = " << it->second << endl);
-        names.push_back(it->first);
-        values.push_back(it->second);
-    }
-
     return true;
 }
 

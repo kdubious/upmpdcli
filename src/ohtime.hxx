@@ -24,24 +24,23 @@
 #include "libupnpp/device/device.hxx"   // for UpnpService
 #include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
 
+#include "ohservice.hxx"
 class UpMpd;
 
 using namespace UPnPP;
 
-class OHTime : public UPnPProvider::UpnpService {
+class OHTime : public OHService {
 public:
     OHTime(UpMpd *dev);
 
-    virtual bool getEventData(bool all, std::vector<std::string>& names, 
-                              std::vector<std::string>& values);
+protected:
+    virtual bool makestate(std::unordered_map<std::string, std::string> &st);
+
 private:
     int ohtime(const SoapIncoming& sc, SoapOutgoing& data);
 
-    void getdata(std::string& trackcount, std::string &duration, std::string& seconds);
-    bool makestate(std::unordered_map<std::string, std::string> &st);
-    // State variable storage
-    std::unordered_map<std::string, std::string> m_state;
-    UpMpd *m_dev;
+    void getdata(std::string& trackcount, std::string &duration,
+                 std::string& seconds);
 };
 
 #endif /* _OHTIME_H_X_INCLUDED_ */
