@@ -20,6 +20,7 @@ upmpdcli_SOURCES = \
      src/execmd.h \
      src/httpfs.cxx \
      src/httpfs.hxx \
+     src/main.cxx \
      src/mpdcli.cxx \
      src/mpdcli.hxx \
      src/netcon.cpp \
@@ -36,6 +37,7 @@ upmpdcli_SOURCES = \
      src/ohradio.hxx \
      src/ohreceiver.cxx \
      src/ohreceiver.hxx \
+     src/ohservice.hxx \
      src/ohsndrcv.cxx \
      src/ohsndrcv.hxx \
      src/ohtime.cxx \
