@@ -84,10 +84,10 @@ OHProduct::OHProduct(UpMpd *dev, const string& friendlyname)
                 o_sources.push_back(pair<string,string>("Radio",
                                                         "SenderReceiverRD"));
             }
+            listScripts(o_sources);
         }
     }
 
-    listScripts(o_sources);
 
     for (auto it = o_sources.begin(); it != o_sources.end(); it++) {
         string visible = it->first.compare("Receiver") ? "1" : "0";
