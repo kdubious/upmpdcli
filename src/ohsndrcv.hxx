@@ -48,13 +48,16 @@ public:
     SenderReceiver(UpMpd *dev, const std::string& senderstarterpath,
                    int mpdport);
     ~SenderReceiver();
-    bool start(bool useradio, int seekms);
+
+    // script can be empty when using an internal source (radio or
+    // playlist) or be a path to an external script for an extern
+    // analog source
+    bool start(const std::string& script, int seekms = 0);
     bool stop();
 
     class Internal;
 private:
     Internal *m;
 };
-
 
 #endif /* _OHSNDRCV_H_X_INCLUDED_ */

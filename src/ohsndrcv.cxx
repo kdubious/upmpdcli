@@ -25,17 +25,25 @@
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
 #include "ohreceiver.hxx"
-#include "ohplaylist.hxx"
 
 using namespace std;
 using namespace std::placeholders;
 using namespace UPnPP;
 
+#ifndef deleteZ
+#define deleteZ(X) {delete (X); X = 0;}
+#endif
+
 class SenderReceiver::Internal {
 public:
+    // isender is the process we use for internal sources:
+    //   internal source -> local mpd -> fifo -> isender->Songcast
+    // ssender is an arbitrary script probably reading from an audio
+    // driver input and managing a sender. Our local source or mpd are
+    // uninvolved
     Internal(UpMpd *dv, const string& starterpath, int port)
-        : dev(dv), mpd(0), origmpd(0), sender(0), makesendercmd(starterpath),
-          mpdport(port) {
+        : dev(dv), mpd(0), origmpd(0), isender(0), ssender(0),
+          makeisendercmd(starterpath), mpdport(port) {
     }
     ~Internal() {
         clear();
@@ -44,25 +52,22 @@ public:
         if (dev && origmpd) {
             dev->m_mpdcli = origmpd;
             origmpd = 0;
-            if (dev->m_ohrcv) {
-                dev->m_ohrcv->iStop();
-            }
-            if (dev->m_ohpl) {
-                dev->m_ohpl->refreshState();
-            }
         }
-        delete mpd;
-        mpd = 0;
-        delete sender;
-        sender = 0;
+        if (dev && dev->m_ohrcv) {
+            dev->m_ohrcv->iStop();
+        }
+        deleteZ(mpd);
+        deleteZ(isender);
+        deleteZ(ssender);
     }
     UpMpd *dev;
     MPDCli *mpd;
     MPDCli *origmpd;
-    ExecCmd *sender;
-    string uri;
-    string meta;
-    string makesendercmd;
+    ExecCmd *isender;
+    ExecCmd *ssender;
+    string iuri;
+    string imeta;
+    string makeisendercmd;
     int mpdport;
 };
 
@@ -88,30 +93,52 @@ static bool copyMpd(MPDCli *src, MPDCli *dest, int seekms)
     return src->saveState(st, seekms) && dest->restoreState(st);
 }
 
-bool SenderReceiver::start(bool useradio, int seekms)
+// If script is empty, we are using an internal source and aux mpd +
+// script. Which we reuse across start/stop/start.
+// If script is non-empty, it's an external source, and we restart it
+// each time.
+bool SenderReceiver::start(const string& script, int seekms)
 {
-    LOGDEB("SenderReceiver::start. seekms " << seekms << endl);
+    LOGDEB("SenderReceiver::start. script [" << script <<
+           "] seekms " << seekms << endl);
     
-    if (!m->dev || !m->dev->m_ohpl) {
-        LOGERR("SenderReceiver::start: no dev or ohpl??\n");
+    if (!m->dev || !m->dev->m_mpdcli || !m->dev->m_ohrcv) {
+        LOGERR("SenderReceiver::start: no dev or absent service??\n");
         return false;
     }
     
     // Stop MPD Play (normally already done)
     m->dev->m_mpdcli->stop();
 
-    if (!m->sender) {
-        // First time: Start fifo MPD and Sender
-        m->sender = new ExecCmd();
+    // sndcmd will non empty if we actually started a script instead
+    // of reusing an old one (then need to read the initial data).
+    ExecCmd *sndcmd = 0;
+    if (script.empty() && !m->isender) {
+        // Internal source, first time: Start fifo MPD and Sender
+        m->isender = sndcmd = new ExecCmd();
         vector<string> args;
         args.push_back("-p");
         args.push_back(SoapHelp::i2s(m->mpdport));
         args.push_back("-f");
         args.push_back(m->dev->m_friendlyname);
-        m->sender->startExec(m->makesendercmd, args, false, true);
+        m->isender->startExec(m->makeisendercmd, args, false, true);
+    } else if (!script.empty()) {
+        // External source. ssender should already be zero, we delete
+        // it just in case
+        deleteZ(m->ssender);
+        m->ssender = sndcmd = new ExecCmd();
+        vector<string> args;
+        args.push_back("-f");
+        args.push_back(m->dev->m_friendlyname);
+        m->ssender->startExec(script, args, false, true);
+    }
 
+    string meta, uri;
+    if (sndcmd) {
+        // Just started internal or external sender script, need to read the
+        // details
         string output;
-        if (m->sender->getline(output) <= 0) {
+        if (sndcmd->getline(output) <= 0) {
             LOGERR("SenderReceiver::start: makesender command failed\n");
             m->clear();
             return false;
@@ -119,6 +146,7 @@ bool SenderReceiver::start(bool useradio, int seekms)
         LOGDEB("SenderReceiver::start got [" << output << "] from script\n");
 
         // Output is like [Ok mpdport URI base64-encoded-uri METADATA b64-meta]
+        // mpdport is bogus, but present, for ext scripts
         vector<string> toks;
         stringToTokens(output, toks);
         if (toks.size() != 6 || toks[0].compare("Ok")) {
@@ -127,10 +155,20 @@ bool SenderReceiver::start(bool useradio, int seekms)
             m->clear();
             return false;
         }
-        m->uri = base64_decode(toks[3]);
-        m->meta = base64_decode(toks[5]);
-
-        // Connect to the new MPD
+        uri = base64_decode(toks[3]);
+        meta = base64_decode(toks[5]);
+        if (script.empty()) {
+            m->iuri = uri;
+            m->imeta = meta;
+        }
+    } else {
+        // Reusing internal source
+        uri = m->iuri;
+        meta = m->imeta;
+    }
+    
+    if (sndcmd && script.empty()) {
+        // Just started the internal source script, connect to the new MPD
         m->mpd = new MPDCli("localhost", m->mpdport);
         if (!m->mpd || !m->mpd->ok()) {
             LOGERR("SenderReceiver::start: can't connect to new MPD\n");
@@ -140,16 +178,20 @@ bool SenderReceiver::start(bool useradio, int seekms)
     }
     
     // Start our receiver
-    if (!m->dev->m_ohrcv->iSetSender(m->uri, m->meta) ||
+    if (!m->dev->m_ohrcv->iSetSender(uri, meta) ||
         !m->dev->m_ohrcv->iPlay()) {
         m->clear();
         return false;
     }
 
-    // Copy mpd state 
-    copyMpd(m->dev->m_mpdcli, m->mpd, seekms);
-    m->origmpd = m->dev->m_mpdcli;
-    m->dev->m_mpdcli = m->mpd;
+    if (script.empty()) {
+        // Internal source: copy mpd state
+        copyMpd(m->dev->m_mpdcli, m->mpd, seekms);
+        m->origmpd = m->dev->m_mpdcli;
+        m->dev->m_mpdcli = m->mpd;
+    } else {
+        m->origmpd = 0;
+    }
 
     return true;
 }
@@ -157,18 +199,21 @@ bool SenderReceiver::start(bool useradio, int seekms)
 bool SenderReceiver::stop()
 {
     LOGDEB("SenderReceiver::stop()\n");
-    // Do we want to transfer the playlist back ? Probably we do.
-    if (!m->dev || !m->origmpd || !m->mpd || !m->dev->m_ohpl ||
-        !m->dev->m_ohrcv) {
-        LOGERR("SenderReceiver::stop: bad state: dev/origmpd/mpd null\n");
+    if (!m->dev || !m->dev->m_ohrcv) {
+        LOGERR("SenderReceiver::stop: bad state: dev/rcv null\n");
         return false;
     }
-    copyMpd(m->mpd, m->origmpd, -1);
-    m->mpd->stop();
-    m->dev->m_mpdcli = m->origmpd;
-    m->origmpd = 0;
     m->dev->m_ohrcv->iStop();
-    m->dev->m_ohpl->refreshState();
 
+    if (m->origmpd && m->mpd) {
+        // Do we want to transfer the playlist back ? Probably we do.
+        copyMpd(m->mpd, m->origmpd, -1);
+        m->mpd->stop();
+        m->dev->m_mpdcli = m->origmpd;
+        m->origmpd = 0;
+    }
+
+    // We don't reuse external source processes
+    deleteZ(m->ssender);
     return true;
 }

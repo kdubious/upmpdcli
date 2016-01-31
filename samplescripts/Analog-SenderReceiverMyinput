@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+
+# An example script for sending an audio input out to songcast, with
+# appropriate interface to be controlled by upmpdcli
+#
+# This must be named something like the following, and made executable:
+# 
+#     /usr/share/upmpdcli/src_scripts/Analog-SenderReceiverReplaceable
+# 
+# - You can use another directory for scripts by setting the upmpdcli
+#   configuration variable "ohsrc_scripts_dir"
+#
+# - 'Analog' may be replaced by 'Digital' or 'Hdmi' if you so fancy.
+# - 'SenderReceiver' is the mandatory beginning of the part after the dash.
+# - 'Replaceable' can be whatever you want.
+
+# Capture device. Use arecord -L to list possible values.
+# The following are values I use to test on my system and entirely
+# dependant on my config, there is no reason they should work for you
+#device = '''default:CARD=U0x46d0x825'''
+#device = '''default:CARD=PCH'''
+device = '''default:CARD=Device'''
+
+import time
+import subprocess
+import os
+import sys
+import uuid
+import getopt
+import signal
+import socket
+
+def usage(f):
+    print("Usage: %s [-h] [-f friendlyname]" % sys.argv[0], file=f)
+    sys.exit(1)
+
+# Songcast Sender program. This reads from stdin and sends to
+# Songcast. It comes with the sc2mpd package (see the upmpdcli web
+# site)
+uxsender = "mpd2sc"
+
+# Upmpdcli friendly-name, actual value comes as a parameter. Used to
+# compute a Uuid in conjunction with the node name and script name
+upmpdcli_fname = "UpMpd"
+
+args = sys.argv[1:]
+opts, args = getopt.getopt(args, "hup:f:")
+for opt, arg in opts:
+    if opt in ['-h']:
+        usage(sys.stdout)
+    elif opt in ['-f']:
+        upmpdcli_fname = arg
+    else:
+        print("unknown option %s\n"%opt, file=sys.stderr)
+        usage(sys.stderr)
+
+# UDN and name for the Sender UPnP device. We use a hash of the
+# friendly name and host name
+sender_udn = uuid.uuid5(uuid.NAMESPACE_DNS,
+                        socket.gethostname() + upmpdcli_fname + sys.argv[0]).urn
+sender_name = "%s UxSender" % upmpdcli_fname
+
+recordproc = None
+senderproc = None
+
+def cleanup(xval):
+    # Clean up
+    try:
+        recordproc.terminate()
+    except:
+        pass
+    try:
+        senderproc.terminate()
+    except:
+        pass
+    sys.exit(xval)
+
+def sighandler(signum, frame):
+    cleanup(1)
+
+signal.signal(signal.SIGINT, sighandler)
+signal.signal(signal.SIGTERM, sighandler)
+
+# -f S16_LE -c 2 -r 44100
+try:
+    recordproc = subprocess.Popen(('arecord', '-D', device,
+                                   '-f', 'cd', '-t', 'raw', '-'),
+                                  stdout=subprocess.PIPE)
+except Exception as err:
+    print("Can't start arecord: %s" % (err), file=sys.stderr)
+    cleanup(1)
+
+# Start the Sender
+try:
+    senderproc = subprocess.Popen([uxsender, "-f", "stdin",
+                                   "-A", "44100:16:2:1",
+                                   "-u", sender_udn, "-n", sender_name],
+                                  stdin=recordproc.stdout,
+                                  stdout=subprocess.PIPE,
+                                  bufsize = -1)
+except Exception as err:
+    print("Can't start %s: %s"%(uxsender, err), file=sys.stderr)
+    cleanup(1)
+
+# Get the Uri and Metadata values from the sender. These get written to stdout
+urimeta = senderproc.stdout.readline()
+
+
+# Tell the world we're set. upmpdcli expects this format exactly 
+print("Ok %d %s" % (0, urimeta))
+sys.stdout.flush()
+
+# Wait process. 
+while True:
+    if recordproc.poll() is not None or senderproc.poll() is not None:
+        break
+    time.sleep(0.5)
+
+time.sleep(1)
+cleanup(0)
+
