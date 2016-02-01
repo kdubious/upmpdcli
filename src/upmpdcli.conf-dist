@@ -59,6 +59,11 @@ ohmetapersist = 1
 # #!/bin/sh (or whatever) in the headline.
 # onstart =
 
+# Run a command when playback is about to begin. Specify the full path to the
+# program, e.g. /usr/bin/logger. Executable scripts work, but must have a
+# #!/bin/sh (or whatever) in the headline.
+# onplay =
+
 # Run a command when playback is about to end. Specify the full path to the
 # program, e.g. /usr/bin/logger. Executable scripts work, but must have a
 # #!/bin/sh (or whatever) in the headline.

@@ -220,6 +220,7 @@ int main(int argc, char *argv[])
 
     string cachedir;
     string onstart;
+    string onplay;
     string onstop;
     string onvolumechange;
     if (!g_configfilename.empty()) {
@@ -258,6 +259,7 @@ int main(int argc, char *argv[])
         g_config->get("presentationhtml", presentationhtml);
         g_config->get("cachedir", cachedir);
         g_config->get("onstart", onstart);
+        g_config->get("onplay", onplay);
         g_config->get("onstop", onstop);
         g_config->get("onvolumechange", onvolumechange);
         if (!(op_flags & OPT_i)) {
@@ -420,8 +422,8 @@ int main(int argc, char *argv[])
     MPDCli *mpdclip = 0;
     int mpdretrysecs = 2;
     for (;;) {
-        mpdclip = new MPDCli(mpdhost, mpdport, mpdpassword, onstart, onstop,
-                             onvolumechange);
+        mpdclip = new MPDCli(mpdhost, mpdport, mpdpassword, onstart, onplay,
+                             onstop, onvolumechange);
         if (mpdclip == 0) {
             LOGFAT("Can't allocate MPD client object" << endl);
             return 1;

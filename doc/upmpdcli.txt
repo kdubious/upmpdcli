@@ -59,8 +59,15 @@ The following parameters can be set:
 note>>|||iconpath
 |Path to HTML file to be used as presentation
 page. <<upmpdcli.presentationnote,See note>>|||presentationhtml
-|Run a command (or shell script) when playback is about to begin.|||onstart
-|Run a command (or shell script) when playback is about to end.|||onstop
+|Run a command (or shell script) when a play action is performed. The difference
+  to onplay is that onstart is called *before* playback is about to begin.|||
+  onstart
+|Run a command (or shell script) when MPD playback is about to begin. Note that
+  onstart is also called if MPD is controlled from another tool, e.g. by mpc.|||
+  onplay
+|Run a command (or shell script) when MPD playback is about to end. Note that
+  onstart is also called if MPD is controlled from another tool, e.g. by mpc.|||
+  onstop
 |Run a command (or shell script) when volume is changed.|||onvolumechange
 |===========================    
 
