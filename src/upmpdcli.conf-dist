@@ -46,13 +46,20 @@
 # The default is 'yes' as OpenHome queuing is superior for most usages.
 openhome = 1
 
-# Save queue metadata to disk to allow persistence across restart, like MPD.
+# Save queue metadata to disk to allow persistence across restart, like
+# MPD.
 ohmetapersist = 1
 
 # Directory used to store cached data (only the queue metadata for now). 
 # Default is ~/.cache/upmpdcli for normal users or /var/cache/upmpdcli when
 # started as root
 # cachedir = /var/lib/upmpdcli
+
+# Mimimum interval (Seconds) between 2 saves of the cache. Setting this may
+# improve playlist load speed on a slow device. The default is to start a
+# new save as soon as the previous one is done (if the list changed again
+# inbetween).
+# ohmetasleep = 0
 
 # Run a command when playback is about to begin. Specify the full path to the
 # program, e.g. /usr/bin/logger. Executable scripts work, but must have a
@@ -76,58 +83,37 @@ ohmetapersist = 1
 # <command> 85.
 # onvolumechange =
 
-### Parameters for the OpenHome service
-
+### Parameters for the OpenHome Product service
 # Manufacturer name. Does not vary at run-time.
 #ohmanufacturername = UpMPDCli heavy industries Co.
-
 # Manufacturer information. Does not vary at run-time.
 #ohmanufacturerinfo = Such nice guys and gals
-
 # URL for manufacturer web site. Does not vary at run-time.
 #ohmanufacturerurl = http://www.lesbonscomptes.com/upmpdcli
-
 # Uri for manufacturer’s logo. Does not vary at run-time.
 #ohmanufacturerimageuri =
-
 # Model name. Does not vary at run-time.
 #ohmodelname = UpMPDCli UPnP-MPD gateway
-
 # Model information. Does not vary at run-time.
 #ohmodelinfo =
-
 # URL for model web site. Does not vary at run-time.
 #ohmodelurl = http://www.lesbonscomptes.com/upmpdcli
-
 # Uri for model’s icon. Does not vary at run-time.
 #ohmodelimageuri =
-
 # User-visible product name. By default this is set to ModelName.
-# Note that the UPnP friendly name is derived by combining this with Room name
-# in the form Room : Name
 #ohproductname = Upmpdcli
-
 # The name of the room where the Product is located. Set to “Main Room” by
 # default.
 # ProductRoom is used to group the Product with other related Products in the
 # same physical room (e.g. a source with a pre-amp). Products which are
 # physically linked must always share the same ProductRoom name.
 #ohproductroom = Main Room
-
 # Product information. Does not vary at run-time.
 #ohproductinfo =
-
 # URL for product web site. This may be the UPnP presentation page.
 #ohproducturl =
-
 # Uri for product image. Does not vary at run-time.
 #ohproductimageuri =
-
-# Mimimum interval (Seconds) between 2 saves of the cache. Setting this may
-# improve playlist load speed on a slow device. The default is to start a
-# new save as soon as the previous one is done (if the list changed again
-# inbetween).
-# ohmetasleep = 0
 
 ### Parameters for the Songcast modes. These are read by either/both the
 ### songcast and upmpdcli.
@@ -152,35 +138,150 @@ ohmetapersist = 1
 # PATH for the init scripts.
 #sc2mpd = /usr/bin/sc2mpd
 
-## Parameters tor the Sender/Receiver mode 
+## Parameters tor the Sender/Receiver mode. Only does anything if
+## scplaymethod is alsa 
+
 # Path to the script which starts the auxiliary mpd and the sender process
 #scsenderpath = /usr/bin/scmakempdsender
+
 # localhost port to use by the auxiliary mpd
 #scsendermpdport = 6700
 
+# Scripts_dir holds scripts to set up additional external sources. See the
+# documentation. 
+#scripts_dir = /usr/share/upmpdcli/src_scripts
 
-# Initial / default List of radios stolen from radiotray. Edit to taste
+
+# Initial / default List of radios borrowed from misc sources. Edit to taste
 #
 # Maybe this should be XML, but it's not. The section markers are the radio
 # names, and then there are two possible entries:
 #  url (mandatory) points to the radio playlist or stream
 #  artUrl (optional) points to the radio icon
 
+[radio FIP autour du rock]
+url = http://webradiofip1.scdn.arkena.com/webradiofip1.mp3
+artUrl = http://www.fipradio.fr/sites/all/themes/custom/fip/img/logo_fip_header.png
+
+[radio Radio Eins]
+url = http://opml.radiotime.com/Tune.ashx?id=s25111
+artUrl = http://cdn-radiotime-logos.tunein.com/s25111q.png
+
+[radio InfoRadio]
+url = http://opml.radiotime.com/Tune.ashx?id=s9176
+artUrl = http://cdn-radiotime-logos.tunein.com/s9176q.png
+
+[radio Radio Teddy]
+url = http://opml.radiotime.com/Tune.ashx?id=s80044
+artUrl = http://cdn-radiotime-logos.tunein.com/s80044q.png
+
+[radio Deutschlandfunk]
+url = http://opml.radiotime.com/Tune.ashx?id=s55698
+artUrl = http://cdn-radiotime-logos.tunein.com/s42828q.png
+
+[radio Naim Radio]
+url =  http://37.130.228.60:8090/listen.pls
+
+[radio 96.2 | The Revolution (Rock)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s45508
+
+[radio 102.0 | Capital Manchester (Top 40/Pop)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s18587
+
+[radio 97.7 | XFM Manchester (Alternative Rock)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s81256
+
+[radio Linn Radio (Variety)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s122119
+artUrl = http://small.linncdn.com/website/responsive/images/logo-black-chunky.png
+[radio Linn Classical (Classical)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s122116
+artUrl = http://small.linncdn.com/website/responsive/images/logo-black-chunky.png
+
+[radio Linn Jazz (Jazz)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s122120
+artUrl = http://small.linncdn.com/website/responsive/images/logo-black-chunky.png
+
+[radio BBC Radio 1Xtra (Soul and R&B)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s20277
+
+[radio 98.2 | BBC Radio 1 (Top 40/Pop)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s83464
+
+[radio 88.6 | BBC Radio 2 (Adult Contemporary)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s83463
+
+[radio 91.3 | BBC Radio 3 (Classical)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s24941
+
+[radio 93.0 | BBC Radio 4 (National News)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s83461
+
+[radio 198 | BBC Radio 4 LW (Public Radio)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s50577
+
+[radio BBC Radio 4 Extra (Comedy)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s6839
+
+[radio 909 | BBC Radio 5 live (Sports Talk)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s24943
+
+[radio BBC Radio 5 live sports extra (Sports)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s50459
+
+[radio BBC Radio 6 Music (AAA)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s44491
+
+[radio BBC World Service (World News)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s50646
+
+[radio 95.1 | BBC Manchester (Community)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s18214
+
+[radio 1107 | talkSPORT (Sports Talk)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s46580
+
+[radio 100.9 | Classic FM (Classical)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s8439
+
+[radio 103.0 | Key 103 (Top 40/Pop)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s6910
+
+[radio 181.FM Beatles (60's)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s113658
+
+[radio Ministry of Sound Radio (Electronic and Dance)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s2262
+
+[radio 106.1 | Real Radio XS Manchester (Classic Rock)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s91723
+
+[radio 100.4 | Smooth North West (Soul and R&B)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s45501
+
+[radio Radio Caroline (Classic Rock)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s10517
+
+[radio Offshore Radio Sounds (Nostalgia)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s141022
+
+[radio Radio 10 Classic (Oldies)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s130799
+
+[radio 94.4 | Salford City Radio (Local Music)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s67827
+
+[radio 106.9 | Silk 106.9 (Top 40/Pop)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s45584
+
+[radio 97.2 | Wythenshawe FM (Local Music)]
+url =  http://opml.radiotime.com/Tune.ashx?id=s37352
+
 [radio Smooth Jazz]
 url = http://smoothjazz.com/streams/smoothjazz_128.pls
-artUrl =
-
-[radio SKY.fm Piano Jazz]
-url = http://listen.sky.fm/public1/pianojazz.pls
-
-[radio SKY.fm Smooth Jazz]
-url = http://listen.sky.fm/public1/smoothjazz.pls
 
 [radio Sonic Universe]
 url = http://somafm.com/sonicuniverse.pls
-
-[radio Blue FM]
-url = http://bluefm.net/listen.pls
 
 [radio Onda Tropical]
 url = http://yp.shoutcast.com/sbin/tunein-station.pls?id=506392
@@ -188,23 +289,8 @@ url = http://yp.shoutcast.com/sbin/tunein-station.pls?id=506392
 [radio Top Latino Radio]
 url = http://online.radiodifusion.net:8020/listen.pls
 
-[radio Salsa Stream]
-url = http://listen.sky.fm/public3/salsa.pls
-
-[radio Reggaeton 24/7]
-url = http://cc.net2streams.com/tunein.php/reggaeton/playlist.pls
-
-[radio Suave 107]
-url = http://grupomedrano.com.do/suave107/suave107.m3u
-
-[radio 181.FM Classic Hits]
-url = http://sc-rly.181.fm:80/stream/1094
-
 [radio .977 Classic Rock]
 url = http://www.977music.com/tunein/web/classicrock.asx
-
-[radio 80s Sky.FM]
-url = http://listen.sky.fm/public3/the80s.pls
 
 [radio Covers]
 url = http://somafm.com/covers.pls
@@ -221,23 +307,8 @@ url = http://www.ibiblio.org/wcpe/wcpe.pls
 [radio CINEMIX]
 url = http://cinemix.us/cine.asx
 
-[radio SKY.fm Soundtracks]
-url = http://listen.sky.fm/public1/soundtracks.pls
-
-[radio SKY.fm Mostly Classical]
-url = http://listen.sky.fm/public1/classical.pls
-
 [radio Radio Paradise]
 url = http://www.radioparadise.com/musiclinks/rp_128aac.m3u
-
-[radio .977 The Hitz Channel]
-url = http://yp.shoutcast.com/sbin/tunein-station.pls?id=1280356
-
-[radio Enjoy Station]
-url = http://yp.shoutcast.com/sbin/tunein-station.pls?id=1377285
-
-[radio SKY.fm Top Hits]
-url = http://listen.sky.fm/public1/tophits.pls
 
 [radio Indie Pop Rocks!]
 url = http://somafm.com/indiepop.pls
@@ -251,15 +322,6 @@ url = http://lin2.ash.fast-serv.com:9022/listen.pls
 [radio WNAR]
 url = http://live.wnar-am.com:8500/listen.pls
 
-[radio SKY.fm Oldies]
-url = http://listen.sky.fm/public1/oldies.pls
-
-[radio 181.FM]
-url = http://yp.shoutcast.com/sbin/tunein-station.pls?id=1275050
-
-[radio Lounge Radio]
-url = http://yp.shoutcast.com/sbin/tunein-station.pls?id=1288934
-
 [radio Beat Blender]
 url = http://somafm.com/beatblender.pls
 
@@ -272,20 +334,8 @@ url = http://somafm.com/groovesalad.pls
 [radio Illinois Street Lounge]
 url = http://somafm.com/illstreet.pls
 
-[radio SKY.fm Country]
-url = http://listen.sky.fm/public1/country.pls
-
 [radio Boot Liquor]
 url = http://somafm.com/bootliquor.pls
-
-[radio US 181]
-url = mmsh://wms-rly.181.fm/181-us181?MSWMExt=.asf
-
-[radio Real Country]
-url = mmsh://wms-rly.181.fm/181-realcountry?MSWMExt=.asf
-
-[radio Highway 181]
-url = mmsh://wms-rly.181.fm/181-highway?MSWMExt=.asf
 
 [radio Country 108]
 url = http://www.country108.com/listen.pls
@@ -305,11 +355,3 @@ url = http://somafm.com/brfm.pls
 [radio New Dance Radio]
 url = http://jbstream.net/tunein.php/blackoutworm/playlist.asx
 
-[radio Jupiter Broadcast]
-url = http://jblive.fm/
-
-[radio WCRS LPFM Columbus]
-url = http://sh4.audio-stream.com/tunein.php/pleonard/playlist.pls
-
-[radio WBEZ]
-url = http://wbez.ic.llnwd.net/stream/wbez_91_5_fm.pls

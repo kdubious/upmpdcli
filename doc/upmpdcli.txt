@@ -4,6 +4,10 @@
 *upmpdcli* is an UPnP Media Renderer front-end to *MPD*, the Music Player
 Daemon. It supports both pure UPnP and the OpenHome ohMedia services.
 
+In OpenHome mode, it supports radio streams and has the ability to
+interface to Linn Songcast for playing audio captured on Windows or Mac OS
+X or for multiroom playing.
+
 [[upmpdcli.security]]
 == Security
 
@@ -22,99 +26,110 @@ will be run as follows:
 The `-D` option tells *upmpdcli* to fork and run in background. The `-c`
 option specifies a configuration file.
 
-The configuration file has a simple `name = value` format.
-
 The configuration parameters can be set from the command line, a
 configuration file, or the environment in this order of priority. It would
 be rather confusing to use a mix of methods, so you should probably chose
-one. Some less common parameters can only be set in the configuration file.
+one. A majority of parameters can only be set in the configuration file.
 
-All parameters have defaults, and a typical installation needs no
-modification of the configuration file. If several instances of *upmpdcli*
-run on the same network, you will want to give them distinct names
-(_friendlyname_ parameter). The other parameters are only useful in special
-situations.
+The configuration file has a simple `name = value` format.
 
-The following parameters can be set:
+All parameters have defaults, and a typical installation will need no
+customisation at all. If several instances of *upmpdcli* run on the same
+network, you will want to give them distinct names (_friendlyname_
+parameter). The other parameters are only useful in special situations.
+
+The following parameters can be set by several methods. The parameters
+which can only be set in the configuration file are described further down.
 
 |========================
 |What|Command line|Environment|Config variable
 |Configuration file name|-c config|$UPMPD_CONFIG|
 |Host name or IP address where *MPD* runs|-h mpdhost|$UPMPD_HOST|mpdhost
 |TCP port for *MPD*|-p mpdport|$UPMPD_PORT|mpdport
-|*MPD* password|||mpdpassword
-|Do we own the *MPD* queue and fearlessly clear it|-o 0/1||ownqueue
 |UPnP "friendly name" for the device. This gets displayed in network search
   results.|-f friendlyname|$UPMPD_FRIENDLYNAME|friendlyname 
 |Log file name. Leave empty for stderr|-d logfilename||logfilename
 |Verbosity level (0-4)|-l loglevel||loglevel
 |UPnP network interface|-i iface|$UPMPD_UPNPIFACE|upnpiface
-|UPnP IP address (if interface not set)|||upnpip
 |UPnP port|-p port|$UPMPD_UPNPPORT|upnpport
-|UPnP AV support switch|||upnpav
-|OpenHome support switch|-O 0/1||openhome
-|OpenHome playlist disk persistence (default 1)|||ohmetapersist
-|Directory for cached data (/var/cache/upmpdcli or ~/.cache/upmpdcli)|||cachedir
-|Path to icon to be displayed by control point. <<upmpdcli.iconpathnote,See
-note>>|||iconpath
-|Path to HTML file to be used as presentation
-page. <<upmpdcli.presentationnote,See note>>|||presentationhtml
-|Run a command (or shell script) when a play action is performed. The difference
-  to onplay is that onstart is called *before* playback is about to begin.|||
-  onstart
-|Run a command (or shell script) when MPD playback is about to begin. Note that
-  onstart is also called if MPD is controlled from another tool, e.g. by mpc.|||
-  onplay
-|Run a command (or shell script) when MPD playback is about to end. Note that
-  onstart is also called if MPD is controlled from another tool, e.g. by mpc.|||
-  onstop
-|Run a command (or shell script) when volume is changed.|||onvolumechange
 |===========================    
 
-[[upmpdcli.iconpathnote]]
-*iconpath* note: the UPnP protocol has provisions for a renderer to send
-the URL to a descriptive icon as part of the device description. The icon
-to use can be set using the *iconpath* configuration file parameter. Due to
-current (and probably permanent) *upmpdcli* limitations, the image file
-*must* be a 64x64 32 bits-per-pixel png file.
 
-[[upmpdcli.presentationnote]]
-*presentationhtml* note: the file referenced by the path will only be read
-once when *upmpdcli* starts, it can't presently be used for status updates
-(but I guess that you could put a redirect in there, to something more
-dynamic served by a real HTTP server).
+[[upmpdcli.configfile]]
+== Configuration file
 
-[[upmpdcli.openhome]]
-== OpenHome ohMedia services
+In addition of the above, the following variables can be set in the
+configuration file:
 
-The support for ohMedia services (play queue managed by the player instead
-of on the control point) is activated by default as of release 0.8.0, only
-an explicit option will turn it off.
+mpdpassword:: Password for connecting to *MPD* (only necessary if
+password access is enabled in the *MPD* configuration file).
 
-The previous version default was set to _off_ in the software, and _on_ in
-the configuration file. As the configuration file is not usually
-overwritten during an upgrade, if you are upgrading to 0.7.x from an
-earlier version and you want to enable the services, you need to set the
-option in the configuration file.
+ownqueue:: If this is set (on by default), we own the *MPD* queue and will
+fearlessly clear it.
 
-=== OpenHome Radio service
+upnpip:: UPnP IP address to use (if `upnpiface` is not used to select an
+interface).
+
+upnpav:: Activate UPnP AV services. This is set by default, but it may be
+useful to switch it off with some too easily confused OpenHome Control
+Points.
+
+openhome:: Activate OpenHome services. This is set by default and there is
+little reason to turn this off.
+
+ohmetapersist:: OpenHome playlist disk persistence (default 1), no reason
+to turn it off.
+
+cachedir:: Directory for cached data (`/var/cache/upmpdcli` or
+`~/.cache/upmpdcli`).
+
+iconpath:: Path to an icon to be displayed by Control Points which support
+it. The UPnP protocol has provisions for a renderer to send the URL to a
+descriptive icon as part of the device description. The icon to use can be
+set using the *iconpath* configuration file parameter. Due to current (and
+probably permanent) *upmpdcli* limitations, the image file *must* be a
+64x64 32 bits-per-pixel png file.
+
+presentationhtml:: Path to an HTML file to be used as presentation page. The
+file referenced by the path will only be read once when *upmpdcli* starts,
+it can't presently be used for status updates (but I guess that you could
+put a redirect in there, to something more dynamic served by a real HTTP
+server).
+
+onplay:: Command to run when MPD playback is about to begin. Note that
+`onplay` is also called if MPD is controlled from another tool, e.g. by
+`mpc`.
+
+onstart:: Command to run when a play action is performed. The difference to
+`onplay` is that `onstart` is called *before* playback is about to begin.
+
+onstop:: Command to run when MPD playback is about to end. Note that
+`onstop` is also called if MPD is controlled from another tool, e.g. by
+`mpc`.
+
+onvolumechange:: Command to run when sound volume is changed.
+
+
+=== Radio station definitions
 
 Recent Upmpdcli versions (after 0.13) implement an OpenHome Radio service
-which allows selecting and listening to internet radio stations. The
-stations are defined at the end of the configuration file in the following
-way:
+which allows selecting and listening to internet radio stations. 
+
+Radio stations can be defined in the configuration (at the end because of
+the use of section indicators). Example:
 
 ----
-[radio The name of the radio]
-url = http//www.myradio.com/path/to/the/playlist.pls
-artUrl = http//www.myradio.com/path/to/the/icon.png
+[radio Radio Teddy]
+url = http://opml.radiotime.com/Tune.ashx?id=s80044
+artUrl = http://cdn-radiotime-logos.tunein.com/s80044q.png
 ----
 
-`artUrl` is optional. None of the non-radio parameters can be defined after
-the first `[radio ...]` section (they would not be found).
+The section name must begin with `radio`, the rest will be displayed as the
+station name. `url` and `artUrl` designate the playlist or stream, and an
+icon. `artUrl` is optional.
 
-The default config file contains a bunch of radio entries, copied from the
-radiotray app. Replace with your own !
+Radio channels can be accessed by selecting the `Radio` Source from an
+OpenHome Control Point.
 
 
 [[upmpdcli.songcast]]
