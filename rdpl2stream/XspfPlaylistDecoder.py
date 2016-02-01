@@ -18,8 +18,7 @@
 #
 ##########################################################################
 import urllib2
-from lxml import etree
-from lxml import objectify
+import xml.etree.ElementTree as ET
 from StringIO import StringIO
 from lib.common import USER_AGENT
 import logging
@@ -54,16 +53,13 @@ class XspfPlaylistDecoder:
         self.log.info('Playlist downloaded')
         self.log.info('Decoding playlist...')
 
-        parser = etree.XMLParser(recover=True)
-        root = etree.parse(StringIO(str),parser)
+        root = ET.parse(StringIO(str))
 
-        elements = root.xpath("//xspf:track/xspf:location",namespaces={'xspf':'http://xspf.org/ns/0/'})
+        ns = {'xspf':'http://xspf.org/ns/0/'}
+        elements = root.findall(".//xspf:track/xspf:location", ns)
 
         result = []
         for r in elements:
             result.append(r.text)
 
-        if (len(result) > 0):
-            return result
-        else:
-            return None
+        return result

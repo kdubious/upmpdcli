@@ -19,8 +19,6 @@
 ##########################################################################
 import urllib2
 from lib.common import USER_AGENT
-from lxml import etree
-from lxml import objectify
 from StringIO import StringIO
 import logging
 

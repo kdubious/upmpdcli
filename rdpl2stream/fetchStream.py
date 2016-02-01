@@ -34,8 +34,8 @@ urlInfo = decoder.getMediaStreamInfo(sys.argv[1])
 
 while urlInfo is not None and urlInfo.isPlaylist():
     playlist = decoder.getPlaylist(urlInfo)
-    if len(playlist) == 0:
-        logger.error("Received empty stream from station", file=sys.stderr)
+    if playlist is None or len(playlist) == 0:
+        logger.error("Received empty stream from station")
         sys.exit(1)
     stream = playlist.pop(0)
     logger.info('Stream %s' % stream)

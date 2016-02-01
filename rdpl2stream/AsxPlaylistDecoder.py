@@ -19,10 +19,10 @@
 ##########################################################################
 import urllib2
 from lib.common import USER_AGENT
-from lxml import etree
-from lxml import objectify
+import xml.etree.ElementTree as ET
 from StringIO import StringIO
 import logging
+import re
 
 class AsxPlaylistDecoder:
 
@@ -53,28 +53,32 @@ class AsxPlaylistDecoder:
         self.log.info('Playlist downloaded')
         self.log.info('Decoding playlist...')
 
-        parser = etree.XMLParser(recover=True)
-        root = etree.parse(StringIO(str),parser)
-
+        try:
+            root = ET.parse(StringIO(str))
+        except:
+            # Last ditch: try to fix docs with mismatched tag name case
+            str = re.sub('''<([A-Za-z0-9/]+)''', \
+                         lambda m: "<" + m.group(1).lower(),
+                         str)
+            root = ET.parse(StringIO(str))
+            
         #ugly hack to normalize the XML
         for element in root.iter():
 
             tmp = element.tag
             element.tag = tmp.lower()
 
-            for key in element.attrib.iterkeys():
+            keys = element.attrib.keys()
+            for key in keys:
                 element.attrib[key.lower()] = element.attrib[key]
 
+        elts = root.findall(".//ref/[@href]")
 
-        result = root.xpath("//ref/@href")
+        result = []
+        for elt in elts:
+            tmp = elt.attrib['href']
+            if (tmp.endswith("?MSWMExt=.asf")):
+                tmp = tmp.replace("http", "mms")
+            result.append(tmp)
 
-        if (len(result) > 0):
-
-            for i in range(1,len(result)):
-
-                tmp = result[i]
-                if (tmp.endswith("?MSWMExt=.asf")):
-                    result[i] = tmp.replace("http", "mms")
-            return result
-        else:
-            return []
+        return result
