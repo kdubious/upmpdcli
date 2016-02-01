@@ -115,6 +115,9 @@ onvolumechange:: Command to run when sound volume is changed.
 Recent Upmpdcli versions (after 0.13) implement an OpenHome Radio service
 which allows selecting and listening to internet radio stations. 
 
+This facility uses Python 2.x, which must be available on the system for
+the radio links to work.
+
 Radio stations can be defined in the configuration (at the end because of
 the use of section indicators). Example:
 
@@ -136,17 +139,19 @@ OpenHome Control Point.
 == Songcast integration
 
 upmpdcli recent versions support Songcast, only when the sc2mpd extension
-package is installed. See the link:sc2mpd.html[description here].
+package is installed. See the link:sc2mpd.html[description here]. upmpdcli
+can act both as a Receiver (playing audio from, e.g., a Windows system),
+and as a Sender (for distributing synchronized audio to multiple players).
 
-NOTE: You can ignore this if you are not installing the Songcast
-complements, especially the Sender part. If you do install them, you should
-know that it is possible to control the Songcast Sender from another local
-network PC to snoop on what you are listening (Radio or Playlist). This is
-detectable from the Renderer state, but not obvious. In any case, the
-playlist itself is public (there are no privacy provisions in UPnP), so
-this is probably not a major additional issue. The system will not capture
-anything besides what mpd is playing (e.g. Skype phone conversations are
-out of reach).
+NOTE: (You can ignore this if you are not installing the Songcast
+complements, especially the Sender part). If you do install them, you
+should know that it is possible to control the Songcast Sender from another
+local network PC to snoop on what you are listening (Radio or
+Playlist). This is detectable from the Renderer state, but not obvious. In
+any case, the playlist itself is public (there are no privacy provisions in
+UPnP), so this is probably not a major additional issue. The system will
+not capture anything besides what mpd is playing (e.g. Skype phone
+conversations are out of reach).
 
 
 [[upmpdcli.boot]]

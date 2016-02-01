@@ -10,8 +10,8 @@ The link:http://www.linn.co.uk/[Linn] *Songcast* protocol distributes an
 audio stream on a local network so that multiple hosts (_Receivers_) can
 play quasi-synchronously from a single source (_Sender_).
 
-The audio source can be a
-link:http://www.linn.co.uk/software#songcast[Songcast application] 
+The audio source (Sender) can be a
+link:http://www.linn.co.uk/software#songcast[Songcast application]
 installed on a Windows or Mac host. This will allow capturing and
 broadcasting the audio from *any* local application (e.g. Spotify, Kobuz,
 Tidal, Windows Media Player etc.).
@@ -70,10 +70,11 @@ need to take a look at a bit more documentation:
 == Upmpdcli Sender mode
 
 You can set *umpdcli* in _Sender_ mode from an OpenHome-capable Control
-Point, by selecting the Source of type `Playlist`, name `SenderReceiver`.
+Point, by selecting the Source of type `Playlist`, name `SenderReceiverPL`
+(playlist) or `SenderReceiverRD` (radio).
 
 The *sc2mpd* configuration must be set to play directly to Alsa for the
-SenderReceiver source to appear. See the
+`SenderReceiverXX` sources to appear. See the
 link:sc2mpd.html#Configuration[configuration section], and
 link:scmulti.html[the page about synchronisation].
 
@@ -93,6 +94,20 @@ the Songcast _Receiver_. Other _Receivers_ can be connected and will play
 in good synchronization.
 
 image::upmpdcli-sender-receiver.png["Sender/Receiver mode"]
+
+This looks complicated, but in practise, starting the mode and connecting
+other Receivers from the `upplay` control panel is quite easy.
+
+=== Managing external sources
+
+In the `Sender` modes described above, `upmpdcli` (or rather its slave
+MPD process) is the source of the audio stream.
+
+It is also possible to set things up so that an external source (e.g. a
+line in) can be connected to the Songcast Sender, allowing multiroom
+playing of any external source. See the comments in the
+https://github.com/medoc92/upmpdcli/commit/491e4501c3a01f6cca2736ee3a5f135b1b8401fb[sample script in the upmpdcli source tree].
+
 
 [[whatis_songcast]]
 == More Details on Songcast

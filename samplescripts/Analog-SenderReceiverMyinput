@@ -15,7 +15,13 @@ from __future__ import print_function
 # - 'Analog' may be replaced by 'Digital' or 'Hdmi' if you so fancy.
 # - 'SenderReceiver' is the mandatory beginning of the part after the dash.
 # - 'Replaceable' can be whatever you want.
-
+#
+# The Source will appear with type Analog and name SenderReceiverReplaceable
+# in an OpenHome Source select dialog (e.g from upplay).
+#
+# The 'SenderReceiver' string part is a hack for upplay to guess that
+# the Receiver for this upmpdcli instance is active.
+#
 # Capture device. Use arecord -L to list possible values.
 # The following are values I use to test on my system and entirely
 # dependant on my config, there is no reason they should work for you
