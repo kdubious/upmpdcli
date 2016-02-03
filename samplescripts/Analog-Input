@@ -2,32 +2,45 @@
 
 from __future__ import print_function
 
-# An example script for sending an audio input out to songcast, with
-# appropriate interface to be controlled by upmpdcli
+# Reference script for reading an audio input and sending to Songcast,
+# with an appropriate interface to be controlled by upmpdcli.
 #
-# This must be named something like the following, and made executable:
-# 
-#     /usr/share/upmpdcli/src_scripts/Analog-SenderReceiverReplaceable
-# 
-# - You can use another directory for scripts by setting the upmpdcli
-#   configuration variable "ohsrc_scripts_dir"
+# The script can also be executed from the command line for
+# testing. No need for parameters, but you should set the device name
+# at least (and maybe the mixer scripts), see further down.
 #
-# - 'Analog' may be replaced by 'Digital' or 'Hdmi' if you so fancy.
-# - 'SenderReceiver' is the mandatory beginning of the part after the dash.
-# - 'Replaceable' can be whatever you want.
+# The general idea is that upmpdcli will create an Openhome Source for
+# each script it finds inside a designated directory.
 #
-# The Source will appear with type Analog and name SenderReceiverReplaceable
-# in an OpenHome Source select dialog (e.g from upplay).
+# By default, the directory is '/usr/share/upmpdcli/src_scripts', but
+# it can be changed by setting the "ohsrc_scripts_dir" configuration
+# variable inside /etc/upmpdcli.conf
 #
-# The 'SenderReceiver' string part is a hack for upplay to guess that
-# the Receiver for this upmpdcli instance is active.
+# Entries inside the directory will typically be created as symbolic
+# links to this file, which is installed as /usr/share/upmpdcli/Analog-Input
 #
-# Capture device. Use arecord -L to list possible values.
-# The following are values I use to test on my system and entirely
-# dependant on my config, there is no reason they should work for you
-#device = '''default:CARD=U0x46d0x825'''
-#device = '''default:CARD=PCH'''
-device = '''default:CARD=Device'''
+# The links must be named like SourceType-SourceName, where SourceType
+# MUST BE one of 'Analog', 'Digital', or 'Hdmi', (which are all the
+# same, and for display purpose only), and you can choose 'SourceName'
+# as you wish, but it should contain no space characters.
+#
+# The Source will appear with type Analog, Digital or Hdmi and name
+# SourceName in an OpenHome Source select dialog (e.g from upplay).
+#
+# If a file named device-SourceName exists in the same directory as
+# the link, we read the device name from it (the contents should be
+# a single line with the device name). Else, the device name is
+# 'default', which has little chance to work
+#
+# If a file named prescript-SourceName exists in the same directory,
+# it must be executable, and we try to execute it before
+# activating. We renounce if it fails. This is meant for mixer
+# commands to set up the device.
+#
+# If a file named postcript-SourceName exists in the same directory,
+# it must be executable, and we try to execute it before terminating
+# This is meant for mixer commands to reset the device.
+#
 
 import time
 import subprocess
@@ -38,18 +51,25 @@ import getopt
 import signal
 import socket
 
-def usage(f):
-    print("Usage: %s [-h] [-f friendlyname]" % sys.argv[0], file=f)
-    sys.exit(1)
+############# Defaults
+
+# Capture device. Use arecord -L to list possible values.
+# Set this in device-mySourceName
+device = '''default'''
 
 # Songcast Sender program. This reads from stdin and sends to
 # Songcast. It comes with the sc2mpd package (see the upmpdcli web
 # site)
 uxsender = "mpd2sc"
 
-# Upmpdcli friendly-name, actual value comes as a parameter. Used to
-# compute a Uuid in conjunction with the node name and script name
+# Upmpdcli friendly-name, the actual value comes from a parameter when
+# executed from upmpdcli (as normal). Used to compute a Uuid in
+# conjunction with the node name and script name
 upmpdcli_fname = "UpMpd"
+
+def usage(f):
+    print("Usage: %s [-h] [-f friendlyname]" % sys.argv[0], file=f)
+    sys.exit(1)
 
 args = sys.argv[1:]
 opts, args = getopt.getopt(args, "hup:f:")
@@ -61,6 +81,30 @@ for opt, arg in opts:
     else:
         print("unknown option %s\n"%opt, file=sys.stderr)
         usage(sys.stderr)
+
+
+# Script name should be something like type-name. We use the name part
+# to look for data or aux scripts
+scriptdir = os.path.dirname(sys.argv[0])
+scriptname = os.path.basename(sys.argv[0])
+lst = scriptname.split("-")
+
+prescript = None
+postscript = None
+if len(lst) == 2:
+    srcname = lst[1]
+    path = os.path.join(scriptdir, 'device-' + srcname)
+    if os.path.exists(path):
+        device = open(path).read().strip()
+    path = os.path.join(scriptdir, 'prescript-' + srcname)
+    if os.path.exists(path):
+        prescript = path
+    path = os.path.join(scriptdir, 'postscript-' + srcname)
+    if os.path.exists(path):
+        postscript = path
+
+print("device [%s] prescript [%s] postscript [%s] " %
+      (device, prescript, postscript), file=sys.stderr)
 
 # UDN and name for the Sender UPnP device. We use a hash of the
 # friendly name and host name
@@ -81,6 +125,13 @@ def cleanup(xval):
         senderproc.terminate()
     except:
         pass
+    # Execute post-script if it is set
+    if postscript:
+        try:
+            subprocess.check_call(postscript)
+        except:
+            pass
+
     sys.exit(xval)
 
 def sighandler(signum, frame):
@@ -88,6 +139,11 @@ def sighandler(signum, frame):
 
 signal.signal(signal.SIGINT, sighandler)
 signal.signal(signal.SIGTERM, sighandler)
+
+
+# Execute pre-script if it is set
+if prescript:
+    subprocess.check_call(prescript)
 
 # -f S16_LE -c 2 -r 44100
 try:
@@ -112,7 +168,6 @@ except Exception as err:
 
 # Get the Uri and Metadata values from the sender. These get written to stdout
 urimeta = senderproc.stdout.readline()
-
 
 # Tell the world we're set. upmpdcli expects this format exactly 
 print("Ok %d %s" % (0, urimeta))
