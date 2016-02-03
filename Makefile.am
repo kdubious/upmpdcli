@@ -86,6 +86,9 @@ install-data-hook: web.tar.gz rdpl2stream.tar.gz
         	mv upmpdcli.conf-dist upmpdcli.conf)
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < web.tar.gz 
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < rdpl2stream.tar.gz
+	(cd $(DESTDIR)$(pkgdatadir); test -d src_scripts || mkdir src_scripts)
+
+dist_pkgdata_SCRIPTS = samplescripts/Analog-Input
 
 dist_sysconf_DATA = src/upmpdcli.conf-dist
             
