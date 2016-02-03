@@ -17,25 +17,38 @@ broadcasting the audio from *any* local application (e.g. Spotify, Kobuz,
 Tidal, Windows Media Player etc.).
 
 The audio source can also be a Unix/Linux host running *upmpdcli*/*sc2mpd*,
-which is mostly useful for multiroom audio.
+which is mostly useful for multiroom audio. This will also work for a line
+input, so that you can distribute an analog source to multiple Receivers
+over Songcast.
 
 The _Receiver_ instances can be Unix/Linux hosts (possibly Rasberry Pi or
 similar) with *upmpdcli*/*sc2mpd* installed, or ones running
 link:https://github.com/PeteManchester/MediaPlayer[MediaPlayer], or actual
 Linn hardware (and probably others I don't know of).
 
-To get started:
+== Installing
 
- - If you want to play from a Mac or Windows machine, install the 
-   link:http://www.linn.co.uk/software#songcast[Songcast application]
- - If the _Sender_ is a *upmpdcli* host, you should probably also install the
-   link:http://www.lesbonscomptes.com/upplay/[upplay] Control Point
-   somewhere. Recent upplay versions include a tool to control _Sender_ and
-   _Receiver_ instances.
- - Download and install the *upmpdcli* and *sc2mpd* packages for your Linux
-   system. See
-   link:http://www.lesbonscomptes.com/upmpdcli/downloads.html#packages[the
-   download page here]. Also, link:#rpi_quick[Rasberry Pi quick install notes].
+If you want to play from a Mac or Windows machine, install the 
+link:http://www.linn.co.uk/software#songcast[Songcast application]
+
+NOTE: Not all Windows Songcast versions work well with upmpdcli. Lately
+I've had good luck with
+http://oss.linn.co.uk/Releases/Songcast/Davaar/Songcast_4.4.190_win.exe[4.4.190]
+but not with the 4.5 ones (it's possible to get them to work with
+*upmpdcli* from the *upplay* control panel, but the Windows app claims that
+the *upmpdcli* receiver is unavailable.).
+
+If the _Sender_ is a *upmpdcli* host, you should probably also install the
+link:http://www.lesbonscomptes.com/upplay/[upplay] Control Point
+somewhere. Recent upplay versions include a tool to control _Sender_ and
+_Receiver_ instances. This is less necessary if the Sender is on Windows or
+Mac, as the Songcast application on these platforms includes a limited
+connection tool (no multiroom).
+
+Download and install the *upmpdcli* and *sc2mpd* packages for your Linux
+system. See
+link:http://www.lesbonscomptes.com/upmpdcli/downloads.html#packages[the
+download page here]. Also, link:#rpi_quick[Rasberry Pi quick install notes].
 
 When using a single _Receiver_, things should just work, the _UpMpd_
 _Receiver_ should appear in the Songcast app on the host (or in the *upplay*
@@ -45,19 +58,14 @@ WARNING: There is *no software volume control* for the *upmpdcli* Songcast
 Receivers for now: use either a local mixer or the little round things on
 the pre-amps. Set the volume low when experimenting !
 
-NOTE: Not all Windows Songcast versions work well with upmpdcli. Lately
-I've had good luck with
-http://oss.linn.co.uk/Releases/Songcast/Davaar/Songcast_4.4.190_win.exe[4.4.190]
-but not with the 4.5 ones (it's possible to get them to work with
-*upmpdcli* from the *upplay* control panel, but the Windows app claims that
-the *upmpdcli* receiver is unavailable.).
-
 NOTE: The receiver side does not work too well on Raspberry Pis using an
 USB DAC (as far as I could see). The reason may be that the data rate of
 the uncompressed stream is just too much for the poor Pi Ethernet/USB
 chip. Things work just fine with an I2S DAC (or on HDMI probably). When on
 WIFI, the results are sometimes irregular too, depending on the quality of
-the connection.
+the connection. If you have no Ethernet cabling, Ethernet over power lines
+may work better than WIFI. The best combination of network and DAC link is
+definitely Wired and I2S (or HDMI).
 
 When using multiple _Receiver_ instances, you need to at least customize
 their names, and you want to take care of synchronization issues. You will
@@ -67,14 +75,22 @@ need to take a look at a bit more documentation:
  - link:scmulti.html[audio synchronization issues and *sc2mpd*
    configuration].
 
-== Upmpdcli Sender mode
+
+[[SENDERRECEIVER]]
+== Upmpdcli as Songcast Sender
+
+Upmpdcli Sender mode allows you to broadcast the Playlist or Radio source
+to other Songcast Receiver. The local host plays through its local Receiver
+too, in order to achieve synchronisation. Unlike on Windows, the audio is
+not captured from the driver, so that you won't be able to cast other
+applications.
 
 You can set *umpdcli* in _Sender_ mode from an OpenHome-capable Control
-Point, by selecting the Source of type `Playlist`, name `SenderReceiverPL`
-(playlist) or `SenderReceiverRD` (radio).
+Point, by selecting the Source of type `Playlist`, name `PL-to-Songcast` or
+type `Radio`, name `RD-to-Songcast`.
 
 The *sc2mpd* configuration must be set to play directly to Alsa for the
-`SenderReceiverXX` sources to appear. See the
+`XX-to-Songcast` sources to appear. See the
 link:sc2mpd.html#Configuration[configuration section], and
 link:scmulti.html[the page about synchronisation].
 
@@ -98,6 +114,7 @@ image::upmpdcli-sender-receiver.png["Sender/Receiver mode"]
 This looks complicated, but in practise, starting the mode and connecting
 other Receivers from the `upplay` control panel is quite easy.
 
+[[SENDERRECEIVER.EXTSOURCES]]
 === Managing external sources
 
 In the `Sender` modes described above, `upmpdcli` (or rather its slave
@@ -106,7 +123,10 @@ MPD process) is the source of the audio stream.
 It is also possible to set things up so that an external source (e.g. a
 line in) can be connected to the Songcast Sender, allowing multiroom
 playing of any external source. See the comments in the
-https://github.com/medoc92/upmpdcli/commit/491e4501c3a01f6cca2736ee3a5f135b1b8401fb[sample script in the upmpdcli source tree].
+link:https://github.com/medoc92/upmpdcli/blob/master/samplescripts/Analog-Input[sample script in the
+upmpdcli source tree] for instructions about configuring this. The general
+idea is that an external script, executed by *upmpdcli*, is responsible for
+executing the piped source reader and Songcast Sender.
 
 
 [[whatis_songcast]]
