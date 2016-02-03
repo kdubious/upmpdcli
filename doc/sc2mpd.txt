@@ -13,7 +13,7 @@ play quasi-synchronously from a single source (_Sender_).
 The audio source (Sender) can be a
 link:http://www.linn.co.uk/software#songcast[Songcast application]
 installed on a Windows or Mac host. This will allow capturing and
-broadcasting the audio from *any* local application (e.g. Spotify, Kobuz,
+broadcasting the audio from *any* local application (e.g. Spotify, Qobuz,
 Tidal, Windows Media Player etc.).
 
 The audio source can also be a Unix/Linux host running *upmpdcli*/*sc2mpd*,
@@ -26,6 +26,7 @@ similar) with *upmpdcli*/*sc2mpd* installed, or ones running
 link:https://github.com/PeteManchester/MediaPlayer[MediaPlayer], or actual
 Linn hardware (and probably others I don't know of).
 
+   
 == Installing
 
 If you want to play from a Mac or Windows machine, install the 
