@@ -58,6 +58,9 @@ static string scripts_dir("/usr/share/upmpdcli/src_scripts");
 // (Type, Name) list
 static vector<pair<string, string> > o_sources;
 
+static const string SndRcvPLName("PL-to-Songcast");
+static const string SndRcvRDName("RD-to-Songcast");
+
 OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc)
     : OHService(sTpProduct, sIdProduct, dev),
       m_ohProductDesc(ohProductDesc), m_sourceIndex(0), m_standby(false)
@@ -78,11 +81,9 @@ OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc)
             // original/saved one, not the current one, which is doing
             // the playing and sending to the fifo, so we'd need to
             // tell ohreceiver about using the right one.
-            o_sources.push_back(pair<string,string>("Playlist",
-                                                    "SenderReceiverPL"));
+            o_sources.push_back(pair<string,string>("Playlist", SndRcvPLName));
             if (m_dev->m_ohrd) {
-                o_sources.push_back(pair<string,string>("Radio",
-                                                        "SenderReceiverRD"));
+                o_sources.push_back(pair<string,string>("Radio", SndRcvRDName));
             }
             listScripts(o_sources);
         }
@@ -267,12 +268,12 @@ int OHProduct::iSetSourceIndex(int sindex)
             m_dev->m_ohrd->setActive(false);
         } else if (m_dev->m_sndrcv && m_dev->m_ohpl &&
                    !curtp.compare("Playlist") &&
-                   !curnm.compare("SenderReceiverPL")) {
+                   !curnm.compare(SndRcvPLName)) {
             m_dev->m_sndrcv->stop();
             m_dev->m_ohpl->setActive(false);
         } else if (m_dev->m_sndrcv && m_dev->m_ohrd &&
                    !curtp.compare("Radio") &&
-                   !curnm.compare("SenderReceiverRD")) {
+                   !curnm.compare(SndRcvRDName)) {
             m_dev->m_ohrd->setActive(false);
             m_dev->m_sndrcv->stop();
         } else {
@@ -289,11 +290,11 @@ int OHProduct::iSetSourceIndex(int sindex)
         } else if (m_dev->m_ohrd && !newnm.compare("Radio")) {
             m_dev->m_ohrd->setActive(true);
         } else if (m_dev->m_ohpl && m_dev->m_sndrcv &&
-                   !newnm.compare("SenderReceiverPL")) {
+                   !newnm.compare(SndRcvPLName)) {
             m_dev->m_ohpl->setActive(true);
             m_dev->m_sndrcv->start(string(), savedms);
         } else if (m_dev->m_ohrd && m_dev->m_sndrcv &&
-                   !newnm.compare("SenderReceiverRD")) {
+                   !newnm.compare(SndRcvRDName)) {
             m_dev->m_ohrd->setActive(true);
             m_dev->m_sndrcv->start(string());
         } else {
