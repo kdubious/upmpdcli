@@ -1,3 +1,12 @@
+upmpdcli (1.0.0-1) unstable; urgency=low
+
+  * Add OpenHome Radio Source (play internet radios). Needs Python.
+  * Add capability to forward ALSA input channel to Songcast (needs
+    sc2mpd 0.14).
+  * Fix Receiver detection from Windows Songcast
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Thu, 04 Feb 2016 19:05:00 +0200
+
 upmpdcli (0.13.1-1) unstable; urgency=low
 
   * Turn off MPD "single" mode if it was set by some other app !
