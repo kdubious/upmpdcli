@@ -44,14 +44,12 @@ upmpdcli_SOURCES = \
      src/ohtime.hxx \
      src/ohvolume.cxx \
      src/ohvolume.hxx \
-     src/ptmutex.hxx \
      src/renderctl.cxx \
      src/renderctl.hxx \
      src/upmpd.cxx \
      src/upmpd.hxx \
      src/upmpdutils.cxx \
-     src/upmpdutils.hxx \
-     src/workqueue.hxx
+     src/upmpdutils.hxx
                            
 upmpdcli_LDADD = $(UPMPDCLI_LIBS)
 
