@@ -1,4 +1,4 @@
-upmpdcli (1.0.0-1) unstable; urgency=low
+upmpdcli (1.1.0-1) unstable; urgency=low
 
   * Add OpenHome Radio Source (play internet radios). Needs Python.
   * Add capability to forward ALSA input channel to Songcast (needs

@@ -2,7 +2,9 @@ Source: upmpdcli
 Section: contrib/sound
 Priority: extra
 Maintainer: Jean-Francois Dockes <jf@dockes.org>
-Build-Depends: debhelper (>= 8.0.0), autotools-dev, libmpdclient-dev, 
+Build-Depends: debhelper (>= 9.0.0), autotools-dev,
+               python-dev (>= 2.6.6-3~),
+               libmpdclient-dev,
                libupnpp2-dev, libupnp6-dev
 Standards-Version: 3.9.3
 Homepage: http://www.lesbonscomptes.com/upmpdcli
@@ -10,6 +12,7 @@ Homepage: http://www.lesbonscomptes.com/upmpdcli
 Package: upmpdcli
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
+Recommends: python
 Description: UPnP Media Renderer front-end to MPD, the Music Player Daemon
  upmpdcli acts as an UPnP Media Renderer on the front-end so that you can
  control it with any UPnP controller like, e.g. Audionet or BubbleUPnP on an
