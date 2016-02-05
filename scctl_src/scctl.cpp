@@ -113,7 +113,7 @@ static char usage [] =
 " -S Run as server\n"
 " -f If no server is found, scctl will fork one after performing the\n"
 "    requested command, so that the next execution will not have to wait for\n"
-"    the discovery timeout.n"
+"    the discovery timeout.\n"
 " -r <sender> <renderer> <renderer> : set up the renderers in Receiver mode\n"
 "    playing data from the sender. This is like -s but we get the uri from \n"
 "    the sender instead of a sibling receiver\n"
@@ -398,7 +398,13 @@ int MyNetconServLis::cando(Netcon::Event reason)
         string master = *beg;
         beg++;
         vector<string> slaves(beg, toks.end());
-        setReceiversFromReceiver(master, slaves);
+        ReceiverState mst;
+        getReceiverState(master, mst);
+        for (auto it = slaves.begin(); it != slaves.end(); it++) {
+            ReceiverState st;
+            getReceiverState(*it, st);
+            setReceiverPlaying(st, mst.uri, mst.meta);
+        }
     } else if (opflags & OPT_x) {
         if (toks.size() < 2)
             return 1;

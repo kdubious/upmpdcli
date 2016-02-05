@@ -69,6 +69,11 @@ mode, the _Receivers_ can be out of sync by several seconds.
    * `scplaymethod` = _`alsa`_
    * `scalsadevice`: use `aplay -L` to chose an appropriate device.
 
+You can control the connections between senders and receivers either from
+the *upplay* `File->Songcast Tool` menu, or from the local web tool. The
+*upplay* approach is easier and recommended. We describe the web way here
+because it is more complicated:
+
  - Activate the web interface on one of the _Receivers_ (or on any machine
    with upmpdcli installed actually). Edit `/etc/default/scweb` to
    configure the interface (see comments in there) and start it with
@@ -92,6 +97,9 @@ the state of the "PC"'s _Receiver_ from outside the PC *Songcast* interface,
 this can only confuse things.
 
 == More detail about the Web interface
+
+This is only useful if you have no machine to run *upplay* on. The *upplay
+Songcast tool is easier to use than the web tool.
 
 To avoid having to access the command line interface to control the
 *Songcast* groups, *upmpdcli* comes with a small Web server which uses
