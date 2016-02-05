@@ -36,6 +36,10 @@ from __future__ import print_function
 # it must be executable, and we try to execute it before
 # activating. We renounce if it fails. This is meant for mixer
 # commands to set up the device.
+# ! With upmpdcli release 1.1.0, the prescript MUST NOT write to
+#   stdout.  redirect its output to stderr or /dev/null. The current
+#   version of Analog-Input has corrected this constraint (by reading
+#   an discarding the output).
 #
 # If a file named postcript-SourceName exists in the same directory,
 # it must be executable, and we try to execute it before terminating
