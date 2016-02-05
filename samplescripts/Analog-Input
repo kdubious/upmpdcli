@@ -141,9 +141,10 @@ signal.signal(signal.SIGINT, sighandler)
 signal.signal(signal.SIGTERM, sighandler)
 
 
-# Execute pre-script if it is set
+# Execute pre-script if it is set. We read and discard its stdout (else if
+# would confuse upmpdcli which expects informations on the first output line).
 if prescript:
-    subprocess.check_call(prescript)
+    subprocess.check_output(prescript)
 
 # -f S16_LE -c 2 -r 44100
 try:
