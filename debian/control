@@ -3,7 +3,6 @@ Section: contrib/sound
 Priority: extra
 Maintainer: Jean-Francois Dockes <jf@dockes.org>
 Build-Depends: debhelper (>= 9.0.0), autotools-dev,
-               python-dev (>= 2.6.6-3~),
                libmpdclient-dev,
                libupnpp2-dev, libupnp6-dev
 Standards-Version: 3.9.3

@@ -75,7 +75,8 @@ web.tar.gz: bogus
 
 rdpl2stream.tar.gz: bogus
 	if test -d $(srcdir)/rdpl2stream; then \
-           (cd $(srcdir); tar cvzf - rdpl2stream) > rdpl2stream.tar.gz; fi
+           (cd $(srcdir); rm -rf rdpl2stream/__pycache__/; tar cvzf - rdpl2stream) > \
+                        rdpl2stream.tar.gz; fi
 
 bogus:
 
