@@ -412,7 +412,9 @@ static void listScripts(vector<pair<string, string> >& sources)
         string nm(tpnm.substr(dash+1));
         if (tp.compare("Analog") && tp.compare("Digital") &&
             tp.compare("Hdmi")) {
-            LOGERR("listScripts: bad source type: " << tp << endl);
+            if (tp.compare("device") && tp.compare("prescript") &&
+                tp.compare("postscript"))
+                LOGERR("listScripts: bad source type: " << tp << endl);
             continue;
         }
 
