@@ -286,11 +286,13 @@ bool MPDCli::restoreState(const MpdState& st)
     random(st.status.random);
     single(st.status.single);
     consume(st.status.consume);
+    m_cachedvolume = st.status.volume;
+    mpd_run_set_volume(M_CONN, st.status.volume);
     // If songelapsedms is set, we have to start playing to restore it
     if (st.status.songelapsedms > 0 ||
         st.status.state == MpdStatus::MPDS_PLAY) {
         play(st.status.songpos);
-        setVolume(st.status.volume);
+        mpd_run_set_volume(M_CONN, st.status.volume);
         if (st.status.songelapsedms > 0)
             seek(st.status.songelapsedms/1000);
     }
@@ -396,8 +398,7 @@ bool MPDCli::setVolume(int volume, bool isMute)
     // This does not seem to be the case with recent MPD versions
     if (!(m_stat.state == MpdStatus::MPDS_PLAY) &&
         !(m_stat.state == MpdStatus::MPDS_PAUSE)) {
-        LOGINF("MPDCli::setVolume: not active" << endl);
-        return true;
+        LOGDEB1("MPDCli::setVolume: not active" << endl);
     }
 
     LOGDEB("MPDCli::setVolume: vol " << volume << " isMute " << isMute << endl);
