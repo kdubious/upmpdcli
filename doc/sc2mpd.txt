@@ -81,7 +81,7 @@ need to take a look at a bit more documentation:
 == Upmpdcli as Songcast Sender
 
 Upmpdcli Sender mode allows you to broadcast the Playlist or Radio source
-to other Songcast Receiver. The local host plays through its local Receiver
+to other Songcast Receivers. The local host plays through its local Receiver
 too, in order to achieve synchronisation. Unlike on Windows, the audio is
 not captured from the driver, so that you won't be able to cast other
 applications.

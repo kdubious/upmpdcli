@@ -1,5 +1,15 @@
 = Upmpdcli release notes
 
+== Upmpdcli 1.1
+
+- Implement an OpenHome Radio source for playing Internet radio streams
+  (needs Python).
+- Add capability to forward ALSA input channel (or other audio source) to
+  Songcast (needs sc2mpd 0.14).
+- Fix Receiver detection from Windows Songcast
+- Lose the 0.x as we are reaching maturity...
+- Needs libupnpp 0.14.1
+
 == Upmpdcli 0.13
 
 - Support the new sc2mpd/mpd2sc Sender/Receiver mode, allowing broadcasting
