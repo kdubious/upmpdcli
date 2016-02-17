@@ -245,67 +245,69 @@ int OHProduct::iSetSourceIndex(int sindex)
         LOGERR("OHProduct::setSourceIndex: bad index: " << sindex << endl);
         return UPNP_E_INVALID_PARAM;
     }
-    if (m_sourceIndex != sindex) {
-
-        const MpdStatus& mpds = m_dev->getMpdStatus();
-        int savedms = mpds.songelapsedms;
-
-        m_dev->m_ohif->setMetatext("");
-
-        string curtp = o_sources[m_sourceIndex].first;
-        string curnm = o_sources[m_sourceIndex].second;
-        if (m_dev->m_ohpl && !curtp.compare("Playlist") &&
-            !curnm.compare("Playlist")) {
-            m_dev->m_ohpl->iStop();
-            m_dev->m_ohpl->setActive(false);
-        } else if (m_dev->m_ohrcv && !curtp.compare("Receiver") &&
-            !curnm.compare("Receiver")) {
-            m_dev->m_ohrcv->iStop();
-            m_dev->m_ohrcv->setActive(false);
-        } else if (m_dev->m_ohrd && !curtp.compare("Radio") &&
-            !curnm.compare("Radio")) {
-            m_dev->m_ohrd->iStop();
-            m_dev->m_ohrd->setActive(false);
-        } else if (m_dev->m_sndrcv && m_dev->m_ohpl &&
-                   !curtp.compare("Playlist") &&
-                   !curnm.compare(SndRcvPLName)) {
-            m_dev->m_sndrcv->stop();
-            m_dev->m_ohpl->setActive(false);
-        } else if (m_dev->m_sndrcv && m_dev->m_ohrd &&
-                   !curtp.compare("Radio") &&
-                   !curnm.compare(SndRcvRDName)) {
-            m_dev->m_ohrd->setActive(false);
-            m_dev->m_sndrcv->stop();
-        } else {
-            // External inputs managed by scripts Analog/Digital/Hdmi etc.
-            m_dev->m_sndrcv->stop();
-        }
-
-        string newtp = o_sources[sindex].first;
-        string newnm = o_sources[sindex].second;
-        if (m_dev->m_ohpl && !newnm.compare("Playlist")) {
-            m_dev->m_ohpl->setActive(true);
-        } else if (m_dev->m_ohrcv && !newnm.compare("Receiver")) {
-            m_dev->m_ohrcv->setActive(true);
-        } else if (m_dev->m_ohrd && !newnm.compare("Radio")) {
-            m_dev->m_ohrd->setActive(true);
-        } else if (m_dev->m_ohpl && m_dev->m_sndrcv &&
-                   !newnm.compare(SndRcvPLName)) {
-            m_dev->m_ohpl->setActive(true);
-            m_dev->m_sndrcv->start(string(), savedms);
-        } else if (m_dev->m_ohrd && m_dev->m_sndrcv &&
-                   !newnm.compare(SndRcvRDName)) {
-            m_dev->m_ohrd->setActive(true);
-            m_dev->m_sndrcv->start(string());
-        } else {
-            string sname = newtp + "-" + newnm;
-            string spath = path_cat(scripts_dir, sname);
-            m_dev->m_sndrcv->start(spath);
-        }
-        m_sourceIndex = sindex;
-
-        m_dev->loopWakeup();
+    if (m_sourceIndex == sindex) {
+        return UPNP_E_SUCCESS;
     }
+
+    const MpdStatus& mpds = m_dev->getMpdStatus();
+    int savedms = mpds.songelapsedms;
+    
+    m_dev->m_ohif->setMetatext("");
+
+    string curtp = o_sources[m_sourceIndex].first;
+    string curnm = o_sources[m_sourceIndex].second;
+    if (m_dev->m_ohpl && !curtp.compare("Playlist") &&
+        !curnm.compare("Playlist")) {
+        m_dev->m_ohpl->iStop();
+        m_dev->m_ohpl->setActive(false);
+    } else if (m_dev->m_ohrcv && !curtp.compare("Receiver") &&
+               !curnm.compare("Receiver")) {
+        m_dev->m_ohrcv->iStop();
+        m_dev->m_ohrcv->setActive(false);
+    } else if (m_dev->m_ohrd && !curtp.compare("Radio") &&
+               !curnm.compare("Radio")) {
+        m_dev->m_ohrd->iStop();
+        m_dev->m_ohrd->setActive(false);
+    } else if (m_dev->m_sndrcv && m_dev->m_ohpl &&
+               !curtp.compare("Playlist") &&
+               !curnm.compare(SndRcvPLName)) {
+        m_dev->m_sndrcv->stop();
+        m_dev->m_ohpl->setActive(false);
+    } else if (m_dev->m_sndrcv && m_dev->m_ohrd &&
+               !curtp.compare("Radio") &&
+               !curnm.compare(SndRcvRDName)) {
+        m_dev->m_ohrd->setActive(false);
+        m_dev->m_sndrcv->stop();
+    } else {
+        // External inputs managed by scripts Analog/Digital/Hdmi etc.
+        m_dev->m_sndrcv->stop();
+    }
+
+    string newtp = o_sources[sindex].first;
+    string newnm = o_sources[sindex].second;
+    if (m_dev->m_ohpl && !newnm.compare("Playlist")) {
+        m_dev->m_ohpl->setActive(true);
+    } else if (m_dev->m_ohrcv && !newnm.compare("Receiver")) {
+        m_dev->m_ohrcv->setActive(true);
+    } else if (m_dev->m_ohrd && !newnm.compare("Radio")) {
+        m_dev->m_ohrd->setActive(true);
+    } else if (m_dev->m_ohpl && m_dev->m_sndrcv &&
+               !newnm.compare(SndRcvPLName)) {
+        m_dev->m_ohpl->setActive(true);
+        m_dev->m_sndrcv->start(string(), savedms);
+    } else if (m_dev->m_ohrd && m_dev->m_sndrcv &&
+               !newnm.compare(SndRcvRDName)) {
+        m_dev->m_ohrd->setActive(true);
+        m_dev->m_sndrcv->start(string());
+    } else {
+        string sname = newtp + "-" + newnm;
+        string spath = path_cat(scripts_dir, sname);
+        m_dev->m_sndrcv->start(spath);
+    }
+    m_sourceIndex = sindex;
+
+    m_dev->loopWakeup();
+
     return UPNP_E_SUCCESS;
 }
 

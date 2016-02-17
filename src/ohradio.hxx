@@ -39,6 +39,7 @@ public:
     bool ok() {return m_ok;}
     
     int iStop();
+    int iPlay();
 
     // Source active ?
     void setActive(bool onoff);

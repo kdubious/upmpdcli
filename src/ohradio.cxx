@@ -267,15 +267,20 @@ void OHRadio::setActive(bool onoff) {
     }
 }
 
+int OHRadio::iPlay()
+{
+    int ret = setPlaying();
+    maybeWakeUp(ret == UPNP_E_SUCCESS);
+    return ret;
+}
+
 int OHRadio::play(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHRadio::play" << endl);
     if (!m_active && m_dev->m_ohpr) {
         m_dev->m_ohpr->iSetSourceIndexByName("Radio");
     }
-    int ret = setPlaying();
-    maybeWakeUp(ret == UPNP_E_SUCCESS);
-    return ret;
+    return iPlay();
 }
 
 int OHRadio::pause(const SoapIncoming& sc, SoapOutgoing& data)
