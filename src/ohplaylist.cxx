@@ -182,11 +182,18 @@ bool OHPlaylist::makeIdArray(string& out)
     m_idArrayCached = out = translateIdArray(vdata);
     m_mpdqvers = mpds.qvers;
 
-    // Update metadata cache: entries not in the current list are
-    // not valid any more. Also there may be entries which were added
+    // Don't perform metadata cache maintenance if we're not active
+    // (the mpd playlist belongs to e.g. the radio service). We would
+    // be destroying data which we may need later.
+    if (!m_active) {
+        return true;
+    }
+
+    // Update metadata cache: entries not in the current list are not
+    // valid any more. Also there may be entries which were added
     // through an MPD client and which don't know about, record the
-    // metadata for these. We don't update the current array, but
-    // just build a new cache for data about current entries.
+    // metadata for these. We don't update the current array, but just
+    // build a new cache for data about current entries.
     //
     // The songids are not preserved through mpd restarts (they
     // restart at 0) this means that the ids are not a good cache key,
