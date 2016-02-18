@@ -203,8 +203,13 @@ bool SenderReceiver::start(const string& script, int seekms)
     if (script.empty()) {
         // Internal source: copy mpd state
         copyMpd(m->dev->m_mpdcli, m->mpd, seekms);
-        if (m->scalestream)
+        if (m->scalestream) {
             m->mpd->forceInternalVControl();
+            // Stream is scaled, set the main mixer to 100 to allow
+            // full scale. Actually this appears to have no effect
+            // (appear automagically for some other cause).
+            m->dev->m_mpdcli->setVolume(100);
+        }
         m->origmpd = m->dev->m_mpdcli;
         m->dev->m_mpdcli = m->mpd;
     } else {

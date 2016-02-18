@@ -55,7 +55,8 @@ public:
 
 class MpdStatus {
 public:
-    MpdStatus() : trackcounter(0), detailscounter(0) {}
+    MpdStatus() : trackcounter(0), detailscounter(0),
+                  externalvolumecontrol(false) {}
 
     enum State {MPDS_UNK, MPDS_STOP, MPDS_PLAY, MPDS_PAUSE};
 
@@ -137,7 +138,7 @@ public:
 
     // Copy complete mpd state. If seekms is > 0, this is the value to
     // save (sometimes useful if mpd was stopped)
-    bool saveState(MpdState& st, int seekms);
+    bool saveState(MpdState& st, int seekms = 0);
     bool restoreState(const MpdState& st);
     
 private:

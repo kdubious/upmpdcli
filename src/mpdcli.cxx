@@ -178,7 +178,7 @@ bool MPDCli::updStatus()
         return false;
     }
 
-    if (m_stat.externalvolumecontrol) {
+    if (m_stat.externalvolumecontrol && !m_stat.getexternalvolume.empty()) {
         string result;
         vector<string> cmd;
         cmd.push_back(m_stat.getexternalvolume);
@@ -335,14 +335,18 @@ bool MPDCli::restoreState(const MpdState& st)
     //no need to set volume if it is controlled external
     if (!m_stat.externalvolumecontrol)
         mpd_run_set_volume(M_CONN, st.status.volume);
-    // If songelapsedms is set, we have to start playing to restore it
-    if (st.status.songelapsedms > 0 ||
+
+    if (st.status.state == MpdStatus::MPDS_PAUSE ||
         st.status.state == MpdStatus::MPDS_PLAY) {
+        // I think that the play is necessary and we can't just do
+        // pause/seek from stop state. To be verified.
         play(st.status.songpos);
-        if (!m_stat.externalvolumecontrol)
-            mpd_run_set_volume(M_CONN, st.status.volume);
         if (st.status.songelapsedms > 0)
             seek(st.status.songelapsedms/1000);
+        if (st.status.state == MpdStatus::MPDS_PAUSE)
+            pause(true);
+        if (!m_stat.externalvolumecontrol)
+            mpd_run_set_volume(M_CONN, st.status.volume);
     }
     return true;
 }

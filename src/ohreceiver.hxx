@@ -50,10 +50,7 @@ public:
     bool iSetSender(const std::string& uri, const std::string& meta);
     OHReceiverParams::PlayMethod playMethod() {return m_pm;}
 
-    // Source active ?
-    void setActive(bool onoff) {
-        m_active = onoff;
-    }
+    void setActive(bool onoff);
 
 protected:
     virtual bool makestate(std::unordered_map<std::string, std::string> &st);

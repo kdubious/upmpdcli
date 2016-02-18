@@ -249,30 +249,24 @@ int OHProduct::iSetSourceIndex(int sindex)
         return UPNP_E_SUCCESS;
     }
 
-    const MpdStatus& mpds = m_dev->getMpdStatus();
-    int savedms = mpds.songelapsedms;
-    
     m_dev->m_ohif->setMetatext("");
 
     string curtp = o_sources[m_sourceIndex].first;
     string curnm = o_sources[m_sourceIndex].second;
     if (m_dev->m_ohpl && !curtp.compare("Playlist") &&
         !curnm.compare("Playlist")) {
-        m_dev->m_ohpl->iStop();
         m_dev->m_ohpl->setActive(false);
     } else if (m_dev->m_ohrcv && !curtp.compare("Receiver") &&
                !curnm.compare("Receiver")) {
-        m_dev->m_ohrcv->iStop();
         m_dev->m_ohrcv->setActive(false);
     } else if (m_dev->m_ohrd && !curtp.compare("Radio") &&
                !curnm.compare("Radio")) {
-        m_dev->m_ohrd->iStop();
         m_dev->m_ohrd->setActive(false);
     } else if (m_dev->m_sndrcv && m_dev->m_ohpl &&
                !curtp.compare("Playlist") &&
                !curnm.compare(SndRcvPLName)) {
-        m_dev->m_sndrcv->stop();
         m_dev->m_ohpl->setActive(false);
+        m_dev->m_sndrcv->stop();
     } else if (m_dev->m_sndrcv && m_dev->m_ohrd &&
                !curtp.compare("Radio") &&
                !curnm.compare(SndRcvRDName)) {
@@ -293,12 +287,12 @@ int OHProduct::iSetSourceIndex(int sindex)
         m_dev->m_ohrd->setActive(true);
     } else if (m_dev->m_ohpl && m_dev->m_sndrcv &&
                !newnm.compare(SndRcvPLName)) {
+        m_dev->m_sndrcv->start(string(), 0 /*savedms*/);
         m_dev->m_ohpl->setActive(true);
-        m_dev->m_sndrcv->start(string(), savedms);
     } else if (m_dev->m_ohrd && m_dev->m_sndrcv &&
                !newnm.compare(SndRcvRDName)) {
-        m_dev->m_ohrd->setActive(true);
         m_dev->m_sndrcv->start(string());
+        m_dev->m_ohrd->setActive(true);
     } else {
         string sname = newtp + "-" + newnm;
         string spath = path_cat(scripts_dir, sname);

@@ -72,10 +72,9 @@ private:
     void maybeWakeUp(bool ok);
 
     bool m_active;
+    MpdState m_mpdsavedstate;
     // Current channel id set by setId
     unsigned int m_id; 
-    // MPD song id for the radio uri, or 0
-    int m_songid;
 
     bool m_ok;
 };

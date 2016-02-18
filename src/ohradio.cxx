@@ -59,7 +59,7 @@ static vector<RadioMeta> o_radios;
 
 OHRadio::OHRadio(UpMpd *dev)
     : OHService(sTpProduct, sIdProduct, dev), m_active(false),
-      m_id(0), m_songid(0), m_ok(false)
+      m_id(0), m_ok(false)
 {
     // Need Python
     string pypath;
@@ -237,15 +237,11 @@ int OHRadio::setPlaying()
     }
 
     // Send url to mpd
-    //m_dev->m_mpdcli->clearQueue();
+    m_dev->m_mpdcli->clearQueue();
     UpSong song;
     song.album = o_radios[m_id].title;
     song.uri = o_radios[m_id].uri;
-    if (m_songid > 0)
-        m_dev->m_mpdcli->deleteId(m_songid);
-    m_songid = m_dev->m_mpdcli->insert(audiourl, 0, song);
-    if (m_songid < 0) {
-        m_songid = 0;
+    if (m_dev->m_mpdcli->insert(audiourl, 0, song) < 0) {
         LOGDEB("OHRadio::setPlaying: mpd insert failed\n");
         return UPNP_E_INTERNAL_ERROR;
     }
@@ -260,11 +256,12 @@ int OHRadio::setPlaying()
 void OHRadio::setActive(bool onoff) {
     m_active = onoff;
     if (m_active) {
-        m_dev->m_mpdcli->clearQueue();
+        m_dev->m_mpdcli->restoreState(m_mpdsavedstate);
         maybeWakeUp(true);
     } else {
+        m_dev->m_mpdcli->saveState(m_mpdsavedstate);
         m_dev->m_mpdcli->clearQueue();
-        m_songid = 0;
+        iStop();
     }
 }
 

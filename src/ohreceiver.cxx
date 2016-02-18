@@ -108,6 +108,13 @@ void OHReceiver::maybeWakeUp(bool ok)
         m_dev->loopWakeup();
 }
 
+void OHReceiver::setActive(bool onoff)
+{
+    m_active = onoff;
+    if (!m_active)
+        iStop();
+}
+
 bool OHReceiver::iPlay()
 {
     bool ok = false;

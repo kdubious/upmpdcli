@@ -278,7 +278,8 @@ void OHPlaylist::setActive(bool onoff)
         refreshState();
         maybeWakeUp(true);
     } else {
-        m_dev->m_mpdcli->saveState(m_mpdsavedstate, 0);
+        m_dev->m_mpdcli->saveState(m_mpdsavedstate);
+        iStop();
     }
 }
 
