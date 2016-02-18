@@ -76,6 +76,16 @@ ohmetapersist = 1
 # #!/bin/sh (or whatever) in the headline.
 # onstop =
 
+# volume control can be done via mpd using alsa mixer controls. If you have an external amp
+# and it is capable of setting and reading volume via a script you can activate
+# externalvolumecontrol. No volumes will be set via mpd anylonger. It will call
+# scripts onvolumechange for setting and getexternalvolume for reading recent volume.
+# externalvolumecontrol = 
+
+# Run a command for reading volume from external device. upmpdcli will read 
+# volume from stdout of the script given.
+# getexternalvolume =
+
 # Run a command when volume is changed. Specify the full path to the program,
 # e.g. /usr/bin/logger. Executable scripts work, but must have a #!/bin/sh (or
 # whatever) in the headline.

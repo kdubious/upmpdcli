@@ -173,6 +173,7 @@ int main(int argc, char *argv[])
     bool enableAV = true;
     bool enableOH = true;
     bool ohmetapersist = true;
+    bool externalvolumecontrol =false;
     string upmpdcliuser("upmpdcli");
     string pidfilename("/var/run/upmpdcli.pid");
     string iconpath(DATADIR "/icon.png");
@@ -247,6 +248,7 @@ int main(int argc, char *argv[])
     string onplay;
     string onstop;
     string onvolumechange;
+    string getexternalvolume;
     if (!g_configfilename.empty()) {
         g_config = new ConfSimple(g_configfilename.c_str(), 1, true);
         if (!g_config || !g_config->ok()) {
@@ -279,6 +281,9 @@ int main(int argc, char *argv[])
         if (g_config->get("ohmetapersist", value)) {
             ohmetapersist = atoi(value.c_str()) != 0;
         }
+	if (g_config->get("externalvolumecontrol", value)) {
+            externalvolumecontrol = atoi(value.c_str()) != 0;
+        }
         g_config->get("iconpath", iconpath);
         g_config->get("presentationhtml", presentationhtml);
         g_config->get("cachedir", cachedir);
@@ -286,6 +291,7 @@ int main(int argc, char *argv[])
         g_config->get("onplay", onplay);
         g_config->get("onstop", onstop);
         g_config->get("onvolumechange", onvolumechange);
+	g_config->get("getexternalvolume", getexternalvolume);
         if (!(op_flags & OPT_i)) {
             g_config->get("upnpiface", iface);
             if (iface.empty()) {
@@ -468,7 +474,8 @@ int main(int argc, char *argv[])
     int mpdretrysecs = 2;
     for (;;) {
         mpdclip = new MPDCli(mpdhost, mpdport, mpdpassword, onstart, onplay,
-                             onstop, onvolumechange);
+                             onstop, onvolumechange, getexternalvolume,
+			     externalvolumecontrol);
         if (mpdclip == 0) {
             LOGFAT("Can't allocate MPD client object" << endl);
             return 1;

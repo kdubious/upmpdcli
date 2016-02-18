@@ -109,7 +109,8 @@ bool SenderReceiver::start(const string& script, int seekms)
     
     // Stop MPD Play (normally already done)
     m->dev->m_mpdcli->stop();
-
+    // Retrieve status to check if external volume control is activated
+    const MpdStatus& st = m->dev->m_mpdcli->getStatus();
     // sndcmd will non empty if we actually started a script instead
     // of reusing an old one (then need to read the initial data).
     ExecCmd *sndcmd = 0;
@@ -121,6 +122,8 @@ bool SenderReceiver::start(const string& script, int seekms)
         args.push_back(SoapHelp::i2s(m->mpdport));
         args.push_back("-f");
         args.push_back(m->dev->m_friendlyname);
+	if (st.externalvolumecontrol)
+            args.push_back("-e");
         m->isender->startExec(m->makeisendercmd, args, false, true);
     } else if (!script.empty()) {
         // External source. ssender should already be zero, we delete
@@ -130,6 +133,8 @@ bool SenderReceiver::start(const string& script, int seekms)
         vector<string> args;
         args.push_back("-f");
         args.push_back(m->dev->m_friendlyname);
+        if (st.externalvolumecontrol)
+            args.push_back("-e");
         m->ssender->startExec(script, args, false, true);
     }
 
