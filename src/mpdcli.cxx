@@ -28,6 +28,8 @@
 
 #include "libupnpp/log.hxx"
 
+#include "upmpd.hxx"
+#include "conftree.hxx"
 #include "execmd.h"
 
 struct mpd_status;
@@ -37,13 +39,9 @@ using namespace UPnPP;
 
 #define M_CONN ((struct mpd_connection *)m_conn)
 
-MPDCli::MPDCli(const string& host, int port, const string& pass,
-               const string& onstart, const string& onplay,
-               const string& onstop, const string& onvolumechange,
-	       const string& getexternalvolume, bool externalvolumecontrol)
+MPDCli::MPDCli(const string& host, int port, const string& pass)
     : m_conn(0), m_ok(false), m_premutevolume(0), m_cachedvolume(50),
-      m_host(host), m_port(port), m_password(pass), m_onstart(onstart),
-      m_onplay(onplay), m_onstop(onstop),
+      m_host(host), m_port(port), m_password(pass),
       m_lastinsertid(-1), m_lastinsertpos(-1), m_lastinsertqvers(-1)
 {
     regcomp(&m_tpuexpr, "^[[:alpha:]]+://.+", REG_EXTENDED|REG_NOSUB);
@@ -54,9 +52,18 @@ MPDCli::MPDCli(const string& host, int port, const string& pass,
 
     m_ok = true;
     m_ok = updStatus();
-    m_stat.externalvolumecontrol = externalvolumecontrol;
-    m_stat.onvolumechange = onvolumechange;
-    m_stat.getexternalvolume = getexternalvolume;
+
+    UPnPP::PTMutexLocker conflock(g_configlock);
+    g_config->get("onstart", m_onstart);
+    g_config->get("onplay", m_onplay);
+    g_config->get("onstop", m_onstop);
+    g_config->get("onvolumechange", m_stat.onvolumechange);
+    g_config->get("getexternalvolume", m_stat.getexternalvolume);
+    m_stat.externalvolumecontrol = false;
+    string value;
+    if (g_config->get("externalvolumecontrol", value)) {
+        m_stat.externalvolumecontrol = atoi(value.c_str()) != 0;
+    }
 }
 
 MPDCli::~MPDCli()
@@ -64,6 +71,17 @@ MPDCli::~MPDCli()
     if (m_conn) 
         mpd_connection_free(M_CONN);
     regfree(&m_tpuexpr);
+}
+
+// This is used on the auxiliary songcast mpd in a configuration where
+// volume is normally controlled by an external script, but we still
+// want to scale the Songcast stream.
+void MPDCli::forceInternalVControl()
+{
+    m_stat.getexternalvolume.clear();
+    if (m_stat.externalvolumecontrol)
+        m_stat.onvolumechange.clear();
+    m_stat.externalvolumecontrol = false;
 }
 
 bool MPDCli::looksLikeTransportURI(const string& path)

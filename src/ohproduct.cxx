@@ -390,7 +390,10 @@ static void listScripts(vector<pair<string, string> >& sources)
     if (!g_config)
         return;
 
-    g_config->get("ohsrc_scripts_dir", scripts_dir);
+    {
+        PTMutexLocker conflock(g_configlock);
+        g_config->get("ohsrc_scripts_dir", scripts_dir);
+    }
 
     DIR *dirp = opendir(scripts_dir.c_str());
     if (dirp == 0) {

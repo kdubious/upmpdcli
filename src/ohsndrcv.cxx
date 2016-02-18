@@ -25,6 +25,7 @@
 #include "mpdcli.hxx"
 #include "upmpdutils.hxx"
 #include "ohreceiver.hxx"
+#include "conftree.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -44,6 +45,14 @@ public:
     Internal(UpMpd *dv, const string& starterpath, int port)
         : dev(dv), mpd(0), origmpd(0), isender(0), ssender(0),
           makeisendercmd(starterpath), mpdport(port) {
+        // Stream volume control ? This decides if the aux mpd has mixer
+        // "software" or "none"
+        scalestream = true;
+        PTMutexLocker conflock(g_configlock);
+        string value;
+        if (g_config->get("scstreamscaled", value)) {
+            scalestream = atoi(value.c_str()) != 0;
+        }
     }
     ~Internal() {
         clear();
@@ -69,6 +78,7 @@ public:
     string imeta;
     string makeisendercmd;
     int mpdport;
+    bool scalestream;
 };
 
 
@@ -109,11 +119,11 @@ bool SenderReceiver::start(const string& script, int seekms)
     
     // Stop MPD Play (normally already done)
     m->dev->m_mpdcli->stop();
-    // Retrieve status to check if external volume control is activated
-    const MpdStatus& st = m->dev->m_mpdcli->getStatus();
+
     // sndcmd will non empty if we actually started a script instead
     // of reusing an old one (then need to read the initial data).
     ExecCmd *sndcmd = 0;
+
     if (script.empty() && !m->isender) {
         // Internal source, first time: Start fifo MPD and Sender
         m->isender = sndcmd = new ExecCmd();
@@ -122,7 +132,7 @@ bool SenderReceiver::start(const string& script, int seekms)
         args.push_back(SoapHelp::i2s(m->mpdport));
         args.push_back("-f");
         args.push_back(m->dev->m_friendlyname);
-	if (st.externalvolumecontrol)
+	if (!m->scalestream)
             args.push_back("-e");
         m->isender->startExec(m->makeisendercmd, args, false, true);
     } else if (!script.empty()) {
@@ -133,7 +143,8 @@ bool SenderReceiver::start(const string& script, int seekms)
         vector<string> args;
         args.push_back("-f");
         args.push_back(m->dev->m_friendlyname);
-        if (st.externalvolumecontrol)
+        // This does nothing, just for consistence.
+        if (!m->scalestream)
             args.push_back("-e");
         m->ssender->startExec(script, args, false, true);
     }
@@ -192,6 +203,8 @@ bool SenderReceiver::start(const string& script, int seekms)
     if (script.empty()) {
         // Internal source: copy mpd state
         copyMpd(m->dev->m_mpdcli, m->mpd, seekms);
+        if (m->scalestream)
+            m->mpd->forceInternalVControl();
         m->origmpd = m->dev->m_mpdcli;
         m->dev->m_mpdcli = m->mpd;
     } else {

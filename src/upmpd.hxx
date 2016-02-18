@@ -18,11 +18,12 @@
 #ifndef _UPMPD_H_X_INCLUDED_
 #define _UPMPD_H_X_INCLUDED_
 
-#include <string>                       // for string
-#include <unordered_map>                // for unordered_map
-#include <vector>                       // for vector
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-#include "libupnpp/device/device.hxx"   // for UpnpDevice, etc
+#include "libupnpp/device/device.hxx"
+#include "libupnpp/ptmutex.hxx"
 
 class MPDCli;
 class MpdStatus;
@@ -30,6 +31,7 @@ class MpdStatus;
 extern std::string g_configfilename;
 extern std::string g_datadir;
 class ConfSimple;
+extern UPnPP::PTMutexInit g_configlock;
 extern ConfSimple *g_config;
 extern std::string g_protocolInfo;
 

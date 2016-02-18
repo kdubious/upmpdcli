@@ -98,16 +98,12 @@ struct MpdState {
 
 class MPDCli {
 public:
-    MPDCli(const std::string& host, int port = 6600, 
-           const std::string& pass="", const std::string& onstart="",
-           const std::string& onplay="", const std::string& onstop="",
-           const std::string& onvolumechange="", 
-	   const std::string& getexternalvolume="",
-	   bool externalvolumecontrol = false);
+    MPDCli(const std::string& host, int port = 6600, const std::string& pss="");
     ~MPDCli();
     bool ok() {return m_ok && m_conn;}
     bool setVolume(int ivol, bool isMute = false);
     int  getVolume();
+    void forceInternalVControl();
     bool togglePause();
     bool pause(bool onoff);
     bool play(int pos = -1);

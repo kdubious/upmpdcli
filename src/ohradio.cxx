@@ -112,6 +112,7 @@ bool OHRadio::readRadios()
     // Id 0 means no selection
     o_radios.push_back(RadioMeta("Unknown radio", "", ""));
     
+    UPnPP::PTMutexLocker conflock(g_configlock);
     vector<string> allsubk = g_config->getSubKeys_unsorted();
     for (auto it = allsubk.begin(); it != allsubk.end(); it++) {
         LOGDEB("OHRadio::readRadios: subk " << *it << endl);

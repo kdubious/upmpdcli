@@ -154,6 +154,11 @@ ohmetapersist = 1
 # Path to the script which starts the auxiliary mpd and the sender process
 #scsenderpath = /usr/bin/scmakempdsender
 
+# Decide if we scale the songcast stream (apply software volume control to
+# it). True by default, the volume set from a control point on the upmpdcli
+# instance which started the sender affects the volume for all receivers.
+#scstreamscaled = 1
+
 # localhost port to use by the auxiliary mpd
 #scsendermpdport = 6700
 

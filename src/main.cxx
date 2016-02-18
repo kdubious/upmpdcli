@@ -128,6 +128,7 @@ string g_datadir(DATADIR "/");
 
 // Global
 string g_configfilename(CONFIGDIR "/upmpdcli.conf");
+PTMutexInit g_configlock;
 ConfSimple *g_config;
 
 static void onsig(int)
@@ -173,7 +174,6 @@ int main(int argc, char *argv[])
     bool enableAV = true;
     bool enableOH = true;
     bool ohmetapersist = true;
-    bool externalvolumecontrol =false;
     string upmpdcliuser("upmpdcli");
     string pidfilename("/var/run/upmpdcli.pid");
     string iconpath(DATADIR "/icon.png");
@@ -244,11 +244,6 @@ int main(int argc, char *argv[])
     UpMpd::Options opts;
 
     string cachedir;
-    string onstart;
-    string onplay;
-    string onstop;
-    string onvolumechange;
-    string getexternalvolume;
     if (!g_configfilename.empty()) {
         g_config = new ConfSimple(g_configfilename.c_str(), 1, true);
         if (!g_config || !g_config->ok()) {
@@ -281,17 +276,9 @@ int main(int argc, char *argv[])
         if (g_config->get("ohmetapersist", value)) {
             ohmetapersist = atoi(value.c_str()) != 0;
         }
-	if (g_config->get("externalvolumecontrol", value)) {
-            externalvolumecontrol = atoi(value.c_str()) != 0;
-        }
         g_config->get("iconpath", iconpath);
         g_config->get("presentationhtml", presentationhtml);
         g_config->get("cachedir", cachedir);
-        g_config->get("onstart", onstart);
-        g_config->get("onplay", onplay);
-        g_config->get("onstop", onstop);
-        g_config->get("onvolumechange", onvolumechange);
-	g_config->get("getexternalvolume", getexternalvolume);
         if (!(op_flags & OPT_i)) {
             g_config->get("upnpiface", iface);
             if (iface.empty()) {
@@ -473,9 +460,7 @@ int main(int argc, char *argv[])
     MPDCli *mpdclip = 0;
     int mpdretrysecs = 2;
     for (;;) {
-        mpdclip = new MPDCli(mpdhost, mpdport, mpdpassword, onstart, onplay,
-                             onstop, onvolumechange, getexternalvolume,
-			     externalvolumecontrol);
+        mpdclip = new MPDCli(mpdhost, mpdport, mpdpassword);
         if (mpdclip == 0) {
             LOGFAT("Can't allocate MPD client object" << endl);
             return 1;
