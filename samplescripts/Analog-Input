@@ -71,17 +71,21 @@ uxsender = "mpd2sc"
 # conjunction with the node name and script name
 upmpdcli_fname = "UpMpd"
 
+externalvolume = False
+
 def usage(f):
     print("Usage: %s [-h] [-f friendlyname]" % sys.argv[0], file=f)
     sys.exit(1)
 
 args = sys.argv[1:]
-opts, args = getopt.getopt(args, "hup:f:")
+opts, args = getopt.getopt(args, "hup:f:e")
 for opt, arg in opts:
     if opt in ['-h']:
         usage(sys.stdout)
     elif opt in ['-f']:
         upmpdcli_fname = arg
+    elif opt in ['-e']:
+        externalvolume = True    
     else:
         print("unknown option %s\n"%opt, file=sys.stderr)
         usage(sys.stderr)
