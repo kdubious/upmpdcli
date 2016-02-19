@@ -55,8 +55,7 @@ public:
 
 class MpdStatus {
 public:
-    MpdStatus() : trackcounter(0), detailscounter(0),
-                  externalvolumecontrol(false) {}
+    MpdStatus() : trackcounter(0), detailscounter(0) {}
 
     enum State {MPDS_UNK, MPDS_STOP, MPDS_PLAY, MPDS_PAUSE};
 
@@ -86,9 +85,6 @@ public:
     // Synthetized fields
     int trackcounter;
     int detailscounter;
-    bool externalvolumecontrol;
-    std::string onvolumechange;
-    std::string getexternalvolume;
 };
 
 // Complete Mpd State
@@ -156,6 +152,9 @@ private:
     std::string m_onstart;
     std::string m_onplay;
     std::string m_onstop;
+    bool m_externalvolumecontrol;
+    std::string m_onvolumechange;
+    std::string m_getexternalvolume;
     regex_t m_tpuexpr;
     // addtagid command only exists for mpd 0.19 and later.
     bool m_have_addtagid; 

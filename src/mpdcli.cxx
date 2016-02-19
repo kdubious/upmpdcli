@@ -42,6 +42,7 @@ using namespace UPnPP;
 MPDCli::MPDCli(const string& host, int port, const string& pass)
     : m_conn(0), m_ok(false), m_premutevolume(0), m_cachedvolume(50),
       m_host(host), m_port(port), m_password(pass),
+      m_externalvolumecontrol(false),
       m_lastinsertid(-1), m_lastinsertpos(-1), m_lastinsertqvers(-1)
 {
     regcomp(&m_tpuexpr, "^[[:alpha:]]+://.+", REG_EXTENDED|REG_NOSUB);
@@ -57,12 +58,12 @@ MPDCli::MPDCli(const string& host, int port, const string& pass)
     g_config->get("onstart", m_onstart);
     g_config->get("onplay", m_onplay);
     g_config->get("onstop", m_onstop);
-    g_config->get("onvolumechange", m_stat.onvolumechange);
-    g_config->get("getexternalvolume", m_stat.getexternalvolume);
-    m_stat.externalvolumecontrol = false;
+    g_config->get("onvolumechange", m_onvolumechange);
+    g_config->get("getexternalvolume", m_getexternalvolume);
+    m_externalvolumecontrol = false;
     string value;
     if (g_config->get("externalvolumecontrol", value)) {
-        m_stat.externalvolumecontrol = atoi(value.c_str()) != 0;
+        m_externalvolumecontrol = atoi(value.c_str()) != 0;
     }
 }
 
@@ -78,10 +79,10 @@ MPDCli::~MPDCli()
 // want to scale the Songcast stream.
 void MPDCli::forceInternalVControl()
 {
-    m_stat.getexternalvolume.clear();
-    if (m_stat.externalvolumecontrol)
-        m_stat.onvolumechange.clear();
-    m_stat.externalvolumecontrol = false;
+    m_getexternalvolume.clear();
+    if (m_externalvolumecontrol)
+        m_onvolumechange.clear();
+    m_externalvolumecontrol = false;
 }
 
 bool MPDCli::looksLikeTransportURI(const string& path)
@@ -178,16 +179,16 @@ bool MPDCli::updStatus()
         return false;
     }
 
-    if (m_stat.externalvolumecontrol && !m_stat.getexternalvolume.empty()) {
+    if (m_externalvolumecontrol && !m_getexternalvolume.empty()) {
         string result;
         vector<string> cmd;
-        cmd.push_back(m_stat.getexternalvolume);
+        cmd.push_back(m_getexternalvolume);
         if (ExecCmd::backtick(cmd, result)) {
             //LOGDEB("MPDCli::volume retrieved: " << result << endl);
             m_stat.volume = atoi(result.c_str());
         } else {
             LOGERR("MPDCli::updStatus: error retrieving volume: " <<
-                   m_stat.getexternalvolume << " failed\n");
+                   m_getexternalvolume << " failed\n");
         }
     } else {
 	m_stat.volume = mpd_status_get_volume(mpds);
@@ -328,12 +329,8 @@ bool MPDCli::restoreState(const MpdState& st)
     single(st.status.single);
     consume(st.status.consume);
     m_cachedvolume = st.status.volume;
-    //set parameters for external volume control
-    m_stat.externalvolumecontrol = st.status.externalvolumecontrol;
-    m_stat.onvolumechange = st.status.onvolumechange;
-    m_stat.getexternalvolume = st.status.getexternalvolume;
     //no need to set volume if it is controlled external
-    if (!m_stat.externalvolumecontrol)
+    if (!m_externalvolumecontrol)
         mpd_run_set_volume(M_CONN, st.status.volume);
 
     if (st.status.state == MpdStatus::MPDS_PAUSE ||
@@ -345,7 +342,7 @@ bool MPDCli::restoreState(const MpdState& st)
             seek(st.status.songelapsedms/1000);
         if (st.status.state == MpdStatus::MPDS_PAUSE)
             pause(true);
-        if (!m_stat.externalvolumecontrol)
+        if (!m_externalvolumecontrol)
             mpd_run_set_volume(M_CONN, st.status.volume);
     }
     return true;
@@ -441,7 +438,7 @@ UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
 
 bool MPDCli::setVolume(int volume, bool isMute)
 {
-    LOGDEB1("MPDCli::setVolume" << endl);
+    LOGDEB("MPDCli::setVolume. extvc " << m_externalvolumecontrol << endl);
     if (!ok()) {
         return false;
     }
@@ -480,18 +477,18 @@ bool MPDCli::setVolume(int volume, bool isMute)
     else if (volume > 100)
         volume = 100;
     
-    if (!(m_stat.externalvolumecontrol)) {
+    if (!(m_externalvolumecontrol)) {
     	RETRY_CMD(mpd_run_set_volume(M_CONN, volume));
     }
-    if (!m_stat.onvolumechange.empty()) {
+    if (!m_onvolumechange.empty()) {
         ExecCmd ecmd;
         vector<string> args;
         stringstream ss;
         ss << volume;
         args.push_back(ss.str());
-        if (ecmd.doexec(m_stat.onvolumechange, args)) {
+        if (ecmd.doexec(m_onvolumechange, args)) {
             // doexec returns the exit status, should be zero
-            LOGDEB("MPDCli::setVolume: " << m_stat.onvolumechange <<
+            LOGDEB("MPDCli::setVolume: " << m_onvolumechange <<
                    " failed " << volume << endl);
         }
     }

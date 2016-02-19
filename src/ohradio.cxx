@@ -256,7 +256,8 @@ int OHRadio::setPlaying()
 void OHRadio::setActive(bool onoff) {
     m_active = onoff;
     if (m_active) {
-        m_dev->m_mpdcli->restoreState(m_mpdsavedstate);
+        if (m_id)
+            m_dev->m_mpdcli->restoreState(m_mpdsavedstate);
         maybeWakeUp(true);
     } else {
         m_dev->m_mpdcli->saveState(m_mpdsavedstate);
