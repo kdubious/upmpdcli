@@ -1,3 +1,12 @@
+upmpdcli (1.1.1-1) unstable; urgency=low
+
+  * Improve play state management when switching sources
+  * Support external scripts for volume control
+  * Avoid losing metadata (e.g. album art) when switching from Playlist to
+    Radio and back
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Thu, 18 Feb 2016 18:03:00 +0100
+
 upmpdcli (1.1.0-1) unstable; urgency=low
 
   * Add OpenHome Radio Source (play internet radios). Needs Python.
@@ -5,7 +14,7 @@ upmpdcli (1.1.0-1) unstable; urgency=low
     sc2mpd 0.14).
   * Fix Receiver detection from Windows Songcast
   
- -- Jean-Francois Dockes <jf@dockes.org>  Thu, 04 Feb 2016 19:05:00 +0200
+ -- Jean-Francois Dockes <jf@dockes.org>  Thu, 04 Feb 2016 19:05:00 +0100
 
 upmpdcli (0.13.1-1) unstable; urgency=low
 
@@ -16,7 +25,7 @@ upmpdcli (0.13.1-1) unstable; urgency=low
   * Fix random initial value for ohproduct standby variable
   * Fix eventing for ohproduct
   
- -- Jean-Francois Dockes <jf@dockes.org>  Wed, 23 Dec 2015 16:30:00 +0200
+ -- Jean-Francois Dockes <jf@dockes.org>  Wed, 23 Dec 2015 16:30:00 +0100
 
 upmpdcli (0.12.0-1) unstable; urgency=low
 

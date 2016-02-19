@@ -1,6 +1,6 @@
 Summary:        UPnP Media Renderer front-end to MPD, the Music Player Daemon
 Name:           upmpdcli
-Version:        1.1.0
+Version:        1.1.1
 Release:        1%{?dist}
 Group:          Applications/Multimedia
 License:        GPLv2+
@@ -66,6 +66,11 @@ install -D -m644 systemd/upmpdcli.service \
 %systemd_postun_with_restart upmpdcli.service 
 
 %changelog
+* Thu Feb 18 2016 J.F. Dockes <jf@dockes.org> - 1.1.1
+- Improve play state management when switching sources
+- Support external scripts for volume control
+- Avoid losing metadata (e.g. album art) when switching from Playlist to
+  Radio and back
 * Fri Feb 05 2016 J.F. Dockes <jf@dockes.org> - 1.1.0
 - Add OpenHome Radio Source (play internet radios). Needs Python.
 - Add capability to forward ALSA input channel to Songcast (needs
