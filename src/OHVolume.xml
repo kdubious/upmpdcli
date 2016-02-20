@@ -98,6 +98,58 @@
         </argument>
       </argumentList>
     </action>
+    <action>
+      <name>SetBalance</name>
+      <argumentList>
+        <argument>
+          <name>Value</name>
+          <direction>in</direction>
+          <relatedStateVariable>Balance</relatedStateVariable>
+        </argument>
+      </argumentList>
+    </action>
+    <action>
+      <name>BalanceInc</name>
+    </action>
+    <action>
+      <name>BalanceDec</name>
+    </action>
+    <action>
+      <name>Balance</name>
+      <argumentList>
+        <argument>
+          <name>Value</name>
+          <direction>out</direction>
+          <relatedStateVariable>Balance</relatedStateVariable>
+        </argument>
+      </argumentList>
+    </action>
+    <action>
+      <name>SetFade</name>
+      <argumentList>
+        <argument>
+          <name>Value</name>
+          <direction>in</direction>
+          <relatedStateVariable>Fade</relatedStateVariable>
+        </argument>
+      </argumentList>
+    </action>
+    <action>
+      <name>FadeInc</name>
+    </action>
+    <action>
+      <name>FadeDec</name>
+    </action>
+    <action>
+      <name>Fade</name>
+      <argumentList>
+        <argument>
+          <name>Value</name>
+          <direction>out</direction>
+          <relatedStateVariable>Fade</relatedStateVariable>
+        </argument>
+      </argumentList>
+    </action>
   </actionList>
   <serviceStateTable>
     <stateVariable sendEvents="yes">

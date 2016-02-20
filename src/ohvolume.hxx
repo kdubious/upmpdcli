@@ -39,6 +39,14 @@ protected:
     int volumeLimit(const SoapIncoming& sc, SoapOutgoing& data);
     int mute(const SoapIncoming& sc, SoapOutgoing& data);
     int setMute(const SoapIncoming& sc, SoapOutgoing& data);
+    int balance(const SoapIncoming& sc, SoapOutgoing& data);
+    int setBalance(const SoapIncoming& sc, SoapOutgoing& data);
+    int balanceInc(const SoapIncoming& sc, SoapOutgoing& data);
+    int balanceDec(const SoapIncoming& sc, SoapOutgoing& data);
+    int fade(const SoapIncoming& sc, SoapOutgoing& data);
+    int setFade(const SoapIncoming& sc, SoapOutgoing& data);
+    int fadeInc(const SoapIncoming& sc, SoapOutgoing& data);
+    int fadeDec(const SoapIncoming& sc, SoapOutgoing& data);
 
     virtual bool makestate(std::unordered_map<std::string, std::string> &st);
 };

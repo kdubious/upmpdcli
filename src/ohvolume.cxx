@@ -17,21 +17,21 @@
 
 #include "ohvolume.hxx"
 
-#include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
+#include <upnp/upnp.h>
 
-#include <functional>                   // for _Bind, bind, _1, _2
-#include <iostream>                     // for endl
-#include <string>                       // for string
-#include <unordered_map>                // for unordered_map, etc
-#include <utility>                      // for pair
-#include <vector>                       // for vector
+#include <functional>
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
-#include "libupnpp/log.hxx"             // for LOGDEB
-#include "libupnpp/soaphelp.hxx"        // for SoapOutgoing, SoapIncoming, i2s
+#include "libupnpp/log.hxx"
+#include "libupnpp/soaphelp.hxx"
 
-#include "upmpd.hxx"                    // for UpMpd
-#include "upmpdutils.hxx"               // for diffmaps
-#include "renderctl.hxx"                // for UpMpdRenderCtl
+#include "upmpd.hxx"
+#include "upmpdutils.hxx"
+#include "renderctl.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -60,6 +60,23 @@ OHVolume::OHVolume(UpMpd *dev)
                           bind(&OHVolume::mute, this, _1, _2));
     dev->addActionMapping(this,"SetMute", 
                           bind(&OHVolume::setMute, this, _1, _2));
+    dev->addActionMapping(this,"SetBalance", 
+                          bind(&OHVolume::setBalance, this, _1, _2));
+    dev->addActionMapping(this,"Balance", 
+                          bind(&OHVolume::balance, this, _1, _2));
+    dev->addActionMapping(this,"BalanceInc", 
+                          bind(&OHVolume::balanceInc, this, _1, _2));
+    dev->addActionMapping(this,"BalanceDec", 
+                          bind(&OHVolume::balanceDec, this, _1, _2));
+    dev->addActionMapping(this,"SetFade", 
+                          bind(&OHVolume::setFade, this, _1, _2));
+    dev->addActionMapping(this,"Fade", 
+                          bind(&OHVolume::fade, this, _1, _2));
+    dev->addActionMapping(this,"FadeInc", 
+                          bind(&OHVolume::fadeInc, this, _1, _2));
+    dev->addActionMapping(this,"FadeDec", 
+                          bind(&OHVolume::fadeDec, this, _1, _2));
+
 }
 
 bool OHVolume::makestate(unordered_map<string, string> &st)
@@ -70,7 +87,7 @@ bool OHVolume::makestate(unordered_map<string, string> &st)
     st["VolumeLimit"] = "100";
     st["VolumeUnity"] = "100";
     st["VolumeSteps"] = "100";
-    st["VolumeMilliDbPerSteps"] = millidbperstep;
+    st["VolumeMilliDbPerStep"] = millidbperstep;
     st["Balance"] = "0";
     st["BalanceMax"] = "0";
     st["Fade"] = "0";
@@ -157,5 +174,64 @@ int OHVolume::volumeLimit(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::volumeLimit" << endl);
     data.addarg("Value", "100");
+    return UPNP_E_SUCCESS;
+}
+
+int OHVolume::balance(const SoapIncoming& sc, SoapOutgoing& data)
+{
+    LOGDEB("OHVolume::balance" << endl);
+    data.addarg("Value", SoapHelp::i2s(0));
+    return UPNP_E_SUCCESS;
+}
+
+int OHVolume::setBalance(const SoapIncoming& sc, SoapOutgoing& data)
+{
+    LOGDEB("OHVolume::setBalance" << endl);
+    int balance;
+    if (!sc.get("Value", &balance) || balance != 0) {
+        return UPNP_E_INVALID_PARAM;
+    }
+    return UPNP_E_SUCCESS;
+}
+
+int OHVolume::balanceInc(const SoapIncoming& sc, SoapOutgoing& data)
+{
+    LOGDEB("OHVolume::balanceInc" << endl);
+    return UPNP_E_SUCCESS;
+}
+
+int OHVolume::balanceDec(const SoapIncoming& sc, SoapOutgoing& data)
+{
+    LOGDEB("OHVolume::balanceDec" << endl);
+    return UPNP_E_SUCCESS;
+}
+
+
+int OHVolume::fade(const SoapIncoming& sc, SoapOutgoing& data)
+{
+    LOGDEB("OHVolume::fade" << endl);
+    data.addarg("Value", SoapHelp::i2s(0));
+    return UPNP_E_SUCCESS;
+}
+
+int OHVolume::setFade(const SoapIncoming& sc, SoapOutgoing& data)
+{
+    LOGDEB("OHVolume::setFade" << endl);
+    int fade;
+    if (!sc.get("Value", &fade) || fade != 0) {
+        return UPNP_E_INVALID_PARAM;
+    }
+    return UPNP_E_SUCCESS;
+}
+
+int OHVolume::fadeInc(const SoapIncoming& sc, SoapOutgoing& data)
+{
+    LOGDEB("OHVolume::fadeInc" << endl);
+    return UPNP_E_SUCCESS;
+}
+
+int OHVolume::fadeDec(const SoapIncoming& sc, SoapOutgoing& data)
+{
+    LOGDEB("OHVolume::fadeDec" << endl);
     return UPNP_E_SUCCESS;
 }
