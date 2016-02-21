@@ -53,7 +53,14 @@ ohmetapersist = 1
 # Directory used to store cached data (only the queue metadata for now). 
 # Default is ~/.cache/upmpdcli for normal users or /var/cache/upmpdcli when
 # started as root
-# cachedir = /var/lib/upmpdcli
+# cachedir = /var/cache/upmpdcli
+
+# Name of lock file used to store the current process pid. Only used if the
+# process is launched by user root. Used by the init system, and to avoid
+# multiple instances. The only reason to change the value is if you
+# actually want to have several instances running (also change cachedir in
+# this case).
+# pidfile = /var/run/upmpdcli.pid
 
 # Mimimum interval (Seconds) between 2 saves of the cache. Setting this may
 # improve playlist load speed on a slow device. The default is to start a

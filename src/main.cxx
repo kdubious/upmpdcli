@@ -279,6 +279,7 @@ int main(int argc, char *argv[])
         g_config->get("iconpath", iconpath);
         g_config->get("presentationhtml", presentationhtml);
         g_config->get("cachedir", cachedir);
+        g_config->get("pidfile", pidfilename);
         if (!(op_flags & OPT_i)) {
             g_config->get("upnpiface", iface);
             if (iface.empty()) {
