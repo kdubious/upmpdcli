@@ -1,5 +1,11 @@
 = Upmpdcli release notes
 
+== Upmpdcli 1.1.1
+
+- Compatibility with Linn Kazoo (also needs libupnp-1.6.19.jfd3).
+- Improve management of play and volume state when switching between sources
+- Allow volume control to be performed by an external script
+
 == Upmpdcli 1.1
 
 - Implement an OpenHome Radio source for playing Internet radio streams
