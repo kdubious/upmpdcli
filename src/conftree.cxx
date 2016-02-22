@@ -18,19 +18,19 @@
 
 #include "conftree.hxx"
 
-#include <fnmatch.h>                    // for fnmatch
-#include <stdlib.h>                     // for abort
-#include <sys/stat.h>                   // for stat, st_mtime
-#include <unistd.h>                     // for access
+#include <fnmatch.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
-#include <algorithm>                    // for find
-#include <cstring>                      // for strlen
-#include <fstream>                      // for ifstream, ofstream
-#include <iostream>                     // for cerr, cout
-#include <sstream>                      // for stringstream
-#include <utility>                      // for pair
+#include <algorithm>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <utility>
 
-#include "upmpdutils.hxx"               // for trimstring, path_catslash, etc
+#include "upmpdutils.hxx"
 
 using namespace std;
 
@@ -41,24 +41,19 @@ using namespace std;
 #define LOGDEB(X)
 #endif
 
-#ifndef MIN
-#define MIN(A,B) ((A) < (B) ? (A) : (B))
-#endif
-
-#define LL 2048
-
 void ConfSimple::parseinput(istream& input)
 {
     string submapkey;
-    char cline[LL];
+    string cline;
     bool appending = false;
     string line;
     bool eof = false;
 
     for (;;) {
-        cline[0] = 0;
-        input.getline(cline, LL - 1);
-        LOGDEB((stderr, "Parse:line: [%s] status %d\n", cline, int(status)));
+        cline.clear();
+        std::getline(input, cline);
+        LOGDEB((stderr, "Parse:line: [%s] status %d\n",
+                cline.c_str(), int(status)));
         if (!input.good()) {
             if (input.bad()) {
                 LOGDEB((stderr, "Parse: input.bad()\n"));
@@ -73,10 +68,11 @@ void ConfSimple::parseinput(istream& input)
         }
 
         {
-            int ll = strlen(cline);
-            while (ll > 0 && (cline[ll - 1] == '\n' || cline[ll - 1] == '\r')) {
-                cline[ll - 1] = 0;
-                ll--;
+            string::size_type pos = cline.find_last_not_of("\n\r");
+            if (pos == string::npos) {
+                cline.clear();
+            } else if (pos != cline.length() - 1) {
+                cline.erase(pos + 1);
             }
         }
 
@@ -181,7 +177,7 @@ ConfSimple::ConfSimple(const char *fname, int readonly, bool tildexp)
         // It seems that there is no separate 'create if not exists'
         // open flag. Have to truncate to create, but dont want to do
         // this to an existing file !
-        if (access(fname, 0) < 0) {
+        if (!path_exists(fname)) {
             mode |= ios::trunc;
         }
         input.open(fname, mode);
@@ -268,29 +264,45 @@ int ConfSimple::get(const string& nm, string& value, const string& sk) const
 }
 
 // Appropriately output a subkey (nm=="") or variable line.
-// Splits long lines
+// We can't make any assumption about the data except that it does not
+// contain line breaks.
+// Avoid long lines if possible (for hand-editing)
+// We used to break at arbitrary places, but this was ennoying for
+// files with pure UTF-8 encoding (some files can be binary anyway),
+// because it made later editing difficult, as the file would no
+// longer have a valid encoding.
+// Any ASCII byte would be a safe break point for utf-8, but could
+// break some other encoding with, e.g. escape sequences? So break at
+// whitespace (is this safe with all encodings?).
+// Note that the choice of break point does not affect the validity of
+// the file data (when read back by conftree), only its ease of
+// editing with a normal editor.
 static ConfSimple::WalkerCode varprinter(void *f, const string& nm,
         const string& value)
 {
-    ostream *output = (ostream *)f;
+    ostream& output = *((ostream *)f);
     if (nm.empty()) {
-        *output << "\n[" << value << "]\n";
+        output << "\n[" << value << "]\n";
     } else {
-        string value1;
-        if (value.length() < 60) {
-            value1 = value;
+        output << nm << " = ";
+        if (nm.length() + value.length() < 75) {
+            output << value;
         } else {
-            string::size_type pos = 0;
-            while (pos < value.length()) {
-                string::size_type len = MIN(60, value.length() - pos);
-                value1 += value.substr(pos, len);
-                pos += len;
-                if (pos < value.length()) {
-                    value1 += "\\\n";
+            string::size_type ll = 0;
+            for (string::size_type pos = 0; pos < value.length(); pos++) {
+                string::value_type c = value[pos];
+                output << c;
+                ll++;
+                // Break at whitespace if line too long and "a lot" of
+                // remaining data
+                if (ll > 50 && (value.length() - pos) > 10 &&
+                        (c == ' ' || c == '\t')) {
+                    ll = 0;
+                    output << "\\\n";
                 }
             }
         }
-        *output << nm << " = " << value1 << "\n";
+        output << "\n";
     }
     return ConfSimple::WALK_CONTINUE;
 }
@@ -612,8 +624,9 @@ bool ConfSimple::hasNameAnywhere(const string& nm) const
 int ConfTree::get(const std::string& name, string& value, const string& sk)
 const
 {
-    if (sk.empty() || sk[0] != '/') {
-        //  LOGDEB((stderr, "ConfTree::get: looking in global space\n"));
+    if (sk.empty() || !path_isabsolute(sk)) {
+        // LOGDEB((stderr, "ConfTree::get: looking in global space for [%s]\n",
+        // sk.c_str()));
         return ConfSimple::get(name, value, sk);
     }
 
@@ -635,7 +648,12 @@ const
         if (pos != string::npos) {
             msk.replace(pos, string::npos, string());
         } else {
-            break;
+#ifdef _WIN32
+            if (msk.size() == 2 && isalpha(msk[0]) && msk[1] == ':') {
+                msk.clear();
+            } else
+#endif
+                break;
         }
     }
     return 0;

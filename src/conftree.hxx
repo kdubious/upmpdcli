@@ -49,20 +49,20 @@
  * (useful to have central/personal config files)
  */
 
-#include <time.h>                       // for time_t
-#include <algorithm>                    // for sort, unique
-#include <map>                          // for map, etc
-#include <string>                       // for string, operator==, etc
-#include <vector>                       // for vector, etc
+#include <algorithm>
+#include <map>
+#include <string>
+#include <vector>
 
 // rh7.3 likes iostream better...
 #if defined(__GNUC__) && __GNUC__ < 3
 #include <iostream>
 #else
-#include <istream>                      // for istream, ostream
+#include <istream>
+#include <ostream>
 #endif
 
-#include "upmpdutils.hxx"               // for path_cat
+#include "upmpdutils.hxx"
 
 using std::string;
 using std::vector;
@@ -393,14 +393,21 @@ public:
         return false;
     }
 
-    virtual int get(const string& name, string& value, const string& sk) const {
+    virtual int get(const string& name, string& value, const string& sk,
+                    bool shallow) const {
         typename vector<T*>::const_iterator it;
         for (it = m_confs.begin(); it != m_confs.end(); it++) {
             if ((*it)->get(name, value, sk)) {
                 return true;
             }
+            if (shallow) {
+                break;
+            }
         }
         return false;
+    }
+    virtual int get(const string& name, string& value, const string& sk) const {
+        return get(name, value, sk, false);
     }
 
     virtual bool hasNameAnywhere(const string& nm) const {
