@@ -151,6 +151,21 @@ ohmetapersist = 1
 # For the alsa play method only: Alsa device to use
 #scalsadevice = default
 
+# Resampling method. The default is SRC_SINC_FASTEST and works on a
+# Rasberry Pi.
+# Possible values: SRC_SINC_BEST_QUALITY SRC_SINC_MEDIUM_QUALITY
+# SRC_SINC_FASTEST SRC_ZERO_ORDER_HOLD SRC_LINEAR
+# See libsamplerate doc for descriptions. Anything above SRC_SINC_FASTEST
+# needs a serious CPU
+# BEST_QUALITY uses approx 25% cpu on a core i7 4770T. Obviously too much,
+# actually might not be sustainable (it's almost 100% of 1 cpu)
+# MEDIUM_QUALITY is around 10% on the same machine, FASTEST is 4-5%. Given
+# that this measured for the full process, probably a couple % for the
+# conversion in fact. 
+# Raspberry Pi: FASTEST is 30% CPU on a Pi2 with USB audio. It's
+# 25-30% on a Pi 1 with i2s audio. 
+# sccvttype = SRC_SINC_FASTEST.
+
 # Path to sc2mpd if it is not in /usr/bin and the location is not in the
 # PATH for the init scripts.
 #sc2mpd = /usr/bin/sc2mpd
