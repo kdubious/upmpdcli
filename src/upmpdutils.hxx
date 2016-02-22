@@ -33,6 +33,8 @@ extern bool file_to_string(const std::string &filename, std::string &data,
                            std::string *reason = 0);
 
 extern void path_catslash(std::string &s);
+extern bool path_exists(const std::string& path);
+extern bool path_isabsolute(const std::string &path);
 extern std::string path_cat(const std::string &s1, const std::string &s2);
 extern void trimstring(std::string &s, const char *ws = " \t");
 extern std::string path_tildexpand(const std::string &s);

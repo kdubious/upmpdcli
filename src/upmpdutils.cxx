@@ -141,6 +141,23 @@ string path_cat(const string &s1, const string &s2) {
     return res;
 }
 
+bool path_exists(const string& path)
+{
+    return access(path.c_str(), 0) == 0;
+}
+
+bool path_isabsolute(const string &path)
+{
+    if (!path.empty() && (path[0] == '/'
+#ifdef _WIN32
+                          || path_isdriveabs(path)
+#endif
+            )) {
+        return true;
+    } 
+    return false;
+}
+
 string path_home()
 {
     uid_t uid = getuid();
