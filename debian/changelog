@@ -1,3 +1,9 @@
+upmpdcli (1.1.2-1) unstable; urgency=low
+
+  * Fix Songcast Receiver playmethod=mpd, broken in 1.1.1
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Fri, 26 Feb 2016 14:10:00 +0100
+
 upmpdcli (1.1.1-1) unstable; urgency=low
 
   * Improve play state management when switching sources
