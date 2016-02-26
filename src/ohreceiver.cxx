@@ -187,10 +187,17 @@ bool OHReceiver::iPlay()
             }
         }
         if (id == -1) {
-            ok = m_dev->m_ohpl->insertUri(0, m_httpuri,
-                                          SoapHelp::xmlUnquote(m_metadata),&id);
-            if (!ok) {
-                LOGERR("OHReceiver::play: insertUri() failed\n");
+            UpSong metaformpd;
+            string metadata(SoapHelp::xmlUnquote(m_metadata));
+            if (!uMetaToUpSong(metadata, &metaformpd)) {
+                LOGERR("OHReceiver::play: failed to parse metadata " << " Uri [" 
+                       << m_httpuri << "] Metadata [" << metadata << "]"
+                       << endl);
+                goto out;
+            }
+            id = m_dev->m_mpdcli->insertAfterId(m_httpuri, 0, metaformpd);
+            if (id == -1) {
+                LOGERR("OHReceiver::play: insertAfterId() failed\n");
                 goto out;
             }
         }
