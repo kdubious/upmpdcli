@@ -94,6 +94,10 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
         m_services.push_back(new OHVolume(this));
         m_ohpl = new OHPlaylist(this, opts.ohmetasleep);
         m_services.push_back(m_ohpl);
+        if (m_avt)
+            m_avt->setOHP(m_ohpl);
+        if (m_ohif)
+            m_ohif->setOHPL(m_ohpl);
         m_ohrd = new OHRadio(this);
         if (m_ohrd && !m_ohrd->ok()) {
             delete m_ohrd;

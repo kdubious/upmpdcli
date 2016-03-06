@@ -358,7 +358,11 @@ string didlmake(const UpSong& song)
         }
     }
 
-    {const string& val = song.tracknum;
+    {string val = song.tracknum;
+        // MPD may return something like xx/yy
+        string::size_type spos = val.find("/");
+        if (spos != string::npos)
+            val = val.substr(0, spos);
         if (!val.empty()) {
             ss << "<upnp:originalTrackNumber>" << val << 
                 "</upnp:originalTrackNumber>";

@@ -37,8 +37,7 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
 
-    void setOHP(OHPlaylist *ohp) 
-    {
+    void setOHP(OHPlaylist *ohp) {
         m_ohp = ohp;
     }
 

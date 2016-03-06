@@ -28,11 +28,17 @@
 
 using namespace UPnPP;
 
+class OHPlaylist;
+
 class OHInfo : public OHService {
 public:
     OHInfo(UpMpd *dev);
 
     void setMetatext(const std::string& metatext);
+
+    void setOHPL(OHPlaylist *ohp) {
+        m_ohpl = ohp;
+    }
 
 protected:
     virtual bool makestate(std::unordered_map<std::string, std::string>& state);
@@ -48,6 +54,7 @@ private:
                      std::string& bitdepth, std::string& samplerate);
 
     std::string m_metatext;
+    OHPlaylist *m_ohpl;
 };
 
 #endif /* _OHINFO_H_X_INCLUDED_ */

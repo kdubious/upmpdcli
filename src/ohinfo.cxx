@@ -17,21 +17,22 @@
 
 #include "ohinfo.hxx"
 
-#include <upnp/upnp.h>                  // for UPNP_E_SUCCESS
+#include <upnp/upnp.h>
 
-#include <functional>                   // for _Bind, bind, _1, _2
-#include <iostream>                     // for endl
-#include <string>                       // for string
-#include <unordered_map>                // for unordered_map, etc
-#include <utility>                      // for pair
-#include <vector>                       // for vector
+#include <functional>
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
-#include "libupnpp/log.hxx"             // for LOGDEB
-#include "libupnpp/soaphelp.hxx"        // for SoapOutgoing, i2s, SoapIncoming
+#include "libupnpp/log.hxx"
+#include "libupnpp/soaphelp.hxx"
 
-#include "mpdcli.hxx"                   // for MpdStatus, etc
-#include "upmpd.hxx"                    // for UpMpd
-#include "upmpdutils.hxx"               // for didlmake, diffmaps
+#include "mpdcli.hxx"
+#include "upmpd.hxx"
+#include "upmpdutils.hxx"
+#include "ohplaylist.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -40,7 +41,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Info:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Info");
 
 OHInfo::OHInfo(UpMpd *dev)
-    : OHService(sTpProduct, sIdProduct, dev)
+    : OHService(sTpProduct, sIdProduct, dev), m_ohpl(0)
 {
     dev->addActionMapping(this, "Counters", 
                           bind(&OHInfo::counters, this, _1, _2));
@@ -60,6 +61,11 @@ void OHInfo::urimetadata(string& uri, string& metadata)
 
     if (is_song) {
         uri = mpds.currentsong.uri;
+        // Prefer metadata from cache (copy from media server) to
+        // whatever comes from mpd
+        if (m_ohpl && m_ohpl->cacheFind(uri, metadata)) {
+            return;
+        }
         metadata = didlmake(mpds.currentsong);
     } else {
         uri.clear();
