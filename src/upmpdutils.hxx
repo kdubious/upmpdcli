@@ -40,6 +40,8 @@ extern void trimstring(std::string &s, const char *ws = " \t");
 extern std::string path_tildexpand(const std::string &s);
 extern void stringToTokens(const std::string &s, std::vector<std::string> &tokens,
 			   const std::string &delims = " \t", bool skipinit=true);
+template <class T> bool stringToStrings(const std::string& s, T &tokens, 
+					const std::string& addseps = "");
 extern bool path_makepath(const std::string& path, int mode);
 
 // Convert between db value to percent values (Get/Set Volume and VolumeDb)

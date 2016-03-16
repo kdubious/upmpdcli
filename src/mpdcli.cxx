@@ -31,6 +31,7 @@
 #include "upmpd.hxx"
 #include "conftree.hxx"
 #include "execmd.h"
+#include "upmpdutils.hxx"
 
 struct mpd_status;
 
@@ -58,8 +59,12 @@ MPDCli::MPDCli(const string& host, int port, const string& pass)
     g_config->get("onstart", m_onstart);
     g_config->get("onplay", m_onplay);
     g_config->get("onstop", m_onstop);
-    g_config->get("onvolumechange", m_onvolumechange);
-    g_config->get("getexternalvolume", m_getexternalvolume);
+    string scratch;
+    g_config->get("onvolumechange", scratch);
+    stringToStrings(scratch,  m_onvolumechange);
+    g_config->get("getexternalvolume", scratch);
+    stringToStrings(scratch, m_getexternalvolume);
+    
     m_externalvolumecontrol = false;
     string value;
     if (g_config->get("externalvolumecontrol", value)) {
@@ -181,14 +186,12 @@ bool MPDCli::updStatus()
 
     if (m_externalvolumecontrol && !m_getexternalvolume.empty()) {
         string result;
-        vector<string> cmd;
-        cmd.push_back(m_getexternalvolume);
-        if (ExecCmd::backtick(cmd, result)) {
+        if (ExecCmd::backtick(m_getexternalvolume, result)) {
             //LOGDEB("MPDCli::volume retrieved: " << result << endl);
             m_stat.volume = atoi(result.c_str());
         } else {
             LOGERR("MPDCli::updStatus: error retrieving volume: " <<
-                   m_getexternalvolume << " failed\n");
+                   m_getexternalvolume[0] << " failed\n");
         }
     } else {
 	m_stat.volume = mpd_status_get_volume(mpds);
@@ -482,13 +485,13 @@ bool MPDCli::setVolume(int volume, bool isMute)
     }
     if (!m_onvolumechange.empty()) {
         ExecCmd ecmd;
-        vector<string> args;
+        vector<string> args = m_onvolumechange;
         stringstream ss;
         ss << volume;
         args.push_back(ss.str());
-        if (ecmd.doexec(m_onvolumechange, args)) {
+        if (ecmd.doexec1(args)) {
             // doexec returns the exit status, should be zero
-            LOGDEB("MPDCli::setVolume: " << m_onvolumechange <<
+            LOGDEB("MPDCli::setVolume: " << m_onvolumechange[0] <<
                    " failed " << volume << endl);
         }
     }

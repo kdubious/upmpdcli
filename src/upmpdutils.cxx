@@ -258,6 +258,118 @@ void stringToTokens(const string& str, vector<string>& tokens,
     }
 }
 
+
+template <class T> bool stringToStrings(const string &s, T &tokens, 
+                                        const string& addseps)
+{
+    string current;
+    tokens.clear();
+    enum states {SPACE, TOKEN, INQUOTE, ESCAPE};
+    states state = SPACE;
+    for (unsigned int i = 0; i < s.length(); i++) {
+	switch (s[i]) {
+        case '"': 
+	    switch(state) {
+            case SPACE: 
+		state=INQUOTE; continue;
+            case TOKEN: 
+	        current += '"';
+		continue;
+            case INQUOTE: 
+                tokens.insert(tokens.end(), current);
+		current.clear();
+		state = SPACE;
+		continue;
+            case ESCAPE:
+	        current += '"';
+	        state = INQUOTE;
+                continue;
+	    }
+	    break;
+        case '\\': 
+	    switch(state) {
+            case SPACE: 
+            case TOKEN: 
+                current += '\\';
+                state=TOKEN; 
+                continue;
+            case INQUOTE: 
+                state = ESCAPE;
+                continue;
+            case ESCAPE:
+                current += '\\';
+                state = INQUOTE;
+                continue;
+	    }
+	    break;
+
+        case ' ': 
+        case '\t': 
+        case '\n': 
+        case '\r': 
+	    switch(state) {
+            case SPACE: 
+                continue;
+            case TOKEN: 
+		tokens.insert(tokens.end(), current);
+		current.clear();
+		state = SPACE;
+		continue;
+            case INQUOTE: 
+            case ESCAPE:
+                current += s[i];
+                continue;
+	    }
+	    break;
+
+        default:
+            if (!addseps.empty() && addseps.find(s[i]) != string::npos) {
+                switch(state) {
+                case ESCAPE:
+                    state = INQUOTE;
+                    break;
+                case INQUOTE: 
+                    break;
+                case SPACE: 
+                    tokens.insert(tokens.end(), string(1, s[i]));
+                    continue;
+                case TOKEN: 
+                    tokens.insert(tokens.end(), current);
+                    current.erase();
+                    tokens.insert(tokens.end(), string(1, s[i]));
+                    state = SPACE;
+                    continue;
+                }
+            } else switch(state) {
+                case ESCAPE:
+                    state = INQUOTE;
+                    break;
+                case SPACE: 
+                    state = TOKEN;
+                    break;
+                case TOKEN: 
+                case INQUOTE: 
+                    break;
+                }
+	    current += s[i];
+	}
+    }
+    switch(state) {
+    case SPACE: 
+	break;
+    case TOKEN: 
+	tokens.insert(tokens.end(), current);
+	break;
+    case INQUOTE: 
+    case ESCAPE:
+	return false;
+    }
+    return true;
+}
+
+template bool stringToStrings<vector<string> >(const string &, 
+					       vector<string> &,const string&);
+
 // Translate 0-100% MPD volume to UPnP VolumeDB: we do db upnp-encoded
 // values from -10240 (0%) to 0 (100%)
 int percentodbvalue(int value)

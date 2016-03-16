@@ -153,8 +153,8 @@ private:
     std::string m_onplay;
     std::string m_onstop;
     bool m_externalvolumecontrol;
-    std::string m_onvolumechange;
-    std::string m_getexternalvolume;
+    std::vector<std::string> m_onvolumechange;
+    std::vector<std::string> m_getexternalvolume;
     regex_t m_tpuexpr;
     // addtagid command only exists for mpd 0.19 and later.
     bool m_have_addtagid; 
