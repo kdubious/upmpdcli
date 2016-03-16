@@ -1,5 +1,11 @@
 = Upmpdcli release notes
 
+== Upmpdcli 1.1.2
+
+- Fixed the mpd play method for the Songcast Receiver, it was broken in
+  1.1.1. Even if the direct alsa is preferred, it can be useful in case of
+  alsa trouble.
+  
 == Upmpdcli 1.1.1
 
 - Compatibility with Linn Kazoo (also needs libupnp-1.6.19.jfd3).
