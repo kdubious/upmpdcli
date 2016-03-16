@@ -39,6 +39,7 @@
 #include "mpdcli.hxx"
 #include "upmpd.hxx"
 #include "httpfs.hxx"
+#include "upmpdutils.hxx"
 
 using namespace std;
 using namespace UPnPP;
@@ -275,6 +276,11 @@ int main(int argc, char *argv[])
         }
         if (g_config->get("ohmetapersist", value)) {
             ohmetapersist = atoi(value.c_str()) != 0;
+        }
+        if (g_config->get("pkgdatadir", g_datadir)) {
+            path_catslash(g_datadir);
+            iconpath = path_cat(g_datadir, "icon.png");
+            presentationhtml = path_cat(g_datadir, "presentation.html");
         }
         g_config->get("iconpath", iconpath);
         g_config->get("presentationhtml", presentationhtml);
