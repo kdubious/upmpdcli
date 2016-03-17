@@ -1,6 +1,6 @@
 Summary:        UPnP Media Renderer front-end to MPD, the Music Player Daemon
 Name:           upmpdcli
-Version:        1.1.2
+Version:        1.1.3
 Release:        1%{?dist}
 Group:          Applications/Multimedia
 License:        GPLv2+
@@ -66,6 +66,10 @@ install -D -m644 systemd/upmpdcli.service \
 %systemd_postun_with_restart upmpdcli.service 
 
 %changelog
+* Thu Mar 17 2016 J.F. Dockes <jf@dockes.org> - 1.1.3
+- Fix cover art display, which sometimes vanished.
+- Allow changing the xml data directory in the run time config.
+- Fix execution of onvolumechange (command could not have args).
 * Fri Feb 26 2016 J.F. Dockes <jf@dockes.org> - 1.1.2
 - Fix Songcast Receiver in scplaymethod=mpd mode
 * Thu Feb 18 2016 J.F. Dockes <jf@dockes.org> - 1.1.1
