@@ -1,7 +1,6 @@
 
 AM_CPPFLAGS = -DDEBUG -g -Wall \
-            -DDATADIR=\"${pkgdatadir}\" -DCONFIGDIR=\"${sysconfdir}\" \
-            -DUPMPDCLI_PACKAGE_VERSION=\"${PACKAGE_VERSION}\"
+            -DDATADIR=\"${pkgdatadir}\" -DCONFIGDIR=\"${sysconfdir}\"
 
 AM_CXXFLAGS = -std=c++0x 
 
@@ -12,8 +11,9 @@ upmpdcli_SOURCES = \
      src/avtransport.hxx \
      src/closefrom.cpp \
      src/closefrom.h \
-     src/conftree.cxx \
-     src/conftree.hxx \
+     src/conf_post.h \
+     src/conftree.cpp \
+     src/conftree.h \
      src/conman.cxx \
      src/conman.hxx \
      src/execmd.cpp \
@@ -44,6 +44,12 @@ upmpdcli_SOURCES = \
      src/ohtime.hxx \
      src/ohvolume.cxx \
      src/ohvolume.hxx \
+     src/pathut.cpp \
+     src/pathut.h \
+     src/smallut.cpp \
+     src/smallut.h \
+     src/readfile.cpp \
+     src/readfile.h \
      src/renderctl.cxx \
      src/renderctl.hxx \
      src/upmpd.cxx \
@@ -56,6 +62,7 @@ upmpdcli_LDADD = $(UPMPDCLI_LIBS)
 scctl_SOURCES = \
     scctl_src/scctl.cpp \
     src/netcon.cpp \
+    src/smallut.cpp \
     src/upmpdutils.cxx
 
 scctl_LDADD = $(UPMPDCLI_LIBS)

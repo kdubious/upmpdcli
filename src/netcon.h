@@ -16,11 +16,17 @@
  *   Free Software Foundation, Inc.,
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include <sys/time.h>
+#ifdef BUILDING_RECOLL
+#include "autoconfig.h"
+#else
+#include "config.h"
+#endif
 
+#include <sys/time.h>
 #include <map>
-#include <memory>
 #include <string>
+
+#include MEMORY_INCLUDE
 
 /// A set of classes to manage client-server communication over a
 /// connection-oriented network, or a pipe.
@@ -37,7 +43,7 @@
 
 /// Base class for all network endpoints:
 class Netcon;
-typedef std::shared_ptr<Netcon> NetconP;
+typedef STD_SHARED_PTR<Netcon> NetconP;
 class SelectLoop;
 
 class Netcon {
@@ -240,7 +246,7 @@ public:
     virtual int getline(char *buf, int cnt, int timeo = -1);
     /// Set handler to be called when the connection is placed in the
     /// selectloop and an event occurs.
-    virtual void setcallback(std::shared_ptr<NetconWorker> user) {
+    virtual void setcallback(STD_SHARED_PTR<NetconWorker> user) {
         m_user = user;
     }
 
@@ -249,7 +255,7 @@ private:
     char *m_bufbase;    // Pointer to current 1st byte of useful data
     int m_bufbytes; // Bytes of data.
     int m_bufsize;  // Total buffer size
-    std::shared_ptr<NetconWorker> m_user;
+    STD_SHARED_PTR<NetconWorker> m_user;
     virtual int cando(Netcon::Event reason); // Selectloop slot
 };
 
@@ -331,7 +337,7 @@ protected:
     virtual int cando(Netcon::Event reason);
 
     // Empty if port was numeric, else service name or socket path
-    std::string m_serv; 
+    std::string m_serv;
 
 private:
 #ifdef NETCON_ACCESSCONTROL

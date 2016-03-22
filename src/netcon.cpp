@@ -1,4 +1,4 @@
-/* Copyright (C) 2002 J.F.Dockes
+/* Copyright (C) 2002 J.F. Dockes
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -19,6 +19,12 @@
 
 
 #ifndef TEST_NETCON
+#ifdef BUILDING_RECOLL
+#include "autoconfig.h"
+#else
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,7 +47,7 @@
 #include <map>
 
 
-#ifdef HAVE_DEBUGLOG
+#ifdef BUILDING_RECOLL
 #include "debuglog.h"
 
 #else
@@ -58,6 +64,8 @@
 #endif
 
 #include "netcon.h"
+
+using namespace std;
 
 #ifndef SOCKLEN_T
 #define SOCKLEN_T socklen_t
@@ -76,8 +84,8 @@
 static const int one = 1;
 static const int zero = 0;
 
-#define LOGSYSERR(who, call, spar)                     \
-    LOGERR(("%s: %s(%s) errno %d (%s)\n", who, call,   \
+#define LOGSYSERR(who, call, spar)                  \
+    LOGERR(("%s: %s(%s) errno %d (%s)\n", who, call,            \
         spar, errno, strerror(errno)))
 
 #ifndef MIN
@@ -113,8 +121,7 @@ int Netcon::select1(int fd, int timeo, int write)
         ret = select(fd + 1, &rd, 0, 0, &tv);
     }
     if (!FD_ISSET(fd, &rd)) {
-        LOGERR(("Netcon::select1: fd not ready after select ??\n"));
-        return -1;
+        LOGDEB2(("Netcon::select1: fd %d timeout\n", fd));
     }
     return ret;
 }
@@ -192,7 +199,7 @@ int SelectLoop::doLoop()
         // Walk the netcon map and set up the read and write fd_sets
         // for select()
         nfds = 0;
-        for (std::map<int, NetconP>::iterator it = m_polldata.begin();
+        for (map<int, NetconP>::iterator it = m_polldata.begin();
                 it != m_polldata.end(); it++) {
             NetconP& pll = it->second;
             int fd  = it->first;
@@ -268,7 +275,7 @@ int SelectLoop::doLoop()
                 continue;
             }
 
-            std::map<int, NetconP>::iterator it = m_polldata.find(fd);
+            map<int, NetconP>::iterator it = m_polldata.find(fd);
             if (it == m_polldata.end()) {
                 /// This should not happen actually
                 LOGDEB2(("Netcon::selectloop: fd %d not found\n", fd));
@@ -317,7 +324,7 @@ int SelectLoop::remselcon(NetconP con)
         return -1;
     }
     LOGDEB1(("Netcon::remselcon: fd %d\n", con->m_fd));
-    std::map<int, NetconP>::iterator it = m_polldata.find(con->m_fd);
+    map<int, NetconP>::iterator it = m_polldata.find(con->m_fd);
     if (it == m_polldata.end()) {
         LOGDEB1(("Netcon::remselcon: con not found for fd %d\n", con->m_fd));
         return -1;
@@ -641,7 +648,7 @@ int NetconCli::openconn(const char *host, unsigned int port, int timeo)
         } else {
             struct hostent *hp;
             if ((hp = gethostbyname(host)) == 0) {
-                LOGERR(("NetconCli::openconn: gethostbyname(%s) failed\n", 
+                LOGERR(("NetconCli::openconn: gethostbyname(%s) failed\n",
                         host));
                 return -1;
             }
@@ -716,7 +723,7 @@ int NetconCli::openconn(const char *host, const char *serv, int timeo)
     if (host[0]  != '/') {
         struct servent *sp;
         if ((sp = getservbyname(serv, "tcp")) == 0) {
-            LOGERR(("NetconCli::openconn: getservbyname failed for %s\n",serv));
+            LOGERR(("NetconCli::openconn: getservbyname failed for %s\n", serv));
             return -1;
         }
         // Callee expects the port number in host byte order
@@ -815,7 +822,7 @@ int NetconServLis::openservice(const char *serv, int backlog)
 
         LOGDEB1(("NetconServLis::openservice: service opened ok\n"));
         ret = 0;
-    out:
+out:
         if (ret < 0 && m_fd >= 0) {
             close(m_fd);
             m_fd = -1;
@@ -976,10 +983,10 @@ NetconServLis::accept(int timeo)
     // Retrieve peer's host name. Errors are non fatal
     if (m_serv.empty() || m_serv[0] != '/') {
         struct hostent *hp;
-        if ((hp = gethostbyaddr((char *) & (who.sin_addr), 
+        if ((hp = gethostbyaddr((char *) & (who.sin_addr),
                                 sizeof(struct in_addr), AF_INET)) == 0) {
             LOGERR(("NetconServLis::accept: gethostbyaddr failed for addr 0x%lx\n",
-                who.sin_addr.s_addr));
+                    who.sin_addr.s_addr));
             con->setpeer(inet_ntoa(who.sin_addr));
         } else {
             con->setpeer(hp->h_name);
@@ -1202,8 +1209,8 @@ int trycli(char *host, char *serv)
         return 1;
     }
     int port = atoi(serv);
-    int ret = port > 0 ? 
-        clicon->openconn(host, port) : clicon->openconn(host, serv);
+    int ret = port > 0 ?
+              clicon->openconn(host, port) : clicon->openconn(host, serv);
     if (ret < 0) {
         fprintf(stderr, "openconn(%s, %s) failed\n", host, serv);
         return 1;
@@ -1228,7 +1235,8 @@ int trycli(char *host, char *serv)
         }
     }
 #else
-    shared_ptr<CliNetconWorker> worker = make_shared<CliNetconWorker>();
+    STD_SHARED_PTR<NetconWorker> worker =
+        STD_SHARED_PTR<NetconWorker>(new CliNetconWorker());
     clicon->setcallback(worker);
     SelectLoop myloop;
     myloop.addselcon(con, Netcon::NETCONPOLL_WRITE);
@@ -1293,8 +1301,8 @@ protected:
         if (con == 0) {
             return -1;
         }
-        shared_ptr<ServNetconWorker> worker =
-            make_shared<ServNetconWorker>(ServNetconWorker());
+        STD_SHARED_PTR<NetconWorker> worker =
+            STD_SHARED_PTR<NetconWorker>(new ServNetconWorker());
         con->setcallback(worker);
         m_loop.addselcon(NetconP(con), NETCONPOLL_READ);
         return 1;
@@ -1336,8 +1344,8 @@ int tryserv(char *serv)
     sigaction(SIGTERM, &sa, 0);
 
     int port = atoi(serv);
-    int ret = port > 0 ? 
-        servlis->openservice(port) : servlis->openservice(serv);
+    int ret = port > 0 ?
+              servlis->openservice(port) : servlis->openservice(serv);
     if (ret < 0) {
         fprintf(stderr, "openservice(%s) failed\n", serv);
         return 1;

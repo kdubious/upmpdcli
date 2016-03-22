@@ -1,5 +1,11 @@
 = Upmpdcli release notes
 
+== Upmpdcli 1.1.3
+
+- Fix cover art display, which sometimes vanished.
+- Allow changing the xml data directory in the run time config.
+- Fix execution of onvolumechange (command could not have args).
+
 == Upmpdcli 1.1.2
 
 - Fixed the mpd play method for the Songcast Receiver, it was broken in

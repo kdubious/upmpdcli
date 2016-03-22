@@ -23,9 +23,10 @@
 #include "execmd.h"
 #include "upmpd.hxx"
 #include "mpdcli.hxx"
+#include "smallut.h"
 #include "upmpdutils.hxx"
 #include "ohreceiver.hxx"
-#include "conftree.hxx"
+#include "conftree.h"
 
 using namespace std;
 using namespace std::placeholders;

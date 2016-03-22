@@ -34,8 +34,10 @@
 
 #include "mpdcli.hxx"
 #include "upmpd.hxx"
+#include "smallut.h"
+#include "pathut.h"
 #include "upmpdutils.hxx"
-#include "conftree.hxx"
+#include "conftree.h"
 #include "execmd.h"
 #include "ohproduct.hxx"
 #include "ohinfo.hxx"

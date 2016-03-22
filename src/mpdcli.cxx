@@ -29,7 +29,8 @@
 #include "libupnpp/log.hxx"
 
 #include "upmpd.hxx"
-#include "conftree.hxx"
+#include "smallut.h"
+#include "conftree.h"
 #include "execmd.h"
 #include "upmpdutils.hxx"
 

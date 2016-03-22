@@ -17,25 +17,26 @@
 
 #include "ohplaylist.hxx"
 
-#include <stdlib.h>                     // for atoi
+#include <stdlib.h>
 
-#include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
+#include <upnp/upnp.h>
 
-#include <functional>                   // for _Bind, bind, _1, _2
-#include <iostream>                     // for endl, etc
-#include <string>                       // for string, allocator, etc
-#include <utility>                      // for pair
-#include <vector>                       // for vector
+#include <functional>
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include "libupnpp/base64.hxx"          // for base64_encode
-#include "libupnpp/log.hxx"             // for LOGDEB, LOGERR
-#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing, i2s, etc
+#include "libupnpp/base64.hxx"
+#include "libupnpp/log.hxx"
+#include "libupnpp/soaphelp.hxx"
 #include "libupnpp/upnpavutils.hxx"
 
-#include "ohmetacache.hxx"              // for dmcacheSave
-#include "mpdcli.hxx"                   // for MpdStatus, UpSong, MPDCli, etc
-#include "upmpd.hxx"                    // for UpMpd, etc
-#include "upmpdutils.hxx"               // for didlmake, diffmaps, etc
+#include "ohmetacache.hxx"
+#include "mpdcli.hxx"
+#include "upmpd.hxx"
+#include "upmpdutils.hxx"
+#include "smallut.h"
 #include "ohproduct.hxx"
 
 using namespace std;

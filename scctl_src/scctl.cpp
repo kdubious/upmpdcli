@@ -32,7 +32,7 @@
  * first tries to contact the server, and does things itself if no
  * server is found (encurring 2-3 S of timeout in the latter case).
  */
-#include "libupnpp/config.h"
+#include "../src/config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,11 +49,10 @@
 
 #include "libupnpp/upnpplib.hxx"
 #include "libupnpp/log.hxx"
-#include "libupnpp/control/mediarenderer.hxx"
-#include "libupnpp/control/discovery.hxx"
 #include "libupnpp/control/linnsongcast.hxx"
 
 #include "../src/netcon.h"
+#include "../src/smallut.h"
 #include "../src/upmpdutils.hxx"
 
 using namespace UPnPClient;

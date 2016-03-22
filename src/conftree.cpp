@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 J.F.Dockes
+/* Copyright (C) 2003-2016 J.F.Dockes
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -16,12 +16,24 @@
  */
 #ifndef TEST_CONFTREE
 
-#include "conftree.hxx"
+#ifdef BUILDING_RECOLL
+#include "autoconfig.h"
+#else
+#include "config.h"
+#endif
 
+#include "conftree.h"
+
+#include <ctype.h>
 #include <fnmatch.h>
+#ifdef _WIN32
+#include "safesysstat.h"
+#else
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <pwd.h>
+#endif
 
 #include <algorithm>
 #include <cstring>
@@ -30,7 +42,8 @@
 #include <sstream>
 #include <utility>
 
-#include "upmpdutils.hxx"
+#include "pathut.h"
+#include "smallut.h"
 
 using namespace std;
 
@@ -639,8 +652,8 @@ const
 
     // Look in subkey and up its parents until root ('')
     for (;;) {
-        //  LOGDEB((stderr,"ConfTree::get: looking for '%s' in '%s'\n",
-        //      name.c_str(), msk.c_str()));
+        // LOGDEB((stderr,"ConfTree::get: looking for '%s' in '%s'\n",
+        // name.c_str(), msk.c_str()));
         if (ConfSimple::get(name, value, msk)) {
             return 1;
         }
@@ -669,6 +682,10 @@ const
 #include <sstream>
 #include <iostream>
 #include <vector>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "conftree.h"
 #include "smallut.h"

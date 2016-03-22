@@ -25,25 +25,6 @@
 
 class UpSong;
 
-/**
- * Read file into string.
- * @return true for ok, false else
- */
-extern bool file_to_string(const std::string &filename, std::string &data, 
-                           std::string *reason = 0);
-
-extern void path_catslash(std::string &s);
-extern bool path_exists(const std::string& path);
-extern bool path_isabsolute(const std::string &path);
-extern std::string path_cat(const std::string &s1, const std::string &s2);
-extern void trimstring(std::string &s, const char *ws = " \t");
-extern std::string path_tildexpand(const std::string &s);
-extern void stringToTokens(const std::string &s, std::vector<std::string> &tokens,
-			   const std::string &delims = " \t", bool skipinit=true);
-template <class T> bool stringToStrings(const std::string& s, T &tokens, 
-					const std::string& addseps = "");
-extern bool path_makepath(const std::string& path, int mode);
-
 // Convert between db value to percent values (Get/Set Volume and VolumeDb)
 extern int percentodbvalue(int value);
 extern int dbvaluetopercent(int dbvalue);
@@ -73,29 +54,5 @@ extern std::string regsub1(const std::string& sexp, const std::string& input,
 extern std::unordered_map<std::string, std::string> 
 diffmaps(const std::unordered_map<std::string, std::string>& old,
          const std::unordered_map<std::string, std::string>& newer);
-
-/// Lock/pid file class. From Recoll
-class Pidfile {
-public:
-    Pidfile(const std::string& path)	: m_path(path), m_fd(-1) {}
-    ~Pidfile();
-    /// Open/create the pid file.
-    /// @return 0 if ok, > 0 for pid of existing process, -1 for other error.
-    pid_t open();
-    /// Write pid into the pid file
-    /// @return 0 ok, -1 error
-    int write_pid();
-    /// Close the pid file (unlocks)
-    int close();
-    /// Delete the pid file
-    int remove();
-    const std::string& getreason() {return m_reason;}
-private:
-    std::string m_path;
-    int    m_fd;
-    std::string m_reason;
-    pid_t read_pid();
-    int flopen();
-};
 
 #endif /* _UPMPDUTILS_H_X_INCLUDED_ */

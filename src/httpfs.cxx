@@ -22,6 +22,9 @@
 
 #include "upmpd.hxx"
 #include "upmpdutils.hxx"
+#include "smallut.h"
+#include "pathut.h"
+#include "readfile.h"
 #include "httpfs.hxx"
 
 using namespace std;

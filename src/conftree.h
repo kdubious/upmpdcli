@@ -49,6 +49,7 @@
  * (useful to have central/personal config files)
  */
 
+#include <time.h>
 #include <algorithm>
 #include <map>
 #include <string>
@@ -62,7 +63,7 @@
 #include <ostream>
 #endif
 
-#include "upmpdutils.hxx"
+#include "pathut.h"
 
 using std::string;
 using std::vector;

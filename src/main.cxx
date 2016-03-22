@@ -16,6 +16,8 @@
  */
 /////////////////////////////////////////////////////////////////////
 // Main program
+#define UPMPDCLI_NEED_PACKAGE_VERSION
+#include "config.h"
 
 #include <errno.h>             
 #include <fcntl.h>             
@@ -35,11 +37,12 @@
 #include "libupnpp/log.hxx"    
 #include "libupnpp/upnpplib.hxx"
 #include "execmd.h"
-#include "conftree.hxx"
+#include "conftree.h"
 #include "mpdcli.hxx"
 #include "upmpd.hxx"
 #include "httpfs.hxx"
 #include "upmpdutils.hxx"
+#include "pathut.h"
 
 using namespace std;
 using namespace UPnPP;
@@ -113,7 +116,7 @@ ohProductDesc_t ohProductDesc = {
     // Product
     {
         "Upmpdcli",                                 // name
-        PACKAGE_VERSION,                            // info
+        UPMPDCLI_PACKAGE_VERSION,                            // info
         "",                                         // url
         ""                                          // imageUri
     }

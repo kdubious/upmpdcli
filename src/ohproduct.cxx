@@ -34,12 +34,13 @@
 
 #include "upmpd.hxx"
 #include "upmpdutils.hxx"
+#include "pathut.h"
 #include "ohplaylist.hxx"
 #include "ohradio.hxx"
 #include "ohreceiver.hxx"
 #include "ohsndrcv.hxx"
 #include "ohinfo.hxx"
-#include "conftree.hxx"
+#include "conftree.h"
 
 using namespace std;
 using namespace std::placeholders;
