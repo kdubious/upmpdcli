@@ -55,64 +55,11 @@ which can only be set in the configuration file are described further down.
 |===========================    
 
 
+In addition to the above basic parameters, many configuration variables can
+be set in the configuration file.
+
 [[upmpdcli.configfile]]
-== Configuration file
-
-In addition of the above, the following variables can be set in the
-configuration file:
-
-mpdpassword:: Password for connecting to *MPD* (only necessary if
-password access is enabled in the *MPD* configuration file).
-
-ownqueue:: If this is set (on by default), we own the *MPD* queue and will
-fearlessly clear it.
-
-upnpip:: UPnP IP address to use (if `upnpiface` is not used to select an
-interface).
-
-upnpav:: Activate UPnP AV services. This is set by default, but it may be
-useful to switch it off with some too easily confused OpenHome Control
-Points.
-
-openhome:: Activate OpenHome services. This is set by default and there is
-little reason to turn this off.
-
-ohmetapersist:: OpenHome playlist disk persistence (default 1), no reason
-to turn it off.
-
-cachedir:: Directory for cached data (`/var/cache/upmpdcli` if started as
-root or else `~/.cache/upmpdcli`).
-
-pkgdatadir:: Directory where the distributed configuration data (XML files
-etc.) is stored. Default: `$prefix/share/upmpcli` (e.g.:
-`/usr/share/upmpdcli`). 
-
-iconpath:: Path to an icon to be displayed by Control Points which support
-it. The UPnP protocol has provisions for a renderer to send the URL to a
-descriptive icon as part of the device description. The icon to use can be
-set using the *iconpath* configuration file parameter. Due to current (and
-probably permanent) *upmpdcli* limitations, the image file *must* be a
-64x64 32 bits-per-pixel png file. Default: `$pkgdatadir/icon.png`.
-
-presentationhtml:: Path to an HTML file to be used as presentation page. The
-file referenced by the path will only be read once when *upmpdcli* starts,
-it can't presently be used for status updates (but I guess that you could
-put a redirect in there, to something more dynamic served by a real HTTP
-server). Default: `$pkgdatadir/presentation.html`.
-
-onplay:: Command to run when MPD playback is about to begin. Note that
-`onplay` is also called if MPD is controlled from another tool, e.g. by
-`mpc`.
-
-onstart:: Command to run when a play action is performed. The difference to
-`onplay` is that `onstart` is called *before* playback is about to begin.
-
-onstop:: Command to run when MPD playback is about to end. Note that
-`onstop` is also called if MPD is controlled from another tool, e.g. by
-`mpc`.
-
-onvolumechange:: Command to run when sound volume is changed.
-
+include::upmpdcli-config.txt[]
 
 === Radio station definitions
 
