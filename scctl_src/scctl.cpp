@@ -60,22 +60,36 @@ using namespace UPnPP;
 using namespace std;
 using namespace Songcast;
 
-string showReceivers()
+#define OPT_L 0x1
+#define OPT_S 0x2
+#define OPT_f 0x4
+#define OPT_h 0x8
+#define OPT_l 0x10
+#define OPT_m 0x20
+#define OPT_p 0x40
+#define OPT_r 0x80
+#define OPT_s 0x100
+#define OPT_x 0x200
+
+static const string sep("||");
+
+string showReceivers(int ops)
 {
     vector<ReceiverState> vscs;
     listReceivers(vscs);
     ostringstream out;
-
+    string dsep = (ops & OPT_m) ? sep : " ";
+    
     for (auto& scs: vscs) {
         switch (scs.state) {
-        case ReceiverState::SCRS_GENERROR:    out << "Error ";break;
-        case ReceiverState::SCRS_NOOH:        out << "Nooh  ";break;
-        case ReceiverState::SCRS_NOTRECEIVER: out << "Off   ";break;
-        case ReceiverState::SCRS_STOPPED:     out << "Stop  ";break;
-        case ReceiverState::SCRS_PLAYING:     out << "Play  ";break;
+        case ReceiverState::SCRS_GENERROR:    out << "Error " << dsep;break;
+        case ReceiverState::SCRS_NOOH:        out << "Nooh  " << dsep;break;
+        case ReceiverState::SCRS_NOTRECEIVER: out << "Off   " << dsep;break;
+        case ReceiverState::SCRS_STOPPED:     out << "Stop  " << dsep;break;
+        case ReceiverState::SCRS_PLAYING:     out << "Play  " << dsep;break;
         }
-        out << scs.nm << " ";
-        out << scs.UDN << " ";
+        out << scs.nm << dsep;
+        out << scs.UDN << dsep;
         if (scs.state == ReceiverState::SCRS_PLAYING) {
             out << scs.uri;
         } else if (scs.state == ReceiverState::SCRS_GENERROR) {
@@ -86,16 +100,17 @@ string showReceivers()
     return out.str();
 }
 
-string showSenders()
+string showSenders(int ops)
 {
     vector<SenderState> vscs;
     listSenders(vscs);
     ostringstream out;
+    string dsep = (ops & OPT_m) ? sep : " ";
 
     for (auto& scs: vscs) {
-        out << scs.nm << " ";
-        out << scs.UDN << " ";
-        out << scs.reason << " ";
+        out << scs.nm << dsep;
+        out << scs.UDN << dsep;
+        out << scs.reason << dsep;
         out << scs.uri;
         out << endl;
     }
@@ -106,38 +121,33 @@ static char *thisprog;
 static char usage [] =
 " -l List renderers with Songcast Receiver capability\n"
 " -L List Songcast Senders\n"
+"   -m : for above modes: use parseable format\n"
+"For the following options the renderers can be designated by their \n"
+"uid (safer) or friendly name\n"
 " -s <master> <slave> [slave ...] : Set up the slaves renderers as Songcast\n"
 "    Receivers and make them play from the same uri as the master receiver\n"
 " -x <renderer> [renderer ...] Reset renderers from Songcast to Playlist\n"
+" -r <sender> <renderer> <renderer> : set up the renderers in Receiver mode\n"
+"    playing data from the sender. This is like -s but we get the uri from \n"
+"    the sender instead of a sibling receiver\n"
 " -S Run as server\n"
 " -f If no server is found, scctl will fork one after performing the\n"
 "    requested command, so that the next execution will not have to wait for\n"
 "    the discovery timeout.\n"
-" -r <sender> <renderer> <renderer> : set up the renderers in Receiver mode\n"
-"    playing data from the sender. This is like -s but we get the uri from \n"
-"    the sender instead of a sibling receiver\n"
 " -h This help.\n"
 "\n"
 "Renderers may be designated by friendly name or UUID\n"
 "\n"
 ;
+
+static int   op_flags;
+
 static void
 Usage(FILE *fp = stderr)
 {
     fprintf(fp, "%s: usage:\n%s", thisprog, usage);
     exit(1);
 }
-
-static int   op_flags;
-#define OPT_l    0x1
-#define OPT_s    0x2
-#define OPT_x    0x4
-#define OPT_S    0x8
-#define OPT_h    0x10
-#define OPT_f    0x20
-#define OPT_p    0x40
-#define OPT_r    0x80
-#define OPT_L    0x100
 
 int runserver();
 bool tryserver(int flags, int argc, char *argv[]);
@@ -147,38 +157,29 @@ int main(int argc, char *argv[])
     thisprog = argv[0];
 
     int ret;
-    while ((ret = getopt(argc, argv, "fhLlrsSx")) != -1) {
+    while ((ret = getopt(argc, argv, "fhmLlrsSx")) != -1) {
         switch (ret) {
         case 'f': op_flags |= OPT_f; break;
         case 'h': Usage(stdout); break;
         case 'l':
-            if (op_flags & ~OPT_f)
-                Usage();
             op_flags |= OPT_l;
             break;
         case 'L':
-            if (op_flags & ~OPT_f)
-                Usage();
             op_flags |= OPT_L;
             break;
+        case 'm':
+            op_flags |= OPT_m;
+            break;
         case 'r':
-            if (op_flags & ~OPT_f)
-                Usage();
             op_flags |= OPT_r;
             break;
         case 's':
-            if (op_flags & ~OPT_f)
-                Usage();
             op_flags |= OPT_s;
             break;
         case 'S':
-            if (op_flags & ~OPT_f)
-                Usage();
             op_flags |= OPT_S;
             break;
         case 'x':
-            if (op_flags & ~OPT_f)
-                Usage();
             op_flags |= OPT_x;
             break;
         default: Usage();
@@ -193,7 +194,8 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    if ((op_flags & ~OPT_f) == 0)
+    // At least one action needed. 
+    if ((op_flags & ~(OPT_f|OPT_m)) == 0)
         Usage();
 
     LibUPnP *mylib = LibUPnP::getLibUPnP();
@@ -216,12 +218,12 @@ int main(int argc, char *argv[])
     if ((op_flags & OPT_l)) {
         if (args.size())
             Usage();
-        string out = showReceivers();
+        string out = showReceivers(op_flags);
         cout << out;
     } else if ((op_flags & OPT_L)) {
         if (args.size())
             Usage();
-        string out = showSenders();
+        string out = showSenders(op_flags);
         cout << out;
     } else if ((op_flags & OPT_r)) {
         if (args.size() < 2)
@@ -379,16 +381,9 @@ int MyNetconServLis::cando(Netcon::Event reason)
         // ping
         out = "Ok\n";
     } else if (opflags & OPT_l) {
-        out = showReceivers();
-    } else if (opflags & OPT_r) {
-        if (toks.size() < 3)
-            return 1;
-        vector<string>::iterator beg = toks.begin();
-        beg++;
-        string sender = *beg;
-        beg++;
-        vector<string> receivers(beg, toks.end());
-        setReceiversFromSender(sender, receivers);
+        out = showReceivers(opflags);
+    } else if (opflags & OPT_L) {
+        out = showSenders(opflags);
     } else if (opflags & OPT_s) {
         if (toks.size() < 3)
             return 1;
@@ -411,6 +406,15 @@ int MyNetconServLis::cando(Netcon::Event reason)
         beg++;
         vector<string> slaves(beg, toks.end());
         stopReceivers(slaves);
+    } else if (opflags & OPT_r) {
+        if (toks.size() < 3)
+            return 1;
+        vector<string>::iterator beg = toks.begin();
+        beg++;
+        string sender = *beg;
+        beg++;
+        vector<string> receivers(beg, toks.end());
+        setReceiversFromSender(sender, receivers);
     } else {
         LOGERR("scctl: server: bad cmd:" << toks[0] << endl);
         return 1;
@@ -451,7 +455,7 @@ int runserver()
     signal(SIGPIPE, SIG_IGN);
 
     // Initialize lib at once, will be ready when we need it
-    showReceivers();
+    showReceivers(0);
 
     MyNetconServLis *servlis = new MyNetconServLis();
     if (servlis == 0) {
