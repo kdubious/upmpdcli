@@ -265,6 +265,11 @@ public:
      */
     bool write(ostream& out) const;
 
+    /** Give access to semi-parsed file contents */
+    const vector<ConfLine>& getlines() const {
+        return m_order;
+    }
+    
 protected:
     bool dotildexpand;
     StatusCode status;
