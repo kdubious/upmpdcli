@@ -27,7 +27,10 @@
   </tr>
 %end
 </table>
-<input type="submit">
+
+<p></p>
+
+<input type="submit" value="Stop selected Receivers">
 </form>
 
 %end

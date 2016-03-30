@@ -1,5 +1,5 @@
 <div id="menu">
-  <ul>
+  <ul id="menu">
 %if current == 'list':
     <li>List Receivers</li>
 %else:
