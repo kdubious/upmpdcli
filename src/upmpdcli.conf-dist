@@ -20,6 +20,11 @@
 # *MPD* configuration file).</descr></var>
 #mpdpassword =
 
+# <var name="ownqueue"><brief>Set if we own the MPD queue.</brief>.<descr>If
+# this is set (on by default), we own the MPD queue and will fearlessly clear
+# it. Can also be specified as -q 0|1.</descr></var>
+#ownqueue = 1
+
 # <grouptitle>Upmpdcli general parameters</grouptitle>
 
 # <var name="friendlyname"><brief>"Friendly Name" for the UPnP Media
