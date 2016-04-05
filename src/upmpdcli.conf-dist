@@ -1,7 +1,11 @@
-# <filetitle>Configuration parameters for upmpdcli</filetitle>
+# <filetitle>Configuration file parameters for upmpdcli</filetitle>
 
-# <note>Note: the command line options have higher priorities than the
-# values in this file.</note>
+# The XML tags in the comments are used to help produce the documentation
+# from the sample/reference file, and not at all at run time, where
+# comments are just comments. Edit at will.
+
+# The command line options have higher priorities than the values in
+# this file.
 
 # <grouptitle>MPD parameters</grouptitle>
 
