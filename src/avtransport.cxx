@@ -324,6 +324,9 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
     LOGDEB("Set(next)AVTransportURI: next " << setnext <<  " uri " << uri <<
            " metadata[" << metadata << "]" << endl);
 
+    const MpdStatus &mpds = m_dev->getMpdStatus();
+    const MpdStatus::State st = mpds.state;
+
     if ((m_dev->m_options & UpMpd::upmpdOwnQueue) && !setnext) {
         // If we own the queue, just clear it before setting the
         // track.  Else it's difficult to impossible to prevent it
@@ -332,9 +335,7 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
         m_dev->m_mpdcli->clearQueue();
     }
 
-    const MpdStatus &mpds = m_dev->getMpdStatus();
-    bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
-        (mpds.state == MpdStatus::MPDS_PAUSE);
+    bool is_song = (st == MpdStatus::MPDS_PLAY) || (st == MpdStatus::MPDS_PAUSE);
     int curpos = mpds.songpos;
     LOGDEB1("UpMpdAVTransport::set" << (setnext?"Next":"") << 
             "AVTransportURI: curpos: " <<
@@ -385,7 +386,6 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
     }
 
     if (!setnext) {
-        MpdStatus::State st = mpds.state;
         // Have to tell mpd which track to play, else it will keep on
         // the previous despite the insertion. The UPnP docs say
         // that setAVTransportURI should not change the transport
@@ -396,10 +396,10 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
         // Audionet: issues a Play
         // BubbleUpnp: issues a Play
         // MediaHouse: no setnext, Play
-        m_dev->m_mpdcli->play(curpos);
 #if 1 || defined(upmpd_do_restore_play_state_after_add)
         switch (st) {
-        case MpdStatus::MPDS_PAUSE: m_dev->m_mpdcli->togglePause(); break;
+        case MpdStatus::MPDS_PLAY: m_dev->m_mpdcli->play(curpos); break;
+        case MpdStatus::MPDS_PAUSE: m_dev->m_mpdcli->pause(true); break;
         case MpdStatus::MPDS_STOP: m_dev->m_mpdcli->stop(); break;
         default: break;
         }
