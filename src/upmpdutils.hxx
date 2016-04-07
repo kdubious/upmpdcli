@@ -17,11 +17,12 @@
 #ifndef _UPMPDUTILS_H_X_INCLUDED_
 #define _UPMPDUTILS_H_X_INCLUDED_
 
-#include <sys/types.h>                  // for pid_t
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include <unordered_set>
 
-#include <string>                       // for string
-#include <unordered_map>                // for unordered_map
-#include <vector>                       // for vector
+#include "libupnpp/control/cdircontent.hxx"
 
 class UpSong;
 
@@ -42,6 +43,19 @@ extern std::string didlmake(const UpSong& song);
 
 // Convert UPnP metadata to UpSong for mpdcli to use
 extern bool uMetaToUpSong(const std::string&, UpSong *ups);
+// Convert UPnP content directory entry object to UpSong
+bool dirObjToUpSong(const UPnPClient::UPnPDirObject& dobj, UpSong *ups);
+
+// Extract the set of formats from protocolinfo data (comma separated
+// list of 'proto:net:format:extradata' elements, e.g. http-get:*:audio/mpeg:*) 
+// All format strings are changed to lower case in the output set.
+extern bool protocolInfoToFormats(const std::string& pinfo,
+                                  std::unordered_set<std::string>& formats);
+
+// Extract content format from resource protocolinfo attribute. This
+// should be made an UPnPResource method one day
+std::string resourceContentFormat(const UPnPClient::UPnPResource& res);
+
 
 // Replace the first occurrence of regexp. cxx11 regex does not work
 // that well yet...
@@ -50,7 +64,7 @@ extern std::string regsub1(const std::string& sexp, const std::string& input,
 
 // Return map with "newer" elements which differ from "old".  Old may
 // have fewer elts than "newer" (e.g. may be empty), we use the
-// "newer" entries for diffing
+// "newer" entries for diffing. This is used to compute state changes.
 extern std::unordered_map<std::string, std::string> 
 diffmaps(const std::unordered_map<std::string, std::string>& old,
          const std::unordered_map<std::string, std::string>& newer);

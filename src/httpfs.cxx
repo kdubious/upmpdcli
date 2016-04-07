@@ -200,6 +200,7 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
         LOGFAT("Failed reading protocol info from " << protofile << endl);
         return false;
     }
+    protocolInfoToFormats(g_protocolInfo, g_supportedFormats);
 
     string reason;
     string icondata;

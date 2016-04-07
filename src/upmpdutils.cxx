@@ -49,6 +49,7 @@
 #include "libupnpp/control/cdircontent.hxx"
 
 #include "mpdcli.hxx"                   // for UpSong
+#include "smallut.h"
 
 using namespace std;
 using namespace UPnPP;
@@ -204,6 +205,59 @@ string didlmake(const UpSong& song)
     return ss.str();
 }
 
+// Extract content format (3rd) field from protocolinfo fragment string
+static string protoInfToFormat(const string& protoinfo)
+{
+    vector<string> toks;
+    stringToTokens(protoinfo, toks, ":");
+    if (toks.size() != 4) {
+        LOGDEB("protoInfToFormat: bad format: [" << protoinfo << "]\n");
+        return string();
+    }
+    return toks[2];
+}
+
+// This should be made an UPnPResource method one day
+string resourceContentFormat(const UPnPResource& res)
+{
+    map<string, string>::const_iterator it = res.m_props.find("protocolInfo");
+    if (it == res.m_props.end()) {
+        LOGDEB("resourceContentFormat: no protocolInfo attribute\n");
+        return string();
+    }
+    return protoInfToFormat(it->second);
+}
+
+bool protocolInfoToFormats(const string& pinfo, unordered_set<string>& formats)
+{
+    vector<string> entries;
+    stringToTokens(pinfo, entries, ",");
+    for (unsigned int i = 0; i < entries.size(); i++) {
+        string format = protoInfToFormat(entries[i]);
+        if (!format.empty()) {
+            LOGDEB("protocolInfoToFormats: Supported format: " << format << endl);
+            formats.insert(stringtolower((const string&)format));
+        }
+    }
+    return true;
+}
+
+bool dirObjToUpSong(const UPnPDirObject& dobj, UpSong *ups)
+{
+    ups->artist = dobj.getprop("upnp:artist");
+    ups->album = dobj.getprop("upnp:album");
+    ups->title = dobj.m_title;
+    string stmp;
+    dobj.getrprop(0, "duration", stmp);
+    if (!stmp.empty()) {
+        ups->duration_secs = upnpdurationtos(stmp);
+    } else {
+        ups->duration_secs = 0;
+    }
+    ups->tracknum = dobj.getprop("upnp:originalTrackNumber");
+    return true;
+}
+
 bool uMetaToUpSong(const string& metadata, UpSong *ups)
 {
     if (ups == 0) {
@@ -214,21 +268,9 @@ bool uMetaToUpSong(const string& metadata, UpSong *ups)
     if (!dirc.parse(metadata) || dirc.m_items.size() == 0) {
         return false;
     }
-    UPnPDirObject& dobj = *dirc.m_items.begin();
-
-    ups->artist = dobj.f2s("upnp:artist", false);
-    ups->album = dobj.f2s("upnp:album", false);
-    ups->title = dobj.m_title;
-    string stmp = dobj.f2s("duration", true);
-    if (!stmp.empty()) {
-        ups->duration_secs = upnpdurationtos(stmp);
-    } else {
-        ups->duration_secs = 0;
-    }
-    ups->tracknum = dobj.f2s("upnp:originalTrackNumber", false);
-    return true;
+    return dirObjToUpSong(*dirc.m_items.begin(), ups);
 }
-
+    
 // Substitute regular expression
 // The c++11 regex package does not seem really ready from prime time
 // (Tried on gcc + libstdc++ 4.7.2-5 on Debian, with little

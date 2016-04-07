@@ -17,21 +17,23 @@
 
 #include "avtransport.hxx"
 
-#include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
+#include <upnp/upnp.h>
 
-#include <functional>                   // for _Bind, bind, _1, _2
-#include <iostream>                     // for operator<<, etc
-#include <map>                          // for map, map<>::const_iterator
-#include <utility>                      // for pair
+#include <functional>
+#include <iostream>
+#include <map>
+#include <utility>
 
-#include "libupnpp/log.hxx"             // for LOGDEB, LOGDEB1, LOGERR
-#include "libupnpp/soaphelp.hxx"        // for SoapOutgoing, SoapIncoming, etc
-#include "libupnpp/upnpavutils.hxx"     // for upnpduration, etc
+#include "libupnpp/log.hxx"
+#include "libupnpp/soaphelp.hxx"
+#include "libupnpp/upnpavutils.hxx"
+#include "libupnpp/control/cdircontent.hxx"
 
-#include "mpdcli.hxx"                   // for MpdStatus, MPDCli, etc
-#include "ohplaylist.hxx"               // for OHPlaylist
-#include "upmpd.hxx"                    // for UpMpd, etc
-#include "upmpdutils.hxx"               // for didlmake, mapget
+#include "mpdcli.hxx"
+#include "ohplaylist.hxx"
+#include "upmpd.hxx"
+#include "upmpdutils.hxx"
+#include "smallut.h"
 
 // For testing upplay with a dumb renderer.
 // #define NO_SETNEXT
@@ -327,6 +329,14 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
     const MpdStatus &mpds = m_dev->getMpdStatus();
     const MpdStatus::State st = mpds.state;
 
+    // Check that we support the audio format for the input uri.
+    UpSong metaformpd;
+    if (!m_dev->checkContentFormat(uri, metadata, &metaformpd)) {
+        LOGERR("set(Next)AVTRansportURI: unsupported format: uri " << uri <<
+               " metadata " << metadata);
+        return UPNP_E_INVALID_PARAM;
+    }
+
     if ((m_dev->m_options & UpMpd::upmpdOwnQueue) && !setnext) {
         // If we own the queue, just clear it before setting the
         // track.  Else it's difficult to impossible to prevent it
@@ -365,9 +375,6 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
                 m_dev->m_mpdcli->deletePosRange(curpos + 1, posend);
         }
     }
-
-    UpSong metaformpd;
-    uMetaToUpSong(metadata, &metaformpd);
 
     int songid = m_dev->m_mpdcli->insert(uri, setnext ? curpos + 1 : curpos,
                                          metaformpd);

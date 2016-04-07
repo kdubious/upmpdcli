@@ -57,6 +57,13 @@ openhome = 1
 # specified as -l loglevel.</descr></var>
 #loglevel = 3
 
+# <var name="checkcontentformat"><brief>Check that input format is
+# supported.</brief><descr>Extract the protocolinfo information from the
+# input metadata and check it against our supported formats. Set this
+# option to 0 if a control point or media server sends good audio data with
+# bad metadata. Default 1.</descr></var>
+#checkcontentformat = 1
+
 # <var name="iconpath"><brief>Path to the Renderer icon.</brief>
 # <descr>The image will be displayed by Control Points which support
 # it. The UPnP protocol has provisions for a renderer to send the URL to a

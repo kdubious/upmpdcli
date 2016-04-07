@@ -654,12 +654,13 @@ bool OHPlaylist::insertUri(int afterid, const string& uri,
     LOGDEB1("OHPlaylist::insertUri: " << uri << endl);
     if (!m_active) {
         LOGERR("OHPlaylist::insertUri: not active" << endl);
-        return UPNP_E_INTERNAL_ERROR;
+        return false;
     }
+
     UpSong metaformpd;
-    if (!uMetaToUpSong(metadata, &metaformpd)) {
-        LOGERR("OHPlaylist::insert: failed to parse metadata " << " Uri [" 
-               << uri << "] Metadata [" << metadata << "]" << endl);
+    if (!m_dev->checkContentFormat(uri, metadata, &metaformpd)) {
+        LOGERR("OHPlaylist::insertUri: unsupported format: uri " << uri <<
+               " metadata " << metadata);
         return false;
     }
     int id = m_dev->m_mpdcli->insertAfterId(uri, afterid, metaformpd);

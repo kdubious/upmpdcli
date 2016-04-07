@@ -122,8 +122,11 @@ ohProductDesc_t ohProductDesc = {
     }
 };
 
-// This is global
+// The following protocolinfo data is read from a configuration file
+// (in httpfs.cxx with the rest of the xml data), global and logically
+// const:
 string g_protocolInfo;
+unordered_set<string> g_supportedFormats;
 
 // Static for cleanup in sig handler.
 static UpnpDevice *dev;
@@ -277,6 +280,14 @@ int main(int argc, char *argv[])
         if (g_config->get("upnpav", value)) {
             enableAV = atoi(value.c_str()) != 0;
         }
+
+        if (g_config->get("checkcontentformat", value)) {
+            // If option is specified and 0, set nocheck flag
+            if (atoi(value.c_str()) == 0) {
+                opts.options |= UpMpd::upmpdNoContentFormatCheck;
+            }
+        }
+        
         if (g_config->get("ohmetapersist", value)) {
             ohmetapersist = atoi(value.c_str()) != 0;
         }

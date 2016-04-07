@@ -20,7 +20,9 @@
 #include "libupnpp/device/device.hxx"   // for UpnpDevice, UpnpService
 #include "libupnpp/log.hxx"             // for LOGFAT, LOGERR, Logger, etc
 #include "libupnpp/upnpplib.hxx"        // for LibUPnP
+#include "libupnpp/control/cdircontent.hxx"
 
+#include "smallut.h"
 #include "avtransport.hxx"
 #include "conman.hxx"
 #include "mpdcli.hxx"
@@ -144,4 +146,40 @@ const MpdStatus& UpMpd::getMpdStatus()
 {
     m_mpds = &m_mpdcli->getStatus();
     return *m_mpds;
+}
+
+bool UpMpd::checkContentFormat(const string& uri, const string& didl,
+                               UpSong *ups)
+{
+    UPnPClient::UPnPDirContent dirc;
+    if (!dirc.parse(didl) || dirc.m_items.size() == 0) {
+        LOGERR("checkContentFormat: didl parse failed\n");
+        return false;
+    }
+    UPnPClient::UPnPDirObject& dobj = *dirc.m_items.begin();
+
+    if ((m_options & upmpdNoContentFormatCheck)) {
+        LOGERR("checkContentFormat: format check disabled\n");
+        return dirObjToUpSong(dobj, ups);
+    }
+    
+    for (vector<UPnPClient::UPnPResource>::const_iterator it =
+             dobj.m_resources.begin(); it != dobj.m_resources.end(); it++) {
+        if (!it->m_uri.compare(uri)) {
+            string cf = stringtolower(resourceContentFormat(*it));
+            if (g_supportedFormats.find(cf) == g_supportedFormats.end()) {
+                LOGERR("checkContentFormat: unsupported:: " << cf << endl);
+                return false;
+            } else {
+                LOGDEB("checkContentFormat: supported: " << cf << endl);
+                if (ups) {
+                    return dirObjToUpSong(dobj, ups);
+                } else {
+                    return true;
+                }
+            }
+        }
+    }
+    LOGERR("checkContentFormat: uri not found in metadata resource list\n");
+    return false;
 }
