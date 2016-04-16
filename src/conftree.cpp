@@ -274,6 +274,16 @@ int ConfSimple::get(const string& nm, string& value, const string& sk) const
     return 1;
 }
 
+int ConfSimple::get(const string& nm, int *value, const string& sk) const
+{
+    string sval;
+    if (!get(nm, sval, sk)) {
+        return 0;
+    }
+    *value = atoi(sval.c_str());
+    return 1;
+}
+
 // Appropriately output a subkey (nm=="") or variable line.
 // We can't make any assumption about the data except that it does not
 // contain line breaks.
@@ -332,6 +342,12 @@ int ConfSimple::set(const std::string& nm, const std::string& value,
     }
     return write();
 }
+int ConfSimple::set(const string& nm, long long val,
+                    const string& sk)
+{
+    return this->set(nm, lltodecstr(val), sk);
+}
+
 
 // Internal set variable: no rw checking or file rewriting. If init is
 // set, we're doing initial parsing, else we are changing a parsed

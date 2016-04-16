@@ -165,18 +165,33 @@ public:
     }
 
     /**
-     * Get value for named parameter, from specified subsection (looks in
-     * global space if sk is empty).
+     * Get string value for named parameter, from specified subsection (looks 
+     * in global space if sk is empty).
      * @return 0 if name not found, 1 else
      */
     virtual int get(const string& name, string& value,
                     const string& sk = string()) const;
 
     /**
-     * Set value for named parameter in specified subsection (or global)
+     * Get integer value for named parameter, from specified subsection (looks 
+     * in global space if sk is empty).
+     * @return 0 if name not found, 1 else
+     */
+    virtual int get(const string& name, int* value,
+                    const string& sk = string()) const;
+
+
+    /**
+     * Set value for named string parameter in specified subsection (or global)
      * @return 0 for error, 1 else
      */
     virtual int set(const string& nm, const string& val,
+                    const string& sk = string());
+    /**
+     * Set value for named integer parameter in specified subsection (or global)
+     * @return 0 for error, 1 else
+     */
+    virtual int set(const string& nm, long long val,
                     const string& sk = string());
 
     /**

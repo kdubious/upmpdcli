@@ -1007,6 +1007,10 @@ bool ExecCmd::maybereap(int *status)
 // Static
 bool ExecCmd::backtick(const vector<string> cmd, string& out)
 {
+    if (cmd.empty()) {
+        LOGERR(("ExecCmd::backtick: empty command\n"));
+        return false;
+    }
     vector<string>::const_iterator it = cmd.begin();
     it++;
     vector<string> args(it, cmd.end());
