@@ -101,6 +101,8 @@ icon. `artUrl` is optional.
 Radio channels can be accessed by selecting the `Radio` Source from an
 OpenHome Control Point.
 
+You can also define the radio stations in a separate file by setting the
+'radiolist' parameter in the main configuration.
 
 [[upmpdcli.songcast]]
 == Songcast integration

@@ -1,4 +1,4 @@
-== Configuration parameters for upmpdcli 
+== Configuration file parameters for upmpdcli 
 
 === MPD parameters 
 
@@ -12,6 +12,10 @@ also be specified as -p port. Defaults to the normal MPD port,
 mpdpassword:: MPD password. Password for
 connecting to *MPD* (only necessary if password access is enabled in the
 *MPD* configuration file).
+
+ownqueue:: Set if we own the MPD queue. If
+this is set (on by default), we own the MPD queue and will fearlessly clear
+it. Can also be specified as -q 0|1.
 
 === Upmpdcli general parameters 
 
@@ -35,6 +39,12 @@ stderr. This can also be specified as -d logfilename.
 
 loglevel:: Log level. 0-4. Can also be
 specified as -l loglevel.
+
+checkcontentformat:: Check that input format is
+supported. Extract the protocolinfo information from the
+input metadata and check it against our supported formats. Set this
+option to 0 if a control point or media server sends good audio data with
+bad metadata. Default 1.
 
 iconpath:: Path to the Renderer icon. The image will be displayed by Control Points which support
 it. The UPnP protocol has provisions for a renderer to send the URL to a
@@ -113,6 +123,19 @@ Specify the full path to the program, which is called with the volume as
 the first argument, e.g. /some/script 85.
 
 === OpenHome parameters 
+
+radiolist:: Path to an external file with radio
+definitions. Radio stations can be defined at the end of
+the the main file, or in a separate one (or both). Using an external file
+can ease distribution to multiple machines. Either way, each radio
+station is defined as a section with a name beginning with "radio",
+containing an URL parameter, and an optional icon URL. Example:
+----
+[radio My Radio]
+url = http://some.host/some/path.pls
+artUrl = http://some.host/icon/path.png
+----
+
 
 ohmanufacturername:: Manufacturer name. Does not vary at
 run-time. 
