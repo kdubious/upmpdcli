@@ -109,28 +109,42 @@ OHRadio::OHRadio(UpMpd *dev)
                           bind(&OHRadio::transportState, this, _1, _2));
 }
 
+static void getRadiosFromConf(ConfSimple* conf)
+{
+    vector<string> allsubk = conf->getSubKeys_unsorted();
+    for (auto it = allsubk.begin(); it != allsubk.end(); it++) {
+        if (it->find("radio ") == 0) {
+            string uri, artUri;
+            string title = it->substr(6);
+            bool ok = conf->get("url", uri, *it);
+            conf->get("artUrl", artUri, *it);
+            if (ok && !uri.empty()) {
+                o_radios.push_back(RadioMeta(title, uri, artUri));
+                LOGDEB1("OHRadio::readRadios:RADIO: [" << title << "] uri ["
+                        << uri << "] artUri [" << artUri << "]\n");
+            }
+        }
+    }
+}
+
 bool OHRadio::readRadios()
 {
     // Id 0 means no selection
     o_radios.push_back(RadioMeta("Unknown radio", "", ""));
     
     UPnPP::PTMutexLocker conflock(g_configlock);
-    vector<string> allsubk = g_config->getSubKeys_unsorted();
-    for (auto it = allsubk.begin(); it != allsubk.end(); it++) {
-        LOGDEB("OHRadio::readRadios: subk " << *it << endl);
-        if (it->find("radio ") == 0) {
-            string uri, artUri;
-            string title = it->substr(6);
-            bool ok = g_config->get("url", uri, *it);
-            g_config->get("artUrl", artUri, *it);
-            if (ok && !uri.empty()) {
-                o_radios.push_back(RadioMeta(title, uri, artUri));
-                LOGDEB("OHRadio::readRadios:RADIO: [" << title << "] uri [" <<
-                       uri << "] artUri [" << artUri << "]\n");
-            }
+    getRadiosFromConf(g_config);
+    // Also if radiolist is defined, get from there
+    string radiolistfn;
+    if (g_config->get("radiolist", radiolistfn)) {
+        ConfSimple rdconf(radiolistfn.c_str(), 1);
+        if (!rdconf.ok()) {
+            LOGERR("OHRadio::readRadios: failed initializing from " <<
+                   radiolistfn << endl);
+        } else {
+            getRadiosFromConf(&rdconf);
         }
     }
-    LOGDEB("OHRadio::readRadios: " << o_radios.size() << " radios found\n");
     return true;
 }
 

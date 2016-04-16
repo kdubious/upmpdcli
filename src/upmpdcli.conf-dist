@@ -157,6 +157,20 @@ openhome = 1
 
 # <grouptitle>OpenHome parameters</grouptitle>
 
+# <var name="radiolist"><brief>Path to an external file with radio
+# definitions.</brief><descr>Radio stations can be defined at the end of
+# the the main file, or in a separate one (or both). Using an external file
+# can ease distribution to multiple machines. Either way, each radio
+# station is defined as a section with a name beginning with "radio",
+# containing an URL parameter, and an optional icon URL. Example:
+# ----
+#     [radio My Radio]
+#     url = http://some.host/some/path.pls
+#     artUrl = http://some.host/icon/path.png
+# ----
+# </descr></var>
+#radiolist = /path/to/my/radio/list
+
 # <var name="ohmanufacturername"><brief>Manufacturer name. Does not vary at
 # run-time.</brief></var> 
 #ohmanufacturername = UpMPDCli heavy industries Co.
