@@ -5,8 +5,8 @@
 Daemon. It supports both pure UPnP and the OpenHome ohMedia services.
 
 In OpenHome mode, it supports radio streams and has the ability to
-interface to Linn Songcast for playing audio captured on Windows or Mac OS
-X or for multiroom playing.
+interface to Linn Songcast for multiroom synchronized playing either of
+audio captured on Windows or Mac OS X or of its own stream.
 
 [[upmpdcli.security]]
 == Security
@@ -14,6 +14,22 @@ X or for multiroom playing.
 *upmpdcli* is not audited for security issues, and, as far as I
 know, it may be full of exploitable bugs. Do not run it on an
 Internet-facing host.
+
+[[upmpcli.audioformats]]
+== Audio format support
+
+The actual audio decoding and playing is performed by *MPD*, the Music
+Player Daemon. In consequence, *upmpdcli* can accept most audio formats
+supported by *MPD*, meaning about anything, including DSD.
+
+Raw PCM streams are an exception though. The reason is that these streams
+do not, by definition, carry metadata to define the exact format (sample
+rate, bits per sample, number of channels, byte order). *upmpdcli* has no
+way to transfer these parameters to *MPD* (this is a limitation of the
+client protocol). There is actually little reason to use raw PCM, and, for
+example, WAV streams, which have an identification header, will be handled
+just fine.
+
 
 [[upmpdcli.config]]
 == Configuration
