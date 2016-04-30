@@ -3,6 +3,7 @@ AC_INIT([upmpdcli], [1.1.3], [jfd@lesbonscomptes.com],
 AC_PREREQ([2.53])
 AC_CONFIG_SRCDIR([src/upmpd.cxx])
 AC_CONFIG_HEADERS([src/config.h])
+AH_BOTTOM([#include "src/conf_post.h"])
 
 AM_INIT_AUTOMAKE([1.10 no-define subdir-objects foreign])
 
