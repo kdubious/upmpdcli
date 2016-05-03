@@ -125,6 +125,9 @@ bool UpMpdRenderCtl::getEventData(bool all, std::vector<std::string>& names,
 
         chgdata += "<";
         chgdata += it->first;
+        if (!it->first.compare("Volume") || !it->first.compare("Mute")) {
+            chgdata += " channel=\"Master\"";
+        }
         chgdata += " val=\"";
         chgdata += SoapHelp::xmlQuote(it->second);
         chgdata += "\"/>\n";
