@@ -363,6 +363,7 @@ understandable reasons:
 
 The *sc2mpd* source comes with a shell script named _ohbuild.sh_ to help
 with this. It has several functions:
+
  - Cloning the OpenHome and checking out verified revisions
  - Applying a few minor patches to ensure that the build will work in a
    simplified environment (e.g. without a c# compiler).
@@ -405,4 +406,28 @@ though).
 
 After restarting *upmpdcli*, it should advertise the _Receiver_ service and
 appear in the Songcast Sender menus.
+
+==== Building a Debian package from an sc2mpd tar distribution
+
+Here follows a synopsis of building a debian package for an sc2mpd tar
+distribution. You'll need to replace the 1.1.1 and 20151223 versions with
+whatever you are building. Note that the 1.1.1 value must match what you
+have in the Debian changelog (or update the changelog).
+
+The $distdir and $sc2mpd_src values stand for places where you store the tar
+files and the sc2mpd (git) source tree.
+
+    mkdir sc2mpd_build
+    cd sc2mpd_build
+    cp $distdir/sc2mpd-1.1.1.tar.gz sc2mpd_1.1.1.orig.tar.gz
+    cp $distdir/openhome-sc2-20151223.tar.gz sc2mpd_1.1.1.orig-openhome.tar.gz
+    tar xzf sc2mpd_1.1.1.orig.tar.gz
+    cp -rp $sc2mpd_src/debian sc2mpd-1.1.1/
+    cd sc2mpd-1.1.1
+    mkdir openhome
+    cd openhome
+    tar xzf ../../sc2mpd_1.1.1.orig-openhome.tar.gz
+    cd ..
+    debuild
+
 
