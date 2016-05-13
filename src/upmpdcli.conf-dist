@@ -7,30 +7,6 @@
 # The command line options have higher priorities than the values in
 # this file.
 
-# <grouptitle>MPD parameters</grouptitle>
-
-# <var name="mpdhost" type="string"><brief>Host MPD runs on.</brief>
-# <descr>Defaults to localhost. This can also be specified as -h
-# host</descr></var>
-#mpdhost = localhost
-
-# <var name="mpdport" type="int" values="0 65635 6600"><brief>IP port used by
-# MPD</brief>. <descr>Can also be specified as -p port. Defaults to the
-# normal MPD port, 6600</descr></var>
-#mpdport = 6600
-
-# <var name="mpdpassword" type="string"><brief>MPD
-# password.</brief><descr>Password for connecting to MPD (only necessary
-# if password access is enabled in the MPD configuration
-# file).</descr></var>
-#mpdpassword =
-
-# <var name="ownqueue" type="bool" values="1"><brief>Set if we own the MPD
-# queue.</brief>.<descr>If this is set (on by default), we own the MPD
-# queue and will fearlessly clear it. Can also be specified as -q
-# 0|1.</descr></var>
-#ownqueue = 1
-
 # <grouptitle>Upmpdcli general parameters</grouptitle>
 
 # <var name="friendlyname" type="string"><brief>"Friendly Name" for the
@@ -49,23 +25,22 @@
 # (0/1).</brief><descr>This defaults to 1, as OpenHome queuing is superior
 # for most usages. There should be little reason to turn it
 # off.</descr></var>
-openhome = 1
+#openhome = 1
 
 # <var name="logfilename" type="fn"><brief>Log file
 # name.</brief><descr>Defaults to stderr. This can also be specified as -d
 # logfilename.</descr></var>
 #logfilename = 
 
-# <var name="loglevel" type="int" values="0 4 0"><brief>Log
-# level. 0-4.</brief><descr>Can also be specified as -l
-# loglevel.</descr></var>
-#loglevel = 3
+# <var name="loglevel" type="int" values="0 5 2"><brief>Log
+# level.</brief><descr>Can also be specified as -l loglevel.</descr></var>
+#loglevel = 2
 
 # <var name="checkcontentformat" type="bool" values="1"><brief>Check that
 # input format is supported.</brief><descr>Extract the protocolinfo
 # information from the input metadata and check it against our supported
 # formats. Set this option to 0 if a control point or media server sends
-# good audio data with bad metadata. Default 1.</descr></var>
+# good audio data with bad metadata.</descr></var>
 #checkcontentformat = 1
 
 # <var name="iconpath" type="fn"><brief>Path to the Renderer icon.</brief>
@@ -105,12 +80,36 @@ openhome = 1
 # case).</descr></var>
 #pidfile = /var/run/upmpdcli.pid
 
+# <grouptitle>MPD parameters</grouptitle>
+
+# <var name="mpdhost" type="string"><brief>Host MPD runs on.</brief>
+# <descr>Defaults to localhost. This can also be specified as -h
+# host</descr></var>
+#mpdhost = localhost
+
+# <var name="mpdport" type="int" values="0 65635 6600"><brief>IP port used by
+# MPD</brief>. <descr>Can also be specified as -p port. Defaults to the
+# normal MPD port, 6600</descr></var>
+#mpdport = 6600
+
+# <var name="mpdpassword" type="string"><brief>MPD
+# password.</brief><descr>Password for connecting to MPD (only necessary
+# if password access is enabled in the MPD configuration
+# file).</descr></var>
+#mpdpassword =
+
+# <var name="ownqueue" type="bool" values="1"><brief>Set if we own the MPD
+# queue.</brief>.<descr>If this is set (on by default), we own the MPD
+# queue and will fearlessly clear it. Can also be specified as -q
+# 0|1.</descr></var>
+#ownqueue = 1
+
 # <grouptitle>UPnP network parameters</grouptitle>
 
-# <var name="upnpiface" type="string"><brief>Network interface to use for
-# UPnP.</brief><descr>libupnp/pupnp only supports communicating on a single
-# interface and will use the first found, this allows forcing the use of
-# another interface.</descr></var>
+# <var name="upnpiface" type="cstr" values="dynamic"><brief>Network interface to
+# use for UPnP.</brief><descr>libupnp/pupnp only supports communicating on
+# a single interface and will use the first found, this allows forcing the
+# use of another interface.</descr></var>
 #upnpiface = 
 
 # <var name="upnpip" type="string"><brief>IP address to use for UPnP, 
@@ -175,29 +174,40 @@ openhome = 1
 # </descr></var>
 #radiolist = /path/to/my/radio/list
 
+# <var name="ohmetapersist" type="bool" values="1"><brief>Save queue
+# metadata to disk (0/1).</brief><descr>This allows persistence of the
+# metadata information across restarts, the default is 1, and there is no
+# reason to turn it off.</descr></var>
+#ohmetapersist = 1
+
+# <var name="ohmetasleep" type="int" values="0 120 0"><brief>Mimimum
+# interval (Seconds) between two cache saves.</brief><descr>Increasing this
+# may improve playlist load speed on a slow device. The default is to start
+# a new save as soon as the previous one is done (if the list changed again
+# inbetween).</descr></var>
+#ohmetasleep = 0
+
 # <var name="ohmanufacturername" type="string"><brief>Manufacturer
-# name. Does not vary at run-time.</brief></var>
+# name. </brief></var>
 #ohmanufacturername = UpMPDCli heavy industries Co.
 # <var name="ohmanufacturerinfo" type="string"><brief>Manufacturer
-# information. Does not vary at run-time.</brief></var>
+# information. </brief></var>
 #ohmanufacturerinfo = Such nice guys and gals
 # <var name="ohmanufacturerurl" type="string"><brief>URL for manufacturer
-# web site. Does not vary at run-time.</brief></var>
+# web site. </brief></var>
 #ohmanufacturerurl = http://www.lesbonscomptes.com/upmpdcli
 # <var name="ohmanufacturerimageuri" type="string"><brief>Uri for
-# manufacturer’s logo. Does not vary at run-time.</brief></var>
+# manufacturer’s logo. </brief></var>
 #ohmanufacturerimageuri =
-# <var name="ohmodelname" type="string"><brief>Model name. Does not vary at
-# run-time.</brief></var>
+# <var name="ohmodelname" type="string"><brief>Model name.</brief></var>
 #ohmodelname = UpMPDCli UPnP-MPD gateway
-# <var name="ohmodelinfo" type="string"><brief>Model information. Does not
-# vary at run-time.</brief></var>
+# <var name="ohmodelinfo" type="string"><brief>Model information.</brief></var>
 #ohmodelinfo =
-# <var name="ohmodelurl" type="string"><brief>URL for model web site. Does
-# not vary at run-time.</brief></var>
+# <var name="ohmodelurl" type="string"><brief>URL for model web
+# site.</brief></var>
 #ohmodelurl = http://www.lesbonscomptes.com/upmpdcli
 # <var name="ohmodelimageuri" type="string"><brief>Uri for model’s
-# icon. Does not vary at run-time.</brief></var>
+# icon. </brief></var>
 #ohmodelimageuri =
 # <var name="ohproductname" type="string"><brief>User-visible product
 # name. By default this is set to ModelName.</brief></var>
@@ -210,28 +220,15 @@ openhome = 1
 # physically linked must always share the same ProductRoom
 # name.</descr></var>
 #ohproductroom = Main Room
-# <var name="ohproductinfo" type="string"><brief>Product information. Does
-# not vary at run-time.</brief></var>
+# <var name="ohproductinfo" type="string"><brief>Product information.
+# </brief></var>
 #ohproductinfo =
 # <var name="ohproducturl" type="string"><brief>URL for product web
 # site. This may be the UPnP presentation page.</brief></var>
 #ohproducturl =
 # <var name="ohproductimageuri" type="string"><brief>Uri for product
-# image. Does not vary at run-time.</brief></var>
+# image. </brief></var>
 #ohproductimageuri =
-
-# <var name="ohmetapersist" type="bool" values="1"><brief>Save queue
-# metadata to disk (0/1).</brief><descr>This allows persistence of the
-# metadata information across restarts, the default is 1, and there is no
-# reason to turn it off.</descr></var>
-ohmetapersist = 1
-
-# <var name="ohmetasleep" type="int" values="0 120 0"><brief>Mimimum
-# interval (Seconds) between two cache saves.</brief><descr>Increasing this
-# may improve playlist load speed on a slow device. The default is to start
-# a new save as soon as the previous one is done (if the list changed again
-# inbetween).</descr></var>
-#ohmetasleep = 0
 
 # <grouptitle>Songcast Receiver parameters</grouptitle>
 
@@ -240,12 +237,12 @@ ohmetapersist = 1
 
 # <var name="sclogfilename" type="fn"><brief>Log file name for sc2mpd (default
 # stderr)</brief><descr>The value *must not* be the same as the one used
-# for upmpdcli.</descr></var>
-#sclogfilename = /tmp/scmpdcli.log
+# for upmpdcli (except if empty).</descr></var>
+#sclogfilename = 
 
-# <var name="scloglevel" type="int" values="0 6 0"><brief>Log verbosity for
+# <var name="scloglevel" type="int" values="0 5 2"><brief>Log verbosity for
 # sc2mpd.</brief></var>
-#scloglevel = 6
+#scloglevel = 3
 
 # <var name="scplaymethod" type="cstr" values="mpd alsa"><brief>sc2mpd
 # play method (mpd/alsa).</brief><descr>With this set as 'alsa', sc2mpd
@@ -265,8 +262,8 @@ ohmetapersist = 1
 # 'aplay -L' to see the possible values.</descr></var>
 #scalsadevice = default
 
-# <var name="sccvttype" type="cstr" values="SRC_SINC_BEST_QUALITY
-# SRC_SINC_MEDIUM_QUALITY SRC_SINC_FASTEST SRC_ZERO_ORDER_HOLD
+# <var name="sccvttype" type="cstr" values="SRC_SINC_FASTEST
+# SRC_SINC_BEST_QUALITY SRC_SINC_MEDIUM_QUALITY SRC_ZERO_ORDER_HOLD
 # SRC_LINEAR"><brief>sc2mpd resampling method.</brief><descr> 
 # Only used for scplaymethod=alsa. sc2mpd uses libsamplerate. The default
 # method is SRC_SINC_FASTEST and a Rasberry Pi 1 is fast enough to use it.
@@ -283,16 +280,17 @@ ohmetapersist = 1
 # <var name="sc2mpd" type="string"><brief>Path to
 # sc2mpd.</brief><descr>Only useful if it is not in /usr/bin and the
 # location is not in the $PATH for the init scripts.</descr></var>
-#sc2mpd = /usr/bin/sc2mpd
+#sc2mpd = 
 
 # <grouptitle>Songcast Sender parameters</grouptitle>
 
 # Parameters tor the Sender/Receiver mode. Only does anything if
 # scplaymethod is alsa
 
-# <var name="scsenderpath" type="string"><brief>Path to the script which
-# starts the auxiliary mpd and the sender process.</brief></var>
-#scsenderpath = /usr/bin/scmakempdsender
+# <var name="scsenderpath" type="string"><brief>Path to the script
+# (scmakempdsender) which starts the auxiliary mpd and the sender
+# process. Empty and searched in PATH by default.</brief></var>
+#scsenderpath =
 
 # <var name="scstreamscaled" type="bool" values="1"><brief>Decide if we
 # scale the songcast stream.</brief><descr>If set, MPD software volume
