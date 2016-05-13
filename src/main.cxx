@@ -294,6 +294,9 @@ int main(int argc, char *argv[])
         if (g_config->get("pkgdatadir", g_datadir)) {
             path_catslash(g_datadir);
             iconpath = path_cat(g_datadir, "icon.png");
+            if (!path_exists(iconpath)) {
+                iconpath.clear();
+            }
             presentationhtml = path_cat(g_datadir, "presentation.html");
         }
         g_config->get("iconpath", iconpath);
