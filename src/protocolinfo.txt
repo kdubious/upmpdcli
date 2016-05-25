@@ -37,6 +37,8 @@ http-get:*:audio/m4a:*,
 http-get:*:audio/mp4:*,
 http-get:*:audio/x-m4a:*,
 http-get:*:audio/vorbis:*,
+http-get:*:audio/x-vorbis:*,
+http-get:*:audio/x-vorbis+ogg:*,
 http-get:*:audio/ogg:*,
 http-get:*:audio/x-ogg:*,
 http-get:*:audio/x-scpls:*
