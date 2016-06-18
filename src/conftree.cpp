@@ -52,6 +52,9 @@ using namespace std;
 #define LOGDEB(X)
 #endif
 
+static const SimpleRegexp varcomment_rx("[ \t]*#[ \t]*([a-zA-Z0-9]+)[ \t]*=",
+                                        0, 1);
+
 void ConfSimple::parseinput(istream& input)
 {
     string submapkey;
@@ -100,7 +103,12 @@ void ConfSimple::parseinput(istream& input)
             if (eof) {
                 break;
             }
-            m_order.push_back(ConfLine(ConfLine::CFL_COMMENT, line));
+            if (varcomment_rx.simpleMatch(line)) {
+                m_order.push_back(ConfLine(ConfLine::CFL_VARCOMMENT, line,
+                                           varcomment_rx.getMatch(line, 1)));
+            } else {
+                m_order.push_back(ConfLine(ConfLine::CFL_COMMENT, line));
+            }
             continue;
         }
         if (line[line.length() - 1] == '\\') {
@@ -118,12 +126,7 @@ void ConfSimple::parseinput(istream& input)
                 submapkey = line;
             }
             m_subkeys_unsorted.push_back(submapkey);
-
-            // No need for adding sk to order, will be done with first
-            // variable insert. Also means that empty section are
-            // expandable (won't be output when rewriting)
-            // Another option would be to add the subsec to m_order here
-            // and not do it inside i_set() if init is true
+            m_order.push_back(ConfLine(ConfLine::CFL_SK, submapkey));
             continue;
         }
 
@@ -371,11 +374,11 @@ int ConfSimple::i_set(const std::string& nm, const std::string& value,
         submap[nm] = value;
         m_submaps[sk] = submap;
 
-        // Maybe add sk entry to m_order data:
+        // Maybe add sk entry to m_order data, if not already there.
         if (!sk.empty()) {
             ConfLine nl(ConfLine::CFL_SK, sk);
             // Append SK entry only if it's not already there (erase
-            // does not remove entries from the order data, adn it may
+            // does not remove entries from the order data, and it may
             // be being recreated after deletion)
             if (find(m_order.begin(), m_order.end(), nl) == m_order.end()) {
                 m_order.push_back(nl);
@@ -445,8 +448,23 @@ int ConfSimple::i_set(const std::string& nm, const std::string& value,
     // It may happen that the order entry already exists because erase doesnt
     // update m_order
     if (find(start, fin, ConfLine(ConfLine::CFL_VAR, nm)) == fin) {
-        m_order.insert(fin, ConfLine(ConfLine::CFL_VAR, nm));
+        // Look for a varcomment line, insert the value right after if
+        // it's there.
+        bool inserted(false);
+        vector<ConfLine>::iterator it;
+        for (it = start; it != fin; it++) {
+            if (it->m_kind == ConfLine::CFL_VARCOMMENT && it->m_aux == nm) {
+                it++;
+                m_order.insert(it, ConfLine(ConfLine::CFL_VAR, nm));
+                inserted = true;
+                break;
+            }
+        }
+        if (!inserted) {
+            m_order.insert(fin, ConfLine(ConfLine::CFL_VAR, nm));
+        }
     }
+
     return 1;
 }
 
@@ -546,6 +564,7 @@ bool ConfSimple::write(ostream& out) const
             it != m_order.end(); it++) {
         switch (it->m_kind) {
         case ConfLine::CFL_COMMENT:
+        case ConfLine::CFL_VARCOMMENT:
             out << it->m_data << endl;
             if (!out.good()) {
                 return false;
@@ -643,6 +662,35 @@ bool ConfSimple::hasNameAnywhere(const string& nm) const
     }
     return false;
 }
+
+bool ConfSimple::commentsAsXML(ostream& out)
+{
+    const vector<ConfLine>& lines = getlines();
+
+    out << "<confcomments>\n";
+    
+    string sk;
+    for (vector<ConfLine>::const_iterator it = lines.begin();
+         it != lines.end(); it++) {
+        switch (it->m_kind) {
+        case ConfLine::CFL_COMMENT:
+        case ConfLine::CFL_VARCOMMENT:
+        {
+            string::size_type pos = it->m_data.find_first_not_of("# ");
+            if (pos != string::npos) {
+                out << it->m_data.substr(pos) << endl;
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
+    out << "</confcomments>\n";
+    
+    return true;
+}
+
 
 // //////////////////////////////////////////////////////////////////////////
 // ConfTree Methods: conftree interpret keys like a hierarchical file tree

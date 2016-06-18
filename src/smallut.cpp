@@ -31,6 +31,16 @@
 #include <string.h>
 #include <math.h>
 
+// Older compilers don't support stdc++ regex, but Windows does not
+// have the Linux one. Have a simple class to solve the simple cases.
+#if defined(_WIN32)
+#define USE_STD_REGEX
+#include <regex>
+#else
+#define USE_LINUX_REGEX
+#include <regex.h>
+#endif
+
 #include <string>
 #include <iostream>
 #include <list>
@@ -87,6 +97,23 @@ string stringtolower(const string& i)
     stringtolower(o);
     return o;
 }
+
+void stringtoupper(string& io)
+{
+    string::iterator it = io.begin();
+    string::iterator ite = io.end();
+    while (it != ite) {
+        *it = ::toupper(*it);
+        it++;
+    }
+}
+string stringtoupper(const string& i)
+{
+    string o = i;
+    stringtoupper(o);
+    return o;
+}
+
 extern int stringisuffcmp(const string& s1, const string& s2)
 {
     string::const_reverse_iterator r1 = s1.rbegin(), re1 = s1.rend(),
@@ -529,6 +556,34 @@ string escapeShell(const string& in)
             break;
         case '\n':
             out += "\\\n";
+            break;
+        case '\\':
+            out += "\\\\";
+            break;
+        default:
+            out += in.at(pos);
+        }
+    }
+    out += "\"";
+    return out;
+}
+
+// Escape value to be suitable as C++ source double-quoted string (for
+// generating a c++ program
+string makeCString(const string& in)
+{
+    string out;
+    out += "\"";
+    for (string::size_type pos = 0; pos < in.length(); pos++) {
+        switch (in.at(pos)) {
+        case '"':
+            out += "\\\"";
+            break;
+        case '\n':
+            out += "\\n";
+            break;
+        case '\r':
+            out += "\\r";
             break;
         case '\\':
             out += "\\\\";
@@ -1107,6 +1162,7 @@ void catstrerror(string *reason, const char *what, int _errno)
     errbuf[0] = 0;
     // We don't use ret, it's there to silence a cc warning
     char *ret = (char *)strerror_r(_errno, errbuf, ERRBUFSZ);
+    (void)ret;
     reason->append(errbuf);
 #endif
 }
@@ -1173,6 +1229,100 @@ string localelang()
         return locale;
     }
     return locale.substr(0, under);
+}
+
+#ifdef USE_STD_REGEX
+
+class SimpleRegexp::Internal {
+public:
+    Internal(const string& exp, int flags, int nm)
+        : expr(exp,
+               basic_regex<char>::flag_type(regex_constants::extended |
+                   ((flags&SRE_ICASE) ? regex_constants::icase : 0) |
+                   ((flags&SRE_NOSUB) ? regex_constants::nosubs : 0)
+                   )), ok(true), nmatch(nm) {
+    }
+    bool ok;
+    std::regex expr;
+    std::smatch res;
+    int nmatch;
+};
+
+bool SimpleRegexp::simpleMatch(const string& val) const
+{
+    if (!ok())
+        return false;
+    return regex_match(val, m->res, m->expr);
+}
+
+string SimpleRegexp::getMatch(const string& val, int i) const
+{
+    return m->res.str(i);
+}
+
+#else // -> !WIN32
+
+class SimpleRegexp::Internal {
+public:
+    Internal(const string& exp, int flags, int nm) : nmatch(nm) {
+        if (regcomp(&expr, exp.c_str(), REG_EXTENDED |
+                    ((flags&SRE_ICASE) ? REG_ICASE : 0) |
+                    ((flags&SRE_NOSUB) ? REG_NOSUB : 0)) == 0) {
+            ok = true;
+        } else {
+            ok = false;
+        }
+        matches.reserve(nmatch+1);
+    }
+    ~Internal() {
+        regfree(&expr);
+    }
+    bool ok;
+    regex_t expr;
+    int nmatch;
+    vector<regmatch_t> matches;
+};
+
+bool SimpleRegexp::simpleMatch(const string& val) const
+{
+    if (!ok())
+        return false;
+    if (regexec(&m->expr, val.c_str(), m->nmatch+1, &m->matches[0], 0) == 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+string SimpleRegexp::getMatch(const string& val, int i) const
+{
+    if (i > m->nmatch) {
+        return string();
+    }
+    return val.substr(m->matches[i].rm_so,
+                      m->matches[i].rm_eo - m->matches[i].rm_so);
+}
+
+#endif // win/notwinf
+
+SimpleRegexp::SimpleRegexp(const string& exp, int flags, int nmatch)
+    : m(new Internal(exp, flags, nmatch))
+{
+}
+
+SimpleRegexp::~SimpleRegexp()
+{
+    delete m;
+}
+
+bool SimpleRegexp::ok() const
+{
+    return m->ok;
+}
+
+bool SimpleRegexp::operator() (const string& val) const
+{
+    return simpleMatch(val);
 }
 
 // Initialization for static stuff to be called from main thread before going
@@ -1249,7 +1399,7 @@ int main(int argc, char **argv)
     thisprog = *argv++;
     argc--;
 
-#if 1
+#if 0
     if (argc <= 0) {
         cerr << "Usage: smallut <stringtosplit>" << endl;
         exit(1);
@@ -1400,7 +1550,23 @@ int main(int argc, char **argv)
         cout << it->first << " " << it->second << " " <<
              stringuppercmp(it->first, it->second) << endl;
     }
-
+#elif 0
+    SimpleRegexp exp("[ \t]*#[ \t]*([a-zA-Z0-9]+)[ \t]*=.*", 0, 1);
+    //SimpleRegexp exp(" # ([a-zA-Z0-9]+) =.*", 0, 10);
+    //SimpleRegexp exp(" # (varnm) = sdf sdf sdf ", 0, 10);
+    //SimpleRegexp exp(".*", 0);
+    string tomatch(" # varnm = sdf sdf sdf ");
+    if (exp.simpleMatch(tomatch)) {
+        cout << "Match !\n";
+        cout << "Submatch[0]: [" << exp.getMatch(tomatch, 0) << "]\n";
+        cout << "Submatch[1]: [" << exp.getMatch(tomatch, 1) << "]\n";
+        return 0;
+    } else {
+        cerr << "No match\n";
+        return 1;
+    }
+#elif 1
+    cout << makeCString("\"hello\" world\n2nd line") << endl;
 #endif
 }
 

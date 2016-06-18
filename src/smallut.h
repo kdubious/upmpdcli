@@ -63,6 +63,8 @@ extern int stringuppercmp(const std::string& alreadyupper,
 
 extern void stringtolower(std::string& io);
 extern std::string stringtolower(const std::string& io);
+extern void stringtoupper(std::string& io);
+extern std::string stringtoupper(const std::string& io);
 
 // Is one string the end part of the other ?
 extern int stringisuffcmp(const std::string& s1, const std::string& s2);
@@ -141,6 +143,9 @@ extern void trimstring(std::string& s, const char *ws = " \t");
 /** Escape things like < or & by turning them into entities */
 extern std::string escapeHtml(const std::string& in);
 
+/** Double-quote and escape to produce C source code string (prog generation) */
+extern std::string makeCString(const std::string& in);
+
 /** Replace some chars with spaces (ie: newline chars). */
 extern std::string neutchars(const std::string& str, const std::string& chars);
 extern void neutchars(const std::string& str, std::string& out,
@@ -188,6 +193,30 @@ inline void leftzeropad(std::string& s, unsigned len)
         s = s.insert(0, len - s.length(), '0');
     }
 }
+
+// A class to solve platorm/compiler issues for simple regex
+// matches. Uses the appropriate native lib under the hood.
+// This always uses extended regexp syntax.
+class SimpleRegexp {
+public:
+    enum Flags {SRE_NONE = 0, SRE_ICASE = 1, SRE_NOSUB = 2};
+    /// @param nmatch must be >= the number of parenthesed subexp in exp
+    SimpleRegexp(const std::string& exp, int flags, int nmatch = 0);
+    ~SimpleRegexp();
+    /// Match input against exp, return true if matches
+    bool simpleMatch(const std::string& val) const;
+    /// After simpleMatch success, get nth submatch, 0 is the whole
+    /// match, 1 first parentheses, etc.
+    std::string getMatch(const std::string& val, int matchidx) const;
+    /// Calls simpleMatch()
+    bool operator() (const std::string& val) const;
+    /// Check after construction
+    bool ok() const;
+    
+    class Internal;
+private:
+    Internal *m;
+};
 
 // Code for static initialization of an stl map. Somewhat like Boost.assign.
 // Ref: http://stackoverflow.com/questions/138600/initializing-a-static-stdmapint-int-in-c
