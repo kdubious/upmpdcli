@@ -148,7 +148,7 @@ static vector<const char *> ohxmlfilenames =
  * We strip white-space from beginning/ends of lines, and allow
  * #-started comments (on a line alone only, comments after data not allowed).
  */
-static bool read_protocolinfo(const string& fn, string& out)
+static bool read_protocolinfo(const string& fn, bool enableL16, string& out)
 {
     ifstream input;
     input.open(fn, ios::in);
@@ -169,6 +169,11 @@ static bool read_protocolinfo(const string& fn, string& out)
             eof = true;
 	}
         trimstring(line, " \t\n\r");
+        if (enableL16 && line[0] == '@') {
+            line = regsub1("@ENABLEL16@", line, "");
+        } else {
+            line = regsub1("@ENABLEL16@", line, "#");
+        }
         if (line[0] == '#')
             continue;
         out += line;
@@ -185,6 +190,7 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
                 const string& datadir,
                 const string& UUID, const string& friendlyname, 
                 bool enableAV, bool enableOH, bool enableReceiver,
+                bool enableL16,
                 const string& iconpath, const string& presentationhtml)
 {
     if (enableOH) {
@@ -196,7 +202,7 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
     }
     
     string protofile(path_cat(datadir, "protocolinfo.txt"));
-    if (!read_protocolinfo(protofile, g_protocolInfo)) {
+    if (!read_protocolinfo(protofile, enableL16, g_protocolInfo)) {
         LOGFAT("Failed reading protocol info from " << protofile << endl);
         return false;
     }

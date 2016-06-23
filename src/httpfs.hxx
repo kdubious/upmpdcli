@@ -27,7 +27,8 @@ extern bool initHttpFs(std::unordered_map<std::string,
                        const std::string& datadir,
                        const std::string& UUID, 
                        const std::string& friendlyname,
-                       bool enableAV, bool enableOH, bool enableReceiver, 
+                       bool enableAV, bool enableOH, bool enableReceiver,
+                       bool enableL16,
                        const std::string& iconpath,
                        const std::string& presentationhtml
     );

@@ -214,7 +214,7 @@ static string protoInfToFormat(const string& protoinfo)
         LOGDEB("protoInfToFormat: bad format: [" << protoinfo << "]\n");
         return string();
     }
-    return toks[2];
+    return stringtolower((const std::string&)toks[2]);
 }
 
 // This should be made an UPnPResource method one day
@@ -290,11 +290,11 @@ string regsub1(const string& sexp, const string& input, const string& repl)
     }
 
     if ((err = regexec(&expr, input.c_str(), 10, pmatch, 0))) {
-        regerror(err, &expr, errbuf, ERRSIZE);
+        // regerror(err, &expr, errbuf, ERRSIZE);
         //LOGDEB("upmpd: regsub1: regexec(" << sexp << ") failed: "
-        //    <<  errbuf << endl);
+        //<<  errbuf << endl);
         regfree(&expr);
-        return string();
+        return input;
     }
     if (pmatch[0].rm_so == -1) {
         // No match

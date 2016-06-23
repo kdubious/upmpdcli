@@ -119,6 +119,14 @@ bool MPDCli::openconn()
             return false;
         }
     }
+
+    const unsigned int *vers = mpd_connection_get_server_version(M_CONN);
+    m_stat.versmajor = vers[0];
+    m_stat.versminor = vers[1];
+    m_stat.verspatch = vers[2];
+    LOGDEB("MPDCLi::openconn: mpd protocol version: " << m_stat.versmajor
+           << "." << m_stat.versminor << "." << m_stat.verspatch << endl);
+
     return true;
 }
 

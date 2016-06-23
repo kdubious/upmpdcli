@@ -500,6 +500,11 @@ int main(int argc, char *argv[])
         }
     }
 
+    const MpdStatus& mpdstat = mpdclip->getStatus();
+    // Only the "special" upmpdcli 0.19.16 version has patch != 0
+    bool enableL16 = mpdstat.versmajor >= 1 || mpdstat.versminor >= 20 ||
+        mpdstat.verspatch >= 16; 
+        
     // Initialize libupnpp, and check health
     LibUPnP *mylib = 0;
     string hwaddr;
@@ -543,7 +548,7 @@ int main(int argc, char *argv[])
     // descriptions, icons, presentation page, etc.)
     unordered_map<string, VDirContent> files;
     if (!initHttpFs(files, g_datadir, UUID, friendlyname, enableAV, enableOH,
-                    !senderpath.empty(),
+                    !senderpath.empty(), enableL16,
                     iconpath, presentationhtml)) {
         exit(1);
     }

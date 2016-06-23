@@ -59,6 +59,9 @@ public:
 
     enum State {MPDS_UNK, MPDS_STOP, MPDS_PLAY, MPDS_PAUSE};
 
+    unsigned int versmajor;
+    unsigned int versminor;
+    unsigned int verspatch;
     int volume;
     bool rept;
     bool random;
