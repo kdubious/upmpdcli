@@ -25,11 +25,10 @@
 #include <iostream>                     // for basic_ostream, operator<<, etc
 #include <utility>                      // for pair
 
-#include "libupnpp/log.hxx"
-#include "libupnpp/workqueue.hxx"
+#include "libupnpp/log.h"
+#include "libupnpp/workqueue.h"
 
 using namespace std;
-using namespace UPnPP;
 
 static unsigned int slptimesecs;
 void dmcacheSetOpts(unsigned int slpsecs)
