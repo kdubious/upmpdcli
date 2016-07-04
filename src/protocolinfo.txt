@@ -24,7 +24,7 @@
 @ENABLEL16@http-get:*:audio/L16;rate=88200;channels=2:*,
 @ENABLEL16@http-get:*:audio/L16;rate=96000;channels=2:*,
 @ENABLEL16@http-get:*:audio/L16;rate=176400;channels=2:*,
-@ENABLEL16@http-get:*:audio/L16;rate=192000;channels=2:*
+@ENABLEL16@http-get:*:audio/L16;rate=192000;channels=2:*,
 
 http-get:*:audio/dsd:*,
 http-get:*:audio/wav:*,
