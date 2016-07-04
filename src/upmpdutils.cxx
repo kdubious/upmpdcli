@@ -205,43 +205,6 @@ string didlmake(const UpSong& song)
     return ss.str();
 }
 
-// Extract content format (3rd) field from protocolinfo fragment string
-static string protoInfToFormat(const string& protoinfo)
-{
-    vector<string> toks;
-    stringToTokens(protoinfo, toks, ":");
-    if (toks.size() != 4) {
-        LOGDEB("protoInfToFormat: bad format: [" << protoinfo << "]\n");
-        return string();
-    }
-    return stringtolower((const std::string&)toks[2]);
-}
-
-// This should be made an UPnPResource method one day
-string resourceContentFormat(const UPnPResource& res)
-{
-    map<string, string>::const_iterator it = res.m_props.find("protocolInfo");
-    if (it == res.m_props.end()) {
-        LOGDEB("resourceContentFormat: no protocolInfo attribute\n");
-        return string();
-    }
-    return protoInfToFormat(it->second);
-}
-
-bool protocolInfoToFormats(const string& pinfo, unordered_set<string>& formats)
-{
-    vector<string> entries;
-    stringToTokens(pinfo, entries, ",");
-    for (unsigned int i = 0; i < entries.size(); i++) {
-        string format = protoInfToFormat(entries[i]);
-        if (!format.empty()) {
-            LOGDEB("protocolInfoToFormats: Supported format: " << format << endl);
-            formats.insert(stringtolower((const string&)format));
-        }
-    }
-    return true;
-}
-
 bool dirObjToUpSong(const UPnPDirObject& dobj, UpSong *ups)
 {
     ups->artist = dobj.getprop("upnp:artist");

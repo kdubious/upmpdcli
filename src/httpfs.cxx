@@ -19,6 +19,7 @@
 #include <string>
 
 #include "libupnpp/log.hxx"
+#include "libupnpp/upnpavutils.hxx"
 
 #include "upmpd.hxx"
 #include "upmpdutils.hxx"
@@ -206,7 +207,12 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
         LOGFAT("Failed reading protocol info from " << protofile << endl);
         return false;
     }
-    protocolInfoToFormats(g_protocolInfo, g_supportedFormats);
+
+    vector<ProtocolinfoEntry> vpe;
+    parseProtocolInfo(g_protocolInfo, vpe);
+    for (const auto& it : vpe) {
+        g_supportedFormats.insert(it.contentFormat);
+    }
 
     string reason;
     string icondata;

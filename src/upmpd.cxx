@@ -166,7 +166,12 @@ bool UpMpd::checkContentFormat(const string& uri, const string& didl,
     for (vector<UPnPClient::UPnPResource>::const_iterator it =
              dobj.m_resources.begin(); it != dobj.m_resources.end(); it++) {
         if (!it->m_uri.compare(uri)) {
-            string cf = stringtolower(resourceContentFormat(*it));
+            ProtocolinfoEntry e;
+            if (!it->protoInfo(e)) {
+                LOGERR("checkContentFormat: resource has no protocolinfo\n");
+                return false;
+            }
+            string cf = e.contentFormat;
             if (g_supportedFormats.find(cf) == g_supportedFormats.end()) {
                 LOGERR("checkContentFormat: unsupported:: " << cf << endl);
                 return false;

@@ -46,17 +46,6 @@ extern bool uMetaToUpSong(const std::string&, UpSong *ups);
 // Convert UPnP content directory entry object to UpSong
 bool dirObjToUpSong(const UPnPClient::UPnPDirObject& dobj, UpSong *ups);
 
-// Extract the set of formats from protocolinfo data (comma separated
-// list of 'proto:net:format:extradata' elements, e.g. http-get:*:audio/mpeg:*) 
-// All format strings are changed to lower case in the output set.
-extern bool protocolInfoToFormats(const std::string& pinfo,
-                                  std::unordered_set<std::string>& formats);
-
-// Extract content format from resource protocolinfo attribute. This
-// should be made an UPnPResource method one day
-std::string resourceContentFormat(const UPnPClient::UPnPResource& res);
-
-
 // Replace the first occurrence of regexp. cxx11 regex does not work
 // that well yet...
 extern std::string regsub1(const std::string& sexp, const std::string& input, 
