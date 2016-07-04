@@ -1,5 +1,16 @@
 = Upmpdcli release notes
 
+== Upmpdcli 1.1.4
+
+- Support audio/L16 format (only works with patched mpd 0.19.16jfd1 until
+  mpd gets to 0.20).
+- Make Volume/Mute events conform to standard (JRiver did not like our
+  non-standard events).
+- Allow defining radio station in an out-of-install file.
+- Add content format compatibility checking. Can be disabled by setting
+  checkcontentformat to 0.
+- Other small fixes.
+
 == Upmpdcli 1.1.3
 
 - Fix cover art display, which sometimes vanished.
