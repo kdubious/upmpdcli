@@ -1,8 +1,8 @@
 
-AM_CPPFLAGS = -DDEBUG -g -Wall \
+AM_CPPFLAGS = -DDEBUG -g -Wall -I${prefix}/include/libupnpp \
             -DDATADIR=\"${pkgdatadir}\" -DCONFIGDIR=\"${sysconfdir}\"
 
-AM_CXXFLAGS = -std=c++0x 
+AM_CXXFLAGS = -std=c++11 
 
 bin_PROGRAMS = upmpdcli scctl
 
