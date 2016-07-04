@@ -49,7 +49,7 @@ public:
         // Stream volume control ? This decides if the aux mpd has mixer
         // "software" or "none"
         scalestream = true;
-        PTMutexLocker conflock(g_configlock);
+        std::unique_lock<std::mutex>(g_configlock);
         string value;
         if (g_config->get("scstreamscaled", value)) {
             scalestream = atoi(value.c_str()) != 0;

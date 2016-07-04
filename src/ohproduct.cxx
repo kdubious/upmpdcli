@@ -386,7 +386,7 @@ static void listScripts(vector<pair<string, string> >& sources)
         return;
 
     {
-        PTMutexLocker conflock(g_configlock);
+        std::unique_lock<std::mutex>(g_configlock);
         g_config->get("ohsrc_scripts_dir", scripts_dir);
     }
 

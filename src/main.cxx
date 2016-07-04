@@ -135,7 +135,7 @@ string g_datadir(DATADIR "/");
 
 // Global
 string g_configfilename(CONFIGDIR "/upmpdcli.conf");
-PTMutexInit g_configlock;
+std::mutex g_configlock;
 ConfSimple *g_config;
 
 static void onsig(int)

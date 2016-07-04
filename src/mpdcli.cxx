@@ -56,7 +56,7 @@ MPDCli::MPDCli(const string& host, int port, const string& pass)
     m_ok = true;
     m_ok = updStatus();
 
-    UPnPP::PTMutexLocker conflock(g_configlock);
+    std::unique_lock<std::mutex>(g_configlock);
     g_config->get("onstart", m_onstart);
     g_config->get("onplay", m_onplay);
     g_config->get("onstop", m_onstop);

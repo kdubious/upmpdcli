@@ -22,9 +22,9 @@
 #include <unordered_map>
 #include <vector>
 #include <unordered_set>
+#include <mutex>
 
 #include "libupnpp/device/device.hxx"
-#include "libupnpp/ptmutex.hxx"
 
 class MPDCli;
 class MpdStatus;
@@ -32,7 +32,7 @@ class MpdStatus;
 extern std::string g_configfilename;
 extern std::string g_datadir;
 class ConfSimple;
-extern UPnPP::PTMutexInit g_configlock;
+extern std::mutex g_configlock;
 extern ConfSimple *g_config;
 extern std::string g_protocolInfo;
 extern std::unordered_set<std::string> g_supportedFormats;
