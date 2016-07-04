@@ -50,32 +50,14 @@
 #endif
 
 #include "execmd.h"
-
 #include "netcon.h"
 #include "closefrom.h"
 #include "smallut.h"
+#include "log.h"
 
 using namespace std;
 
 extern char **environ;
-
-#ifdef BUILDING_RECOLL
-#include "debuglog.h"
-
-#else
-// If compiling outside of recoll, make the file as standalone as reasonable.
-
-#define LOGFATAL(X)
-#define LOGERR(X)
-#define LOGINFO(X)
-#define LOGDEB(X)
-#define LOGDEB0(X)
-#define LOGDEB1(X)
-#define LOGDEB2(X)
-#define LOGDEB3(X)
-#define LOGDEB4(X)
-
-#endif // BUILDING_RECOLL
 
 class ExecCmd::Internal {
 public:
@@ -267,7 +249,7 @@ public:
         if (!m_active || !m_parent) {
             return;
         }
-        LOGDEB1(("~ExecCmdRsrc: working. mypid: %d\n", (int)getpid()));
+        LOGDEB1("~ExecCmdRsrc: working. mypid: " << getpid() << "\n");
 
         // Better to close the descs first in case the child is waiting in read
         if (m_parent->m_pipein[0] >= 0) {
@@ -289,7 +271,7 @@ public:
         // definitely tried to call killpg(-1,) from time to time.
         pid_t grp;
         if (m_parent->m_pid > 0 && (grp = getpgid(m_parent->m_pid)) > 0) {
-            LOGDEB(("ExecCmd: killpg(%d, SIGTERM)\n", grp));
+            LOGDEB("ExecCmd: killpg(" << (grp) << ", SIGTERM)\n");
             int ret = killpg(grp, SIGTERM);
             if (ret == 0) {
                 for (int i = 0; i < 3; i++) {
@@ -300,14 +282,14 @@ public:
                         break;
                     }
                     if (i == 2) {
-                        LOGDEB(("ExecCmd: killpg(%d, SIGKILL)\n", grp));
+                        LOGDEB("ExecCmd: killpg(" << (grp) << ", SIGKILL)\n");
                         killpg(grp, SIGKILL);
                         (void)waitpid(m_parent->m_pid, &status, WNOHANG);
                     }
                 }
             } else {
-                LOGERR(("ExecCmd: error killing process group %d: %d\n",
-                        grp, errno));
+                LOGERR("ExecCmd: error killing process group " << (grp) <<
+                       ": " << errno << "\n");
             }
         }
         m_parent->m_tocmd.reset();
@@ -347,8 +329,8 @@ inline void ExecCmd::Internal::dochild(const string& cmd, const char **argv,
 {
     // Start our own process group
     if (setpgid(0, getpid())) {
-        LOGINFO(("ExecCmd::DOCHILD: setpgid(0, %d) failed: errno %d\n",
-                 getpid(), errno));
+        LOGINFO("ExecCmd::DOCHILD: setpgid(0, " << getpid() <<
+                ") failed: errno " << errno << "\n");
     }
 
     // Restore SIGTERM to default. Really, signal handling should be
@@ -364,7 +346,7 @@ inline void ExecCmd::Internal::dochild(const string& cmd, const char **argv,
     // to mess with the global process signal disposition.
 
     if (signal(SIGTERM, SIG_DFL) == SIG_ERR) {
-        //LOGERR(("ExecCmd::DOCHILD: signal() failed, errno %d\n", errno));
+        //LOGERR("ExecCmd::DOCHILD: signal() failed, errno " << errno << "\n");
     }
     sigset_t sset;
     sigfillset(&sset);
@@ -415,10 +397,12 @@ inline void ExecCmd::Internal::dochild(const string& cmd, const char **argv,
         close(m_pipeout[0]);
         if (m_pipeout[1] != 1) {
             if (dup2(m_pipeout[1], 1) < 0) {
-                LOGERR(("ExecCmd::DOCHILD: dup2() failed. errno %d\n", errno));
+                LOGERR("ExecCmd::DOCHILD: dup2() failed. errno " <<
+                       errno << "\n");
             }
             if (close(m_pipeout[1]) < 0) {
-                LOGERR(("ExecCmd::DOCHILD: close() failed. errno %d\n", errno));
+                LOGERR("ExecCmd::DOCHILD: close() failed. errno " <<
+                       errno << "\n");
             }
         }
     }
@@ -446,8 +430,8 @@ inline void ExecCmd::Internal::dochild(const string& cmd, const char **argv,
     // Hu ho. This should never have happened as we checked the
     // existence of the executable before calling dochild... Until we
     // did this check, this was the chief cause of LOG mutex deadlock
-    LOGERR(("ExecCmd::DOCHILD: execve(%s) failed. errno %d\n", cmd.c_str(),
-            errno));
+    LOGERR("ExecCmd::DOCHILD: execve(" << cmd << ") failed. errno " <<
+           errno << "\n");
     _exit(127);
 }
 
@@ -466,19 +450,19 @@ int ExecCmd::startExec(const string& cmd, const vector<string>& args,
                 it != args.end(); it++) {
             command += "{" + *it + "} ";
         }
-        LOGDEB(("ExecCmd::startExec: (%d|%d) %s\n",
-                has_input, has_output, command.c_str()));
+        LOGDEB("ExecCmd::startExec: (" << has_input << "|" << has_output <<
+               ") " << command << "\n");
     }
 
     // The resource manager ensures resources are freed if we return early
     ExecCmdRsrc e(this->m);
 
     if (has_input && pipe(m->m_pipein) < 0) {
-        LOGERR(("ExecCmd::startExec: pipe(2) failed. errno %d\n", errno));
+        LOGERR("ExecCmd::startExec: pipe(2) failed. errno " << errno << "\n" );
         return -1;
     }
     if (has_output && pipe(m->m_pipeout) < 0) {
-        LOGERR(("ExecCmd::startExec: pipe(2) failed. errno %d\n", errno));
+        LOGERR("ExecCmd::startExec: pipe(2) failed. errno " << errno << "\n");
         return -1;
     }
 
@@ -494,7 +478,7 @@ int ExecCmd::startExec(const string& cmd, const vector<string>& args,
     Ccharp *argv;
     argv = (Ccharp *)malloc((args.size() + 2) * sizeof(char *));
     if (argv == 0) {
-        LOGERR(("ExecCmd::doexec: malloc() failed. errno %d\n", errno));
+        LOGERR("ExecCmd::doexec: malloc() failed. errno " << errno << "\n");
         return -1;
     }
     // Fill up argv
@@ -514,7 +498,7 @@ int ExecCmd::startExec(const string& cmd, const vector<string>& args,
         }
     envv = (Ccharp *)malloc((envsize + m->m_env.size() + 2) * sizeof(char *));
     if (envv == 0) {
-        LOGERR(("ExecCmd::doexec: malloc() failed. errno %d\n", errno));
+        LOGERR("ExecCmd::doexec: malloc() failed. errno " << errno << "\n");
         free(argv);
         return -1;
     }
@@ -531,7 +515,7 @@ int ExecCmd::startExec(const string& cmd, const vector<string>& args,
     // As we are going to use execve, not execvp, do the PATH thing.
     string exe;
     if (!which(cmd, exe)) {
-        LOGERR(("ExecCmd::startExec: %s not found\n", cmd.c_str()));
+        LOGERR("ExecCmd::startExec: " << (cmd) << " not found\n");
         free(argv);
         free(envv);
         return -1;
@@ -590,7 +574,7 @@ int ExecCmd::startExec(const string& cmd, const vector<string>& args,
             posix_spawn_file_actions_addopen(&facts, 2, m->m_stderrFile.c_str(),
                                              oflags, 0600);
         }
-        LOGDEB1(("using SPAWN\n"));
+        LOGDEB1("using SPAWN\n");
 
         // posix_spawn() does not have any standard way to ask for
         // calling closefrom(). Afaik there is a solaris extension for this,
@@ -604,22 +588,22 @@ int ExecCmd::startExec(const string& cmd, const vector<string>& args,
         posix_spawnattr_destroy(&attrs);
         posix_spawn_file_actions_destroy(&facts);
         if (ret) {
-            LOGERR(("ExecCmd::startExec: posix_spawn() failed. errno %d\n",
-                    ret));
+            LOGERR("ExecCmd::startExec: posix_spawn() failed. errno " << ret <<
+                   "\n");
             return -1;
         }
     }
 
 #else
     if (Internal::o_useVfork) {
-        LOGDEB1(("using VFORK\n"));
+        LOGDEB1("using VFORK\n");
         m->m_pid = vfork();
     } else {
-        LOGDEB1(("using FORK\n"));
+        LOGDEB1("using FORK\n");
         m->m_pid = fork();
     }
     if (m->m_pid < 0) {
-        LOGERR(("ExecCmd::startExec: fork(2) failed. errno %d\n", errno));
+        LOGERR("ExecCmd::startExec: fork(2) failed. errno " << errno << "\n");
         return -1;
     }
     if (m->m_pid == 0) {
@@ -645,8 +629,8 @@ int ExecCmd::startExec(const string& cmd, const vector<string>& args,
     if (setpgid(m->m_pid, m->m_pid)) {
         // This can fail with EACCES if the son has already done execve
         // (linux at least)
-        LOGDEB2(("ExecCmd: father setpgid(son)(%d,%d) errno %d (ok)\n",
-                 m->m_pid, m->m_pid, errno));
+        LOGDEB2("ExecCmd: father setpgid(son)(" << m->m_pid << "," <<
+                m->m_pid << ") errno " << errno << " (ok)\n");
     }
 
     sigemptyset(&m->m_blkcld);
@@ -690,8 +674,8 @@ public:
         if (!m_input) {
             return -1;
         }
-        LOGDEB1(("ExecWriter: input m_cnt %d input length %d\n", m_cnt,
-                 m_input->length()));
+        LOGDEB1("ExecWriter: input m_cnt " << m_cnt << " input length " <<
+                m_input->length() << "\n");
         if (m_cnt >= m_input->length()) {
             // Fd ready for more but we got none. Try to get data, else
             // shutdown;
@@ -707,14 +691,14 @@ public:
                 // Ready with new buffer, reset use count
                 m_cnt = 0;
             }
-            LOGDEB2(("ExecWriter: provide m_cnt %d input length %d\n",
-                     m_cnt, m_input->length()));
+            LOGDEB2("ExecWriter: provide m_cnt " << m_cnt <<
+                    " input length " << m_input->length() << "\n");
         }
         int ret = con->send(m_input->c_str() + m_cnt,
                             m_input->length() - m_cnt);
-        LOGDEB2(("ExecWriter: wrote %d to command\n", ret));
+        LOGDEB2("ExecWriter: wrote " << (ret) << " to command\n");
         if (ret <= 0) {
-            LOGERR(("ExecWriter: data: can't write\n"));
+            LOGERR("ExecWriter: data: can't write\n");
             return -1;
         }
         m_cnt += ret;
@@ -736,9 +720,9 @@ public:
     virtual int data(NetconData *con, Netcon::Event reason) {
         char buf[8192];
         int n = con->receive(buf, 8192);
-        LOGDEB1(("ExecReader: got %d from command\n", n));
+        LOGDEB1("ExecReader: got " << (n) << " from command\n");
         if (n < 0) {
-            LOGERR(("ExecCmd::doexec: receive failed. errno %d\n", errno));
+            LOGERR("ExecCmd::doexec: receive failed. errno " << errno << "\n");
         } else if (n > 0) {
             m_output->append(buf, n);
             if (m_advise) {
@@ -770,7 +754,7 @@ int ExecCmd::doexec(const string& cmd, const vector<string>& args,
         if (output) {
             NetconCli *oclicon = m->m_fromcmd.get();
             if (!oclicon) {
-                LOGERR(("ExecCmd::doexec: no connection from command\n"));
+                LOGERR("ExecCmd::doexec: no connection from command\n");
                 return -1;
             }
             oclicon->setcallback(STD_SHARED_PTR<NetconWorker>
@@ -783,7 +767,7 @@ int ExecCmd::doexec(const string& cmd, const vector<string>& args,
         if (input) {
             NetconCli *iclicon = m->m_tocmd.get();
             if (!iclicon) {
-                LOGERR(("ExecCmd::doexec: no connection from command\n"));
+                LOGERR("ExecCmd::doexec: no connection from command\n");
                 return -1;
             }
             iclicon->setcallback(STD_SHARED_PTR<NetconWorker>
@@ -796,16 +780,16 @@ int ExecCmd::doexec(const string& cmd, const vector<string>& args,
         // Do the actual reading/writing/waiting
         myloop.setperiodichandler(0, 0, m->m_timeoutMs);
         while ((ret = myloop.doLoop()) > 0) {
-            LOGDEB(("ExecCmd::doexec: selectloop returned %d\n", ret));
+            LOGDEB("ExecCmd::doexec: selectloop returned " << (ret) << "\n");
             if (m->m_advise) {
                 m->m_advise->newData(0);
             }
             if (m->m_killRequest) {
-                LOGINFO(("ExecCmd::doexec: cancel request\n"));
+                LOGINFO("ExecCmd::doexec: cancel request\n");
                 break;
             }
         }
-        LOGDEB0(("ExecCmd::doexec: selectloop returned %d\n", ret));
+        LOGDEB0("ExecCmd::doexec: selectloop returned " << (ret) << "\n");
         // Check for interrupt request: we won't want to waitpid()
         if (m->m_advise) {
             m->m_advise->newData(0);
@@ -838,7 +822,7 @@ int ExecCmd::send(const string& data)
 {
     NetconCli *con = m->m_tocmd.get();
     if (con == 0) {
-        LOGERR(("ExecCmd::send: outpipe is closed\n"));
+        LOGERR("ExecCmd::send: outpipe is closed\n");
         return -1;
     }
     unsigned int nwritten = 0;
@@ -848,7 +832,7 @@ int ExecCmd::send(const string& data)
         }
         int n = con->send(data.c_str() + nwritten, data.length() - nwritten);
         if (n < 0) {
-            LOGERR(("ExecCmd::send: send failed\n"));
+            LOGERR("ExecCmd::send: send failed\n");
             return -1;
         }
         nwritten += n;
@@ -860,7 +844,7 @@ int ExecCmd::receive(string& data, int cnt)
 {
     NetconCli *con = m->m_fromcmd.get();
     if (con == 0) {
-        LOGERR(("ExecCmd::receive: inpipe is closed\n"));
+        LOGERR("ExecCmd::receive: inpipe is closed\n");
         return -1;
     }
     const int BS = 4096;
@@ -870,13 +854,13 @@ int ExecCmd::receive(string& data, int cnt)
         int toread = cnt > 0 ? MIN(cnt - ntot, BS) : BS;
         int n = con->receive(buf, toread);
         if (n < 0) {
-            LOGERR(("ExecCmd::receive: error\n"));
+            LOGERR("ExecCmd::receive: error\n");
             return -1;
         } else if (n > 0) {
             ntot += n;
             data.append(buf, n);
         } else {
-            LOGDEB(("ExecCmd::receive: got 0\n"));
+            LOGDEB("ExecCmd::receive: got 0\n");
             break;
         }
     } while (cnt > 0 && ntot < cnt);
@@ -887,7 +871,7 @@ int ExecCmd::getline(string& data)
 {
     NetconCli *con = m->m_fromcmd.get();
     if (con == 0) {
-        LOGERR(("ExecCmd::receive: inpipe is closed\n"));
+        LOGERR("ExecCmd::receive: inpipe is closed\n");
         return -1;
     }
     const int BS = 1024;
@@ -904,17 +888,17 @@ again:
     int n = con->getline(buf, BS, timeosecs);
     if (n < 0) {
         if (con->timedout()) {
-            LOGDEB(("ExecCmd::getline: timeout\n"));
+            LOGDEB("ExecCmd::getline: timeout\n");
             if (m->m_advise) {
                 m->m_advise->newData(0);
             }
             goto again;
         }
-        LOGERR(("ExecCmd::getline: error\n"));
+        LOGERR("ExecCmd::getline: error\n");
     } else if (n > 0) {
         data.append(buf, n);
     } else {
-        LOGDEB(("ExecCmd::getline: got 0\n"));
+        LOGDEB("ExecCmd::getline: got 0\n");
     }
     return n;
 }
@@ -968,10 +952,10 @@ int ExecCmd::wait()
     int status = -1;
     if (!m->m_killRequest && m->m_pid > 0) {
         if (waitpid(m->m_pid, &status, 0) < 0) {
-            LOGERR(("ExecCmd::waitpid: returned -1 errno %d\n", errno));
+            LOGERR("ExecCmd::waitpid: returned -1 errno " << errno << "\n");
             status = -1;
         }
-        LOGDEB(("ExecCmd::wait: got status 0x%x\n", status));
+        LOGDEB("ExecCmd::wait: got status 0x" << (status) << "\n");
         m->m_pid = -1;
     }
     // Let the ExecCmdRsrc cleanup, it will do the killing/waiting if needed
@@ -990,15 +974,15 @@ bool ExecCmd::maybereap(int *status)
 
     pid_t pid = waitpid(m->m_pid, status, WNOHANG);
     if (pid < 0) {
-        LOGERR(("ExecCmd::maybereap: returned -1 errno %d\n", errno));
+        LOGERR("ExecCmd::maybereap: returned -1 errno " << errno << "\n");
         m->m_pid = -1;
         return true;
     } else if (pid == 0) {
-        LOGDEB1(("ExecCmd::maybereap: not exited yet\n"));
+        LOGDEB1("ExecCmd::maybereap: not exited yet\n");
         e.inactivate();
         return false;
     } else {
-        LOGDEB(("ExecCmd::maybereap: got status 0x%x\n", status));
+        LOGDEB("ExecCmd::maybereap: got status 0x" << (status) << "\n");
         m->m_pid = -1;
         return true;
     }
@@ -1008,7 +992,7 @@ bool ExecCmd::maybereap(int *status)
 bool ExecCmd::backtick(const vector<string> cmd, string& out)
 {
     if (cmd.empty()) {
-        LOGERR(("ExecCmd::backtick: empty command\n"));
+        LOGERR("ExecCmd::backtick: empty command\n");
         return false;
     }
     vector<string>::const_iterator it = cmd.begin();
@@ -1108,9 +1092,9 @@ void ReExec::reexec()
 
     // Try to get back to the initial working directory
     if (m_cfd < 0 || fchdir(m_cfd) < 0) {
-        LOGINFO(("ReExec::reexec: fchdir failed, trying chdir\n"));
+        LOGINFO("ReExec::reexec: fchdir failed, trying chdir\n");
         if (!m_curdir.empty() && chdir(m_curdir.c_str())) {
-            LOGERR(("ReExec::reexec: chdir failed\n"));
+            LOGERR("ReExec::reexec: chdir failed\n");
         }
     }
 
@@ -1122,7 +1106,7 @@ void ReExec::reexec()
     Ccharp *argv;
     argv = (Ccharp *)malloc((m_argv.size() + 1) * sizeof(char *));
     if (argv == 0) {
-        LOGERR(("ExecCmd::doexec: malloc() failed. errno %d\n", errno));
+        LOGERR("ExecCmd::doexec: malloc() failed. errno " << errno << "\n");
         return;
     }
 
@@ -1151,7 +1135,8 @@ void ReExec::reexec()
 #include <sstream>
 #include <vector>
 
-#include "debuglog.h"
+#include "log.h"
+
 #include "execmd.h"
 #ifdef BUILDING_RECOLL
 #include "smallut.h"
@@ -1505,3 +1490,4 @@ int main(int argc, char *argv[])
     }
 }
 #endif // TEST
+
