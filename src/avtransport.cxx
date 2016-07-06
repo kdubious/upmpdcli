@@ -97,6 +97,64 @@ UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev, bool noev)
 #endif
 }
 
+// AVTransport Errors
+enum AVTErrorCode {
+  UPNP_AV_AVT_INVALID_TRANSITION                    = 701,
+  UPNP_AV_AVT_NO_CONTENTS                           = 702,
+  UPNP_AV_AVT_READ_ERROR                            = 703,
+  UPNP_AV_AVT_UNSUPPORTED_PLAY_FORMAT               = 704,
+  UPNP_AV_AVT_TRANSPORT_LOCKED                      = 705,
+  UPNP_AV_AVT_WRITE_ERROR                           = 706,
+  UPNP_AV_AVT_PROTECTED_MEDIA                       = 707,
+  UPNP_AV_AVT_UNSUPPORTED_REC_FORMAT                = 708,
+  UPNP_AV_AVT_FULL_MEDIA                            = 709,
+  UPNP_AV_AVT_UNSUPPORTED_SEEK_MODE                 = 710,
+  UPNP_AV_AVT_ILLEGAL_SEEK_TARGET                   = 711,
+  UPNP_AV_AVT_UNSUPPORTED_PLAY_MODE                 = 712,
+  UPNP_AV_AVT_UNSUPPORTED_REC_QUALITY               = 713,
+  UPNP_AV_AVT_ILLEGAL_MIME                          = 714,
+  UPNP_AV_AVT_CONTENT_BUSY                          = 715,
+  UPNP_AV_AVT_RESOURCE_NOT_FOUND                    = 716,
+  UPNP_AV_AVT_UNSUPPORTED_PLAY_SPEED                = 717,
+  UPNP_AV_AVT_INVALID_INSTANCE_ID                   = 718,
+};
+
+const std::string UpMpdAVTransport::serviceErrString(int error) const
+{
+    switch(error) {
+    case UPNP_AV_AVT_INVALID_TRANSITION:
+        return "AVTransport Invalid Transition";
+    case UPNP_AV_AVT_NO_CONTENTS: return "AVTransport No Contents";
+    case UPNP_AV_AVT_READ_ERROR: return "AVTransport Read Error";
+    case UPNP_AV_AVT_UNSUPPORTED_PLAY_FORMAT:
+        return "AVTransport Unsupported Play Format";
+    case UPNP_AV_AVT_TRANSPORT_LOCKED: return "AVTransport Transport Locked";
+    case UPNP_AV_AVT_WRITE_ERROR: return "AVTransport Write Error";
+    case UPNP_AV_AVT_PROTECTED_MEDIA: return "AVTransport Protected Media";
+    case UPNP_AV_AVT_UNSUPPORTED_REC_FORMAT:
+        return "AVTransport Unsupported Rec Format";
+    case UPNP_AV_AVT_FULL_MEDIA: return "AVTransport Full Media";
+    case UPNP_AV_AVT_UNSUPPORTED_SEEK_MODE:
+        return "AVTransport Unsupported Seek Mode";
+    case UPNP_AV_AVT_ILLEGAL_SEEK_TARGET:
+        return "AVTransport Illegal Seek Target";
+    case UPNP_AV_AVT_UNSUPPORTED_PLAY_MODE:
+        return "AVTransport Unsupported Play Mode";
+    case UPNP_AV_AVT_UNSUPPORTED_REC_QUALITY:
+        return "AVTransport Unsupported Rec Quality";
+    case UPNP_AV_AVT_ILLEGAL_MIME: return "AVTransport Illegal Mime";
+    case UPNP_AV_AVT_CONTENT_BUSY: return "AVTransport Content Busy";
+    case UPNP_AV_AVT_RESOURCE_NOT_FOUND:
+        return "AVTransport Resource Not Found";
+    case UPNP_AV_AVT_UNSUPPORTED_PLAY_SPEED:
+        return "AVTransport Unsupported Play Speed";
+    case UPNP_AV_AVT_INVALID_INSTANCE_ID:
+        return "AVTransport Invalid Instance Id";
+    default:
+        return "AVTRansport Unknown Error";
+    }
+}
+
 // Translate MPD mode flags to UPnP Play mode
 static string mpdsToPlaymode(const MpdStatus& mpds)
 {
@@ -332,7 +390,7 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
     // Check that we support the audio format for the input uri.
     UpSong metaformpd;
     if (!m_dev->checkContentFormat(uri, metadata, &metaformpd)) {
-        LOGERR("set(Next)AVTRansportURI: unsupported format: uri " << uri <<
+        LOGERR("set(Next)AVTransportURI: unsupported format: uri " << uri <<
                " metadata " << metadata);
         return UPNP_E_INVALID_PARAM;
     }

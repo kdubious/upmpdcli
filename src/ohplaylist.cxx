@@ -294,7 +294,7 @@ int OHPlaylist::play(const SoapIncoming& sc, SoapOutgoing& data)
     m_dev->m_mpdcli->single(false);
     bool ok = m_dev->m_mpdcli->play();
     maybeWakeUp(ok);
-    return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
+    return ok ? UPNP_E_SUCCESS : UpnpService::UPNP_ACTION_FAILED;
 }
 
 int OHPlaylist::pause(const SoapIncoming& sc, SoapOutgoing& data)

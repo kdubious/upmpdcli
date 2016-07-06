@@ -63,6 +63,24 @@ UpMpdRenderCtl::UpMpdRenderCtl(UpMpd *dev, bool noev)
                             bind(&UpMpdRenderCtl::selectPreset, this, _1, _2));
 }
 
+// Rendering Control errors
+enum RDCErrorCode {
+  UPNP_AV_RC_INVALID_PRESET_NAME                    = 701,
+  UPNP_AV_RC_INVALID_INSTANCE_ID                    = 702,
+};
+
+const std::string UpMpdRenderCtl::serviceErrString(int error) const
+{
+    switch(error) {
+    case UPNP_AV_RC_INVALID_PRESET_NAME:
+        return "Rendering Control Invalid Preset Name";
+    case UPNP_AV_RC_INVALID_INSTANCE_ID:
+        return "Rendering Control Invalid Instance ID";
+    default:
+        return "Rendering Control Unknown Error";
+    }
+}
+
 ////////////////////////////////////////////////////
 /// RenderingControl methods
 

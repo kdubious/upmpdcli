@@ -37,6 +37,8 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
 
+    virtual const std::string serviceErrString(int) const;
+
     void setOHP(OHPlaylist *ohp) {
         m_ohp = ohp;
     }

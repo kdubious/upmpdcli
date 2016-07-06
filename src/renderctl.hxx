@@ -34,6 +34,7 @@ public:
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
+    virtual const std::string serviceErrString(int) const;
     int getvolume_i();
     void setvolume_i(int volume);
     void setmute_i(bool onoff);
