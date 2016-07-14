@@ -42,8 +42,8 @@
 #include <string>
 #include <iostream>
 #include <list>
-#include UNORDERED_MAP_INCLUDE
-#include UNORDERED_SET_INCLUDE
+#include <unordered_map>
+#include <unordered_set>
 
 #include "smallut.h"
 
@@ -323,8 +323,8 @@ template bool stringToStrings<vector<string> >(const string&,
         vector<string>&, const string&);
 template bool stringToStrings<set<string> >(const string&,
         set<string>&, const string&);
-template bool stringToStrings<STD_UNORDERED_SET<string> >
-(const string&, STD_UNORDERED_SET<string>&, const string&);
+template bool stringToStrings<std::unordered_set<string> >
+(const string&, std::unordered_set<string>&, const string&);
 
 template <class T> void stringsToString(const T& tokens, string& s)
 {
@@ -1195,14 +1195,14 @@ static const string cstr_cp1252("CP1252");
 
 string langtocode(const string& lang)
 {
-    static STD_UNORDERED_MAP<string, string> lang_to_code;
+    static std::unordered_map<string, string> lang_to_code;
     if (lang_to_code.empty()) {
         for (unsigned int i = 0;
                 i < sizeof(vlang_to_code) / sizeof(char *); i += 2) {
             lang_to_code[vlang_to_code[i]] = vlang_to_code[i + 1];
         }
     }
-    STD_UNORDERED_MAP<string, string>::const_iterator it =
+    std::unordered_map<string, string>::const_iterator it =
         lang_to_code.find(lang);
 
     // Use cp1252 by default...
@@ -1240,9 +1240,9 @@ public:
                    ((flags&SRE_NOSUB) ? regex_constants::nosubs : 0)
                    )), ok(true), nmatch(nm) {
     }
-    bool ok;
     std::regex expr;
     std::smatch res;
+    bool ok;
     int nmatch;
 };
 

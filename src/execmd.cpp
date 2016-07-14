@@ -77,10 +77,10 @@ public:
     string           m_stderrFile;
     // Pipe for data going to the command
     int              m_pipein[2];
-    STD_SHARED_PTR<NetconCli> m_tocmd;
+    std::shared_ptr<NetconCli> m_tocmd;
     // Pipe for data coming out
     int              m_pipeout[2];
-    STD_SHARED_PTR<NetconCli> m_fromcmd;
+    std::shared_ptr<NetconCli> m_fromcmd;
     // Subprocess id
     pid_t            m_pid;
     // Saved sigmask
@@ -642,14 +642,14 @@ int ExecCmd::startExec(const string& cmd, const vector<string>& args,
         m->m_pipein[0] = -1;
         NetconCli *iclicon = new NetconCli();
         iclicon->setconn(m->m_pipein[1]);
-        m->m_tocmd = STD_SHARED_PTR<NetconCli>(iclicon);
+        m->m_tocmd = std::shared_ptr<NetconCli>(iclicon);
     }
     if (has_output) {
         close(m->m_pipeout[1]);
         m->m_pipeout[1] = -1;
         NetconCli *oclicon = new NetconCli();
         oclicon->setconn(m->m_pipeout[0]);
-        m->m_fromcmd = STD_SHARED_PTR<NetconCli>(oclicon);
+        m->m_fromcmd = std::shared_ptr<NetconCli>(oclicon);
     }
 
     /* Don't want to undo what we just did ! */
@@ -757,7 +757,7 @@ int ExecCmd::doexec(const string& cmd, const vector<string>& args,
                 LOGERR("ExecCmd::doexec: no connection from command\n");
                 return -1;
             }
-            oclicon->setcallback(STD_SHARED_PTR<NetconWorker>
+            oclicon->setcallback(std::shared_ptr<NetconWorker>
                                  (new ExecReader(output, m->m_advise)));
             myloop.addselcon(m->m_fromcmd, Netcon::NETCONPOLL_READ);
             // Give up ownership
@@ -770,7 +770,7 @@ int ExecCmd::doexec(const string& cmd, const vector<string>& args,
                 LOGERR("ExecCmd::doexec: no connection from command\n");
                 return -1;
             }
-            iclicon->setcallback(STD_SHARED_PTR<NetconWorker>
+            iclicon->setcallback(std::shared_ptr<NetconWorker>
                                  (new ExecWriter(input, m->m_provide, m)));
             myloop.addselcon(m->m_tocmd, Netcon::NETCONPOLL_WRITE);
             // Give up ownership

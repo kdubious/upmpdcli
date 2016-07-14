@@ -35,16 +35,3 @@ static const char *UPMPDCLI_PACKAGE_VERSION = PACKAGE_VERSION;
 #undef PACKAGE_TARNAME
 #undef PACKAGE_URL
 #undef PACKAGE_VERSION
-
-#ifdef __cplusplus
-#define UNORDERED_MAP_INCLUDE <unordered_map>
-#define UNORDERED_SET_INCLUDE <unordered_set>
-#define STD_UNORDERED_MAP std::unordered_map
-#define STD_UNORDERED_SET std::unordered_set
-#define STD_FUNCTION      std::function
-#define STD_BIND          std::bind
-#define STD_PLACEHOLDERS  std::placeholders
-#define MEMORY_INCLUDE <memory>
-#define STD_SHARED_PTR    std::shared_ptr
-#define STD_WEAK_PTR      std::weak_ptr
-#endif /* c++ */

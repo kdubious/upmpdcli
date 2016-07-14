@@ -42,14 +42,15 @@
 
 #include "pathut.h"
 #include "smallut.h"
+#include "log.h"
 
 using namespace std;
 
-#undef DEBUG
-#ifdef DEBUG
-#define LOGDEB(X) fprintf X
+#undef DEBUG_CONFTREE
+#ifdef DEBUG_CONFTREE
+#define CONFDEB LOGDEB
 #else
-#define LOGDEB(X)
+#define CONFDEB LOGDEB2
 #endif
 
 static const SimpleRegexp varcomment_rx("[ \t]*#[ \t]*([a-zA-Z0-9]+)[ \t]*=",
@@ -66,15 +67,14 @@ void ConfSimple::parseinput(istream& input)
     for (;;) {
         cline.clear();
         std::getline(input, cline);
-        LOGDEB((stderr, "Parse:line: [%s] status %d\n",
-                cline.c_str(), int(status)));
+        CONFDEB("Parse:line: ["  << cline << "] status "  << status << "\n");
         if (!input.good()) {
             if (input.bad()) {
-                LOGDEB((stderr, "Parse: input.bad()\n"));
+                CONFDEB("Parse: input.bad()\n");
                 status = STATUS_ERROR;
                 return;
             }
-            LOGDEB((stderr, "Parse: eof\n"));
+            CONFDEB("Parse: eof\n");
             // Must be eof ? But maybe we have a partial line which
             // must be processed. This happens if the last line before
             // eof ends with a backslash, or there is no final \n
@@ -338,8 +338,7 @@ int ConfSimple::set(const std::string& nm, const std::string& value,
     if (status  != STATUS_RW) {
         return 0;
     }
-    LOGDEB((stderr, "ConfSimple::set [%s]:[%s] -> [%s]\n", sk.c_str(),
-            nm.c_str(), value.c_str()));
+    CONFDEB("ConfSimple::set ["<<sk<< "]:[" << nm << "] -> [" << value << "]\n");
     if (!i_set(nm, value, sk)) {
         return 0;
     }
@@ -358,18 +357,18 @@ int ConfSimple::set(const string& nm, long long val,
 int ConfSimple::i_set(const std::string& nm, const std::string& value,
                       const string& sk, bool init)
 {
-    LOGDEB((stderr, "ConfSimple::i_set: nm[%s] val[%s] key[%s], init %d\n",
-            nm.c_str(), value.c_str(), sk.c_str(), init));
+    CONFDEB("ConfSimple::i_set: nm[" << nm << "] val[" << value <<
+            "] key[" << sk << "], init " << init << "\n");
     // Values must not have embedded newlines
     if (value.find_first_of("\n\r") != string::npos) {
-        LOGDEB((stderr, "ConfSimple::i_set: LF in value\n"));
+        CONFDEB("ConfSimple::i_set: LF in value\n");
         return 0;
     }
     bool existing = false;
     map<string, map<string, string> >::iterator ss;
     // Test if submap already exists, else create it, and insert variable:
     if ((ss = m_submaps.find(sk)) == m_submaps.end()) {
-        LOGDEB((stderr, "ConfSimple::i_set: new submap\n"));
+        CONFDEB("ConfSimple::i_set: new submap\n");
         map<string, string> submap;
         submap[nm] = value;
         m_submaps[sk] = submap;
@@ -398,7 +397,7 @@ int ConfSimple::i_set(const std::string& nm, const std::string& value,
 
     // If the variable already existed, no need to change the m_order data
     if (existing) {
-        LOGDEB((stderr, "ConfSimple::i_set: existing var: no order update\n"));
+        CONFDEB("ConfSimple::i_set: existing var: no order update\n");
         return 1;
     }
 
@@ -406,7 +405,7 @@ int ConfSimple::i_set(const std::string& nm, const std::string& value,
 
     if (init) {
         // During the initial construction, just append:
-        LOGDEB((stderr, "ConfSimple::i_set: init true: append\n"));
+        CONFDEB("ConfSimple::i_set: init true: append\n");
         m_order.push_back(ConfLine(ConfLine::CFL_VAR, nm));
         return 1;
     }
@@ -418,7 +417,7 @@ int ConfSimple::i_set(const std::string& nm, const std::string& value,
     vector<ConfLine>::iterator start, fin;
     if (sk.empty()) {
         start = m_order.begin();
-        LOGDEB((stderr, "ConfSimple::i_set: null sk, start at top of order\n"));
+        CONFDEB("ConfSimple::i_set: null sk, start at top of order\n");
     } else {
         start = find(m_order.begin(), m_order.end(),
                      ConfLine(ConfLine::CFL_SK, sk));
@@ -572,7 +571,7 @@ bool ConfSimple::write(ostream& out) const
             break;
         case ConfLine::CFL_SK:
             sk = it->m_data;
-            LOGDEB((stderr, "ConfSimple::write: SK [%s]\n", sk.c_str()));
+            CONFDEB("ConfSimple::write: SK ["  << sk << "]\n");
             // Check that the submap still exists, and only output it if it
             // does
             if (m_submaps.find(sk) != m_submaps.end()) {
@@ -584,8 +583,7 @@ bool ConfSimple::write(ostream& out) const
             break;
         case ConfLine::CFL_VAR:
             string nm = it->m_data;
-            LOGDEB((stderr, "ConfSimple::write: VAR [%s], sk [%s]\n",
-                    nm.c_str(), sk.c_str()));
+            CONFDEB("ConfSimple::write: VAR [" << nm << "], sk [" <<sk<< "]\n");
             // As erase() doesnt update m_order we can find unexisting
             // variables, and must not output anything for them. Have
             // to use a ConfSimple::get() to check here, because
@@ -599,8 +597,7 @@ bool ConfSimple::write(ostream& out) const
                 }
                 break;
             }
-            LOGDEB((stderr, "ConfSimple::write: no value: nm[%s] sk[%s]\n",
-                    nm.c_str(), sk.c_str()));
+            CONFDEB("ConfSimple::write: no value: nm["<<nm<<"] sk["<<sk<< "]\n");
             break;
         }
     }
@@ -700,8 +697,8 @@ int ConfTree::get(const std::string& name, string& value, const string& sk)
 const
 {
     if (sk.empty() || !path_isabsolute(sk)) {
-        // LOGDEB((stderr, "ConfTree::get: looking in global space for [%s]\n",
-        // sk.c_str()));
+        LOGDEB2("ConfTree::get: looking in global space for ["  <<
+                sk << "]\n");
         return ConfSimple::get(name, value, sk);
     }
 
@@ -714,8 +711,8 @@ const
 
     // Look in subkey and up its parents until root ('')
     for (;;) {
-        // LOGDEB((stderr,"ConfTree::get: looking for '%s' in '%s'\n",
-        // name.c_str(), msk.c_str()));
+        LOGDEB2("ConfTree::get: looking for ["  << name << "] in ["  <<
+                msk << "]\n");
         if (ConfSimple::get(name, value, msk)) {
             return 1;
         }
@@ -733,3 +730,4 @@ const
     }
     return 0;
 }
+

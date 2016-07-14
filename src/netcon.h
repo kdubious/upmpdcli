@@ -26,7 +26,7 @@
 #include <map>
 #include <string>
 
-#include MEMORY_INCLUDE
+#include <memory>
 
 /// A set of classes to manage client-server communication over a
 /// connection-oriented network, or a pipe.
@@ -43,7 +43,7 @@
 
 /// Base class for all network endpoints:
 class Netcon;
-typedef STD_SHARED_PTR<Netcon> NetconP;
+typedef std::shared_ptr<Netcon> NetconP;
 class SelectLoop;
 
 class Netcon {
@@ -246,7 +246,7 @@ public:
     virtual int getline(char *buf, int cnt, int timeo = -1);
     /// Set handler to be called when the connection is placed in the
     /// selectloop and an event occurs.
-    virtual void setcallback(STD_SHARED_PTR<NetconWorker> user) {
+    virtual void setcallback(std::shared_ptr<NetconWorker> user) {
         m_user = user;
     }
 
@@ -255,7 +255,7 @@ private:
     char *m_bufbase;    // Pointer to current 1st byte of useful data
     int m_bufbytes; // Bytes of data.
     int m_bufsize;  // Total buffer size
-    STD_SHARED_PTR<NetconWorker> m_user;
+    std::shared_ptr<NetconWorker> m_user;
     virtual int cando(Netcon::Event reason); // Selectloop slot
 };
 

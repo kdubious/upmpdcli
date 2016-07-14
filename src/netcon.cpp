@@ -1208,8 +1208,8 @@ int trycli(char *host, char *serv)
         }
     }
 #else
-    STD_SHARED_PTR<NetconWorker> worker =
-        STD_SHARED_PTR<NetconWorker>(new CliNetconWorker());
+    std::shared_ptr<NetconWorker> worker =
+        std::shared_ptr<NetconWorker>(new CliNetconWorker());
     clicon->setcallback(worker);
     SelectLoop myloop;
     myloop.addselcon(con, Netcon::NETCONPOLL_WRITE);
@@ -1274,8 +1274,8 @@ protected:
         if (con == 0) {
             return -1;
         }
-        STD_SHARED_PTR<NetconWorker> worker =
-            STD_SHARED_PTR<NetconWorker>(new ServNetconWorker());
+        std::shared_ptr<NetconWorker> worker =
+            std::shared_ptr<NetconWorker>(new ServNetconWorker());
         con->setcallback(worker);
         m_loop.addselcon(NetconP(con), NETCONPOLL_READ);
         return 1;
