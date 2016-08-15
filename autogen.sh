@@ -1,3 +1,5 @@
+#!/bin/sh
+
 aclocal
-automake --force-missing --add-missing
+automake --force-missing --add-missing --copy
 autoconf
