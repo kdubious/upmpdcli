@@ -22,6 +22,7 @@
 #include <vector>         
 
 #include "libupnpp/device/device.hxx"
+#include "upmpdutils.hxx"
 #include "upmpd.hxx"
 
 using namespace UPnPP;
@@ -35,10 +36,29 @@ public:
     }
     virtual ~OHService() { }
 
-    // Implementation in upmpd.cxx
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
-                              std::vector<std::string>& values);
+                              std::vector<std::string>& values) {
+        //LOGDEB("OHService::getEventData" << std::endl);
 
+        std::unordered_map<std::string, std::string> state, changed;
+        makestate(state);
+        if (all) {
+            changed = state;
+        } else {
+            changed = diffmaps(m_state, state);
+        }
+        m_state = state;
+
+        for (auto& it : changed) {
+            //LOGDEB("OHService: state change: " << it.first << " -> "
+            // << it.second << endl);
+            names.push_back(it.first);
+            values.push_back(it.second);
+        }
+
+        return true;
+    }
+    
 protected:
     virtual bool makestate(std::unordered_map<std::string, std::string> &) = 0;
     // State variable storage
