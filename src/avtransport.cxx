@@ -403,7 +403,9 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
         m_dev->m_mpdcli->clearQueue();
     }
 
-    bool is_song = (st == MpdStatus::MPDS_PLAY) || (st == MpdStatus::MPDS_PAUSE);
+    bool is_song = (st == MpdStatus::MPDS_PLAY) ||
+	(st == MpdStatus::MPDS_PAUSE);
+    UPMPD_UNUSED(is_song);
     int curpos = mpds.songpos;
     LOGDEB1("UpMpdAVTransport::set" << (setnext?"Next":"") << 
             "AVTransportURI: curpos: " <<

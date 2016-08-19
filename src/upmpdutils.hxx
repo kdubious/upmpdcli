@@ -58,4 +58,6 @@ extern std::unordered_map<std::string, std::string>
 diffmaps(const std::unordered_map<std::string, std::string>& old,
          const std::unordered_map<std::string, std::string>& newer);
 
+#define UPMPD_UNUSED(X) (void)(X)
+
 #endif /* _UPMPDUTILS_H_X_INCLUDED_ */
