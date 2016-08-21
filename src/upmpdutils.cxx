@@ -122,6 +122,75 @@ diffmaps(const unordered_map<string, string>& old,
     return out;
 }
 
+
+string UpSong::didl()
+{
+    ostringstream ss;
+    string typetag;
+    if (iscontainer) {
+	typetag = "container";
+    } else {
+	typetag = "item";
+    }
+    ss << "<" << typetag << " id=\"" << id << "\" parentID=\"" <<
+	parentid << "\" restricted=\"1\" searchable=\"" <<
+	(searchable ? string("1") : string("0")) << "\">" <<
+	"<dc:title>" << SoapHelp::xmlQuote(title) << "</dc:title>";
+    if (iscontainer) {
+	ss << "<upnp:class>object.container</upnp:class>" <<
+	    (artist.empty() ? string() :
+	     string("<upnp:userAnnotation>" + SoapHelp::xmlQuote(artist) +
+		    "</upnp:userAnnotation>"));
+	    
+    } else {
+	ss << "<upnp:class>object.item.audioItem.musicTrack</upnp:class>";
+
+#define UPNPXML(FLD, TAG)				       \
+	if (!FLD.empty()) {				       \
+	    ss << "<" #TAG ">" << SoapHelp::xmlQuote(FLD) <<   \
+		"</" #TAG ">";				       \
+	}
+
+	UPNPXML(uri, uri);
+	UPNPXML(artist, dc:creator);
+	UPNPXML(artist, upnp:artist);
+	UPNPXML(genre, upnp:genre);
+	UPNPXML(tracknum, upnp:originalTrackNumber);
+	UPNPXML(artUri, upnp:albumArtURI);
+
+	ss << "<res " << "duration=\"" <<
+	    upnpduration(duration_secs * 1000)  << "\" " <<
+	    "sampleFrequency=\"44100\" audioChannels=\"2\" " <<
+	    "protocolInfo=\"http-get:*:audio/mpeg:*\">" <<
+	    SoapHelp::xmlQuote(uri) <<
+	    "</res>";
+    }
+    ss << "</" << typetag << ">";
+    return ss.str();
+}
+
+const string& headDIDL()
+{
+    static const string head(
+	"<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+	"<DIDL-Lite xmlns:dc=\"http://purl.org/dc/elements/1.1/\" "
+	"xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\" "
+	"xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" "
+	"xmlns:dlna=\"urn:schemas-dlna-org:metadata-1-0/\">");
+    return head;
+}
+
+const string& tailDIDL()
+{
+    static const string tail("</DIDL-Lite>");
+    return tail;
+}
+    
+string wrapDIDL(const std::string& data)
+{
+    return headDIDL() + data + tailDIDL();
+}
+
 // Bogus didl fragment maker. We probably don't need a full-blown XML
 // helper here
 string didlmake(const UpSong& song)

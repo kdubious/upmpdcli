@@ -23,13 +23,53 @@
 #include <iostream>
 #include <map>
 #include <utility>
+#include <unordered_map>
 
 #include "libupnpp/log.hxx"
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/device/device.hxx"
 
+#include "pathut.h"
+#include "smallut.h"
+#include "upmpdutils.hxx"
+#include "cdplugins/cdplugin.hxx"
+#include "cdplugins/tidal.hxx"
+
 using namespace std;
 using namespace std::placeholders;
+
+extern string g_datadir;
+
+class ContentDirectory::Internal {
+public:
+    ~Internal() {
+	for (auto& it : plugins) {
+	    delete it.second;
+	}
+    }
+    CDPlugin *pluginFactory(const string& appname) {
+	LOGDEB("ContentDirectory::pluginFactory: for " << appname << endl);
+	if (!appname.compare("tidal")) {
+	    string pthcdplugs = path_cat(g_datadir, "cdplugins");
+	    return new Tidal({pthcdplugs, path_cat(pthcdplugs, appname)});
+	} else {
+	    return nullptr;
+	}
+    }
+    CDPlugin *pluginForApp(const string& appname) {
+	auto it = plugins.find(appname);
+	if (it != plugins.end()) {
+	    return it->second;
+	} else {
+	    CDPlugin *plug = pluginFactory(appname);
+	    if (plug) {
+		plugins[appname] = plug;
+	    }
+	    return plug;
+	}
+    }
+    unordered_map<string, CDPlugin *> plugins;
+};
 
 static const string
 sTpContentDirectory("urn:schemas-upnp-org:service:ContentDirectory:1");
@@ -37,7 +77,8 @@ static const string
 sIdContentDirectory("urn:upnp-org:serviceId:ContentDirectory");
 
 ContentDirectory::ContentDirectory(UPnPProvider::UpnpDevice *dev)
-    : UpnpService(sTpContentDirectory, sIdContentDirectory, dev)
+    : UpnpService(sTpContentDirectory, sIdContentDirectory, dev),
+      m(new Internal)
 {
     dev->addActionMapping(
         this, "GetSearchCapabilities",
@@ -56,6 +97,10 @@ ContentDirectory::ContentDirectory(UPnPProvider::UpnpDevice *dev)
         bind(&ContentDirectory::actSearch, this, _1, _2));
 }
 
+ContentDirectory::~ContentDirectory()
+{
+    delete m;
+}
 
 int ContentDirectory::actGetSearchCapabilities(const SoapIncoming& sc, SoapOutgoing& data)
 {
@@ -85,6 +130,35 @@ int ContentDirectory::actGetSystemUpdateID(const SoapIncoming& sc, SoapOutgoing&
     std::string out_Id;
     data.addarg("Id", out_Id);
     return UPNP_E_SUCCESS;
+}
+
+static vector<UpSong> rootdir;
+void makerootdir()
+{
+    rootdir.push_back(UpSong::container("0$tidal", "0", "Tidal"));
+}
+
+// Returns totalmatches
+static size_t readroot(int offs, int cnt, vector<UpSong>& out)
+{
+    //LOGDEB("readroot: offs " << offs << " cnt " << cnt << endl);
+    if (rootdir.empty()) {
+	makerootdir();
+    }
+    out.clear();
+    if (offs < 0 || cnt <= 0) {
+	return rootdir.size();
+    }
+	
+    for (int i = 0; i < cnt; i++) {
+	if (size_t(offs + i) < rootdir.size()) {
+	    out.push_back(rootdir[offs + i]);
+	} else {
+	    break;
+	}
+    }
+    //LOGDEB("readroot: returning " << out.size() << " entries\n");
+    return rootdir.size();
 }
 
 int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
@@ -127,14 +201,69 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
         return UPNP_E_INVALID_PARAM;
     }
 
-    LOGDEB("ContentDirectory::actBrowse: " << " ObjectID " << in_ObjectID << " BrowseFlag " << in_BrowseFlag << " Filter " << in_Filter << " StartingIndex " << in_StartingIndex << " RequestedCount " << in_RequestedCount << " SortCriteria " << in_SortCriteria << endl);
+    LOGDEB("ContentDirectory::actBrowse: " << " ObjectID " << in_ObjectID <<
+	   " BrowseFlag " << in_BrowseFlag << " Filter " << in_Filter <<
+	   " StartingIndex " << in_StartingIndex <<
+	   " RequestedCount " << in_RequestedCount <<
+	   " SortCriteria " << in_SortCriteria << endl);
 
+    vector<string> sortcrits;
+    stringToStrings(in_SortCriteria, sortcrits);
+
+    CDPlugin::BrowseFlag bf;
+    if (in_BrowseFlag.compare("BrowseMetadata")) {
+	bf = CDPlugin::BFMeta;
+    } else {
+	bf = CDPlugin::BFChildren;
+    }
     std::string out_Result;
     std::string out_NumberReturned;
     std::string out_TotalMatches;
     std::string out_UpdateID;
 
+    // Go fetch
+    vector<UpSong> entries;
+    size_t tot = 0;
+    if (!in_ObjectID.compare("0")) {
+	// Root directory: we do this ourselves
+	tot = readroot(in_StartingIndex, in_RequestedCount, entries);
+    } else {
+	// Pass off request to appropriate app, defined by 1st elt in id
+	string app;
+	string::size_type dol0 = in_ObjectID.find_first_of("$");
+	if (dol0 == string::npos) {
+	    LOGERR("ContentDirectory::actBrowse: bad id [" << in_ObjectID <<
+		   "]\n");
+	} else {
+	    string::size_type dol1 = in_ObjectID.find_first_of("$", dol0 + 1);
+	    app = in_ObjectID.substr(dol0 + 1, dol1 - dol0 -1);
+	}
+	LOGDEB("ContentDirectory::actBrowse: app: [" << app << "]\n");
+
+	// for now, app has better be tidal...
+	CDPlugin *plg = m->pluginForApp(app);
+	if (plg) {
+	    out_TotalMatches = plg->browse(in_ObjectID, in_StartingIndex,
+					   in_RequestedCount, entries,
+					   sortcrits, bf);
+	} else {
+	    LOGERR("ContentDirectory::Browse: unknown app: [" << app << "]\n");
+	}
+    }
+
+
+    // Process and send out result
+    out_NumberReturned = ulltodecstr(entries.size());
+    out_TotalMatches = ulltodecstr(tot);
+    out_UpdateID = "1";
+    out_Result = headDIDL();
+    for (unsigned int i = 0; i < entries.size(); i++) {
+	out_Result += entries[i].didl();
+    } 
+    out_Result += tailDIDL();
+    
     data.addarg("Result", out_Result);
+    LOGDEB("ContentDirectory::actBrowse: result [" << out_Result << "]\n");
     data.addarg("NumberReturned", out_NumberReturned);
     data.addarg("TotalMatches", out_TotalMatches);
     data.addarg("UpdateID", out_UpdateID);
@@ -197,5 +326,4 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
     data.addarg("UpdateID", out_UpdateID);
     return UPNP_E_SUCCESS;
 }
-
 

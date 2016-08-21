@@ -28,13 +28,17 @@ using namespace UPnPP;
 class ContentDirectory : public UPnPProvider::UpnpService {
 public:
     ContentDirectory(UPnPProvider::UpnpDevice *dev);
-
+    ~ContentDirectory();
+    
 private:
     int actGetSearchCapabilities(const SoapIncoming& sc, SoapOutgoing& data);
     int actGetSortCapabilities(const SoapIncoming& sc, SoapOutgoing& data);
     int actGetSystemUpdateID(const SoapIncoming& sc, SoapOutgoing& data);
     int actBrowse(const SoapIncoming& sc, SoapOutgoing& data);
     int actSearch(const SoapIncoming& sc, SoapOutgoing& data);
+
+    class Internal;
+    Internal *m;
 };
 #endif
 

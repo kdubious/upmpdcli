@@ -23,35 +23,9 @@
 #include <vector>                       // for vector
 #include <memory>
 
-struct mpd_song;
+#include "upmpdutils.hxx"
 
-class UpSong {
-public:
-    UpSong() : duration_secs(0), mpdid(0) {}
-    void clear() {
-        uri.clear(); 
-        artist.clear(); 
-        album.clear();
-        title.clear();
-        tracknum.clear();
-        genre.clear();
-        duration_secs = mpdid = 0;
-    }
-    std::string uri;
-    std::string name; // only set for radios apparently
-    std::string artist;
-    std::string album;
-    std::string title;
-    std::string tracknum;
-    std::string genre;
-    std::string artUri; // This does not come from mpd, but we sometimes add it
-    unsigned int duration_secs;
-    int mpdid;
-    std::string dump() {
-        return std::string("Uri [") + uri + "] Artist [" + artist + "] Album ["
-            +  album + "] Title [" + title + "] Tno [" + tracknum + "]";
-    }
-};
+struct mpd_song;
 
 class MpdStatus {
 public:

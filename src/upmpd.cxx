@@ -43,30 +43,6 @@ using namespace std;
 using namespace std::placeholders;
 using namespace UPnPP;
 
-bool OHService::getEventData(bool all, vector<string>& names, 
-                             vector<std::string>& values)
-{
-    //LOGDEB("OHService::getEventData" << std::endl);
-
-    std::unordered_map<std::string, std::string> state, changed;
-    makestate(state);
-    if (all) {
-        changed = state;
-    } else {
-        changed = diffmaps(m_state, state);
-    }
-    m_state = state;
-
-    for (auto it = changed.begin(); it != changed.end(); it++) {
-        //LOGDEB("OHService: state change: " << it->first << " -> "
-        // << it->second << endl);
-        names.push_back(it->first);
-        values.push_back(it->second);
-    }
-
-    return true;
-}
-
 // Note: if we ever need this to work without cxx11, there is this:
 // http://www.tutok.sk/fastgl/callback.html
 UpMpd::UpMpd(const string& deviceid, const string& friendlyname,

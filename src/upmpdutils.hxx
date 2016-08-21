@@ -22,9 +22,54 @@
 #include <vector>
 #include <unordered_set>
 
-#include "libupnpp/control/cdircontent.hxx"
+namespace UPnPClient {
+    class UPnPDirObject;
+};
 
-class UpSong;
+// This was originally purely a translation of data from mpd. Extended
+// to general purpose track/container descriptor
+class UpSong {
+public:
+    UpSong()
+	: duration_secs(0), mpdid(0),
+	  iscontainer(false), searchable(false) {
+    }
+    void clear() {
+	*this = UpSong();
+    }
+    std::string id;
+    std::string parentid;
+    std::string uri;
+    std::string name; // only set for radios apparently. 
+    std::string artist; // Reused as annot for containers
+    std::string album;
+    std::string title;
+    std::string tracknum;
+    std::string genre;
+    std::string artUri; // This does not come from mpd, but we sometimes add it
+
+    unsigned int duration_secs;
+    int mpdid;
+    bool iscontainer;
+    bool searchable;
+
+    std::string dump() {
+        return std::string("Uri [") + uri + "] Artist [" + artist + "] Album ["
+            +  album + "] Title [" + title + "] Tno [" + tracknum + "]";
+    }
+    // Format to DIDL fragment 
+    std::string didl();
+
+    static UpSong container(const std::string& i, const std::string& p,
+			    const std::string& t, bool s = true,
+			    const std::string& annot = std::string()) {
+	UpSong song;
+	song.iscontainer = true;
+	song.id = i; song.parentid = p; song.title = t; song.searchable = s;
+	song.artist = annot;
+	return song;
+    }
+};
 
 // Convert between db value to percent values (Get/Set Volume and VolumeDb)
 extern int percentodbvalue(int value);
@@ -38,8 +83,13 @@ extern const std::string& mapget(
     const std::unordered_map<std::string, std::string>& im, 
     const std::string& k);
 
-// Format a didl fragment from MPD status data
+// Format a didl fragment from MPD status data. Used by the renderer
 extern std::string didlmake(const UpSong& song);
+
+// Wrap DIDL entries in header / trailer
+extern const std::string& headDIDL();
+extern const std::string& tailDIDL();
+extern std::string wrapDIDL(const std::string& data);
 
 // Convert UPnP metadata to UpSong for mpdcli to use
 extern bool uMetaToUpSong(const std::string&, UpSong *ups);

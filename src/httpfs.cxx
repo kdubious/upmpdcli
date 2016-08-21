@@ -126,7 +126,31 @@ static const string iconDesc(
     );
 
 static const string presDesc(
-"<presentationURL>/upmpd/presentation.html</presentationURL>"
+    "<presentationURL>/upmpd/presentation.html</presentationURL>"
+    );
+
+static const string deviceMedia(
+    "<device>"
+    "<deviceType>urn:schemas-upnp-org:device:MediaServer:1</deviceType>"
+    "<friendlyName>@FRIENDLYNAMEMEDIA@</friendlyName>"
+    "<UDN>uuid:@UUIDMEDIA@</UDN>"
+    "<serviceList>"
+    "<service>"
+    "<serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>"
+    "<serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>"
+    "<SCPDURL>/upmpd/ConnectionManager.xml</SCPDURL>"
+    "<controlURL>/ctl1/ConnectionManager</controlURL>"
+    "<eventSubURL>/evt1/ConnectionManager</eventSubURL>"
+    "</service>"
+    "<service>"
+    "<serviceType>urn:schemas-upnp-org:service:ContentDirectory:1</serviceType>"
+    "<serviceId>urn:upnp-org:serviceId:ContentDirectory</serviceId>"
+    "<SCPDURL>/upmpd/ContentDirectory.xml</SCPDURL>"
+    "<controlURL>/ctl1/ContentDirectory</controlURL>"
+    "<eventSubURL>/evt1/ContentDirectory</eventSubURL>"
+    "</service>"
+    "</serviceList>"
+    "</device>"
     );
 
 // The base XML description files. !Keep description.xml first!
@@ -140,7 +164,7 @@ static vector<const char *> xmlfilenames =
 static vector<const char *> ohxmlfilenames = 
 {
     "OHProduct.xml", "OHInfo.xml", "OHTime.xml", "OHVolume.xml", 
-    "OHPlaylist.xml", "OHRadio.xml"
+    "OHPlaylist.xml", "OHRadio.xml", "ContentDirectory.xml"
 };
 
 /** Read protocol info file. This contains the connection manager
@@ -191,7 +215,7 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
                 const string& datadir,
                 const string& UUID, const string& friendlyname, 
                 bool enableAV, bool enableOH, bool enableReceiver,
-                bool enableL16,
+                bool enableL16, bool enableMediaServer,
                 const string& iconpath, const string& presentationhtml)
 {
     if (enableOH) {
@@ -240,11 +264,23 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
             // Special for description: set UUID and friendlyname
             data = regsub1("@UUID@", data, UUID);
             data = regsub1("@FRIENDLYNAME@", data, friendlyname);
+
+	    if (enableMediaServer) {
+		string msdesc = regsub1("@UUIDMEDIA@", deviceMedia,
+					uuidMediaServer(UUID));
+		msdesc = regsub1("@FRIENDLYNAMEMEDIA@", msdesc,
+				 friendlyNameMediaServer(friendlyname));
+                data = regsub1("@MEDIASERVER@", data, msdesc);
+	    } else {
+                data = regsub1("@MEDIASERVER@", data, "");
+	    }
+
             if (enableAV) {
                 data = regsub1("@UPNPAV@", data, upnpAVDesc);
             } else {
                 data = regsub1("@UPNPAV@", data, "");
             }
+
             if (enableOH) {
                 if (enableReceiver) {
                     ohDesc += ohDescReceive;

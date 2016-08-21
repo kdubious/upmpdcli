@@ -40,6 +40,7 @@
 #include "conftree.h"
 #include "mpdcli.hxx"
 #include "upmpd.hxx"
+#include "mediaserver.hxx"
 #include "httpfs.hxx"
 #include "upmpdutils.hxx"
 #include "pathut.h"
@@ -547,8 +548,9 @@ int main(int argc, char *argv[])
     // Initialize the data we serve through HTTP (device and service
     // descriptions, icons, presentation page, etc.)
     unordered_map<string, VDirContent> files;
+    bool enableMediaServer = true;
     if (!initHttpFs(files, g_datadir, UUID, friendlyname, enableAV, enableOH,
-                    !senderpath.empty(), enableL16,
+                    !senderpath.empty(), enableL16, enableMediaServer,
                     iconpath, presentationhtml)) {
         exit(1);
     }
@@ -571,11 +573,22 @@ int main(int argc, char *argv[])
 
     if (!enableAV)
         opts.options |= UpMpd::upmpdNoAV;
-    // Initialize the UPnP device object.
+
+    // Initialize the UPnP root device object. 
     UpMpd device(string("uuid:") + UUID, friendlyname, ohProductDesc,
                  files, mpdclip, opts);
     dev = &device;
 
+    MediaServer *devmedia = nullptr;
+    if (enableMediaServer) {
+	// Create the Media Server embedded device object. There needs
+	// be no reference to the root object because there can be
+	// only one (libupnp restriction)
+	devmedia = new MediaServer(string("uuid:") + uuidMediaServer(UUID),
+				   friendlyNameMediaServer(friendlyname));
+    }
+    UPMPD_UNUSED(devmedia);
+    
     // And forever generate state change events.
     LOGDEB("Entering event loop" << endl);
     setupsigs();

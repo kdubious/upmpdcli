@@ -29,4 +29,8 @@
     </serviceList>
     @PRESENTATION@
   </device>
+  <devicelist>
+  @MEDIASERVER@
+  </devicelist>
 </root>
+                                                    

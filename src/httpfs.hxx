@@ -29,8 +29,15 @@ extern bool initHttpFs(std::unordered_map<std::string,
                        const std::string& friendlyname,
                        bool enableAV, bool enableOH, bool enableReceiver,
                        bool enableL16,
+                       bool enableMediaServer,
                        const std::string& iconpath,
                        const std::string& presentationhtml
     );
 
+inline std::string uuidMediaServer(const std::string& uuid) {
+    return uuid + "-mediaserver";
+}
+inline std::string friendlyNameMediaServer(const std::string& f) {
+    return f + "-mediaserver";
+}
 #endif /* _HTTPFS_H_X_INCLUDED_ */

@@ -1,5 +1,7 @@
 
-AM_CPPFLAGS = -DDEBUG -g -Wall -I${prefix}/include/libupnpp \
+AM_CPPFLAGS = -DDEBUG -g -Wall \
+            -I${prefix}/include/libupnpp \
+            -I$(top_srcdir)/src \
             -DDATADIR=\"${pkgdatadir}\" -DCONFIGDIR=\"${sysconfdir}\"
 
 AM_CXXFLAGS = -std=c++11 
@@ -9,6 +11,11 @@ bin_PROGRAMS = upmpdcli scctl
 upmpdcli_SOURCES = \
      src/avtransport.cxx \
      src/avtransport.hxx \
+     src/cdplugins/cdplugin.hxx \
+     src/cdplugins/cmdtalk.cpp \
+     src/cdplugins/cmdtalk.h \
+     src/cdplugins/tidal.cxx \
+     src/cdplugins/tidal.hxx \
      src/closefrom.cpp \
      src/closefrom.h \
      src/conf_post.h \
@@ -16,11 +23,15 @@ upmpdcli_SOURCES = \
      src/conftree.h \
      src/conman.cxx \
      src/conman.hxx \
+     src/contentdirectory.cxx \
+     src/contentdirectory.hxx \
      src/execmd.cpp \
      src/execmd.h \
      src/httpfs.cxx \
      src/httpfs.hxx \
      src/main.cxx \
+     src/mediaserver.cxx \
+     src/mediaserver.hxx \
      src/mpdcli.cxx \
      src/mpdcli.hxx \
      src/netcon.cpp \
@@ -46,12 +57,12 @@ upmpdcli_SOURCES = \
      src/ohvolume.hxx \
      src/pathut.cpp \
      src/pathut.h \
-     src/smallut.cpp \
-     src/smallut.h \
      src/readfile.cpp \
      src/readfile.h \
      src/renderctl.cxx \
      src/renderctl.hxx \
+     src/smallut.cpp \
+     src/smallut.h \
      src/upmpd.cxx \
      src/upmpd.hxx \
      src/upmpdutils.cxx \
@@ -71,7 +82,7 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/RenderingControl.xml src/ConnectionManager.xml \
                   src/OHProduct.xml src/OHInfo.xml src/OHTime.xml \
                   src/OHVolume.xml src/OHPlaylist.xml src/OHReceiver.xml \
-                  src/OHRadio.xml \
+                  src/OHRadio.xml src/ContentDirectory.xml \
                   src/protocolinfo.txt src/presentation.html
 
 EXTRA_DIST = web.tar.gz rdpl2stream.tar.gz systemd/upmpdcli.service
