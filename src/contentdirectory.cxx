@@ -24,6 +24,7 @@
 #include <map>
 #include <utility>
 #include <unordered_map>
+#include <sstream>
 
 #include "libupnpp/log.hxx"
 #include "libupnpp/soaphelp.hxx"
@@ -32,16 +33,19 @@
 #include "pathut.h"
 #include "smallut.h"
 #include "upmpdutils.hxx"
+#include "main.hxx"
 #include "cdplugins/cdplugin.hxx"
 #include "cdplugins/tidal.hxx"
 
 using namespace std;
 using namespace std::placeholders;
-
-extern string g_datadir;
+using namespace UPnPProvider;
 
 class ContentDirectory::Internal {
 public:
+    Internal (ContentDirectory *sv)
+	: service(sv) {
+    }
     ~Internal() {
 	for (auto& it : plugins) {
 	    delete it.second;
@@ -49,9 +53,38 @@ public:
     }
     CDPlugin *pluginFactory(const string& appname) {
 	LOGDEB("ContentDirectory::pluginFactory: for " << appname << endl);
+
+	if (httphp.empty()) {
+	    UpnpDevice *dev;
+	    if (!service || !(dev = service->getDevice())) {
+		LOGERR("ContentDirectory::Internal: no service or dev ??\n");
+		return nullptr;
+	    }
+	    string host;
+	    unsigned short port;
+	    if (!dev->ipv4(&host, &port)) {
+		LOGERR("ContentDirectory::Internal: can't get server IP\n");
+		return nullptr;
+	    }
+	    ostringstream ss;
+	    ss << host << ":" << port;
+	    httphp = ss.str();
+	    LOGDEB("ContentDirectory: host:port: " << httphp << endl);
+	}
+	VirtualDir *dir = VirtualDir::getVirtualDir();
+	if (dir == nullptr) {
+	    LOGERR("CDPlugin::factory: getVirtualDir() failed\n");
+	    return nullptr;
+	}
 	if (!appname.compare("tidal")) {
 	    string pthcdplugs = path_cat(g_datadir, "cdplugins");
-	    return new Tidal({pthcdplugs, path_cat(pthcdplugs, appname)});
+	    Tidal *tidal =
+		new Tidal({pthcdplugs, path_cat(pthcdplugs, appname)},
+			  httphp, "/tidal");
+	    if (tidal) {
+		dir->addVDir("/tidal", tidal->getFileOps());
+	    }
+	    return tidal;
 	} else {
 	    return nullptr;
 	}
@@ -69,6 +102,8 @@ public:
 	}
     }
     unordered_map<string, CDPlugin *> plugins;
+    ContentDirectory *service;
+    string httphp;
 };
 
 static const string
@@ -78,7 +113,7 @@ sIdContentDirectory("urn:upnp-org:serviceId:ContentDirectory");
 
 ContentDirectory::ContentDirectory(UPnPProvider::UpnpDevice *dev)
     : UpnpService(sTpContentDirectory, sIdContentDirectory, dev),
-      m(new Internal)
+      m(new Internal(this))
 {
     dev->addActionMapping(
         this, "GetSearchCapabilities",

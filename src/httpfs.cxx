@@ -20,8 +20,9 @@
 
 #include "libupnpp/log.hxx"
 #include "libupnpp/upnpavutils.hxx"
+#include "libupnpp/device/device.hxx"
 
-#include "upmpd.hxx"
+#include "main.hxx"
 #include "upmpdutils.hxx"
 #include "smallut.h"
 #include "pathut.h"
@@ -30,6 +31,7 @@
 
 using namespace std;
 using namespace UPnPP;
+using namespace UPnPProvider;
 
 // UPnP AV services. We can disable this to help pure OpenHome
 // renderers which having both UPnP AV and OpenHome gets in trouble

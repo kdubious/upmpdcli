@@ -21,35 +21,13 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <unordered_set>
-#include <mutex>
 
 #include "libupnpp/device/device.hxx"
 
+#include "main.hxx"
+
 class MPDCli;
 class MpdStatus;
-
-extern std::string g_configfilename;
-extern std::string g_datadir;
-class ConfSimple;
-extern std::mutex g_configlock;
-extern ConfSimple *g_config;
-extern std::string g_protocolInfo;
-extern std::unordered_set<std::string> g_supportedFormats;
-
-typedef struct ohInfoDesc {
-    std::string name;
-    std::string info;
-    std::string url;
-    std::string imageUri;
-} ohInfoDesc_t;
-
-typedef struct ohProductDesc {
-    ohInfoDesc_t manufacturer;
-    ohInfoDesc_t model;
-    ohInfoDesc_t product;
-    std::string room;
-} ohProductDesc_t;
 
 using namespace UPnPProvider;
 

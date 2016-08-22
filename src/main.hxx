@@ -14,33 +14,34 @@
  *   Free Software Foundation, Inc.,
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#ifndef _TIDAL_H_INCLUDED_
-#define _TIDAL_H_INCLUDED_
+#ifndef _MAIN_H_X_INCLUDED_
+#define _MAIN_H_X_INCLUDED_
 
-#include <vector>
+#include <string>
+#include <unordered_set>
+#include <mutex>
 
-#include "cdplugin.hxx"
-#include "libupnpp/device/vdir.hxx"
+extern std::string g_configfilename;
+extern std::string g_datadir;
+class ConfSimple;
+extern std::mutex g_configlock;
+extern ConfSimple *g_config;
+extern std::string g_protocolInfo;
+extern std::unordered_set<std::string> g_supportedFormats;
 
-// Tidal interface
-class Tidal : public CDPlugin {
-public:
-    Tidal(const std::vector<std::string>& plgpath,
-	  const std::string& httphp, const std::string& pathprefix);
-    virtual ~Tidal();
+typedef struct ohInfoDesc {
+    std::string name;
+    std::string info;
+    std::string url;
+    std::string imageUri;
+} ohInfoDesc_t;
 
-    // Returns totalmatches
-    virtual int browse(
-	const std::string& objid, int stidx, int cnt,
-	std::vector<UpSong>& entries,
-	const std::vector<std::string>& sortcrits = std::vector<std::string>(),
-	BrowseFlag flg = BFChildren);
+typedef struct ohProductDesc {
+    ohInfoDesc_t manufacturer;
+    ohInfoDesc_t model;
+    ohInfoDesc_t product;
+    std::string room;
+} ohProductDesc_t;
 
-    UPnPProvider::VirtualDir::FileOps getFileOps();
-    
-private:
-    class Internal;
-    Internal *m;
-};
 
-#endif /* _TIDAL_H_INCLUDED_ */
+#endif /* _MAIN_H_X_INCLUDED_ */

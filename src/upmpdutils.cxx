@@ -151,7 +151,6 @@ string UpSong::didl()
 		"</" #TAG ">";				       \
 	}
 
-	UPNPXML(uri, uri);
 	UPNPXML(artist, dc:creator);
 	UPNPXML(artist, upnp:artist);
 	UPNPXML(genre, upnp:genre);

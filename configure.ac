@@ -39,13 +39,16 @@ dnl AC_CHECK_LIB([expat], [XML_ParserCreate], [],AC_MSG_ERROR([libexpat not foun
 AC_CHECK_LIB([upnpp], [getsyshwaddr], [], [AC_MSG_ERROR([libupnpp])])
 AC_CHECK_LIB([mpdclient], [mpd_connection_new], [],
                           AC_MSG_ERROR([libmpdclient not found]))
+SCCTL_LIBS=$LIBS
 
+AC_CHECK_LIB([rtmp], [RTMP_Alloc], [], [])
 UPMPDCLI_LIBS=$LIBS
 echo "UPMPDCLI_LIBS=$LIBS"
 
 LIBS=""
 
 AC_SUBST(UPMPDCLI_LIBS)
+AC_SUBST(SCCTL_LIBS)
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

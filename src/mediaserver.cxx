@@ -18,7 +18,6 @@
 #include "mediaserver.hxx"
 
 
-
 #include "contentdirectory.hxx"
 
 using namespace std;

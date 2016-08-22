@@ -9,6 +9,9 @@
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
 
+/* Define to 1 if you have the `rtmp' library (-lrtmp). */
+#undef HAVE_LIBRTMP
+
 /* Define to 1 if you have the `upnpp' library (-lupnpp). */
 #undef HAVE_LIBUPNPP
 

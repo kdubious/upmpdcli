@@ -76,7 +76,7 @@ scctl_SOURCES = \
     src/smallut.cpp \
     src/upmpdutils.cxx
 
-scctl_LDADD = $(UPMPDCLI_LIBS)
+scctl_LDADD = $(SCCTL_LIBS)
               
 dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/RenderingControl.xml src/ConnectionManager.xml \
