@@ -36,6 +36,12 @@ public:
 	const std::vector<std::string>& sortcrits = std::vector<std::string>(),
 	BrowseFlag flg = BFChildren);
 
+    virtual int search(
+	const std::string& ctid, int stidx, int cnt,
+	const std::string& searchstr,
+	std::vector<UpSong>& entries,
+	const std::vector<std::string>& sortcrits = std::vector<std::string>());
+
     UPnPProvider::VirtualDir::FileOps getFileOps();
     
 private:

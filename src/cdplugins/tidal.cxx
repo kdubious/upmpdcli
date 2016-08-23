@@ -27,6 +27,7 @@
 #include "cmdtalk.h"
 
 #include "pathut.h"
+#include "smallut.h"
 #include "log.hxx"
 #include "json.hpp"
 #include "main.hxx"
@@ -203,6 +204,19 @@ void Tidal::Internal::close(void *hdl)
 }
 
 
+VirtualDir::FileOps Tidal::getFileOps()
+{
+    VirtualDir::FileOps ops;
+    
+    ops.getinfo = bind(&Tidal::Internal::getinfo, m, _1, _2);
+    ops.open = bind(&Tidal::Internal::open, m, _1);
+    ops.read = bind(&Tidal::Internal::read, m, _1, _2, _3);
+    ops.seek = bind(&Tidal::Internal::seek, m, _1, _2, _3);
+    ops.close = bind(&Tidal::Internal::close, m, _1);
+    return ops;
+}
+
+
 Tidal::Tidal(const vector<string>& plgpath, const string& httphp,
 	     const string& pp)
     : m(new Internal(plgpath, httphp, pp))
@@ -214,43 +228,29 @@ Tidal::~Tidal()
     delete m;
 }
 
-int Tidal::browse(const std::string& objid, int stidx, int cnt,
-		  std::vector<UpSong>& entries,
-		  const std::vector<std::string>& sortcrits,
-		  BrowseFlag flg)
+static int resultToEntries(const string& encoded, int stidx, int cnt,
+			   std::vector<UpSong>& entries)
 {
-    LOGDEB("Tidal::browse\n");
-    if (!m->maybeStartCmd("browse")) {
-	return -1;
-    }
-    unordered_map<string, string> res;
-    if (!m->cmd.callproc("browse", {{"objid", objid}}, res)) {
-	LOGERR("Tidal::browse: slave failure\n");
-	return -1;
-    }
-
-    auto it = res.find("entries");
-    if (it == res.end()) {
-	LOGERR("Tidal::browse: no entries returned\n");
-	return -1;
-    }
-
-    auto decoded = json::parse(it->second);
+    auto decoded = json::parse(encoded);
     LOGDEB("Tidal::browse: got " << decoded.size() << " entries\n");
     LOGDEB1("Tidal::browse: undecoded json: " << decoded.dump() << endl);
-    
-    for (const auto& it : decoded) {
+
+    for (unsigned int i = stidx; i < decoded.size(); i++) {
+	if (--cnt < 0) {
+	    break;
+	}
 	UpSong song;
-	auto it1 = it.find("tp");
-	if (it1 == it.end()) {
+	// tp is container ("ct") or item ("it")
+	auto it1 = decoded[i].find("tp");
+	if (it1 == decoded[i].end()) {
 	    LOGERR("Tidal::browse: no type in entry\n");
 	    continue;
 	}
 	string stp = it1.value();
 	
 #define JSONTOUPS(fld, nm)						\
-	it1 = it.find(#nm);						\
-	if (it1 != it.end()) {						\
+	it1 = decoded[i].find(#nm);					\
+	if (it1 != decoded[i].end()) {					\
 	    /*LOGDEB("song." #fld " = " << it1.value() << endl);*/	\
 	    song.fld = it1.value();					\
 	}
@@ -275,18 +275,80 @@ int Tidal::browse(const std::string& objid, int stidx, int cnt,
 	JSONTOUPS(title, tt);
 	entries.push_back(song);
     }
+    // We return the total match size, the count of actually returned
+    // entries can be obtained from the vector
     return decoded.size();
 }
 
-VirtualDir::FileOps Tidal::getFileOps()
+int Tidal::browse(const std::string& objid, int stidx, int cnt,
+		  std::vector<UpSong>& entries,
+		  const std::vector<std::string>& sortcrits,
+		  BrowseFlag flg)
 {
-    VirtualDir::FileOps ops;
-    
-    ops.getinfo = bind(&Tidal::Internal::getinfo, m, _1, _2);
-    ops.open = bind(&Tidal::Internal::open, m, _1);
-    ops.read = bind(&Tidal::Internal::read, m, _1, _2, _3);
-    ops.seek = bind(&Tidal::Internal::seek, m, _1, _2, _3);
-    ops.close = bind(&Tidal::Internal::close, m, _1);
-    return ops;
+    LOGDEB("Tidal::browse\n");
+    if (!m->maybeStartCmd("browse")) {
+	return -1;
+    }
+    unordered_map<string, string> res;
+    if (!m->cmd.callproc("browse", {{"objid", objid}}, res)) {
+	LOGERR("Tidal::browse: slave failure\n");
+	return -1;
+    }
+
+    auto it = res.find("entries");
+    if (it == res.end()) {
+	LOGERR("Tidal::browse: no entries returned\n");
+	return -1;
+    }
+    return resultToEntries(it->second, stidx, cnt, entries);
 }
 
+
+int Tidal::search(const string& ctid, int stidx, int cnt,
+		  const string& searchstr,
+		  vector<UpSong>& entries,
+		  const vector<string>& sortcrits)
+{
+    LOGDEB("Tidal::search\n");
+    if (!m->maybeStartCmd("search")) {
+	return -1;
+    }
+
+    // We only accept field xx value as search criteria
+    vector<string> vs;
+    stringToStrings(searchstr, vs);
+    LOGDEB("Tidal::search:search string split->" << vs.size() << " pieces\n");
+    if (vs.size() != 3) {
+	LOGERR("Tidal::search: bad search string: [" << searchstr << "]\n");
+	return -1;
+    }
+    const string& upnpproperty = vs[0];
+    string tidalfield;
+    if (!upnpproperty.compare("upnp:artist") ||
+	!upnpproperty.compare("dc:author")) {
+	tidalfield = "artist";
+    } else if (!upnpproperty.compare("upnp:album")) {
+	tidalfield = "album";
+    } else if (!upnpproperty.compare("dc:title")) {
+	tidalfield = "track";
+    } else {
+	LOGERR("Tidal::search: bad property: [" << upnpproperty << "]\n");
+	return -1;
+    }
+	
+    unordered_map<string, string> res;
+    if (!m->cmd.callproc("search", {
+		{"objid", ctid},
+		{"field", tidalfield},
+		{"value", vs[2]} },  res)) {
+	LOGERR("Tidal::search: slave failure\n");
+	return -1;
+    }
+
+    auto it = res.find("entries");
+    if (it == res.end()) {
+	LOGERR("Tidal::search: no entries returned\n");
+	return -1;
+    }
+    return resultToEntries(it->second, stidx, cnt, entries);
+}

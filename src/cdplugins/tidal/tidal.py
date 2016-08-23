@@ -194,10 +194,11 @@ def urls_from_id(view_func, items):
 def view(data_items, urls, end=True):
     for item, url in zip(data_items, urls):
         title = item.name
+        msgproc.log("view: got title %s" % item.name)
         xbmcplugin.entries.append(direntry('0$tidal$' + url, xbmcplugin.objid, title))
 
 def track_list(tracks):
-    xbmcplugin.entries = trackentries(xbmcplugin.objid, tracks)
+    xbmcplugin.entries += trackentries(xbmcplugin.objid, tracks)
        
 @dispatcher.record('browse')
 def browse(a):
@@ -407,6 +408,34 @@ def favourite_albums():
 @plugin.route('/favourite_tracks')
 def favourite_tracks():
     track_list(session.user.favorites.tracks())
+
+
+@dispatcher.record('search')
+def search(a):
+    global xbmcplugin
+    xbmcplugin = XbmcPlugin()
+    msgproc.log("search: [%s]" % a)
+    objid = a['objid']
+    field = a['field']
+    value = a['value']
+    if re.match('0\$tidal\$', objid) is None:
+        raise Exception("bad objid [%s]" % objid)
+    xbmcplugin.objid = objid
+    maybelogin()
+    
+    searchresults = session.search(field, value)
+    msgproc.log("search: Got %d artists" % len(searchresults.artists))
+    view(searchresults.artists, urls_from_id(artist_view, searchresults.artists),
+        end=False)
+    view(searchresults.albums, urls_from_id(album_view, searchresults.albums),
+         end=False)
+    view(searchresults.playlists, urls_from_id(playlist_view,
+                                               searchresults.playlists),
+         end=False)
+    track_list(searchresults.tracks)
+    #msgproc.log("%s" % xbmcplugin.entries)
+    encoded = json.dumps(xbmcplugin.entries)
+    return {"entries" : encoded}
 
 
 msgproc.log("Tidal running")

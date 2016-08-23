@@ -15,6 +15,8 @@
  *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#define LOGGER_LOCAL_LOGINC 3
+
 #include "contentdirectory.hxx"
 
 #include <upnp/upnp.h>
@@ -139,17 +141,15 @@ ContentDirectory::~ContentDirectory()
 
 int ContentDirectory::actGetSearchCapabilities(const SoapIncoming& sc, SoapOutgoing& data)
 {
-
     LOGDEB("ContentDirectory::actGetSearchCapabilities: " << endl);
 
-    std::string out_SearchCaps;
+    std::string out_SearchCaps = "upnp:artist,dc:creator,upnp:album,dc:title";
     data.addarg("SearchCaps", out_SearchCaps);
     return UPNP_E_SUCCESS;
 }
 
 int ContentDirectory::actGetSortCapabilities(const SoapIncoming& sc, SoapOutgoing& data)
 {
-
     LOGDEB("ContentDirectory::actGetSortCapabilities: " << endl);
 
     std::string out_SortCaps;
@@ -159,7 +159,6 @@ int ContentDirectory::actGetSortCapabilities(const SoapIncoming& sc, SoapOutgoin
 
 int ContentDirectory::actGetSystemUpdateID(const SoapIncoming& sc, SoapOutgoing& data)
 {
-
     LOGDEB("ContentDirectory::actGetSystemUpdateID: " << endl);
 
     std::string out_Id;
@@ -194,6 +193,22 @@ static size_t readroot(int offs, int cnt, vector<UpSong>& out)
     }
     //LOGDEB("readroot: returning " << out.size() << " entries\n");
     return rootdir.size();
+}
+
+static string appForId(const string& id)
+{
+    string app;
+    string::size_type dol0 = id.find_first_of("$");
+    if (dol0 == string::npos) {
+	LOGERR("ContentDirectory::appForId: bad id [" << id << "]\n");
+	return string();
+    } 
+    string::size_type dol1 = id.find_first_of("$", dol0 + 1);
+    if (dol1 == string::npos) {
+	LOGERR("ContentDirectory::appForId: bad id [" << id << "]\n");
+	return string();
+    } 
+    return id.substr(dol0 + 1, dol1 - dol0 -1);
 }
 
 int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
@@ -264,18 +279,9 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
 	tot = readroot(in_StartingIndex, in_RequestedCount, entries);
     } else {
 	// Pass off request to appropriate app, defined by 1st elt in id
-	string app;
-	string::size_type dol0 = in_ObjectID.find_first_of("$");
-	if (dol0 == string::npos) {
-	    LOGERR("ContentDirectory::actBrowse: bad id [" << in_ObjectID <<
-		   "]\n");
-	} else {
-	    string::size_type dol1 = in_ObjectID.find_first_of("$", dol0 + 1);
-	    app = in_ObjectID.substr(dol0 + 1, dol1 - dol0 -1);
-	}
+	string app = appForId(in_ObjectID);
 	LOGDEB("ContentDirectory::actBrowse: app: [" << app << "]\n");
 
-	// for now, app has better be tidal...
 	CDPlugin *plg = m->pluginForApp(app);
 	if (plg) {
 	    out_TotalMatches = plg->browse(in_ObjectID, in_StartingIndex,
@@ -345,16 +351,55 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
         return UPNP_E_INVALID_PARAM;
     }
 
-    LOGDEB("ContentDirectory::actSearch: " << " ContainerID " << in_ContainerID << " SearchCriteria " << in_SearchCriteria << " Filter " << in_Filter << " StartingIndex " << in_StartingIndex << " RequestedCount " << in_RequestedCount << " SortCriteria " << in_SortCriteria << endl);
+    LOGDEB("ContentDirectory::actSearch: " <<
+	   " ContainerID " << in_ContainerID <<
+	   " SearchCriteria " << in_SearchCriteria <<
+	   " Filter " << in_Filter << " StartingIndex " << in_StartingIndex <<
+	   " RequestedCount " << in_RequestedCount <<
+	   " SortCriteria " << in_SortCriteria << endl);
+
+    vector<string> sortcrits;
+    stringToStrings(in_SortCriteria, sortcrits);
 
     std::string out_Result;
-    std::string out_NumberReturned;
-    std::string out_TotalMatches;
+    std::string out_NumberReturned = "0";
+    std::string out_TotalMatches = "0";
     std::string out_UpdateID;
 
-    out_NumberReturned = "0";
-    out_TotalMatches = "0";
+    // Go fetch
+    vector<UpSong> entries;
+    size_t tot = 0;
+    if (!in_ContainerID.compare("0")) {
+	// Root directory: can't search in there
+	LOGERR("ContentDirectory::actSearch: Can't search in root\n");
+    } else {
+	// Pass off request to appropriate app, defined by 1st elt in id
+	// Pass off request to appropriate app, defined by 1st elt in id
+	string app = appForId(in_ContainerID);
+	LOGDEB("ContentDirectory::actSearch: app: [" << app << "]\n");
 
+	CDPlugin *plg = m->pluginForApp(app);
+	if (plg) {
+	    out_TotalMatches = plg->search(in_ContainerID, in_StartingIndex,
+					   in_RequestedCount, 
+					   in_SearchCriteria,
+					   entries, sortcrits);
+	} else {
+	    LOGERR("ContentDirectory::Browse: unknown app: [" << app << "]\n");
+	}
+    }
+
+
+    // Process and send out result
+    out_NumberReturned = ulltodecstr(entries.size());
+    out_TotalMatches = ulltodecstr(tot);
+    out_UpdateID = "1";
+    out_Result = headDIDL();
+    for (unsigned int i = 0; i < entries.size(); i++) {
+	out_Result += entries[i].didl();
+    } 
+    out_Result += tailDIDL();
+    
     data.addarg("Result", out_Result);
     data.addarg("NumberReturned", out_NumberReturned);
     data.addarg("TotalMatches", out_TotalMatches);

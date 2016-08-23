@@ -37,6 +37,12 @@ public:
 	const std::vector<std::string>& sortcrits = std::vector<std::string>(),
 	BrowseFlag flg = BFChildren) = 0;
 
+    virtual int search(
+	const std::string& ctid, int stidx, int cnt,
+	const std::string& searchstr,
+	std::vector<UpSong>& entries,
+	const std::vector<std::string>& sortcrits = std::vector<std::string>())
+    = 0;
 };
 
 #endif /* _CDPLUGIN_H_INCLUDED_ */
