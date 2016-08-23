@@ -23,6 +23,7 @@
 #include <vector>
 #include <string.h>
 #include <librtmp/rtmp.h>
+#include <upnp/upnp.h>
 
 #include "cmdtalk.h"
 
@@ -110,7 +111,7 @@ string Tidal::Internal::get_mimetype(const std::string& path)
     if (mimetype.empty()) {
 	unordered_map<string, string> res;
 	if (!cmd.callproc("mimetype", {{"path", path}}, res)) {
-	    LOGERR("Tidal::get_media_url: slave failure\n");
+	    LOGERR("Tidal::get_mimetype: slave failure\n");
 	    return string();
 	}
 
@@ -134,6 +135,25 @@ int Tidal::Internal::getinfo(const std::string& path, VirtualDir::FileInfo *inf)
     return 0;
 }
 
+class StreamHandle {
+public:
+    StreamHandle() : rtmp(nullptr), http_handle(nullptr) {
+    }
+    ~StreamHandle() {
+	if (rtmp) {
+	    RTMP_Close(rtmp);
+	    RTMP_Free(rtmp);
+	}
+	if (http_handle) {
+	    UpnpCloseHttpGet(http_handle);
+	}
+    }
+	
+    RTMP *rtmp;
+    void *http_handle;
+    int len;
+};
+
 void *Tidal::Internal::open(const string& path)
 {
     LOGDEB("Tidal::open: " << path << endl);
@@ -141,50 +161,92 @@ void *Tidal::Internal::open(const string& path)
     if (media_url.empty()) {
 	return nullptr;
     }
-    RTMP *rtmp = RTMP_Alloc();
-    RTMP_Init(rtmp);
+    if (media_url.find("http") == 0) {
+	void *http_handle;
+	char *content_type;
+	int content_length;
+	int httpstatus;
+	int code = UpnpOpenHttpGet(media_url.c_str(), &http_handle,
+				     &content_type, &content_length,
+				     &httpstatus, 30);
+	LOGDEB("Tidal::open: UpnpOpenHttpGet: ret " << code <<
+	       " mtype " << content_type << " length " << content_length <<
+	       " HTTP status " << httpstatus << endl);
+	if (code) {
+	    LOGERR("Tidal::open: UpnpOpenHttpGet: ret " << code <<
+		   " mtype " << content_type << " length " << content_length <<
+		   " HTTP status " << httpstatus << endl);
+	    return nullptr;
+	}
+	StreamHandle *hdl = new StreamHandle;
+	hdl->http_handle = http_handle;
+	hdl->len = content_length;
+	return hdl;
+    } else {
+	RTMP *rtmp = RTMP_Alloc();
+	RTMP_Init(rtmp);
 
-    // Writable copy of url
-    if (!RTMP_SetupURL(rtmp, strdup(media_url.c_str()))) {
-	LOGERR("Tidal::open: RTMP_SetupURL failed for [" <<
-	       media_url << "]\n");
-	RTMP_Free(rtmp);
-	return nullptr;
+	// Writable copy of url
+	if (!RTMP_SetupURL(rtmp, strdup(media_url.c_str()))) {
+	    LOGERR("Tidal::open: RTMP_SetupURL failed for [" <<
+		   media_url << "]\n");
+	    RTMP_Free(rtmp);
+	    return nullptr;
+	}
+	if (!RTMP_Connect(rtmp, NULL)) {
+	    LOGERR("Tidal::open: RTMP_Connect failed for [" <<
+		   media_url << "]\n");
+	    RTMP_Free(rtmp);
+	    return nullptr;
+	}
+	if (!RTMP_ConnectStream(rtmp, 0)) {
+	    LOGERR("Tidal::open: RTMP_ConnectStream failed for [" <<
+		   media_url << "]\n");
+	    RTMP_Free(rtmp);
+	    return nullptr;
+	}
+	StreamHandle *hdl = new StreamHandle;
+	hdl->rtmp = rtmp;
+	return hdl;
     }
-    if (!RTMP_Connect(rtmp, NULL)) {
-	LOGERR("Tidal::open: RTMP_Connect failed for [" <<
-	       media_url << "]\n");
-	RTMP_Free(rtmp);
-	return nullptr;
-    }
-    if (!RTMP_ConnectStream(rtmp, 0)) {
-	LOGERR("Tidal::open: RTMP_ConnectStream failed for [" <<
-	       media_url << "]\n");
-	RTMP_Free(rtmp);
-	return nullptr;
-    }
-	
-    return rtmp;
 }
 
-int Tidal::Internal::read(void *hdl, char* buf, size_t cnt)
+int Tidal::Internal::read(void *_hdl, char* buf, size_t cnt)
 {
     LOGDEB("Tidal::read: " << cnt << endl);
-    if (!hdl)
+    if (!_hdl)
 	return -1;
-    RTMP *rtmp = (RTMP *)hdl;
+
+    // The pupnp http code has a default 1MB buffer size which is much
+    // too big for us (too slow, esp. because tidal will stall).
     if (cnt > 100 * 1024)
-	cnt = 100 * 1024;
-    size_t totread = 0;
-    while (totread < cnt) {
-	int didread = RTMP_Read(rtmp, buf+totread, cnt-totread);
-	//LOGDEB("Tidal::read: RTMP_Read returned: " << didread << endl);
-	if (didread <= 0)
-	    break;
-	totread += didread;
+	    cnt = 100 * 1024;
+
+    StreamHandle *hdl = (StreamHandle *)_hdl;
+
+    if (hdl->rtmp) {
+	RTMP *rtmp = hdl->rtmp;
+	size_t totread = 0;
+	while (totread < cnt) {
+	    int didread = RTMP_Read(rtmp, buf+totread, cnt-totread);
+	    //LOGDEB("Tidal::read: RTMP_Read returned: " << didread << endl);
+	    if (didread <= 0)
+		break;
+	    totread += didread;
+	}
+	LOGDEB("Tidal::read: total read: " << totread << endl);
+	return totread > 0 ? totread : -1;
+    } else if (hdl->http_handle) {
+	int code = UpnpReadHttpGet(hdl->http_handle, buf, &cnt, 30);
+	if (code) {
+	    LOGERR("Tidal::read: UpnpReadHttpGet returned " << code << endl);
+	    return -1;
+	}
+	return int(cnt);
+    } else {
+	LOGERR("Tidal::read: neither rtmp nor http\n");
+	return -1;
     }
-    LOGDEB("Tidal::read: total read: " << totread << endl);
-    return totread > 0 ? totread : -1;
 }
 
 off_t Tidal::Internal::seek(void *hdl, off_t offs, int whence)
@@ -193,14 +255,11 @@ off_t Tidal::Internal::seek(void *hdl, off_t offs, int whence)
     return -1;
 }
 
-void Tidal::Internal::close(void *hdl)
+void Tidal::Internal::close(void *_hdl)
 {
     LOGDEB("Tidal::close\n");
-    if (hdl) {
-	RTMP *rtmp = (RTMP *)hdl;
-	RTMP_Close(rtmp);
-	RTMP_Free(rtmp);
-    }
+    StreamHandle *hdl = (StreamHandle *)_hdl;
+    delete hdl;
 }
 
 

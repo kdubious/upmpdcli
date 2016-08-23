@@ -12,6 +12,9 @@
 /* Define to 1 if you have the `rtmp' library (-lrtmp). */
 #undef HAVE_LIBRTMP
 
+/* Define to 1 if you have the `upnp' library (-lupnp). */
+#undef HAVE_LIBUPNP
+
 /* Define to 1 if you have the `upnpp' library (-lupnpp). */
 #undef HAVE_LIBUPNPP
 

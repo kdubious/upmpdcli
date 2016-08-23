@@ -42,6 +42,7 @@ AC_CHECK_LIB([mpdclient], [mpd_connection_new], [],
 SCCTL_LIBS=$LIBS
 
 AC_CHECK_LIB([rtmp], [RTMP_Alloc], [], [])
+AC_CHECK_LIB([upnp], [UpnpCloseHttpGet], [], [])
 UPMPDCLI_LIBS=$LIBS
 echo "UPMPDCLI_LIBS=$LIBS"
 

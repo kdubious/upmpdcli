@@ -304,7 +304,7 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
     out_Result += tailDIDL();
     
     data.addarg("Result", out_Result);
-    LOGDEB("ContentDirectory::actBrowse: result [" << out_Result << "]\n");
+    LOGDEB1("ContentDirectory::actBrowse: result [" << out_Result << "]\n");
     data.addarg("NumberReturned", out_NumberReturned);
     data.addarg("TotalMatches", out_TotalMatches);
     data.addarg("UpdateID", out_UpdateID);
