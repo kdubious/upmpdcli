@@ -28,8 +28,17 @@ import tidalapi
 from tidalapi.models import Album, Artist
 from tidalapi import Quality
 
-routes = cmdtalkplugin.Routes()
-processor = cmdtalkplugin.Processor(routes)
+# Using kodi plugin routing plugin: lets use reuse a lot of code from
+# the addon.
+from routing import Plugin
+# Need bogus base_url value to avoid plugin trying to call xbmc to
+# retrieve addon id
+plugin = Plugin('') 
+
+# Func name to method mapper
+dispatcher = cmdtalkplugin.Dispatch()
+# Pipe message handler
+msgproc = cmdtalkplugin.Processor(dispatcher)
 
 is_logged_in = False
 
@@ -82,8 +91,6 @@ def trackentries(objid, tracks):
         if not track.available:
             continue
         li = {}
-        
-
         li['pid'] = objid
         li['id'] = objid + '$' + "%s"%track.id
         li['tt'] = track.name
@@ -91,7 +98,7 @@ def trackentries(objid, tracks):
                     posixpath.join(pathprefix,
                                    'track?version=1&trackId=%s' % \
                                    track.id)
-        processor.rclog("URI: [%s]" % li['uri'])
+        #msgproc.log("URI: [%s]" % li['uri'])
         li['tp'] = 'it'
         if track.album:
             li['upnp:album'] = track.album.name
@@ -105,8 +112,7 @@ def trackentries(objid, tracks):
         # track.album.release_date.year if track.album.release_date else None,
 
         entries.append(li)
-        return entries
-
+    return entries
 
 def direntry(id, pid, title):
     return {'id': id, 'pid' : pid, 'tt':title, 'tp':'ct'}
@@ -128,82 +134,276 @@ def trackid_from_path(a):
     if m is None:
         raise Exception("trackuri: path [%s] does not match [%s]" % (path, exp))
     trackid = m.group(1)
-    processor.rclog("trackid: [%s]" % trackid)
     return trackid
 
-@routes.route('trackuri')
+def get_mimetype():
+    #return 'audio/flac' if quality == Quality.lossless else 'audio/mpeg'
+    return 'audio/flac' if quality == Quality.lossless else 'video/x-flv'
+
+@dispatcher.record('trackuri')
 def trackuri(a):
-    processor.rclog("trackuri: [%s]" % a)
+    msgproc.log("trackuri: [%s]" % a)
     trackid = trackid_from_path(a)
     
     maybelogin()
     media_url = session.get_media_url(trackid)
-    processor.rclog("%s" % media_url)
+    #msgproc.log("%s" % media_url)
     if not media_url.startswith('http://') and not \
            media_url.startswith('https://'):
         host, tail = media_url.split('/', 1)
         app, playpath = tail.split('/mp4:', 1)
         media_url = 'rtmp://%s app=%s playpath=mp4:%s' % (host, app, playpath)
     
-    mimetype = 'audio/flac' if quality == Quality.lossless else 'audio/mpeg'
-    return {'media_url' : media_url, 'mimetype' : mimetype}
+    return {'media_url' : media_url, 'mimetype' : get_mimetype()}
 
-@routes.route('mimetype')
+@dispatcher.record('mimetype')
 def mimetype(a):
-    processor.rclog("mimetype: [%s]" % a)
     maybelogin()
-    mimetype = 'audio/flac' if quality == Quality.lossless else 'audio/mpeg'
-    return {'mimetype' : mimetype}
+    mimetype = get_mimetype()
+    return {'mimetype' : get_mimetype()}
 
-@routes.route('browse')
+# Bogus global for helping with reusing kodi addon code
+class XbmcPlugin:
+    SORT_METHOD_TRACKNUM = 1
+    def __init__(self):
+        self.entries = []
+        self.objid = ''
+    def addDirectoryItem(self, hdl, endpoint, title, isend):
+        self.entries.append(direntry('0$tidal$' + endpoint, self.objid, title))
+        return
+    def endOfDirectory(self, h):
+        return
+    def setContent(self, a, b):
+        return
+    def addSortMethod(self, a, b):
+        return
+    
+def add_directory(title, endpoint):
+    if callable(endpoint):
+        endpoint = plugin.url_for(endpoint)
+    xbmcplugin.entries.append(direntry('0$tidal$' + endpoint, xbmcplugin.objid, title))
+
+def urls_from_id(view_func, items):
+    #msgproc.log("urls_from_id: items: %s" % str([item.id for item in items]))
+    return [plugin.url_for(view_func, item.id) for item in items if str(item.id).find('http') != 0]
+
+def view(data_items, urls, end=True):
+    for item, url in zip(data_items, urls):
+        title = item.name
+        xbmcplugin.entries.append(direntry('0$tidal$' + url, xbmcplugin.objid, title))
+
+def track_list(tracks):
+    xbmcplugin.entries = trackentries(xbmcplugin.objid, tracks)
+       
+@dispatcher.record('browse')
 def browse(a):
-    processor.rclog("browse: [%s]" % a)
+    global xbmcplugin
+    xbmcplugin = XbmcPlugin()
+    msgproc.log("browse: [%s]" % a)
     if 'objid' not in a:
         raise Exception("No objid in args")
+
     objid = a['objid']
-    if re.match('0\$tidal', objid) is None:
+    if re.match('0\$tidal\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
-
+    xbmcplugin.objid = objid
     maybelogin()
-    if objid == '0$tidal':
-        # Root
-        content = direntries(objid,
-                              (('My Music', 'my_music'),
-                               ('Featured Playlists', 'featured'),
-                               ("What's New", 'new'),
-                               ('Genres', 'genres'),
-                               ('Moods', 'moods'),
-                               ('Search', 'search')))
-    elif objid == '0$tidal$my_music':
-        content = direntries(objid,
-                             (('My Playlists', 'my_pl'),
-                              ('Favourite Playlists', 'fav_pl'),
-                              ('Favourite Artists', 'fav_art'),
-                              ('Favourite Albums', 'fav_alb'),
-                              ('Favourite Tracks', 'fav_trk')))
-    elif objid == '0$tidal$my_music$fav_trk':
-        content = trackentries(objid, session.user.favorites.tracks())
-    elif objid == '0$tidal$my_music$my_pl':
-        items = session.user.playlists()
-        view(items, urls_from_id(playlist_view, items))
-    elif objid == '0$tidal$my_music$fav_pl':
-        items = session.user.favorites.playlists()
-        view(items, urls_from_id(playlist_view, items))
-    elif objid == '0$tidal$my_music$fav_art':
-        xbmcplugin.setContent(plugin.handle, 'artists')
-        items = session.user.favorites.artists()
-        view(items, urls_from_id(artist_view, items))
-    elif objid == '0$tidal$my_music$fav_alb':
+    idpath = objid.replace('0$tidal$', '', 1)
+    plugin.run([idpath])
+    #msgproc.log("%s" % xbmcplugin.entries)
+    encoded = json.dumps(xbmcplugin.entries)
+    return {"entries" : encoded}
+
+@plugin.route('/')
+def root():
+    add_directory('My Music', my_music)
+    add_directory('Featured Playlists', featured_playlists)
+    add_directory("What's New", whats_new)
+    add_directory('Genres', genres)
+    add_directory('Moods', moods)
+
+
+@plugin.route('/track_radio/<track_id>')
+def track_radio(track_id):
+    track_list(session.get_track_radio(track_id))
+
+
+@plugin.route('/moods')
+def moods():
+    items = session.get_moods()
+    view(items, urls_from_id(moods_playlists, items))
+
+
+@plugin.route('/moods/<mood>')
+def moods_playlists(mood):
+    items = session.get_mood_playlists(mood)
+    view(items, urls_from_id(playlist_view, items))
+
+
+@plugin.route('/genres')
+def genres():
+    items = session.get_genres()
+    view(items, urls_from_id(genre_view, items))
+
+
+@plugin.route('/genre/<genre_id>')
+def genre_view(genre_id):
+    add_directory('Playlists', plugin.url_for(genre_playlists, genre_id=genre_id))
+    add_directory('Albums', plugin.url_for(genre_albums, genre_id=genre_id))
+    add_directory('Tracks', plugin.url_for(genre_tracks, genre_id=genre_id))
+    xbmcplugin.endOfDirectory(plugin.handle)
+
+
+@plugin.route('/genre/<genre_id>/playlists')
+def genre_playlists(genre_id):
+    items = session.get_genre_items(genre_id, 'playlists')
+    view(items, urls_from_id(playlist_view, items))
+
+
+@plugin.route('/genre/<genre_id>/albums')
+def genre_albums(genre_id):
+    xbmcplugin.setContent(plugin.handle, 'albums')
+    items = session.get_genre_items(genre_id, 'albums')
+    view(items, urls_from_id(album_view, items))
+
+@plugin.route('/genre/<genre_id>/tracks')
+def genre_tracks(genre_id):
+    items = session.get_genre_items(genre_id, 'tracks')
+    track_list(items)
+
+
+@plugin.route('/featured_playlists')
+def featured_playlists():
+    items = session.get_featured()
+    view(items, urls_from_id(playlist_view, items))
+
+
+@plugin.route('/whats_new')
+def whats_new():
+    add_directory('Recommended Playlists', plugin.url_for(featured, group='recommended', content_type='playlists'))
+    add_directory('Recommended Albums', plugin.url_for(featured, group='recommended', content_type='albums'))
+    add_directory('Recommended Tracks', plugin.url_for(featured, group='recommended', content_type='tracks'))
+    add_directory('New Playlists', plugin.url_for(featured, group='new', content_type='playlists'))
+    add_directory('New Albums', plugin.url_for(featured, group='new', content_type='albums'))
+    add_directory('New Tracks', plugin.url_for(featured, group='new', content_type='tracks'))
+    add_directory('Top Albums', plugin.url_for(featured, group='top', content_type='albums'))
+    add_directory('Top Tracks', plugin.url_for(featured, group='top', content_type='tracks'))
+    if session.country_code != 'US':
+        add_directory('Local Playlists', plugin.url_for(featured, group='local', content_type='playlists'))
+        add_directory('Local Albums', plugin.url_for(featured, group='local', content_type='albums'))
+        add_directory('Local Tracks', plugin.url_for(featured, group='local', content_type='tracks'))
+    xbmcplugin.endOfDirectory(plugin.handle)
+
+
+@plugin.route('/featured/<group>/<content_type>')
+def featured(group=None, content_type=None):
+    items = session.get_featured_items(content_type, group)
+    if content_type == 'tracks':
+        track_list(items)
+    elif content_type == 'albums':
         xbmcplugin.setContent(plugin.handle, 'albums')
-        items = session.user.favorites.albums()
         view(items, urls_from_id(album_view, items))
-    else:
-        raise Exception("unhandled path")
-
-    encoded = json.dumps(content)
-    return {"entries":encoded}
+    elif content_type == 'playlists':
+        view(items, urls_from_id(playlist_view, items))
 
 
+@plugin.route('/my_music')
+def my_music():
+    add_directory('My Playlists', my_playlists)
+    add_directory('Favourite Playlists', favourite_playlists)
+    add_directory('Favourite Artists', favourite_artists)
+    add_directory('Favourite Albums', favourite_albums)
+    add_directory('Favourite Tracks', favourite_tracks)
+    xbmcplugin.endOfDirectory(plugin.handle)
 
-processor.rclog("Tidal running")
-processor.mainloop()
+
+@plugin.route('/album/<album_id>')
+def album_view(album_id):
+    xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_TRACKNUM)
+    track_list(session.get_album_tracks(album_id))
+
+
+def ListItem(tt):
+    return tt
+
+@plugin.route('/artist/<artist_id>')
+def artist_view(artist_id):
+    xbmcplugin.setContent(plugin.handle, 'albums')
+    xbmcplugin.addDirectoryItem(
+        plugin.handle, plugin.url_for(top_tracks, artist_id),
+        ListItem('Top Tracks'), True
+    )
+    xbmcplugin.addDirectoryItem(
+        plugin.handle, plugin.url_for(artist_radio, artist_id),
+        ListItem('Artist Radio'), True
+    )
+    xbmcplugin.addDirectoryItem(
+        plugin.handle, plugin.url_for(similar_artists, artist_id),
+        ListItem('Similar Artists'), True
+    )
+    albums = session.get_artist_albums(artist_id) + \
+             session.get_artist_albums_ep_singles(artist_id) + \
+             session.get_artist_albums_other(artist_id)
+    view(albums, urls_from_id(album_view, albums))
+
+
+@plugin.route('/artist/<artist_id>/radio')
+def artist_radio(artist_id):
+    track_list(session.get_artist_radio(artist_id))
+
+
+@plugin.route('/artist/<artist_id>/top')
+def top_tracks(artist_id):
+    track_list(session.get_artist_top_tracks(artist_id))
+
+
+@plugin.route('/artist/<artist_id>/similar')
+def similar_artists(artist_id):
+    xbmcplugin.setContent(plugin.handle, 'artists')
+    artists = session.get_artist_similar(artist_id)
+    view(artists, urls_from_id(artist_view, artists))
+
+
+@plugin.route('/playlist/<playlist_id>')
+def playlist_view(playlist_id):
+    track_list(session.get_playlist_tracks(playlist_id))
+
+
+@plugin.route('/user_playlists')
+def my_playlists():
+    items = session.user.playlists()
+    view(items, urls_from_id(playlist_view, items))
+
+
+@plugin.route('/favourite_playlists')
+def favourite_playlists():
+    items = session.user.favorites.playlists()
+    view(items, urls_from_id(playlist_view, items))
+
+
+@plugin.route('/favourite_artists')
+def favourite_artists():
+    xbmcplugin.setContent(plugin.handle, 'artists')
+    try:
+        items = session.user.favorites.artists()
+    except Exception as err:
+        msgproc.log("session.user.favorite.artists failed: %s" % err)
+        return
+    msgproc.log("First artist name %s"% items[0].name)
+    view(items, urls_from_id(artist_view, items))
+
+
+@plugin.route('/favourite_albums')
+def favourite_albums():
+    xbmcplugin.setContent(plugin.handle, 'albums')
+    items = session.user.favorites.albums()
+    view(items, urls_from_id(album_view, items))
+
+
+@plugin.route('/favourite_tracks')
+def favourite_tracks():
+    track_list(session.user.favorites.tracks())
+
+
+msgproc.log("Tidal running")
+msgproc.mainloop()

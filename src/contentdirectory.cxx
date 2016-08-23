@@ -170,7 +170,7 @@ int ContentDirectory::actGetSystemUpdateID(const SoapIncoming& sc, SoapOutgoing&
 static vector<UpSong> rootdir;
 void makerootdir()
 {
-    rootdir.push_back(UpSong::container("0$tidal", "0", "Tidal"));
+    rootdir.push_back(UpSong::container("0$tidal$", "0", "Tidal"));
 }
 
 // Returns totalmatches
