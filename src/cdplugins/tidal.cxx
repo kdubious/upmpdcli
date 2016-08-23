@@ -172,10 +172,12 @@ int Tidal::Internal::read(void *hdl, char* buf, size_t cnt)
     if (!hdl)
 	return -1;
     RTMP *rtmp = (RTMP *)hdl;
+    if (cnt > 100 * 1024)
+	cnt = 100 * 1024;
     size_t totread = 0;
     while (totread < cnt) {
 	int didread = RTMP_Read(rtmp, buf+totread, cnt-totread);
-	LOGDEB("Tidal::read: RTMP_Read returned: " << didread << endl);
+	//LOGDEB("Tidal::read: RTMP_Read returned: " << didread << endl);
 	if (didread <= 0)
 	    break;
 	totread += didread;
