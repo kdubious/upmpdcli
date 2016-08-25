@@ -113,7 +113,7 @@ def trackentries(objid, tracks):
         li['dc:title'] = track.name
         li['discnumber'] = str(track.disc_num)
         li['duration'] = track.duration
-        # track.album.release_date.year if track.album.release_date else None,
+        li['releasedate'] = track.album.release_date if track.album.release_date
 
         entries.append(li)
     return entries
@@ -194,7 +194,6 @@ def urls_from_id(view_func, items):
 def view(data_items, urls, end=True):
     for item, url in zip(data_items, urls):
         title = item.name
-        msgproc.log("view: got title %s" % item.name)
         xbmcplugin.entries.append(direntry('0$tidal$' + url, xbmcplugin.objid, title))
 
 def track_list(tracks):
