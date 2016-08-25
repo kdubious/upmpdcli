@@ -63,7 +63,7 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
     m_services.push_back(m_avt);
     m_rdctl = new UpMpdRenderCtl(this, avtnoev);
     m_services.push_back(m_rdctl);
-    m_services.push_back(new UpMpdConMan(this));
+    m_services.push_back(new UpMpdConMan(this, g_protocolInfo));
 
     if (m_options & upmpdDoOH) {
         m_ohif = new OHInfo(this);
