@@ -17,22 +17,24 @@
 
 #include "mediaserver.hxx"
 
-
+#include "conman.hxx"
 #include "contentdirectory.hxx"
 
 using namespace std;
 
-MediaServer::MediaServer(const string& deviceid, const string& friendlyname)
-    : UpnpDevice(deviceid, unordered_map<string, VDirContent>())
+extern string g_protocolInfo;
+
+MediaServer::MediaServer(const string& deviceid, const string& friendlyname,
+    const std::unordered_map<std::string, VDirContent>& files)
+    : UpnpDevice(deviceid, files)
 {
     m_cd = new ContentDirectory(this);
+    m_cm = new UpMpdConMan(this, g_protocolInfo);
 }
 
 
 MediaServer::~MediaServer()
 {
     delete m_cd;
+    delete m_cm;
 }
-
-
-

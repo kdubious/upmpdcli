@@ -23,15 +23,20 @@
 using namespace UPnPProvider;
 
 class ContentDirectory;
+class UpMpdConMan;
 
 class MediaServer : public UpnpDevice {
 public:
-    MediaServer(const std::string& deviceid, const std::string& friendlyname);
+    MediaServer(const std::string& deviceid, const std::string& friendlyname,
+                const std::unordered_map<std::string, VDirContent>& files =
+                std::unordered_map<std::string, VDirContent>()
+        );
 
     ~MediaServer();
 
 private:
     ContentDirectory *m_cd;
+    UpMpdConMan *m_cm;
 };
 
 
