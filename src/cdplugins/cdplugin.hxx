@@ -28,15 +28,41 @@ public:
     virtual ~CDPlugin() {
     }
 
+    /// List children or return metadata for target object. You can
+    /// probably get by without implementing BFMeta in most cases.
     enum BrowseFlag {BFChildren, BFMeta};
 
-    // Returns totalmatches
+    /// Browse object at objid, which should be a container, and
+    /// return its content. 
+    ///
+    /// This reflects an UPnP Browse action, refer to UPnP documentation.
+    /// 
+    /// @param objid the object to browse.
+    /// @param stidx first entry to return.
+    /// @param cnt number of entries.
+    /// @param[output] entries output content.
+    /// @param sortcrits csv list of sort criteria.
+    /// @param flg browse flag
+    /// @return total number of matched entries in container
     virtual int browse(
 	const std::string& objid, int stidx, int cnt,
 	std::vector<UpSong>& entries,
 	const std::vector<std::string>& sortcrits = std::vector<std::string>(),
 	BrowseFlag flg = BFChildren) = 0;
 
+    /// Search under object at objid.
+    ///
+    /// This reflects an UPnP Search action, refer to UPnP
+    /// documentation. Most plugins won't be able to actually perform
+    /// the search under container operation. Plain search should be
+    /// good enough.
+    /// 
+    /// @param objid the object to search
+    /// @param stidx first entry to return.
+    /// @param cnt number of entries.
+    /// @param[output] entries output content.
+    /// @param sortcrits csv list of sort criteria.
+    /// @return total number of matched entries in container
     virtual int search(
 	const std::string& ctid, int stidx, int cnt,
 	const std::string& searchstr,
