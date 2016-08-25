@@ -41,7 +41,7 @@ using namespace UPnPProvider;
 class Tidal::Internal {
 public:
     Internal(const vector<string>& pth, const string& hp, const string& pp)
-	: path(pth), httphp(hp), pathprefix(pp) { }
+	: path(pth), httphp(hp), pathprefix(pp), lasttime(0) { }
 
     bool maybeStartCmd(const string&);
     string get_media_url(const std::string& path);
@@ -55,11 +55,19 @@ public:
 
     CmdTalk cmd;
     vector<string> path;
+    // Host and port part for the URIs we generate.
     string httphp;
+    // path prefix (this is used to redirect gets to us).
     string pathprefix;
     // mimetype is a constant for a given session, depend on quality
     // choice only. Initialized once
     string mimetype;
+
+    // Cached uri translation for the vdir: we do this in getinfo()
+    // and reuse in open()
+    string lastpath;
+    string lastmediaurl;
+    time_t lasttime;
 };
 
 bool Tidal::Internal::maybeStartCmd(const string& who)
@@ -86,21 +94,25 @@ string Tidal::Internal::get_media_url(const std::string& path)
     if (!maybeStartCmd("get_media_url")) {
 	return string();
     }
+    if (lastpath.compare(path) || (time(0) - lasttime > 10)) {
+	unordered_map<string, string> res;
+	if (!cmd.callproc("trackuri", {{"path", path}}, res)) {
+	    LOGERR("Tidal::get_media_url: slave failure\n");
+	    return string();
+	}
 
-    unordered_map<string, string> res;
-    if (!cmd.callproc("trackuri", {{"path", path}}, res)) {
-	LOGERR("Tidal::get_media_url: slave failure\n");
-	return string();
+	auto it = res.find("media_url");
+	if (it == res.end()) {
+	    LOGERR("Tidal::get_media_url: no media url in result\n");
+	    return string();
+	}
+	lastmediaurl = it->second;
+	lastpath = path;
+	lasttime = time(0);
     }
 
-    auto it = res.find("media_url");
-    if (it == res.end()) {
-	LOGERR("Tidal::get_media_url: no media url in result\n");
-	return string();
-    }
-    string& media_url = it->second;
-    LOGDEB("Tidal: got media url [" << media_url << "]\n");
-    return media_url;
+    LOGDEB("Tidal: got media url [" << lastmediaurl << "]\n");
+    return lastmediaurl;
 }
 
 string Tidal::Internal::get_mimetype(const std::string& path)
@@ -126,15 +138,6 @@ string Tidal::Internal::get_mimetype(const std::string& path)
     return mimetype;
 }
 
-int Tidal::Internal::getinfo(const std::string& path, VirtualDir::FileInfo *inf)
-{
-    LOGDEB("Tidal::getinfo: " << path << endl);
-    inf->file_length = -1;
-    inf->last_modified = 0;
-    inf->mime = get_mimetype(path);
-    return 0;
-}
-
 class StreamHandle {
 public:
     StreamHandle() : rtmp(nullptr), http_handle(nullptr) {
@@ -145,7 +148,9 @@ public:
 	    RTMP_Free(rtmp);
 	}
 	if (http_handle) {
+            LOGDEB("StreamHandle:~: closing http handle\n");
 	    UpnpCloseHttpGet(http_handle);
+            LOGDEB("StreamHandle:~: close done\n");
 	}
     }
 	
@@ -153,6 +158,47 @@ public:
     void *http_handle;
     int len;
 };
+
+
+int Tidal::Internal::getinfo(const std::string& path, VirtualDir::FileInfo *inf)
+{
+    LOGDEB("Tidal::getinfo: " << path << endl);
+    string media_url = get_media_url(path);
+    if (media_url.empty()) {
+	return -1;
+    }
+    inf->file_length = -1;
+    inf->last_modified = 0;
+    inf->mime = get_mimetype(path);
+    if (media_url.find("http") == 0) {
+	void *http_handle;
+	char *content_type;
+	int content_length;
+	int httpstatus;
+	int code = UpnpOpenHttpGet(media_url.c_str(), &http_handle,
+				     &content_type, &content_length,
+				     &httpstatus, 30);
+	LOGDEB("Tidal::getinfo: UpnpOpenHttpGet: ret " << code <<
+	       " mtype " << content_type << " length " << content_length <<
+	       " HTTP status " << httpstatus << endl);
+	if (code) {
+	    LOGERR("Tidal::getinfo: UpnpOpenHttpGet: ret " << code <<
+		   " mtype " << content_type << " length " << content_length <<
+		   " HTTP status " << httpstatus << endl);
+	} else {
+	    inf->file_length = content_length;
+	    LOGDEB("Tidal:getinfo: got file length "<< inf->file_length <<endl);
+	}
+        // Doc says to free this, but it causes malloc issues
+	//free(content_type);
+	StreamHandle hdl;
+	hdl.http_handle = http_handle;
+	// Let StreamHandle clean up
+    }
+    LOGDEB("Tidal::getinfo: returning\n");
+    return 0;
+}
+
 
 void *Tidal::Internal::open(const string& path)
 {
@@ -178,6 +224,8 @@ void *Tidal::Internal::open(const string& path)
 		   " HTTP status " << httpstatus << endl);
 	    return nullptr;
 	}
+        // Doc says to free this, but it causes malloc issues
+	//free(content_type);
 	StreamHandle *hdl = new StreamHandle;
 	hdl->http_handle = http_handle;
 	hdl->len = content_length;
@@ -291,8 +339,8 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 			   std::vector<UpSong>& entries)
 {
     auto decoded = json::parse(encoded);
-    LOGDEB("Tidal::browse: got " << decoded.size() << " entries\n");
-    LOGDEB1("Tidal::browse: undecoded json: " << decoded.dump() << endl);
+    LOGDEB("Tidal::results: got " << decoded.size() << " entries\n");
+    LOGDEB1("Tidal::results: undecoded json: " << decoded.dump() << endl);
 
     for (unsigned int i = stidx; i < decoded.size(); i++) {
 	if (--cnt < 0) {
