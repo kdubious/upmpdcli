@@ -46,7 +46,7 @@ using namespace UPnPProvider;
 class ContentDirectory::Internal {
 public:
     Internal (ContentDirectory *sv)
-	: service(sv) {
+	: service(sv), updateID("1") {
     }
     ~Internal() {
 	for (auto& it : plugins) {
@@ -106,6 +106,7 @@ public:
     unordered_map<string, CDPlugin *> plugins;
     ContentDirectory *service;
     string httphp;
+    string updateID;
 };
 
 static const string
@@ -161,7 +162,7 @@ int ContentDirectory::actGetSystemUpdateID(const SoapIncoming& sc, SoapOutgoing&
 {
     LOGDEB("ContentDirectory::actGetSystemUpdateID: " << endl);
 
-    std::string out_Id;
+    std::string out_Id = m->updateID;
     data.addarg("Id", out_Id);
     return UPNP_E_SUCCESS;
 }
@@ -273,10 +274,10 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
 
     // Go fetch
     vector<UpSong> entries;
-    size_t tot = 0;
+    size_t totalmatches = 0;
     if (!in_ObjectID.compare("0")) {
 	// Root directory: we do this ourselves
-	tot = readroot(in_StartingIndex, in_RequestedCount, entries);
+	totalmatches = readroot(in_StartingIndex, in_RequestedCount, entries);
     } else {
 	// Pass off request to appropriate app, defined by 1st elt in id
 	string app = appForId(in_ObjectID);
@@ -284,9 +285,9 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
 
 	CDPlugin *plg = m->pluginForApp(app);
 	if (plg) {
-	    out_TotalMatches = plg->browse(in_ObjectID, in_StartingIndex,
-					   in_RequestedCount, entries,
-					   sortcrits, bf);
+	    totalmatches = plg->browse(in_ObjectID, in_StartingIndex,
+                                       in_RequestedCount, entries,
+                                       sortcrits, bf);
 	} else {
 	    LOGERR("ContentDirectory::Browse: unknown app: [" << app << "]\n");
 	}
@@ -295,8 +296,8 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
 
     // Process and send out result
     out_NumberReturned = ulltodecstr(entries.size());
-    out_TotalMatches = ulltodecstr(tot);
-    out_UpdateID = "1";
+    out_TotalMatches = ulltodecstr(totalmatches);
+    out_UpdateID = m->updateID;
     out_Result = headDIDL();
     for (unsigned int i = 0; i < entries.size(); i++) {
 	out_Result += entries[i].didl();
@@ -368,7 +369,7 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
 
     // Go fetch
     vector<UpSong> entries;
-    size_t tot = 0;
+    size_t totalmatches = 0;
     if (!in_ContainerID.compare("0")) {
 	// Root directory: can't search in there
 	LOGERR("ContentDirectory::actSearch: Can't search in root\n");
@@ -380,10 +381,9 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
 
 	CDPlugin *plg = m->pluginForApp(app);
 	if (plg) {
-	    out_TotalMatches = plg->search(in_ContainerID, in_StartingIndex,
-					   in_RequestedCount, 
-					   in_SearchCriteria,
-					   entries, sortcrits);
+	    totalmatches = plg->search(in_ContainerID, in_StartingIndex,
+                                       in_RequestedCount, in_SearchCriteria,
+                                       entries, sortcrits);
 	} else {
 	    LOGERR("ContentDirectory::Browse: unknown app: [" << app << "]\n");
 	}
@@ -392,8 +392,8 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
 
     // Process and send out result
     out_NumberReturned = ulltodecstr(entries.size());
-    out_TotalMatches = ulltodecstr(tot);
-    out_UpdateID = "1";
+    out_TotalMatches = ulltodecstr(totalmatches);
+    out_UpdateID = m->updateID;
     out_Result = headDIDL();
     for (unsigned int i = 0; i < entries.size(); i++) {
 	out_Result += entries[i].didl();
@@ -406,4 +406,3 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
     data.addarg("UpdateID", out_UpdateID);
     return UPNP_E_SUCCESS;
 }
-
