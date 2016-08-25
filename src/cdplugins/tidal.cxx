@@ -38,10 +38,41 @@ using namespace std::placeholders;
 using json = nlohmann::json;
 using namespace UPnPProvider;
 
+class StreamHandle {
+public:
+    StreamHandle() : rtmp(nullptr), http_handle(nullptr), offset(0) {
+    }
+    ~StreamHandle() {
+        clear();
+    }
+    void clear() {
+        if (rtmp) {
+	    RTMP_Close(rtmp);
+	    RTMP_Free(rtmp);
+	}
+	if (http_handle) {
+            LOGDEB("StreamHandle:~: closing http handle\n");
+	    UpnpCloseHttpGet(http_handle);
+            LOGDEB("StreamHandle:~: close done\n");
+	}
+        len = 0;
+        offset = 0;
+        media_url.clear();
+        path.clear();
+    }
+    string path;
+    string media_url;
+    RTMP *rtmp;
+    void *http_handle;
+    int len;
+    off_t offset;
+    time_t opentime;
+};
+
 class Tidal::Internal {
 public:
     Internal(const vector<string>& pth, const string& hp, const string& pp)
-	: path(pth), httphp(hp), pathprefix(pp), lasttime(0) { }
+	: path(pth), httphp(hp), pathprefix(pp) { }
 
     bool maybeStartCmd(const string&);
     string get_media_url(const std::string& path);
@@ -63,11 +94,9 @@ public:
     // choice only. Initialized once
     string mimetype;
 
-    // Cached uri translation for the vdir: we do this in getinfo()
-    // and reuse in open()
-    string lastpath;
-    string lastmediaurl;
-    time_t lasttime;
+    // Cached uri translation and stream: set in getinfo() and reused
+    // in open()
+    StreamHandle laststream;
 };
 
 bool Tidal::Internal::maybeStartCmd(const string& who)
@@ -87,32 +116,6 @@ bool Tidal::Internal::maybeStartCmd(const string& who)
 	}
     }
     return true;
-}
-
-string Tidal::Internal::get_media_url(const std::string& path)
-{
-    if (!maybeStartCmd("get_media_url")) {
-	return string();
-    }
-    if (lastpath.compare(path) || (time(0) - lasttime > 10)) {
-	unordered_map<string, string> res;
-	if (!cmd.callproc("trackuri", {{"path", path}}, res)) {
-	    LOGERR("Tidal::get_media_url: slave failure\n");
-	    return string();
-	}
-
-	auto it = res.find("media_url");
-	if (it == res.end()) {
-	    LOGERR("Tidal::get_media_url: no media url in result\n");
-	    return string();
-	}
-	lastmediaurl = it->second;
-	lastpath = path;
-	lasttime = time(0);
-    }
-
-    LOGDEB("Tidal: got media url [" << lastmediaurl << "]\n");
-    return lastmediaurl;
 }
 
 string Tidal::Internal::get_mimetype(const std::string& path)
@@ -138,31 +141,39 @@ string Tidal::Internal::get_mimetype(const std::string& path)
     return mimetype;
 }
 
-class StreamHandle {
-public:
-    StreamHandle() : rtmp(nullptr), http_handle(nullptr) {
+string Tidal::Internal::get_media_url(const std::string& path)
+{
+    if (!maybeStartCmd("get_media_url")) {
+	return string();
     }
-    ~StreamHandle() {
-	if (rtmp) {
-	    RTMP_Close(rtmp);
-	    RTMP_Free(rtmp);
+    time_t now = time(0);
+    if (laststream.path.compare(path) || (now - laststream.opentime > 10)) {
+	unordered_map<string, string> res;
+	if (!cmd.callproc("trackuri", {{"path", path}}, res)) {
+	    LOGERR("Tidal::get_media_url: slave failure\n");
+	    return string();
 	}
-	if (http_handle) {
-            LOGDEB("StreamHandle:~: closing http handle\n");
-	    UpnpCloseHttpGet(http_handle);
-            LOGDEB("StreamHandle:~: close done\n");
-	}
-    }
-	
-    RTMP *rtmp;
-    void *http_handle;
-    int len;
-};
 
+	auto it = res.find("media_url");
+	if (it == res.end()) {
+	    LOGERR("Tidal::get_media_url: no media url in result\n");
+	    return string();
+	}
+        laststream.clear();
+        laststream.path = path;
+        laststream.media_url = it->second;
+        laststream.opentime = now;
+    }
+
+    LOGDEB("Tidal: got media url [" << laststream.media_url << "]\n");
+    return laststream.media_url;
+}
 
 int Tidal::Internal::getinfo(const std::string& path, VirtualDir::FileInfo *inf)
 {
     LOGDEB("Tidal::getinfo: " << path << endl);
+
+    laststream.clear();
     string media_url = get_media_url(path);
     if (media_url.empty()) {
 	return -1;
@@ -171,34 +182,26 @@ int Tidal::Internal::getinfo(const std::string& path, VirtualDir::FileInfo *inf)
     inf->last_modified = 0;
     inf->mime = get_mimetype(path);
     if (media_url.find("http") == 0) {
-	void *http_handle;
 	char *content_type;
-	int content_length;
 	int httpstatus;
-	int code = UpnpOpenHttpGet(media_url.c_str(), &http_handle,
-				     &content_type, &content_length,
+	int code = UpnpOpenHttpGet(media_url.c_str(), &laststream.http_handle,
+				     &content_type, &laststream.len,
 				     &httpstatus, 30);
 	LOGDEB("Tidal::getinfo: UpnpOpenHttpGet: ret " << code <<
-	       " mtype " << content_type << " length " << content_length <<
+	       " mtype " << content_type << " length " << laststream.len <<
 	       " HTTP status " << httpstatus << endl);
 	if (code) {
 	    LOGERR("Tidal::getinfo: UpnpOpenHttpGet: ret " << code <<
-		   " mtype " << content_type << " length " << content_length <<
+		   " mtype " << content_type << " length " << laststream.len <<
 		   " HTTP status " << httpstatus << endl);
 	} else {
-	    inf->file_length = content_length;
+	    inf->file_length = laststream.len;
 	    LOGDEB("Tidal:getinfo: got file length "<< inf->file_length <<endl);
 	}
-        // Doc says to free this, but it causes malloc issues
-	//free(content_type);
-	StreamHandle hdl;
-	hdl.http_handle = http_handle;
-	// Let StreamHandle clean up
     }
     LOGDEB("Tidal::getinfo: returning\n");
     return 0;
 }
-
 
 void *Tidal::Internal::open(const string& path)
 {
@@ -208,27 +211,33 @@ void *Tidal::Internal::open(const string& path)
 	return nullptr;
     }
     if (media_url.find("http") == 0) {
-	void *http_handle;
-	char *content_type;
-	int content_length;
-	int httpstatus;
-	int code = UpnpOpenHttpGet(media_url.c_str(), &http_handle,
-				     &content_type, &content_length,
-				     &httpstatus, 30);
-	LOGDEB("Tidal::open: UpnpOpenHttpGet: ret " << code <<
-	       " mtype " << content_type << " length " << content_length <<
-	       " HTTP status " << httpstatus << endl);
-	if (code) {
-	    LOGERR("Tidal::open: UpnpOpenHttpGet: ret " << code <<
-		   " mtype " << content_type << " length " << content_length <<
-		   " HTTP status " << httpstatus << endl);
-	    return nullptr;
-	}
-        // Doc says to free this, but it causes malloc issues
+        if (laststream.http_handle == nullptr) {
+            char *content_type;
+            int httpstatus;
+            int code = UpnpOpenHttpGet(media_url.c_str(),
+                                       &laststream.http_handle,
+                                       &content_type, &laststream.len,
+                                       &httpstatus, 30);
+            LOGDEB("Tidal::open: UpnpOpenHttpGet: ret " << code <<
+                   " mtype " << content_type << " length " <<
+                   laststream.len <<
+                   " HTTP status " << httpstatus << endl);
+            if (code) {
+                LOGERR("Tidal::open: UpnpOpenHttpGet: ret " << code <<
+                       " mtype " << content_type << " length " <<
+                       laststream.len <<
+                       " HTTP status " << httpstatus << endl);
+                return nullptr;
+            }
+        } 
+        // Doc says to free content_type, but it causes malloc issues
 	//free(content_type);
 	StreamHandle *hdl = new StreamHandle;
-	hdl->http_handle = http_handle;
-	hdl->len = content_length;
+	hdl->http_handle = laststream.http_handle;
+	hdl->len = laststream.len;
+        hdl->media_url = media_url;
+        laststream.http_handle = nullptr;
+        laststream.clear();
 	return hdl;
     } else {
 	RTMP *rtmp = RTMP_Alloc();
@@ -267,8 +276,9 @@ int Tidal::Internal::read(void *_hdl, char* buf, size_t cnt)
 
     // The pupnp http code has a default 1MB buffer size which is much
     // too big for us (too slow, esp. because tidal will stall).
-    if (cnt > 100 * 1024)
-	    cnt = 100 * 1024;
+    const int mybsize = 200 * 1024;
+    if (cnt > mybsize)
+        cnt = mybsize;
 
     StreamHandle *hdl = (StreamHandle *)_hdl;
 
@@ -283,6 +293,7 @@ int Tidal::Internal::read(void *_hdl, char* buf, size_t cnt)
 	    totread += didread;
 	}
 	LOGDEB("Tidal::read: total read: " << totread << endl);
+        hdl->offset += totread;
 	return totread > 0 ? totread : -1;
     } else if (hdl->http_handle) {
 	int code = UpnpReadHttpGet(hdl->http_handle, buf, &cnt, 30);
@@ -290,6 +301,7 @@ int Tidal::Internal::read(void *_hdl, char* buf, size_t cnt)
 	    LOGERR("Tidal::read: UpnpReadHttpGet returned " << code << endl);
 	    return -1;
 	}
+        hdl->offset += cnt;
 	return int(cnt);
     } else {
 	LOGERR("Tidal::read: neither rtmp nor http\n");
@@ -297,10 +309,40 @@ int Tidal::Internal::read(void *_hdl, char* buf, size_t cnt)
     }
 }
 
-off_t Tidal::Internal::seek(void *hdl, off_t offs, int whence)
+off_t Tidal::Internal::seek(void *_hdl, off_t offs, int whence)
 {
-    LOGDEB("Tidal::seek\n");
-    return -1;
+    StreamHandle *hdl = (StreamHandle *)_hdl;
+    LOGDEB("Tidal::seek: offs "<< offs << " whence " << whence << " current " <<
+           hdl->offset << endl);
+    if (whence == 0) {
+        hdl->offset = offs;
+    } else if (whence == 1) {
+        hdl->offset += offs;
+    } else if (whence == 2) {
+        hdl->offset = hdl->len + offs;
+    }
+    if (hdl->http_handle) {
+        UpnpCloseHttpGet(hdl->http_handle);
+	char *content_type;
+	int content_length;
+	int httpstatus;
+	int code = UpnpOpenHttpGetEx(hdl->media_url.c_str(), &hdl->http_handle,
+				     &content_type, &content_length,
+				     &httpstatus, hdl->offset, 2000000000, 30);
+        LOGERR("Tidal::seek to " << hdl->offset <<
+               " UpnpOpenHttpGetEx: ret " << code <<
+               " mtype " << content_type << " length " << content_length <<
+               " HTTP status " << httpstatus << endl);
+	if (code) {
+	    LOGERR("Tidal::seek to " << hdl->offset <<
+                   " UpnpOpenHttpGetEx: ret " << code <<
+		   " mtype " << content_type << " length " << content_length <<
+		   " HTTP status " << httpstatus << endl);
+            return -1;
+	} 
+    }
+    
+    return 0;
 }
 
 void Tidal::Internal::close(void *_hdl)
