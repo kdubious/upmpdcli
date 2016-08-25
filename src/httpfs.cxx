@@ -131,7 +131,8 @@ static const string presDesc(
     "<presentationURL>/upmpd/presentation.html</presentationURL>"
     );
 
-static const string deviceMedia(
+// description file fragment for Media Server as embedded device
+static const string embedms_desc(
     "<device>"
     "<deviceType>urn:schemas-upnp-org:device:MediaServer:1</deviceType>"
     "<friendlyName>@FRIENDLYNAMEMEDIA@</friendlyName>"
@@ -155,18 +156,46 @@ static const string deviceMedia(
     "</device>"
     );
 
+// Description file for Media Server as root device
+static const string msonly_desc(
+    "<?xml version=\"1.0\"?>"
+    "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">"
+    "<specVersion><major>1</major><minor>0</minor></specVersion>"
+    "<device>"
+    "<deviceType>urn:schemas-upnp-org:device:MediaServer:1</deviceType>"
+    "<friendlyName>@FRIENDLYNAMEMEDIA@</friendlyName>"
+    "<UDN>uuid:@UUIDMEDIA@</UDN>"
+    "@ICONLIST@"
+    "<serviceList><service>"
+    "<serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>"
+    "<serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>"
+    "<SCPDURL>/upmpd/ConnectionManager.xml</SCPDURL>"
+    "<controlURL>/ctl1/ConnectionManager</controlURL>"
+    "<eventSubURL>/evt1/ConnectionManager</eventSubURL>"
+    "</service><service>"
+    "<serviceType>urn:schemas-upnp-org:service:ContentDirectory:1</serviceType>"
+    "<serviceId>urn:upnp-org:serviceId:ContentDirectory</serviceId>"
+    "<SCPDURL>/upmpd/ContentDirectory.xml</SCPDURL>"
+    "<controlURL>/ctl1/ContentDirectory</controlURL>"
+    "<eventSubURL>/evt1/ContentDirectory</eventSubURL>"
+    "</service></serviceList>"
+    "</device>"
+    "</root>"
+    );
+
 // The base XML description files. !Keep description.xml first!
 static vector<const char *> xmlfilenames = 
 {
     /* keep first */ "description.xml", /* keep first */
     "RenderingControl.xml", "AVTransport.xml", "ConnectionManager.xml",
+    "ContentDirectory.xml"
 };
 
 // Optional OpenHome service description files
 static vector<const char *> ohxmlfilenames = 
 {
     "OHProduct.xml", "OHInfo.xml", "OHTime.xml", "OHVolume.xml", 
-    "OHPlaylist.xml", "OHRadio.xml", "ContentDirectory.xml"
+    "OHPlaylist.xml", "OHRadio.xml"
 };
 
 /** Read protocol info file. This contains the connection manager
@@ -217,9 +246,14 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
                 const string& datadir,
                 const string& UUID, const string& friendlyname, 
                 bool enableAV, bool enableOH, bool enableReceiver,
-                bool enableL16, bool enableMediaServer,
+                bool enableL16, bool enableMediaServer, bool msonly,
                 const string& iconpath, const string& presentationhtml)
 {
+    if (msonly) {
+        enableAV=enableOH=enableReceiver=enableL16=false;
+        enableMediaServer = true;
+    }
+
     if (enableOH) {
         if (enableReceiver) {
             ohxmlfilenames.push_back("OHReceiver.xml");
@@ -263,17 +297,29 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
             return false;
         }
         if (i == 0) {
-            // Special for description: set UUID and friendlyname
-            data = regsub1("@UUID@", data, UUID);
-            data = regsub1("@FRIENDLYNAME@", data, friendlyname);
+            // Description
+            if (!msonly) {
+                // Set UUID and friendlyname for renderer
+                data = regsub1("@UUID@", data, UUID);
+                data = regsub1("@FRIENDLYNAME@", data, friendlyname);
+            }
 
-	    if (enableMediaServer) {
-		string msdesc = regsub1("@UUIDMEDIA@", deviceMedia,
+	    if (enableMediaServer && !msonly) {
+                // Edit embedded media server description and
+                // subsitute it in main description
+		string msdesc = regsub1("@UUIDMEDIA@", embedms_desc,
 					uuidMediaServer(UUID));
 		msdesc = regsub1("@FRIENDLYNAMEMEDIA@", msdesc,
 				 friendlyNameMediaServer(friendlyname));
                 data = regsub1("@MEDIASERVER@", data, msdesc);
-	    } else {
+	    } else if (msonly) {
+                // Substitute values in msonly description
+		data = regsub1("@UUIDMEDIA@", msonly_desc,
+                               uuidMediaServer(UUID));
+		data = regsub1("@FRIENDLYNAMEMEDIA@", data,
+                               friendlyNameMediaServer(friendlyname));
+            } else {
+                // No media server: erase the section
                 data = regsub1("@MEDIASERVER@", data, "");
 	    }
 
@@ -300,7 +346,8 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
                 data = regsub1("@PRESENTATION@", data, presDesc);
             else
                 data = regsub1("@PRESENTATION@", data, "");
-        }
+        } // End description file editing
+
         files.insert(pair<string, VDirContent>
                      (dir + xmlfilenames[i], 
                       VDirContent(data, "application/xml")));

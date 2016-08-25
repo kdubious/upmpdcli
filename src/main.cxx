@@ -51,19 +51,20 @@ using namespace UPnPP;
 static char *thisprog;
 
 static int op_flags;
-#define OPT_MOINS 0x1
-#define OPT_h     0x2
-#define OPT_p     0x4
-#define OPT_d     0x8
-#define OPT_D     0x10
-#define OPT_c     0x20
-#define OPT_l     0x40
-#define OPT_f     0x80
-#define OPT_q     0x100
-#define OPT_i     0x200
-#define OPT_P     0x400
-#define OPT_O     0x800
-#define OPT_v     0x1000
+#define OPT_MOINS 0x1   
+#define OPT_D     0x2   
+#define OPT_O     0x4   
+#define OPT_P     0x8   
+#define OPT_c     0x10  
+#define OPT_d     0x20  
+#define OPT_f     0x40  
+#define OPT_h     0x80  
+#define OPT_i     0x100 
+#define OPT_l     0x200 
+#define OPT_m     0x400 
+#define OPT_p     0x800 
+#define OPT_q     0x1000
+#define OPT_v     0x2000
 
 static const char usage[] = 
     "-c configfile \t configuration file to use\n"
@@ -78,8 +79,12 @@ static const char usage[] =
     "-P upport    \t specify port number to be used for UPnP\n"
     "-O 0|1\t decide if we run and export the OpenHome services\n"
     "-v      \tprint version info\n"
+    "-m <0|1|2|3> media server mode "
+    "(default, forked|only renderer|only media|combined)\n"
     "\n"
     ;
+
+enum MSMode {Forked, RdrOnly, MSOnly, Combined};
 
 static void
 versionInfo(FILE *fp)
@@ -162,6 +167,11 @@ static void setupsigs()
 
 int main(int argc, char *argv[])
 {
+    vector<string> savedargs;
+    for (int i = 0; i < argc; i++) {
+        savedargs.push_back(argv[i]);
+    }
+    
     // Path for the sc2mpd command, or empty
     string sc2mpdpath;
 
@@ -190,7 +200,10 @@ int main(int argc, char *argv[])
     string iface;
     unsigned short upport = 0;
     string upnpip;
-
+    int msm = 0;
+    bool inprocessms = false;
+    bool msonly = false;
+    
     const char *cp;
     if ((cp = getenv("UPMPD_HOST")))
         mpdhost = cp;
@@ -226,6 +239,8 @@ int main(int argc, char *argv[])
                 iface = *(++argv); argc--; goto b1;
             case 'l':   op_flags |= OPT_l; if (argc < 2)  Usage();
                 loglevel = atoi(*(++argv)); argc--; goto b1;
+            case 'm':   op_flags |= OPT_m; if (argc < 2)  Usage();
+                msm = atoi(*(++argv)); argc--; goto b1;
             case 'O': {
                 op_flags |= OPT_O; 
                 if (argc < 2)  Usage();
@@ -247,9 +262,11 @@ int main(int argc, char *argv[])
     b1: argc--; argv++;
     }
 
-    if (argc != 0)
+    if (argc != 0 || msm < 0 || msm > 3) {
         Usage();
-
+    }
+    MSMode msmode = MSMode(msm);
+    
     UpMpd::Options opts;
 
     string cachedir;
@@ -346,8 +363,27 @@ int main(int argc, char *argv[])
         if (g_config->get("scsendermpdport", value))
             sendermpdport = atoi(value.c_str());
 
+        // If a streaming service is enabled (only tidal for now), we
+        // need a Media Server. The way we implement it depends on the
+        // command line option:
         if (g_config->hasNameAnywhere("tidaluser")) {
             enableMediaServer = true;
+            switch (msmode) {
+            case MSOnly:
+                inprocessms = true;
+                msonly = true;
+                break;
+            case Combined:
+                inprocessms = true;
+                msonly = false;
+                break;
+            case RdrOnly:
+            case Forked:
+            default:
+                inprocessms = false;
+                msonly = false;
+                break;
+            }
         }
     }
     if (Logger::getTheLog(logfilename) == 0) {
@@ -550,12 +586,18 @@ int main(int argc, char *argv[])
     // Create unique ID
     string UUID = LibUPnP::makeDevUUID(friendlyname, hwaddr);
 
+    // If running as mediaserver only, make sure we don't conflict
+    // with a possible renderer
+    if (msonly) {
+        pidfilename = pidfilename + "-ms";
+    }
+
     // Initialize the data we serve through HTTP (device and service
     // descriptions, icons, presentation page, etc.)
     unordered_map<string, VDirContent> files;
     if (!initHttpFs(files, g_datadir, UUID, friendlyname, enableAV, enableOH,
-                    !senderpath.empty(), enableL16, enableMediaServer, 
-                    iconpath, presentationhtml)) {
+                    !senderpath.empty(), enableL16, inprocessms,
+                    msonly, iconpath, presentationhtml)) {
         exit(1);
     }
 
@@ -579,25 +621,61 @@ int main(int argc, char *argv[])
         opts.options |= UpMpd::upmpdNoAV;
 
     // Initialize the UPnP root device object. 
-    UpMpd device(string("uuid:") + UUID, friendlyname, ohProductDesc,
-                 files, mpdclip, opts);
-    dev = &device;
+    UpMpd *mediarenderer = nullptr;
+    if (!msonly) {
+        mediarenderer = new UpMpd(string("uuid:") + UUID, friendlyname,
+                                  ohProductDesc, files, mpdclip, opts);
+    }
 
-    MediaServer *devmedia = nullptr;
-    if (enableMediaServer) {
+    MediaServer *mediaserver = nullptr;
+    unordered_map<string, VDirContent> emptyfiles =
+        unordered_map<string, VDirContent>();
+    unordered_map<string, VDirContent> *msfiles = &emptyfiles;
+    vector<string> args{"-m", "2"};
+    ExecCmd cmd;
+    
+    if (inprocessms) {
+        if (op_flags & OPT_m) {
+            msfiles = &files;
+        }
 	// Create the Media Server embedded device object. There needs
 	// be no reference to the root object because there can be
 	// only one (libupnp restriction)
-	devmedia = new MediaServer(string("uuid:") + uuidMediaServer(UUID),
-				   friendlyNameMediaServer(friendlyname));
+	mediaserver = new MediaServer(string("uuid:") + uuidMediaServer(UUID),
+                                      friendlyNameMediaServer(friendlyname),
+                                      *msfiles);
+    } else if (enableMediaServer) {
+        // Fork process for media server, replacing whatever -m option
+        // was given with -m 2 (ms only)
+        string cmdpath(savedargs[0]);
+        for (unsigned int i = 1; i < savedargs.size(); i++) {
+            string sa(savedargs[i]);
+            if (sa[sa.length()-1] == 'm') {
+                sa = sa.substr(0, sa.length()-1);
+                if (int(i) == argc -1)
+                    Usage();
+                i++;
+            }
+            if (!sa.empty() && sa.compare("-")) {
+                args.push_back(sa);
+            }
+        }
+        cmd.startExec(cmdpath, args, false, false);
     }
-    UPMPD_UNUSED(devmedia);
+    UPMPD_UNUSED(mediaserver);
     
     // And forever generate state change events.
     LOGDEB("Entering event loop" << endl);
     setupsigs();
-    device.eventloop();
+    if (msonly) {
+        dev = mediaserver;
+        LOGDEB("Media server event loop" << endl);
+        mediaserver->eventloop();
+    } else {
+        LOGDEB("Renderer event loop" << endl);
+        dev = mediarenderer;
+        mediarenderer->eventloop();
+    }
     LOGDEB("Event loop returned" << endl);
-
     return 0;
 }
