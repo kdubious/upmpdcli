@@ -113,7 +113,8 @@ def trackentries(objid, tracks):
         li['dc:title'] = track.name
         li['discnumber'] = str(track.disc_num)
         li['duration'] = track.duration
-        li['releasedate'] = track.album.release_date if track.album.release_date
+        if track.album.release_date:
+            li['releasedate'] = track.album.release_date 
 
         entries.append(li)
     return entries
