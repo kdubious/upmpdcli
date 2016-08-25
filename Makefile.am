@@ -85,6 +85,21 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/OHRadio.xml src/ContentDirectory.xml \
                   src/protocolinfo.txt src/presentation.html
 
+cdpluginsdir = $(pkgdatadir)/cdplugins/
+cdpluginspycomdir = $(pkgdatadir)/cdplugins/pycommon
+cdpluginspycom_DATA = \
+                    src/cdplugins/pycommon/cmdtalk.py \
+                    src/cdplugins/pycommon/cmdtalkplugin.py \
+                    src/cdplugins/pycommon/conftree.py \
+                    src/cdplugins/pycommon/routing.py
+cdpluginstidaldir = $(pkgdatadir)/cdplugins/tidal
+cdpluginstidal_DATA = \
+                  src/cdplugins/tidal/tidal.py 
+cdpluginstidallibdir = $(pkgdatadir)/cdplugins/tidal/tidalapi
+cdpluginstidallib_DATA = \
+                  src/cdplugins/tidal/tidalapi/__init__.py \
+                  src/cdplugins/tidal/tidalapi/models.py
+
 EXTRA_DIST = web.tar.gz rdpl2stream.tar.gz systemd/upmpdcli.service
 
 web.tar.gz: bogus
@@ -104,6 +119,7 @@ install-data-hook: web.tar.gz rdpl2stream.tar.gz
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < web.tar.gz 
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < rdpl2stream.tar.gz
 	(cd $(DESTDIR)$(pkgdatadir); test -d src_scripts || mkdir src_scripts)
+	(cd $(DESTDIR)/$(cdpluginstidaldir); chmod a+x tidal.py) 
 
 dist_pkgdata_SCRIPTS = samplescripts/Analog-Input
 
