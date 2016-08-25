@@ -181,6 +181,7 @@ int main(int argc, char *argv[])
     bool ownqueue = true;
     bool enableAV = true;
     bool enableOH = true;
+    bool enableMediaServer = false;
     bool ohmetapersist = true;
     string upmpdcliuser("upmpdcli");
     string pidfilename("/var/run/upmpdcli.pid");
@@ -344,6 +345,10 @@ int main(int argc, char *argv[])
         g_config->get("scsenderpath", senderpath);
         if (g_config->get("scsendermpdport", value))
             sendermpdport = atoi(value.c_str());
+
+        if (g_config->hasNameAnywhere("tidaluser")) {
+            enableMediaServer = true;
+        }
     }
     if (Logger::getTheLog(logfilename) == 0) {
         cerr << "Can't initialize log" << endl;
@@ -548,9 +553,8 @@ int main(int argc, char *argv[])
     // Initialize the data we serve through HTTP (device and service
     // descriptions, icons, presentation page, etc.)
     unordered_map<string, VDirContent> files;
-    bool enableMediaServer = true;
     if (!initHttpFs(files, g_datadir, UUID, friendlyname, enableAV, enableOH,
-                    !senderpath.empty(), enableL16, enableMediaServer,
+                    !senderpath.empty(), enableL16, enableMediaServer, 
                     iconpath, presentationhtml)) {
         exit(1);
     }
