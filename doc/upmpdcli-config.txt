@@ -1,28 +1,11 @@
 == Configuration file parameters for upmpdcli 
 
-=== MPD parameters 
-
-mpdhost:: Host MPD runs on. Defaults to localhost. This can also be specified as -h
-host
-
-mpdport:: IP port used by MPD Can
-also be specified as -p port. Defaults to the normal MPD port,
-6600
-
-mpdpassword:: MPD password. Password for
-connecting to *MPD* (only necessary if password access is enabled in the
-*MPD* configuration file).
-
-ownqueue:: Set if we own the MPD queue. If
-this is set (on by default), we own the MPD queue and will fearlessly clear
-it. Can also be specified as -q 0|1.
-
 === Upmpdcli general parameters 
 
-friendlyname:: "Friendly Name" for the UPnP Media
-Renderer. This will be displayed by most Control Points to
-identify the Renderer. Some OpenHome Control Points may display the
-'ohproductroom' value instead.
+friendlyname:: "Friendly Name" for the
+UPnP Media Renderer. This will be displayed by most Control
+Points to identify the Renderer. Some OpenHome Control Points may display
+the 'ohproductroom' value instead.
 
 upnpav:: Enable UPnP AV services
 (0/1). This is set by default, but it may useful to switch
@@ -34,17 +17,18 @@ openhome:: Enable OpenHome services
 for most usages. There should be little reason to turn it
 off.
 
-logfilename:: Log file name. Defaults to
-stderr. This can also be specified as -d logfilename.
+logfilename:: Log file
+name. Defaults to stderr. This can also be specified as -d
+logfilename.
 
-loglevel:: Log level. 0-4. Can also be
-specified as -l loglevel.
+loglevel:: Log
+level. Can also be specified as -l loglevel.
 
-checkcontentformat:: Check that input format is
-supported. Extract the protocolinfo information from the
-input metadata and check it against our supported formats. Set this
-option to 0 if a control point or media server sends good audio data with
-bad metadata. Default 1.
+checkcontentformat:: Check that
+input format is supported. Extract the protocolinfo
+information from the input metadata and check it against our supported
+formats. Set this option to 0 if a control point or media server sends
+good audio data with bad metadata.
 
 iconpath:: Path to the Renderer icon. The image will be displayed by Control Points which support
 it. The UPnP protocol has provisions for a renderer to send the URL to a
@@ -70,52 +54,82 @@ up. It can't presently be used for status updates (but I guess that you
 could put a redirect in there, to something more dynamic served by a real
 HTTP server). Default: '$pkgdatadir/presentation.html'.
 
-pidfile:: Name of lock file used to store the current
-process pid. Only used if the process is launched by user
-root. Used by the init system, and to avoid multiple instances. The only
-reason to change the value is if you actually want to have several
-instances running (also change cachedir in this case).
+pidfile:: Name of lock file used to store the
+current process pid. Only used if the process is launched
+by user root. Used by the init system, and to avoid multiple
+instances. The only reason to change the value is if you actually want to
+have several instances running (also change cachedir in this
+case).
+
+=== Tidal streaming service parameters 
+
+tidaluser:: Tidal user name. Your Tidal login name.
+
+tidalpass:: Tidal password. The password for your Tidal account.
+
+tidalquality:: Tidal stream quality. 'low' and 'high' are aac
+streams. 'lossless' is FLAC and will only work if your subscription
+allows it.
+
+=== MPD parameters 
+
+mpdhost:: Host MPD runs on. Defaults to localhost. This can also be specified as -h
+host
+
+mpdport:: IP port used by
+MPD Can also be specified as -p port. Defaults to the
+normal MPD port, 6600
+
+mpdpassword:: MPD
+password. Password for connecting to MPD (only necessary
+if password access is enabled in the MPD configuration
+file).
+
+ownqueue:: Set if we own the MPD
+queue. If this is set (on by default), we own the MPD
+queue and will fearlessly clear it. Can also be specified as -q
+0|1.
 
 === UPnP network parameters 
 
-upnpiface:: Network interface to use for
-UPnP. libupnp/pupnp only supports communicating on a single
-interface and will use the first found, this allows forcing the use of
-another interface.
+upnpiface:: Network interface to
+use for UPnP. libupnp/pupnp only supports communicating on
+a single interface and will use the first found, this allows forcing the
+use of another interface.
 
 upnpip:: IP address to use for UPnP,
 alternative to using an interface name. 
 
-upnpport:: Port number used for
-UPnP. libupnp/pupnp defaults to using the first free port
-after 49152. Note that clients do not need to know about the value, which
-is automatically discovered.
+upnpport:: Port number
+used for UPnP. libupnp/pupnp defaults to using the first
+free port after 49152. Note that clients do not need to know about the
+value, which is automatically discovered.
 
 === Audio control hooks 
 
-onstart:: Command to run when playback is about to
-begin. Specify the full path to the
-program, e.g. /usr/bin/logger.
+onstart:: Command to run when playback is
+about to begin. Specify the full path to the program,
+e.g. /usr/bin/logger.
 
-onplay:: Command to run when MPD state switches to "PLAY".
- Specify the full path to the program,
+onplay:: Command to run when MPD state
+switches to "PLAY".   Specify the full path to the program,
 e.g. /usr/bin/logger.
 
 onstop:: Command to run when MPD state switches to
 "STOP". Specify the full path to the program,
 e.g. /usr/bin/logger.
 
-externalvolumecontrol:: Use external commands to manage
-the the sound volume (0/1). This is used in the case where MPD
-is unable to control the volume, but some other command can, for example
-if you have an external amp on which it is possible to set and read the
-volume through scripts. If set, the calls to MPD to set and read the volume
-will be replaced by executions of 'onvolumechange' and
-'getexternalvolume'
+externalvolumecontrol:: Use external command
+to manage the the sound volume (0/1). This is used in the
+case where MPD is unable to control the volume, but some other command
+can, for example if you have an external amp on which it is possible to
+set and read the volume through scripts. If set, the calls to MPD to set
+and read the volume will be replaced by executions of 'onvolumechange'
+and 'getexternalvolume'
 
-getexternalvolume:: Command to run for reading the sound
-volume. The command should write a 0-100 numeric value to
-stdout.
+getexternalvolume:: Command to run for reading
+the sound volume. The command should write a 0-100 numeric
+value to stdout.
 
 onvolumechange:: Command to run to set the
 volume. Used when 'externalvolumecontrol' is set.
@@ -137,79 +151,82 @@ artUrl = http://some.host/icon/path.png
 ----
 
 
-ohmanufacturername:: Manufacturer name. Does not vary at
-run-time. 
+ohmetapersist:: Save queue
+metadata to disk (0/1). This allows persistence of the
+metadata information across restarts, the default is 1, and there is no
+reason to turn it off.
 
-ohmanufacturerinfo:: Manufacturer information. Does not
-vary at run-time. 
+ohmetasleep:: Mimimum
+interval (Seconds) between two cache saves. Increasing this
+may improve playlist load speed on a slow device. The default is to start
+a new save as soon as the previous one is done (if the list changed again
+inbetween).
 
-ohmanufacturerurl:: URL for manufacturer web site. Does
-not vary at run-time. 
+ohmanufacturername:: Manufacturer
+name.  
 
-ohmanufacturerimageuri:: Uri for manufacturer’s logo. Does
-not vary at run-time. 
+ohmanufacturerinfo:: Manufacturer
+information.  
 
-ohmodelname:: Model name. Does not vary at
-run-time. 
+ohmanufacturerurl:: URL for manufacturer
+web site.  
 
-ohmodelinfo:: Model information. Does not vary at
-run-time. 
+ohmanufacturerimageuri:: Uri for
+manufacturer’s logo.  
 
-ohmodelurl:: URL for model web site. Does not vary at
-run-time. 
+ohmodelname:: Model name. 
 
-ohmodelimageuri:: Uri for model’s icon. Does not vary at
-run-time. 
+ohmodelinfo:: Model information. 
 
-ohproductname:: User-visible product name. By default
-this is set to ModelName. 
+ohmodelurl:: URL for model web
+site. 
 
-ohproductroom:: The name of the room where the Product
-is located. Set to “Main Room” by default, displayed in
-place of the "friendly name" by some control points.  ProductRoom is used
-to group the Product with other related Products in the same physical
-room (e.g. a source with a pre-amp). Products which are physically linked
-must always share the same ProductRoom name.
+ohmodelimageuri:: Uri for model’s
+icon.  
 
-ohproductinfo:: Product information. Does not vary at
-run-time. 
+ohproductname:: User-visible product
+name. By default this is set to ModelName. 
 
-ohproducturl:: URL for product web site. This may be the
-UPnP presentation page. 
+ohproductroom:: The name of the room where
+the Product is located. Set to “Main Room” by default,
+displayed in place of the "friendly name" by some control points.
+ProductRoom is used to group the Product with other related Products in
+the same physical room (e.g. a source with a pre-amp). Products which are
+physically linked must always share the same ProductRoom
+name.
 
-ohproductimageuri:: Uri for product image. Does not vary
-at run-time. 
+ohproductinfo:: Product information.
+ 
 
-ohmetapersist:: Save queue metadata to disk
-(0/1). This allows persistence of the metadata information
-across restarts, the default is 1, and there is no reason to turn it
-off.
+ohproducturl:: URL for product web
+site. This may be the UPnP presentation page. 
 
-ohmetasleep:: Mimimum interval (Seconds) between two
-cache saves. Increasing this may improve playlist load
-speed on a slow device. The default is to start a new save as soon as the
-previous one is done (if the list changed again inbetween).
+ohproductimageuri:: Uri for product
+image.  
 
 === Songcast Receiver parameters 
 
 sclogfilename:: Log file name for sc2mpd (default
 stderr) The value *must not* be the same as the one used
-for upmpdcli.
+for upmpdcli (except if empty).
 
-scloglevel:: Log verbosity for sc2mpd. 
+scloglevel:: Log verbosity for
+sc2mpd. 
 
-scplaymethod:: sc2mpd play method
-(mpd/alsa). With this set as 'alsa', sc2mpd will send the
-audio directly to the sound driver, which is the only way to really avoid
-skips and control the synchronization in multi-room setups.
+scplaymethod:: sc2mpd
+play method (mpd/alsa). With this set as 'alsa', sc2mpd
+will send the audio directly to the sound driver, which is the only way
+to really avoid skips and control the synchronization in multi-room
+setups.
 
-schttpport:: Port used by sc2mpd for MPD to connect
-to. Used only for scplaymethod=mpd. sc2mpd only accepts
-connections from localhost.
+schttpport:: Port
+used by sc2mpd for MPD to connect to. Used only for
+scplaymethod=mpd. sc2mpd only accepts connections from
+localhost.
 
-scalsadevice:: Alsa device used by sc2mpd for playing
-audio. Only used for scplaymethod=alsa. Use 'aplay -L' to
-see the possible values.
+scalsadevice:: Alsa device used by sc2mpd
+for playing audio. Only used for scplaymethod=alsa. Use
+'aplay -L' to see the possible values.
 
 sccvttype:: sc2mpd resampling method. 
 Only used for scplaymethod=alsa. sc2mpd uses libsamplerate. The default
@@ -223,26 +240,26 @@ serious CPU.  BEST_QUALITY uses approx 25% cpu on a core i7
 FASTEST is 4-5%. Given that this is measured for the full process, probably
 a couple % for the conversion in fact.
 
-sc2mpd:: Path to sc2mpd. Only useful if it
-is not in /usr/bin and the location is not in the $PATH for the init
-scripts.
+sc2mpd:: Path to
+sc2mpd. Only useful if it is not in /usr/bin and the
+location is not in the $PATH for the init scripts.
 
 === Songcast Sender parameters 
 
-scsenderpath:: Path to the script which starts the
-auxiliary mpd and the sender process. 
+scsenderpath:: Path to the script
+(scmakempdsender) which starts the auxiliary mpd and the sender
+process. Empty and searched in PATH by default. 
 
-scstreamscaled:: Decide if we scale the songcast
-stream. If set, MPD software volume control will be applied
-to the stream. True by default: using a Control Point to set the volume
-on the upmpdcli instance which started the Sender affects the volume for
-all Receivers.
+scstreamscaled:: Decide if we
+scale the songcast stream. If set, MPD software volume
+control will be applied to the stream. True by default: using a Control
+Point to set the volume on the upmpdcli instance which started the Sender
+affects the volume for all Receivers.
 
-scsendermpdport:: localhost port to use by the auxiliary
-mpd. 
+scsendermpdport:: localhost port to be used by the auxiliary mpd. 
 
-scripts_dir:: Location for the scripts used to set up
-additional external sources. See the Songcast Sender
-support documentation page.
+scripts_dir:: Location for the scripts used
+to set up additional external sources. See the Songcast
+Sender support documentation page.
 
 

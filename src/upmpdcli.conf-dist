@@ -80,6 +80,20 @@
 # case).</descr></var>
 #pidfile = /var/run/upmpdcli.pid
 
+# <grouptitle>Tidal streaming service parameters</grouptitle>
+
+# <var name="tidaluser" type="string"><brief>Tidal user name.</brief>
+# <descr>Your Tidal login name.</descr></var>
+tidaluser = your tidal user name
+# <var name="tidalpass" type="string"><brief>Tidal password.</brief>
+# <descr>The password for your Tidal account.</descr></var>
+tidalpass = your Tidal password
+# <var name="tidalquality" type="cstr" "values="low high lossless">
+# <brief>Tidal stream quality.</brief> <descr>'low' and 'high' are aac
+# streams. 'lossless' is FLAC and will only work if your subscription
+# allows it.</descr></var>
+tidalquality = low/high/lossless
+
 # <grouptitle>MPD parameters</grouptitle>
 
 # <var name="mpdhost" type="string"><brief>Host MPD runs on.</brief>
