@@ -17,29 +17,27 @@
 
 #include "conman.hxx"
 
-#include <upnp/upnp.h>                  // for UPNP_E_SUCCESS, etc
+#include <upnp/upnp.h>
 
-#include <functional>                   // for _Bind, bind, _1, _2
-#include <iostream>                     // for endl
-#include <map>                          // for _Rb_tree_const_iterator, etc
-#include <string>                       // for string, basic_string
-#include <utility>                      // for pair
-#include <vector>                       // for vector
+#include <functional>
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include "libupnpp/log.hxx"             // for LOGDEB
-#include "libupnpp/soaphelp.hxx"        // for SoapOutgoing, SoapIncoming
-
-#include "upmpd.hxx"                    // for UpMpd
+#include "libupnpp/log.hxx"
+#include "libupnpp/soaphelp.hxx"
 
 using namespace std;
 using namespace std::placeholders;
 using namespace UPnPP;
+using namespace UPnPProvider;
 
 static const string sTpCM("urn:schemas-upnp-org:service:ConnectionManager:1");
 static const string sIdCM("urn:upnp-org:serviceId:ConnectionManager");
 
-UpMpdConMan::UpMpdConMan(UpMpd *dev)
-    : UpnpService(sTpCM, sIdCM, dev)
+UpMpdConMan::UpMpdConMan(UpnpDevice *dev, const string& protoinfo)
+    : UpnpService(sTpCM, sIdCM, dev), m_protoinfo(protoinfo)
 {
     dev->addActionMapping(this,"GetCurrentConnectionIDs", 
                           bind(&UpMpdConMan::getCurrentConnectionIDs, 
@@ -60,7 +58,7 @@ bool UpMpdConMan::getEventData(bool all, std::vector<std::string>& names,
     // we return nothing.
     if (all) {
         names.push_back("SinkProtocolInfo");
-        values.push_back(g_protocolInfo);
+        values.push_back(m_protoinfo);
     }
     return true;
 }
@@ -96,7 +94,7 @@ int UpMpdConMan::getProtocolInfo(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("UpMpdConMan::getProtocolInfo" << endl);
     data.addarg("Source", "");
-    data.addarg("Sink", g_protocolInfo);
+    data.addarg("Sink", m_protoinfo);
 
     return UPNP_E_SUCCESS;
 }

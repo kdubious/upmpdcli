@@ -17,19 +17,17 @@
 #ifndef _CONMAN_H_X_INCLUDED_
 #define _CONMAN_H_X_INCLUDED_
 
-#include <string>                       // for string
-#include <vector>                       // for vector
+#include <string>
+#include <vector>
 
-#include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
-
-class UpMpd;
+#include "libupnpp/device/device.hxx"
+#include "libupnpp/soaphelp.hxx"
 
 using namespace UPnPP;
 
 class UpMpdConMan : public UPnPProvider::UpnpService {
 public:
-    UpMpdConMan(UpMpd *dev);
+    UpMpdConMan(UPnPProvider::UpnpDevice *dev, const std::string& protoinfo);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
@@ -37,7 +35,7 @@ private:
     int getCurrentConnectionIDs(const SoapIncoming& sc, SoapOutgoing& data);
     int getCurrentConnectionInfo(const SoapIncoming& sc, SoapOutgoing& data);
     int getProtocolInfo(const SoapIncoming& sc, SoapOutgoing& data);
-
+    std::string m_protoinfo;
 };
 
 #endif /* _CONMAN_H_X_INCLUDED_ */
