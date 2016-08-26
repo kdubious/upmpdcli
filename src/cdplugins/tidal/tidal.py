@@ -141,9 +141,13 @@ def trackid_from_path(a):
     trackid = m.group(1)
     return trackid
 
-def get_mimetype():
-    #return 'audio/flac' if quality == Quality.lossless else 'audio/mpeg'
-    return 'audio/flac' if quality == Quality.lossless else 'video/x-flv'
+def get_mimeandkbs():
+    if quality == Quality.lossless:
+        return ('audio/flac', str(1411))
+    elif quality == Quality.high:
+        return ('video/x-flv', str(320))
+    else:
+        return ('video/x-flv', str(96))
 
 @dispatcher.record('trackuri')
 def trackuri(a):
@@ -158,14 +162,14 @@ def trackuri(a):
         host, tail = media_url.split('/', 1)
         app, playpath = tail.split('/mp4:', 1)
         media_url = 'rtmp://%s app=%s playpath=mp4:%s' % (host, app, playpath)
-    
-    return {'media_url' : media_url, 'mimetype' : get_mimetype()}
+    mime, kbs = get_mimeandkbs()
+    return {'media_url' : media_url, 'mimetype' : mime, 'kbs' : kbs}
 
 @dispatcher.record('mimetype')
 def mimetype(a):
     maybelogin()
-    mimetype = get_mimetype()
-    return {'mimetype' : get_mimetype()}
+    mime, kbs = get_mimeandkbs()
+    return {'mimetype' : mime, 'kbs' : kbs}
 
 # Bogus global for helping with reusing kodi addon code
 class XbmcPlugin:
