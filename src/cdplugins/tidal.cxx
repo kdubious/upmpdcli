@@ -21,9 +21,12 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 #include <string.h>
 #include <librtmp/rtmp.h>
 #include <upnp/upnp.h>
+
+#include <microhttpd.h>
 
 #include "cmdtalk.h"
 
@@ -32,6 +35,7 @@
 #include "log.hxx"
 #include "json.hpp"
 #include "main.hxx"
+#include "conftree.h"
 
 using namespace std;
 using namespace std::placeholders;
@@ -71,11 +75,15 @@ public:
 
 class Tidal::Internal {
 public:
-    Internal(const vector<string>& pth, const string& hp, const string& pp)
-	: path(pth), httphp(hp), pathprefix(pp) { }
+    Internal(Tidal *tidal, const vector<string>& pth, const string& hst,
+             int prt, const string& pp)
+	: plg(tidal), path(pth), host(hst), port(prt), pathprefix(pp), kbs(0),
+          mhd(0) { }
 
     bool maybeStartCmd(const string&);
     string get_media_url(const std::string& path);
+
+    // This also sets the kbs
     string get_mimetype(const std::string& path);
     
     int getinfo(const std::string&, VirtualDir::FileInfo*);
@@ -84,36 +92,144 @@ public:
     off_t seek(void *hdl, off_t offs, int whence);
     void close(void *hdl);
 
+    Tidal *plg;
     CmdTalk cmd;
     vector<string> path;
-    // Host and port part for the URIs we generate.
-    string httphp;
+    // Host and port for the URLs we generate when using the
+    // libupnp server (through vdir)
+    string host;
+    int port;
     // path prefix (this is used to redirect gets to us).
     string pathprefix;
     // mimetype is a constant for a given session, depend on quality
     // choice only. Initialized once
     string mimetype;
 
+    // kilobits/s
+    int kbs;
+    
     // Cached uri translation and stream: set in getinfo() and reused
-    // in open()
+    // in open() (used with miniserver/vdir)
     StreamHandle laststream;
+    // When using microhttpd
+    struct MHD_Daemon *mhd;
 };
+
+static int answer_to_connection(void *cls, struct MHD_Connection *connection, 
+                                const char *url, 
+                                const char *method, const char *version, 
+                                const char *upload_data, 
+                                size_t *upload_data_size, void **con_cls)
+{
+    LOGDEB("answer_to_connection: url " << url << " method " << method << 
+           " version " << version << endl);
+    Tidal::Internal *me = (Tidal::Internal*)cls;
+    
+    static int aptr;
+    if (&aptr != *con_cls) {
+        /* do not respond on first call */
+        *con_cls = &aptr;
+        return MHD_YES;
+    }
+
+    string path(url);
+
+    const char* stid =
+        MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND,
+                                    "trackId");
+    if (!stid || !*stid) {
+        LOGERR("answer_to_connection: no trackId in args\n");
+    }
+    path += string("?version=1&trackId=") + stid;
+
+    string media_url = me->get_media_url(path);
+    if (media_url.empty()) {
+        LOGERR("answer_to_connection: media_uri not found for URL: " <<
+               url << endl);
+        return MHD_NO;
+    }
+    static char data[] = "<html><body><p>Error!</p></body></html>";
+    struct MHD_Response *response =
+        MHD_create_response_from_buffer(strlen(data), data,
+                                        MHD_RESPMEM_PERSISTENT);
+    if (response == NULL) {
+        LOGERR("answer_to_connection: could not create response" << endl);
+        return MHD_NO;
+    }
+
+    LOGDEB("Tidal: redirecting to " << media_url << endl);
+    MHD_add_response_header (response, "Location", media_url.c_str());
+
+    int ret = MHD_queue_response(connection, 302, response);
+    MHD_destroy_response(response);
+    return ret;
+}
+
+static int accept_policy(void *, const struct sockaddr* sa,
+                         socklen_t addrlen)
+{
+    return MHD_YES;
+}
 
 bool Tidal::Internal::maybeStartCmd(const string& who)
 {
     LOGDEB1("Tidal::maybeStartCmd for: " << who << endl);
-    if (!cmd.running()) {
-	string pythonpath = string("PYTHONPATH=") +
-	    path_cat(g_datadir, "cdplugins/pycommon");
-	string configname = string("UPMPD_CONFIG=") + g_configfilename;
-	string hostport = string("UPMPD_HTTPHOSTPORT=") + httphp;
-	string pp = string("UPMPD_PATHPREFIX=") + pathprefix;
-	if (!cmd.startCmd("tidal.py", {/*args*/},
-			  {pythonpath, configname, hostport, pp},
-			  path)) {
-	    LOGERR("Tidal::maybeStartCmd: " << who << " startCmd failed\n");
-	    return false;
-	}
+    
+    if (cmd.running()) {
+        return true;
+    }
+
+    ConfSimple *conf = plg->m_services->getconfig(plg);
+    string tidalquality;
+    if (!conf || !conf->get("tidalquality", tidalquality)) {
+        LOGERR("Tidal: can't get parameter 'tidalquality' from config\n");
+        return false;
+    }
+
+    bool using_miniserver = tidalquality.compare("lossless");
+    
+    if (using_miniserver) {
+        VirtualDir::FileOps ops;
+        ops.getinfo = bind(&Tidal::Internal::getinfo, this, _1, _2);
+        ops.open = bind(&Tidal::Internal::open, this, _1);
+        ops.read = bind(&Tidal::Internal::read, this, _1, _2, _3);
+        ops.seek = bind(&Tidal::Internal::seek, this, _1, _2, _3);
+        ops.close = bind(&Tidal::Internal::close, this, _1);
+        plg->m_services->setfileops(plg, plg->m_services->getpathprefix(plg),
+                                    ops);
+    } else {
+        port = 49149;
+        string sport;
+        if (conf->get("tidalmicrohttpport", sport)) {
+            port = atoi(sport.c_str());
+        }
+        mhd = MHD_start_daemon(
+            MHD_USE_THREAD_PER_CONNECTION,
+            //MHD_USE_SELECT_INTERNALLY, 
+            port, 
+            /* Accept policy callback and arg */
+            accept_policy, NULL, 
+            /* handler and arg */
+            &answer_to_connection, this, 
+            MHD_OPTION_END);
+        if (nullptr == mhd) {
+            LOGERR("Tidal: MHD_start_daemon failed\n");
+            return false;
+        }
+    }
+        
+    string pythonpath = string("PYTHONPATH=") +
+        path_cat(g_datadir, "cdplugins/pycommon");
+    string configname = string("UPMPD_CONFIG=") + g_configfilename;
+    stringstream ss;
+    ss << host << ":" << port;
+    string hostport = string("UPMPD_HTTPHOSTPORT=") + ss.str();
+    string pp = string("UPMPD_PATHPREFIX=") + pathprefix;
+    if (!cmd.startCmd("tidal.py", {/*args*/},
+                      /* env */ {pythonpath, configname, hostport, pp},
+                      /* exec path */ path)) {
+        LOGERR("Tidal::maybeStartCmd: " << who << " startCmd failed\n");
+        return false;
     }
     return true;
 }
@@ -136,6 +252,10 @@ string Tidal::Internal::get_mimetype(const std::string& path)
 	    return string();
 	}
 	mimetype = it->second;
+	it = res.find("kbs");
+	if (it != res.end()) {
+            kbs = atoi(it->second.c_str());
+	}
 	LOGDEB("Tidal: got mimetype [" << mimetype << "]\n");
     }
     return mimetype;
@@ -169,6 +289,12 @@ string Tidal::Internal::get_media_url(const std::string& path)
     return laststream.media_url;
 }
 
+//////////////////////////////////
+// Note that the following vdir functions are currently actually not
+// used when dealing with an http url (lossless flac data), because we
+// now just use a redirect to the media url instead of gatewaying the
+// data in this case. Code kept around just in case.
+
 int Tidal::Internal::getinfo(const std::string& path, VirtualDir::FileInfo *inf)
 {
     LOGDEB("Tidal::getinfo: " << path << endl);
@@ -181,6 +307,7 @@ int Tidal::Internal::getinfo(const std::string& path, VirtualDir::FileInfo *inf)
     inf->file_length = -1;
     inf->last_modified = 0;
     inf->mime = get_mimetype(path);
+
     if (media_url.find("http") == 0) {
 	char *content_type;
 	int httpstatus;
@@ -199,6 +326,7 @@ int Tidal::Internal::getinfo(const std::string& path, VirtualDir::FileInfo *inf)
 	    LOGDEB("Tidal:getinfo: got file length "<< inf->file_length <<endl);
 	}
     }
+
     LOGDEB("Tidal::getinfo: returning\n");
     return 0;
 }
@@ -340,6 +468,14 @@ off_t Tidal::Internal::seek(void *_hdl, off_t offs, int whence)
 		   " HTTP status " << httpstatus << endl);
             return -1;
 	} 
+    } else if (hdl->rtmp && (kbs > 0)) {
+        // Convert offset to mS:
+        long long timestamp = 1000 * (hdl->offset / (kbs/8));
+        LOGDEB("Tidal::seek: seeking rtmp stream to " << timestamp/1000 <<
+               "S\n");
+        if (!RTMP_SendSeek(hdl->rtmp, timestamp)) {
+            return -1;
+        }
     }
     
     return 0;
@@ -353,23 +489,14 @@ void Tidal::Internal::close(void *_hdl)
 }
 
 
-VirtualDir::FileOps Tidal::getFileOps()
-{
-    VirtualDir::FileOps ops;
-    
-    ops.getinfo = bind(&Tidal::Internal::getinfo, m, _1, _2);
-    ops.open = bind(&Tidal::Internal::open, m, _1);
-    ops.read = bind(&Tidal::Internal::read, m, _1, _2, _3);
-    ops.seek = bind(&Tidal::Internal::seek, m, _1, _2, _3);
-    ops.close = bind(&Tidal::Internal::close, m, _1);
-    return ops;
-}
 
-
-Tidal::Tidal(const vector<string>& plgpath, const string& httphp,
-	     const string& pp)
-    : m(new Internal(plgpath, httphp, pp))
+Tidal::Tidal(const std::string& name, CDPluginServices *services)
+    : CDPlugin(name, services)
 {
+    m = new Internal(this, services->getexecpath(this),
+                     services->getupnpaddr(this),
+                     services->getupnpport(this),
+                     services->getpathprefix(this));
 }
 
 Tidal::~Tidal()

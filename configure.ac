@@ -43,6 +43,8 @@ SCCTL_LIBS=$LIBS
 
 AC_CHECK_LIB([rtmp], [RTMP_Alloc], [], [])
 AC_CHECK_LIB([upnp], [UpnpCloseHttpGet], [], [])
+AC_CHECK_LIB([microhttpd], [MHD_queue_response], [], [])
+
 UPMPDCLI_LIBS=$LIBS
 echo "UPMPDCLI_LIBS=$LIBS"
 

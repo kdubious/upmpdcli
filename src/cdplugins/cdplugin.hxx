@@ -19,11 +19,68 @@
 
 #include <string>
 #include "upmpdutils.hxx"
+#include "libupnpp/device/vdir.hxx"
 
-// Interface for media server modules
+class CDPlugin;
+class ConfSimple;
+
+/// Service/Environment interface for media server modules
+class CDPluginServices {
+public:
+    /// Returns something like "/tidal" (no end slash)
+    virtual std::string getpathprefix(CDPlugin *) = 0;
+
+    /// Retrieve the IP address and port for the libupnp server. URLs
+    /// intended to be served this way (by adding a vdir) should use
+    /// these as host/port
+    virtual std::string getupnpaddr(CDPlugin *) = 0;
+    virtual int getupnpport(CDPlugin *) = 0;
+
+    /// Add a virtual directory and set file operation interface. path
+    /// must be equal or begin with the pathprefix.
+    virtual bool setfileops(CDPlugin *, const std::string& path,
+                            UPnPProvider::VirtualDir::FileOps ops)= 0;
+
+    /// Access the main configuration file.
+    virtual ConfSimple *getconfig(CDPlugin *)= 0;
+    virtual const std::vector<std::string> getexecpath(CDPlugin *)= 0;
+};
+
+/// Interface to media server modules
+///
+/// The main operations, Browse and Search, return content as UpSong
+/// structures. At the very minimum, id, parentid, iscontainer and
+/// title should be properly set for each entry. Id is very important for
+/// directories (containers), because this is the main parameter to
+/// the browse call. title is what gets displayed in lists by the
+/// control point.
+///
+/// The rest of the UpSong fields are only meaningful for items
+/// (tracks), and only one is mandatory: uri.
+///
+/// The item uri will be used by the renderer for fetching the data to
+/// be played. Three types can be used:
+/// - A direct URL, usable by the renderer for fetching the data from
+///   wherever it is (for example a radio stream HTTP URL).
+/// - A vdir URL: this should have a host/port part matching the media
+///   server host/port (which can be obtained through the environment
+///   interface). Data will be fetched by libupnp using the vdir
+///   interface. This is simple but limited: the libupnp HTTP server
+///   does not emit "accept-range" headers, meaning that most CPs will
+///   not try range requests, and that seeking will not work. No
+///   redirects are possible. The URL path part should begin with the
+///   pathprefix, which is how the request will be routed to the
+///   appropriate plugin.
+/// - A libmicrohttpd URL. A plugin may start a microhttpd instance,
+///   and receive the connections directly. The host/port will be
+///   obtained from the configuration. The advantage is that redirects
+///   and range requests are possible, but it is a bit more
+///   complicated as some libmicrohttpd knowledge is required.
+/// 
 class CDPlugin {
 public:
-    CDPlugin() {
+    CDPlugin(const std::string& name, CDPluginServices *services)
+        : m_name(name), m_services(services) {
     }
     virtual ~CDPlugin() {
     }
@@ -35,7 +92,7 @@ public:
     /// Browse object at objid, which should be a container, and
     /// return its content. 
     ///
-    /// This reflects an UPnP Browse action, refer to UPnP documentation.
+    /// This reflects an UPnP Browse action. Refer to UPnP documentation.
     /// 
     /// @param objid the object to browse.
     /// @param stidx first entry to return.
@@ -69,6 +126,13 @@ public:
 	std::vector<UpSong>& entries,
 	const std::vector<std::string>& sortcrits = std::vector<std::string>())
     = 0;
+
+    const std::string& getname() {
+        return m_name;
+    }
+
+    std::string m_name;
+    CDPluginServices *m_services;
 };
 
 #endif /* _CDPLUGIN_H_INCLUDED_ */

@@ -23,13 +23,34 @@
 #include "libupnpp/device/device.hxx"
 #include "libupnpp/soaphelp.hxx"
 
+#include "cdplugins/cdplugin.hxx"
+
 using namespace UPnPP;
 
-class ContentDirectory : public UPnPProvider::UpnpService {
+class ContentDirectory : public UPnPProvider::UpnpService,
+                         public CDPluginServices {
 public:
     ContentDirectory(UPnPProvider::UpnpDevice *dev);
     ~ContentDirectory();
-    
+
+    /// Returns something like "/tidal" (no end slash)
+    virtual std::string getpathprefix(CDPlugin *);
+
+    /// Retrieve the IP address and port for the libupnp server. URLs
+    /// intended to be served this way (by adding a vdir) should use
+    /// these as host/port
+    virtual std::string getupnpaddr(CDPlugin *);
+    virtual int getupnpport(CDPlugin *);
+
+    /// Add a virtual directory and set file operation interface. path
+    /// must be equal or begin with the pathprefix.
+    virtual bool setfileops(CDPlugin *, const std::string& path,
+                            UPnPProvider::VirtualDir::FileOps ops);
+
+    /// Access the main configuration file.
+    virtual ConfSimple *getconfig(CDPlugin *);
+    virtual const std::vector<std::string> getexecpath(CDPlugin *);
+
 private:
     int actGetSearchCapabilities(const SoapIncoming& sc, SoapOutgoing& data);
     int actGetSortCapabilities(const SoapIncoming& sc, SoapOutgoing& data);

@@ -25,8 +25,7 @@
 // Tidal interface
 class Tidal : public CDPlugin {
 public:
-    Tidal(const std::vector<std::string>& plgpath,
-	  const std::string& httphp, const std::string& pathprefix);
+    Tidal(const std::string& name, CDPluginServices *services);
     virtual ~Tidal();
 
     // Returns totalmatches
@@ -42,10 +41,8 @@ public:
 	std::vector<UpSong>& entries,
 	const std::vector<std::string>& sortcrits = std::vector<std::string>());
 
-    UPnPProvider::VirtualDir::FileOps getFileOps();
-    
-private:
     class Internal;
+private:
     Internal *m;
 };
 

@@ -3,6 +3,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the `microhttpd' library (-lmicrohttpd). */
+#undef HAVE_LIBMICROHTTPD
+
 /* Define to 1 if you have the `mpdclient' library (-lmpdclient). */
 #undef HAVE_LIBMPDCLIENT
 

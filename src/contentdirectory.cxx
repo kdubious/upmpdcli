@@ -36,7 +36,6 @@
 #include "smallut.h"
 #include "upmpdutils.hxx"
 #include "main.hxx"
-#include "cdplugins/cdplugin.hxx"
 #include "cdplugins/tidal.hxx"
 
 using namespace std;
@@ -56,36 +55,22 @@ public:
     CDPlugin *pluginFactory(const string& appname) {
 	LOGDEB("ContentDirectory::pluginFactory: for " << appname << endl);
 
-	if (httphp.empty()) {
+	if (host.empty()) {
 	    UpnpDevice *dev;
 	    if (!service || !(dev = service->getDevice())) {
 		LOGERR("ContentDirectory::Internal: no service or dev ??\n");
 		return nullptr;
 	    }
-	    string host;
-	    unsigned short port;
-	    if (!dev->ipv4(&host, &port)) {
+	    unsigned short usport;
+	    if (!dev->ipv4(&host, &usport)) {
 		LOGERR("ContentDirectory::Internal: can't get server IP\n");
 		return nullptr;
 	    }
-	    ostringstream ss;
-	    ss << host << ":" << port;
-	    httphp = ss.str();
-	    LOGDEB("ContentDirectory: host:port: " << httphp << endl);
-	}
-	VirtualDir *dir = VirtualDir::getVirtualDir();
-	if (dir == nullptr) {
-	    LOGERR("CDPlugin::factory: getVirtualDir() failed\n");
-	    return nullptr;
+            port = usport;
+	    LOGDEB("ContentDirectory: host "<< host<< " port " << port << endl);
 	}
 	if (!appname.compare("tidal")) {
-	    string pthcdplugs = path_cat(g_datadir, "cdplugins");
-	    Tidal *tidal =
-		new Tidal({pthcdplugs, path_cat(pthcdplugs, appname)},
-			  httphp, "/tidal");
-	    if (tidal) {
-		dir->addVDir("/tidal", tidal->getFileOps());
-	    }
+	    Tidal *tidal = new Tidal("tidal", service);
 	    return tidal;
 	} else {
 	    return nullptr;
@@ -105,7 +90,8 @@ public:
     }
     unordered_map<string, CDPlugin *> plugins;
     ContentDirectory *service;
-    string httphp;
+    string host;
+    int port;
     string updateID;
 };
 
@@ -405,4 +391,54 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
     data.addarg("TotalMatches", out_TotalMatches);
     data.addarg("UpdateID", out_UpdateID);
     return UPNP_E_SUCCESS;
+}
+
+std::string ContentDirectory::getpathprefix(CDPlugin *plg)
+{
+    return string("/") + plg->getname();
+}
+
+
+std::string ContentDirectory::getupnpaddr(CDPlugin *)
+{
+    return m->host;
+}
+
+
+int ContentDirectory::getupnpport(CDPlugin *)
+{
+    return m->port;
+}
+
+
+bool ContentDirectory::setfileops(CDPlugin *plg, const std::string& path,
+                                  UPnPProvider::VirtualDir::FileOps ops)
+{
+    VirtualDir *dir = VirtualDir::getVirtualDir();
+    if (dir == nullptr) {
+        LOGERR("ContentDirectory::setfileops: getVirtualDir() failed\n");
+        return false;
+    }
+    string prefix = getpathprefix(plg);
+    if (path.find(prefix) != 0) {
+        LOGERR("ContentDirectory::setfileops: dir path should begin with: " <<
+               prefix);
+        return false;
+    }
+        
+    dir->addVDir(path, ops);
+    return true;
+}
+
+
+ConfSimple *ContentDirectory::getconfig(CDPlugin *)
+{
+    return g_config;
+}
+
+
+const std::vector<std::string> ContentDirectory::getexecpath(CDPlugin *plg)
+{
+    string pthcdplugs = path_cat(g_datadir, "cdplugins");
+    return {pthcdplugs, path_cat(pthcdplugs, plg->getname())};
 }
