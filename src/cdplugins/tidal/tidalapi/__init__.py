@@ -142,7 +142,7 @@ class Session(object):
         return self._map_request('artists/%s/similar' % artist_id, ret='artists')
 
     def get_artist_radio(self, artist_id):
-        return self._map_request('artists/%s/radio' % artist_id, params={'limit': 100}, ret='tracks')
+        return self._map_request('artists/%s/radio' % artist_id, params={'limit': 200}, ret='tracks')
 
     def get_featured(self):
         items = self.request('GET', 'promotions').json()['items']
@@ -164,7 +164,7 @@ class Session(object):
         return self._map_request('/'.join(['genres', genre_id, content_type]), ret=content_type)
 
     def get_track_radio(self, track_id):
-        return self._map_request('tracks/%s/radio' % track_id, params={'limit': 100}, ret='tracks')
+        return self._map_request('tracks/%s/radio' % track_id, params={'limit': 200}, ret='tracks')
 
     def get_track(self, track_id):
         return self._map_request('tracks/%s' % track_id, ret='track')
@@ -199,7 +199,7 @@ class Session(object):
     def search(self, field, value):
         params = {
             'query': value,
-            'limit': 50,
+            'limit': 200,
         }
         if field not in ['artist', 'album', 'playlist', 'track']:
             raise ValueError('Unknown field \'%s\'' % field)
