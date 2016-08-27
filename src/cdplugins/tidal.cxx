@@ -46,12 +46,13 @@ using namespace UPnPProvider;
 
 class StreamHandle {
 public:
-    StreamHandle() : avio(0), offset(0) {
+    StreamHandle(Tidal::Internal *plg) : avio(0), offset(0) {
     }
     ~StreamHandle() {
         clear();
     }
     void clear() {
+        plg = 0;
         if (avio)
             avio_close(avio);
         path.clear();
@@ -60,10 +61,11 @@ public:
         offset = 0;
         opentime = 0;
     }
+    Tidal::Internal *plg;
     AVIOContext *avio;
     string path;
     string media_url;
-    int len;
+    long long len;
     off_t offset;
     time_t opentime;
 };
@@ -73,6 +75,7 @@ public:
     Internal(Tidal *tidal, const vector<string>& pth, const string& hst,
              int prt, const string& pp)
 	: plg(tidal), path(pth), host(hst), port(prt), pathprefix(pp), kbs(0),
+          laststream(this),
           mhd(0) { }
 
     bool maybeStartCmd(const string&);
@@ -110,9 +113,72 @@ public:
     struct MHD_Daemon *mhd;
 };
 
-// Microhttpd connection handler. This is only used when working with
-// HTTP/FLAC. We re-build the complete url + query string
-// (&trackid=value), use this to retrieve a Tidal HTTP URL, and redirect to it.
+// Parse range header. 
+static void parseRanges(const string& ranges, vector<pair<int,int> >& oranges)
+{
+    oranges.clear();
+    string::size_type pos = ranges.find("bytes=");
+    if (pos == string::npos) {
+        return;
+    }
+    pos += 6;
+    bool done = false;
+    while(!done) {
+        string::size_type dash = ranges.find('-', pos);
+        string::size_type comma = ranges.find(',', pos);
+        string firstPart = dash != string::npos ? 
+            ranges.substr(pos, dash-pos) : "";
+        int start = firstPart.empty() ? 0 : atoi(firstPart.c_str());
+        string secondPart = dash != string::npos ? 
+            ranges.substr(dash+1, comma != string::npos ? 
+                          comma-dash-1 : string::npos) : "";
+        int fin = secondPart.empty() ? -1 : atoi(firstPart.c_str());
+        pair<int,int> nrange(start,fin);
+        oranges.push_back(nrange);
+        if (comma != string::npos) {
+            pos = comma + 1;
+        }
+        done = comma == string::npos;
+    }
+}
+
+static void ContentReaderFreeCallback(void *cls)
+{
+    StreamHandle *hdl = (StreamHandle*)cls;
+    delete hdl;
+}
+
+static ssize_t
+data_generator(void *cls, uint64_t pos, char *buf, size_t max)
+{
+    StreamHandle *hdl = (StreamHandle *)cls;
+    LOGDEB1("data_generator: pos " << pos << " max " << max << endl);
+    return hdl->plg->read(cls, buf, max);
+}
+
+static const char *ValueKindToCp(enum MHD_ValueKind kind)
+{
+    switch (kind) {
+    case MHD_RESPONSE_HEADER_KIND: return "Response header";
+    case MHD_HEADER_KIND: return "HTTP header";
+    case MHD_COOKIE_KIND: return "Cookies";
+    case MHD_POSTDATA_KIND: return "POST data";
+    case MHD_GET_ARGUMENT_KIND: return "GET (URI) arguments";
+    case MHD_FOOTER_KIND: return "HTTP footer";
+    default: return "Unknown";
+    }
+}
+
+static int print_out_key (void *cls, enum MHD_ValueKind kind, 
+                          const char *key, const char *value)
+{
+    LOGDEB(ValueKindToCp(kind) << ": " << key << " -> " << value << endl);
+    return MHD_YES;
+}
+
+// Microhttpd connection handler. We re-build the complete url + query
+// string (&trackid=value), use this to retrieve a Tidal URL, and
+// either redirect to it if it is http or manage the reading.
 static int answer_to_connection(void *cls, struct MHD_Connection *connection, 
                                 const char *url, 
                                 const char *method, const char *version, 
@@ -148,18 +214,62 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
         return MHD_NO;
     }
 
-    LOGDEB("Tidal: redirecting to " << media_url << endl);
+    if (media_url.find("http") == 0) {
+        LOGDEB("Tidal: redirecting to " << media_url << endl);
 
-    static char data[] = "<html><body></body></html>";
-    struct MHD_Response *response =
-        MHD_create_response_from_buffer(strlen(data), data,
-                                        MHD_RESPMEM_PERSISTENT);
+        static char data[] = "<html><body></body></html>";
+        struct MHD_Response *response =
+            MHD_create_response_from_buffer(strlen(data), data,
+                                            MHD_RESPMEM_PERSISTENT);
+        if (response == NULL) {
+            LOGERR("answer_to_connection: could not create response" << endl);
+            return MHD_NO;
+        }
+        MHD_add_response_header (response, "Location", media_url.c_str());
+        int ret = MHD_queue_response(connection, 302, response);
+        MHD_destroy_response(response);
+        return ret;
+    }
+
+    // rtmp stream, read and send.
+    MHD_get_connection_values(connection, MHD_HEADER_KIND, &print_out_key, 0);
+    const char* rangeh = MHD_lookup_connection_value(connection, 
+                                                     MHD_HEADER_KIND, "range");
+    vector<pair<int,int> > ranges;
+    if (rangeh) {
+        LOGDEB("answer_to_connection: got ranges\n");
+        parseRanges(rangeh, ranges);
+    }
+
+    // open will ccall get_media_url again but this is ok because the
+    // value is cached
+    StreamHandle *hdl = (StreamHandle*)me->open(path);
+
+    long long size = hdl->len;
+    LOGDEB("answer_to_connection: stream size: " << size << endl);
+    
+    if (ranges.size()) {
+        if (ranges[0].second != -1) {
+            size = ranges[0].second - ranges[0].first + 1;
+        }
+        me->seek(hdl, ranges[0].first, 0);
+    }
+
+    struct MHD_Response *response = 
+        MHD_create_response_from_callback(size, 100*1024, &data_generator, 
+                                          hdl, ContentReaderFreeCallback);
     if (response == NULL) {
-        LOGERR("answer_to_connection: could not create response" << endl);
+        LOGERR("httpgate: answer: could not create response" << endl);
         return MHD_NO;
     }
-    MHD_add_response_header (response, "Location", media_url.c_str());
-    int ret = MHD_queue_response(connection, 302, response);
+    MHD_add_response_header (response, "Content-Type", "application/flv");
+    if (size > 0) {
+        string ssize;
+        lltodecstr(size, ssize);
+        MHD_add_response_header (response, "Content-Length", ssize.c_str());
+    }
+    MHD_add_response_header (response, "Accept-Ranges", "bytes");
+    int ret = MHD_queue_response (connection, MHD_HTTP_OK, response);
     MHD_destroy_response(response);
     return ret;
 }
@@ -185,38 +295,28 @@ bool Tidal::Internal::maybeStartCmd(const string& who)
         return false;
     }
 
-    bool using_miniserver = tidalquality.compare("lossless");
     
-    if (using_miniserver) {
+    if (tidalquality.compare("lossless")) {
         av_register_all();
         avformat_network_init();
-        VirtualDir::FileOps ops;
-        ops.getinfo = bind(&Tidal::Internal::getinfo, this, _1, _2);
-        ops.open = bind(&Tidal::Internal::open, this, _1);
-        ops.read = bind(&Tidal::Internal::read, this, _1, _2, _3);
-        ops.seek = bind(&Tidal::Internal::seek, this, _1, _2, _3);
-        ops.close = bind(&Tidal::Internal::close, this, _1);
-        plg->m_services->setfileops(plg, plg->m_services->getpathprefix(plg),
-                                    ops);
-    } else {
-        port = 49149;
-        string sport;
-        if (conf->get("tidalmicrohttpport", sport)) {
-            port = atoi(sport.c_str());
-        }
-        mhd = MHD_start_daemon(
-            MHD_USE_THREAD_PER_CONNECTION,
-            //MHD_USE_SELECT_INTERNALLY, 
-            port, 
-            /* Accept policy callback and arg */
-            accept_policy, NULL, 
-            /* handler and arg */
-            &answer_to_connection, this, 
-            MHD_OPTION_END);
-        if (nullptr == mhd) {
-            LOGERR("Tidal: MHD_start_daemon failed\n");
-            return false;
-        }
+    }
+    port = 49149;
+    string sport;
+    if (conf->get("tidalmicrohttpport", sport)) {
+        port = atoi(sport.c_str());
+    }
+    mhd = MHD_start_daemon(
+        MHD_USE_THREAD_PER_CONNECTION,
+        //MHD_USE_SELECT_INTERNALLY, 
+        port, 
+        /* Accept policy callback and arg */
+        accept_policy, NULL, 
+        /* handler and arg */
+        &answer_to_connection, this, 
+        MHD_OPTION_END);
+    if (nullptr == mhd) {
+        LOGERR("Tidal: MHD_start_daemon failed\n");
+        return false;
     }
         
     string pythonpath = string("PYTHONPATH=") +
@@ -331,10 +431,14 @@ void *Tidal::Internal::open(const string& path)
             LOGERR("Tidal: avio_open failed for [" << media_url << "]\n");
             return nullptr;
 	}
-	StreamHandle *hdl = new StreamHandle;
+	StreamHandle *hdl = new StreamHandle(this);
         hdl->path = path;
         hdl->media_url = media_url;
 	hdl->avio = avio;
+        LOGDEB("Tidal::open: avio_size returns " << avio_size(avio) << endl);
+        hdl->len = avio_size(avio);
+        if (hdl->len < 0)
+            hdl->len = -1;
         hdl->opentime = time(0);
 	return hdl;
     } else {
@@ -346,7 +450,7 @@ void *Tidal::Internal::open(const string& path)
 
 int Tidal::Internal::read(void *_hdl, char* buf, size_t cnt)
 {
-    LOGDEB("Tidal::read: " << cnt << endl);
+    LOGDEB1("Tidal::read: " << cnt << endl);
     if (!_hdl)
 	return -1;
 
@@ -364,7 +468,7 @@ int Tidal::Internal::read(void *_hdl, char* buf, size_t cnt)
             LOGERR("Tidal: avio_read(" << cnt << ") failed\n");
             return -1;
 	}
-	LOGDEB("Tidal::read: total read: " << totread << endl);
+	LOGDEB1("Tidal::read: total read: " << totread << endl);
         hdl->offset += totread;
 	return int(totread);
     } else {
@@ -469,8 +573,19 @@ int Tidal::browse(const std::string& objid, int stidx, int cnt,
     if (!m->maybeStartCmd("browse")) {
 	return -1;
     }
+    string sbflg;
+    switch (flg) {
+    case CDPlugin::BFMeta:
+        sbflg = "meta";
+        break;
+    case CDPlugin::BFChildren:
+    default:
+        sbflg = "children";
+        break;
+    }
+
     unordered_map<string, string> res;
-    if (!m->cmd.callproc("browse", {{"objid", objid}}, res)) {
+    if (!m->cmd.callproc("browse", {{"objid", objid}, {"flag", sbflg}}, res)) {
 	LOGERR("Tidal::browse: slave failure\n");
 	return -1;
     }

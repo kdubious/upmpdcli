@@ -120,15 +120,15 @@ def trackentries(objid, tracks):
     return entries
 
 def direntry(id, pid, title):
-    return {'id': id, 'pid' : pid, 'tt':title, 'tp':'ct'}
+    return {'id': id, 'pid' : pid, 'tt': title, 'tp':'ct'}
 
 def direntries(objid, ttidlist):
     content = []
     for tt,id in ttidlist:
-        content.append(direntry(objid+'$'+id, objid, tt))
+        content.append(direntry(objid + '$' + id, objid, tt))
     return content
 
-def trackid_from_path(a):
+def trackid_from_urlpath(a):
     if 'path' not in a:
         raise Exception("No path in args")
     path = a['path']
@@ -158,7 +158,7 @@ def mimetype(a):
 @dispatcher.record('trackuri')
 def trackuri(a):
     msgproc.log("trackuri: [%s]" % a)
-    trackid = trackid_from_path(a)
+    trackid = trackid_from_urlpath(a)
     
     maybelogin()
     media_url = session.get_media_url(trackid)
@@ -211,14 +211,23 @@ def browse(a):
     msgproc.log("browse: [%s]" % a)
     if 'objid' not in a:
         raise Exception("No objid in args")
-
     objid = a['objid']
+    bflg = a['flag'] if 'flag' in a else 'children'
+    
     if re.match('0\$tidal\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
-    xbmcplugin.objid = objid
     maybelogin()
+
+    xbmcplugin.objid = objid
     idpath = objid.replace('0$tidal$', '', 1)
-    plugin.run([idpath])
+    if bflg == 'meta':
+        m = re.match('.*\$(.+)$', idpath)
+        if m:
+            trackid = m.group(1)
+            track = session.get_track(trackid)
+            track_list([track])
+    else:
+        plugin.run([idpath])
     #msgproc.log("%s" % xbmcplugin.entries)
     encoded = json.dumps(xbmcplugin.entries)
     return {"entries" : encoded}

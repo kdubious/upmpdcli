@@ -248,7 +248,7 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
     stringToStrings(in_SortCriteria, sortcrits);
 
     CDPlugin::BrowseFlag bf;
-    if (in_BrowseFlag.compare("BrowseMetadata")) {
+    if (!in_BrowseFlag.compare("BrowseMetadata")) {
 	bf = CDPlugin::BFMeta;
     } else {
 	bf = CDPlugin::BFChildren;
