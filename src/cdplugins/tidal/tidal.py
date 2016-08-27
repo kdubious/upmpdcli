@@ -149,6 +149,12 @@ def get_mimeandkbs():
     else:
         return ('video/x-flv', str(96))
 
+@dispatcher.record('mimetype')
+def mimetype(a):
+    maybelogin()
+    mime, kbs = get_mimeandkbs()
+    return {'mimetype' : mime, 'kbs' : kbs}
+
 @dispatcher.record('trackuri')
 def trackuri(a):
     msgproc.log("trackuri: [%s]" % a)
@@ -164,12 +170,6 @@ def trackuri(a):
         media_url = 'rtmp://%s app=%s playpath=mp4:%s' % (host, app, playpath)
     mime, kbs = get_mimeandkbs()
     return {'media_url' : media_url, 'mimetype' : mime, 'kbs' : kbs}
-
-@dispatcher.record('mimetype')
-def mimetype(a):
-    maybelogin()
-    mime, kbs = get_mimeandkbs()
-    return {'mimetype' : mime, 'kbs' : kbs}
 
 # Bogus global for helping with reusing kodi addon code
 class XbmcPlugin:

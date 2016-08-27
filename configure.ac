@@ -41,7 +41,7 @@ AC_CHECK_LIB([mpdclient], [mpd_connection_new], [],
                           AC_MSG_ERROR([libmpdclient not found]))
 SCCTL_LIBS=$LIBS
 
-AC_CHECK_LIB([rtmp], [RTMP_Alloc], [], [])
+AC_CHECK_LIB([avformat], [av_register_all], [], [])
 AC_CHECK_LIB([upnp], [UpnpCloseHttpGet], [], [])
 AC_CHECK_LIB([microhttpd], [MHD_queue_response], [], [])
 

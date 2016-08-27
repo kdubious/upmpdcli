@@ -3,6 +3,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the `avformat' library (-lavformat). */
+#undef HAVE_LIBAVFORMAT
+
 /* Define to 1 if you have the `microhttpd' library (-lmicrohttpd). */
 #undef HAVE_LIBMICROHTTPD
 
@@ -11,9 +14,6 @@
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
-
-/* Define to 1 if you have the `rtmp' library (-lrtmp). */
-#undef HAVE_LIBRTMP
 
 /* Define to 1 if you have the `upnp' library (-lupnp). */
 #undef HAVE_LIBUPNP

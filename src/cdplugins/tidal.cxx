@@ -23,13 +23,15 @@
 #include <vector>
 #include <sstream>
 #include <string.h>
-#include <librtmp/rtmp.h>
 #include <upnp/upnp.h>
-
 #include <microhttpd.h>
+extern "C" {
+#include <libavformat/avio.h>
+#include <libavformat/avformat.h>
+}
+
 
 #include "cmdtalk.h"
-
 #include "pathut.h"
 #include "smallut.h"
 #include "log.hxx"
@@ -44,30 +46,23 @@ using namespace UPnPProvider;
 
 class StreamHandle {
 public:
-    StreamHandle() : rtmp(nullptr), http_handle(nullptr), offset(0) {
+    StreamHandle() : avio(0), offset(0) {
     }
     ~StreamHandle() {
         clear();
     }
     void clear() {
-        if (rtmp) {
-	    RTMP_Close(rtmp);
-	    RTMP_Free(rtmp);
-	}
-	if (http_handle) {
-            LOGDEB("StreamHandle:~: closing http handle\n");
-	    UpnpCloseHttpGet(http_handle);
-            LOGDEB("StreamHandle:~: close done\n");
-	}
+        if (avio)
+            avio_close(avio);
+        path.clear();
+        media_url.clear();
         len = 0;
         offset = 0;
-        media_url.clear();
-        path.clear();
+        opentime = 0;
     }
+    AVIOContext *avio;
     string path;
     string media_url;
-    RTMP *rtmp;
-    void *http_handle;
     int len;
     off_t offset;
     time_t opentime;
@@ -115,6 +110,9 @@ public:
     struct MHD_Daemon *mhd;
 };
 
+// Microhttpd connection handler. This is only used when working with
+// HTTP/FLAC. We re-build the complete url + query string
+// (&trackid=value), use this to retrieve a Tidal HTTP URL, and redirect to it.
 static int answer_to_connection(void *cls, struct MHD_Connection *connection, 
                                 const char *url, 
                                 const char *method, const char *version, 
@@ -132,23 +130,27 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
         return MHD_YES;
     }
 
+    // Rebuild URL + query
     string path(url);
-
     const char* stid =
         MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND,
                                     "trackId");
     if (!stid || !*stid) {
         LOGERR("answer_to_connection: no trackId in args\n");
+        return MHD_NO;
     }
     path += string("?version=1&trackId=") + stid;
 
+    // Translate to Tidal URL
     string media_url = me->get_media_url(path);
     if (media_url.empty()) {
-        LOGERR("answer_to_connection: media_uri not found for URL: " <<
-               url << endl);
+        LOGERR("answer_to_connection: no media_uri for: " << url << endl);
         return MHD_NO;
     }
-    static char data[] = "<html><body><p>Error!</p></body></html>";
+
+    LOGDEB("Tidal: redirecting to " << media_url << endl);
+
+    static char data[] = "<html><body></body></html>";
     struct MHD_Response *response =
         MHD_create_response_from_buffer(strlen(data), data,
                                         MHD_RESPMEM_PERSISTENT);
@@ -156,24 +158,21 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
         LOGERR("answer_to_connection: could not create response" << endl);
         return MHD_NO;
     }
-
-    LOGDEB("Tidal: redirecting to " << media_url << endl);
     MHD_add_response_header (response, "Location", media_url.c_str());
-
     int ret = MHD_queue_response(connection, 302, response);
     MHD_destroy_response(response);
     return ret;
 }
 
-static int accept_policy(void *, const struct sockaddr* sa,
-                         socklen_t addrlen)
+static int accept_policy(void *, const struct sockaddr* sa, socklen_t addrlen)
 {
     return MHD_YES;
 }
 
+// Called once for starting the Python program and do other initialization.
 bool Tidal::Internal::maybeStartCmd(const string& who)
 {
-    LOGDEB1("Tidal::maybeStartCmd for: " << who << endl);
+    LOGDEB("Tidal::maybeStartCmd for: " << who << endl);
     
     if (cmd.running()) {
         return true;
@@ -189,6 +188,8 @@ bool Tidal::Internal::maybeStartCmd(const string& who)
     bool using_miniserver = tidalquality.compare("lossless");
     
     if (using_miniserver) {
+        av_register_all();
+        avformat_network_init();
         VirtualDir::FileOps ops;
         ops.getinfo = bind(&Tidal::Internal::getinfo, this, _1, _2);
         ops.open = bind(&Tidal::Internal::open, this, _1);
@@ -261,8 +262,14 @@ string Tidal::Internal::get_mimetype(const std::string& path)
     return mimetype;
 }
 
+// Translate our http URL (based on the trackid), to an actual
+// temporary TIDAL one, which may be HTTP for hi-fi/lossless quality
+// FLAC format, or rtmp for high-low quality FLV aac format. The
+// Python code calls tidal.com to translate the trackid to a temp URL.
+// We cache the result for a few seconds to avoid multiple calls to tidal.
 string Tidal::Internal::get_media_url(const std::string& path)
 {
+    LOGDEB("Tidal::get_media_url: " << path << endl);
     if (!maybeStartCmd("get_media_url")) {
 	return string();
     }
@@ -289,45 +296,24 @@ string Tidal::Internal::get_media_url(const std::string& path)
     return laststream.media_url;
 }
 
-//////////////////////////////////
-// Note that the following vdir functions are currently actually not
-// used when dealing with an http url (lossless flac data), because we
-// now just use a redirect to the media url instead of gatewaying the
-// data in this case. Code kept around just in case.
 
 int Tidal::Internal::getinfo(const std::string& path, VirtualDir::FileInfo *inf)
 {
     LOGDEB("Tidal::getinfo: " << path << endl);
 
     laststream.clear();
+    LOGDEB("Tidal::getinfo: calling get_media_url\n");
     string media_url = get_media_url(path);
+    LOGDEB("Tidal::getinfo: get_media_url returned\n");
     if (media_url.empty()) {
+        LOGDEB("Tidal::getinfo: got empty media url for " << path << endl);
 	return -1;
     }
     inf->file_length = -1;
     inf->last_modified = 0;
     inf->mime = get_mimetype(path);
 
-    if (media_url.find("http") == 0) {
-	char *content_type;
-	int httpstatus;
-	int code = UpnpOpenHttpGet(media_url.c_str(), &laststream.http_handle,
-				     &content_type, &laststream.len,
-				     &httpstatus, 30);
-	LOGDEB("Tidal::getinfo: UpnpOpenHttpGet: ret " << code <<
-	       " mtype " << content_type << " length " << laststream.len <<
-	       " HTTP status " << httpstatus << endl);
-	if (code) {
-	    LOGERR("Tidal::getinfo: UpnpOpenHttpGet: ret " << code <<
-		   " mtype " << content_type << " length " << laststream.len <<
-		   " HTTP status " << httpstatus << endl);
-	} else {
-	    inf->file_length = laststream.len;
-	    LOGDEB("Tidal:getinfo: got file length "<< inf->file_length <<endl);
-	}
-    }
-
-    LOGDEB("Tidal::getinfo: returning\n");
+    LOGDEB("Tidal::getinfo: returning, mimetype is " << mimetype << "\n");
     return 0;
 }
 
@@ -338,61 +324,23 @@ void *Tidal::Internal::open(const string& path)
     if (media_url.empty()) {
 	return nullptr;
     }
-    if (media_url.find("http") == 0) {
-        if (laststream.http_handle == nullptr) {
-            char *content_type;
-            int httpstatus;
-            int code = UpnpOpenHttpGet(media_url.c_str(),
-                                       &laststream.http_handle,
-                                       &content_type, &laststream.len,
-                                       &httpstatus, 30);
-            LOGDEB("Tidal::open: UpnpOpenHttpGet: ret " << code <<
-                   " mtype " << content_type << " length " <<
-                   laststream.len <<
-                   " HTTP status " << httpstatus << endl);
-            if (code) {
-                LOGERR("Tidal::open: UpnpOpenHttpGet: ret " << code <<
-                       " mtype " << content_type << " length " <<
-                       laststream.len <<
-                       " HTTP status " << httpstatus << endl);
-                return nullptr;
-            }
-        } 
-        // Doc says to free content_type, but it causes malloc issues
-	//free(content_type);
+    if (media_url.find("http") != 0) {
+	AVIOContext *avio;
+	auto result = avio_open(&avio, media_url.c_str(), AVIO_FLAG_READ);
+	if (result != 0) {
+            LOGERR("Tidal: avio_open failed for [" << media_url << "]\n");
+            return nullptr;
+	}
 	StreamHandle *hdl = new StreamHandle;
-	hdl->http_handle = laststream.http_handle;
-	hdl->len = laststream.len;
+        hdl->path = path;
         hdl->media_url = media_url;
-        laststream.http_handle = nullptr;
-        laststream.clear();
+	hdl->avio = avio;
+        hdl->opentime = time(0);
 	return hdl;
     } else {
-	RTMP *rtmp = RTMP_Alloc();
-	RTMP_Init(rtmp);
-
-	// Writable copy of url
-	if (!RTMP_SetupURL(rtmp, strdup(media_url.c_str()))) {
-	    LOGERR("Tidal::open: RTMP_SetupURL failed for [" <<
-		   media_url << "]\n");
-	    RTMP_Free(rtmp);
-	    return nullptr;
-	}
-	if (!RTMP_Connect(rtmp, NULL)) {
-	    LOGERR("Tidal::open: RTMP_Connect failed for [" <<
-		   media_url << "]\n");
-	    RTMP_Free(rtmp);
-	    return nullptr;
-	}
-	if (!RTMP_ConnectStream(rtmp, 0)) {
-	    LOGERR("Tidal::open: RTMP_ConnectStream failed for [" <<
-		   media_url << "]\n");
-	    RTMP_Free(rtmp);
-	    return nullptr;
-	}
-	StreamHandle *hdl = new StreamHandle;
-	hdl->rtmp = rtmp;
-	return hdl;
+        // This should not happen.
+        LOGERR("Tidal::open: called for http stream ??\n");
+        return nullptr;
     }
 }
 
@@ -410,29 +358,17 @@ int Tidal::Internal::read(void *_hdl, char* buf, size_t cnt)
 
     StreamHandle *hdl = (StreamHandle *)_hdl;
 
-    if (hdl->rtmp) {
-	RTMP *rtmp = hdl->rtmp;
-	size_t totread = 0;
-	while (totread < cnt) {
-	    int didread = RTMP_Read(rtmp, buf+totread, cnt-totread);
-	    //LOGDEB("Tidal::read: RTMP_Read returned: " << didread << endl);
-	    if (didread <= 0)
-		break;
-	    totread += didread;
+    if (hdl->avio) {
+	auto totread = avio_read(hdl->avio, (unsigned char *)buf, cnt);
+	if (totread <= 0) {
+            LOGERR("Tidal: avio_read(" << cnt << ") failed\n");
+            return -1;
 	}
 	LOGDEB("Tidal::read: total read: " << totread << endl);
         hdl->offset += totread;
-	return totread > 0 ? totread : -1;
-    } else if (hdl->http_handle) {
-	int code = UpnpReadHttpGet(hdl->http_handle, buf, &cnt, 30);
-	if (code) {
-	    LOGERR("Tidal::read: UpnpReadHttpGet returned " << code << endl);
-	    return -1;
-	}
-        hdl->offset += cnt;
-	return int(cnt);
+	return int(totread);
     } else {
-	LOGERR("Tidal::read: neither rtmp nor http\n");
+	LOGERR("Tidal::read: no handle\n");
 	return -1;
     }
 }
@@ -442,42 +378,10 @@ off_t Tidal::Internal::seek(void *_hdl, off_t offs, int whence)
     StreamHandle *hdl = (StreamHandle *)_hdl;
     LOGDEB("Tidal::seek: offs "<< offs << " whence " << whence << " current " <<
            hdl->offset << endl);
-    if (whence == 0) {
-        hdl->offset = offs;
-    } else if (whence == 1) {
-        hdl->offset += offs;
-    } else if (whence == 2) {
-        hdl->offset = hdl->len + offs;
-    }
-    if (hdl->http_handle) {
-        UpnpCloseHttpGet(hdl->http_handle);
-	char *content_type;
-	int content_length;
-	int httpstatus;
-	int code = UpnpOpenHttpGetEx(hdl->media_url.c_str(), &hdl->http_handle,
-				     &content_type, &content_length,
-				     &httpstatus, hdl->offset, 2000000000, 30);
-        LOGERR("Tidal::seek to " << hdl->offset <<
-               " UpnpOpenHttpGetEx: ret " << code <<
-               " mtype " << content_type << " length " << content_length <<
-               " HTTP status " << httpstatus << endl);
-	if (code) {
-	    LOGERR("Tidal::seek to " << hdl->offset <<
-                   " UpnpOpenHttpGetEx: ret " << code <<
-		   " mtype " << content_type << " length " << content_length <<
-		   " HTTP status " << httpstatus << endl);
-            return -1;
-	} 
-    } else if (hdl->rtmp && (kbs > 0)) {
-        // Convert offset to mS:
-        long long timestamp = 1000 * (hdl->offset / (kbs/8));
-        LOGDEB("Tidal::seek: seeking rtmp stream to " << timestamp/1000 <<
-               "S\n");
-        if (!RTMP_SendSeek(hdl->rtmp, timestamp)) {
-            return -1;
-        }
-    }
-    
+    hdl->offset = avio_seek(hdl->avio, offs, whence);
+
+    if (hdl->offset < 0)
+        return -1;
     return 0;
 }
 
