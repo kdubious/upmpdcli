@@ -44,8 +44,13 @@ class Config(object):
     def __init__(self, quality=Quality.high):
         self.quality = quality
         self.api_location = 'https://api.tidalhifi.com/v1/'
-        self.api_token = 'P5Xbeo5LFvESeDy6' if self.quality == \
-            Quality.lossless else 'wdgaB1CilGA-S_s2',
+        # For some reason, Kodi uses the following keys. The 2nd one results
+        # in rtmp / flv stream containers which are ennoying to handle. No idea
+        # where it comes from (the other is from the older wimpy api), or why
+        # they do this.
+        #        self.api_token = 'P5Xbeo5LFvESeDy6' if self.quality == \
+        #            Quality.lossless else 'wdgaB1CilGA-S_s2',
+        self.api_token = 'P5Xbeo5LFvESeDy6'
 
 
 class Session(object):

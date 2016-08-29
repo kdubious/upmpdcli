@@ -19,6 +19,8 @@
 
 #define LOGGER_LOCAL_LOGINC 3
 
+#include <fcntl.h>
+
 #include <string>
 #include <vector>
 #include <sstream>
@@ -46,27 +48,24 @@ using namespace UPnPProvider;
 
 class StreamHandle {
 public:
-    StreamHandle(Tidal::Internal *plg) : avio(0), offset(0) {
+    StreamHandle(Tidal::Internal *plg) {
     }
     ~StreamHandle() {
         clear();
     }
     void clear() {
         plg = 0;
-        if (avio)
-            avio_close(avio);
         path.clear();
         media_url.clear();
         len = 0;
-        offset = 0;
         opentime = 0;
     }
+    
     Tidal::Internal *plg;
     AVIOContext *avio;
     string path;
     string media_url;
     long long len;
-    off_t offset;
     time_t opentime;
 };
 
@@ -80,29 +79,20 @@ public:
 
     bool maybeStartCmd(const string&);
     string get_media_url(const std::string& path);
-
     // This also sets the kbs
     string get_mimetype(const std::string& path);
-    
-    int getinfo(const std::string&, VirtualDir::FileInfo*);
-    void *open(const std::string&);
-    int read(void *hdl, char* buf, size_t cnt);
-    off_t seek(void *hdl, off_t offs, int whence);
-    void close(void *hdl);
 
     Tidal *plg;
     CmdTalk cmd;
     vector<string> path;
-    // Host and port for the URLs we generate when using the
-    // libupnp server (through vdir)
+    // Host and port for the URLs we generate.
     string host;
     int port;
-    // path prefix (this is used to redirect gets to us).
+    // path prefix (this is used by upmpdcli that a gets is for us).
     string pathprefix;
     // mimetype is a constant for a given session, depend on quality
     // choice only. Initialized once
     string mimetype;
-
     // kilobits/s
     int kbs;
     
@@ -113,72 +103,13 @@ public:
     struct MHD_Daemon *mhd;
 };
 
-// Parse range header. 
-static void parseRanges(const string& ranges, vector<pair<int,int> >& oranges)
-{
-    oranges.clear();
-    string::size_type pos = ranges.find("bytes=");
-    if (pos == string::npos) {
-        return;
-    }
-    pos += 6;
-    bool done = false;
-    while(!done) {
-        string::size_type dash = ranges.find('-', pos);
-        string::size_type comma = ranges.find(',', pos);
-        string firstPart = dash != string::npos ? 
-            ranges.substr(pos, dash-pos) : "";
-        int start = firstPart.empty() ? 0 : atoi(firstPart.c_str());
-        string secondPart = dash != string::npos ? 
-            ranges.substr(dash+1, comma != string::npos ? 
-                          comma-dash-1 : string::npos) : "";
-        int fin = secondPart.empty() ? -1 : atoi(firstPart.c_str());
-        pair<int,int> nrange(start,fin);
-        oranges.push_back(nrange);
-        if (comma != string::npos) {
-            pos = comma + 1;
-        }
-        done = comma == string::npos;
-    }
-}
-
-static void ContentReaderFreeCallback(void *cls)
-{
-    StreamHandle *hdl = (StreamHandle*)cls;
-    delete hdl;
-}
-
-static ssize_t
-data_generator(void *cls, uint64_t pos, char *buf, size_t max)
-{
-    StreamHandle *hdl = (StreamHandle *)cls;
-    LOGDEB1("data_generator: pos " << pos << " max " << max << endl);
-    return hdl->plg->read(cls, buf, max);
-}
-
-static const char *ValueKindToCp(enum MHD_ValueKind kind)
-{
-    switch (kind) {
-    case MHD_RESPONSE_HEADER_KIND: return "Response header";
-    case MHD_HEADER_KIND: return "HTTP header";
-    case MHD_COOKIE_KIND: return "Cookies";
-    case MHD_POSTDATA_KIND: return "POST data";
-    case MHD_GET_ARGUMENT_KIND: return "GET (URI) arguments";
-    case MHD_FOOTER_KIND: return "HTTP footer";
-    default: return "Unknown";
-    }
-}
-
-static int print_out_key (void *cls, enum MHD_ValueKind kind, 
-                          const char *key, const char *value)
-{
-    LOGDEB(ValueKindToCp(kind) << ": " << key << " -> " << value << endl);
-    return MHD_YES;
-}
 
 // Microhttpd connection handler. We re-build the complete url + query
 // string (&trackid=value), use this to retrieve a Tidal URL, and
-// either redirect to it if it is http or manage the reading.
+// redirect to it (HTTP). A previous version handled rtmp streams, and
+// had to read them. Look up the history if you need the code again
+// (the apparition of RTMP streams was apparently linked to the use of
+// a different API key).
 static int answer_to_connection(void *cls, struct MHD_Connection *connection, 
                                 const char *url, 
                                 const char *method, const char *version, 
@@ -229,49 +160,12 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
         int ret = MHD_queue_response(connection, 302, response);
         MHD_destroy_response(response);
         return ret;
-    }
-
-    // rtmp stream, read and send.
-    MHD_get_connection_values(connection, MHD_HEADER_KIND, &print_out_key, 0);
-    const char* rangeh = MHD_lookup_connection_value(connection, 
-                                                     MHD_HEADER_KIND, "range");
-    vector<pair<int,int> > ranges;
-    if (rangeh) {
-        LOGDEB("answer_to_connection: got ranges\n");
-        parseRanges(rangeh, ranges);
-    }
-
-    // open will ccall get_media_url again but this is ok because the
-    // value is cached
-    StreamHandle *hdl = (StreamHandle*)me->open(path);
-
-    long long size = hdl->len;
-    LOGDEB("answer_to_connection: stream size: " << size << endl);
-    
-    if (ranges.size()) {
-        if (ranges[0].second != -1) {
-            size = ranges[0].second - ranges[0].first + 1;
-        }
-        me->seek(hdl, ranges[0].first, 0);
-    }
-
-    struct MHD_Response *response = 
-        MHD_create_response_from_callback(size, 100*1024, &data_generator, 
-                                          hdl, ContentReaderFreeCallback);
-    if (response == NULL) {
-        LOGERR("httpgate: answer: could not create response" << endl);
+    } else {
+        LOGERR("Tidal: got non-http URL !: " << media_url << endl);
+        LOGERR("Tidal:   the code for handling these is gone !\n");
+        LOGERR("    will have to fetch it from git history\n");
         return MHD_NO;
-    }
-    MHD_add_response_header (response, "Content-Type", "application/flv");
-    if (size > 0) {
-        string ssize;
-        lltodecstr(size, ssize);
-        MHD_add_response_header (response, "Content-Length", ssize.c_str());
-    }
-    MHD_add_response_header (response, "Accept-Ranges", "bytes");
-    int ret = MHD_queue_response (connection, MHD_HTTP_OK, response);
-    MHD_destroy_response(response);
-    return ret;
+    } 
 }
 
 static int accept_policy(void *, const struct sockaddr* sa, socklen_t addrlen)
@@ -294,12 +188,7 @@ bool Tidal::Internal::maybeStartCmd(const string& who)
         LOGERR("Tidal: can't get parameter 'tidalquality' from config\n");
         return false;
     }
-
     
-    if (tidalquality.compare("lossless")) {
-        av_register_all();
-        avformat_network_init();
-    }
     port = 49149;
     string sport;
     if (conf->get("tidalmicrohttpport", sport)) {
@@ -363,10 +252,14 @@ string Tidal::Internal::get_mimetype(const std::string& path)
 }
 
 // Translate our http URL (based on the trackid), to an actual
-// temporary TIDAL one, which may be HTTP for hi-fi/lossless quality
-// FLAC format, or rtmp for high-low quality FLV aac format. The
-// Python code calls tidal.com to translate the trackid to a temp URL.
-// We cache the result for a few seconds to avoid multiple calls to tidal.
+// temporary TIDAL one, which will be an HTTP URL pointing to either
+// an AAC or a FLAC stream.
+// Older versions of this module handled AAC FLV transported over
+// RTMP, apparently because of the use of a different API key. Look up
+// the git history if you need this again.
+// The Python code calls tidal.com to translate the trackid to a temp
+// URL. We cache the result for a few seconds to avoid multiple calls
+// to tidal.
 string Tidal::Internal::get_media_url(const std::string& path)
 {
     LOGDEB("Tidal::get_media_url: " << path << endl);
@@ -395,107 +288,6 @@ string Tidal::Internal::get_media_url(const std::string& path)
     LOGDEB("Tidal: got media url [" << laststream.media_url << "]\n");
     return laststream.media_url;
 }
-
-
-int Tidal::Internal::getinfo(const std::string& path, VirtualDir::FileInfo *inf)
-{
-    LOGDEB("Tidal::getinfo: " << path << endl);
-
-    laststream.clear();
-    LOGDEB("Tidal::getinfo: calling get_media_url\n");
-    string media_url = get_media_url(path);
-    LOGDEB("Tidal::getinfo: get_media_url returned\n");
-    if (media_url.empty()) {
-        LOGDEB("Tidal::getinfo: got empty media url for " << path << endl);
-	return -1;
-    }
-    inf->file_length = -1;
-    inf->last_modified = 0;
-    inf->mime = get_mimetype(path);
-
-    LOGDEB("Tidal::getinfo: returning, mimetype is " << mimetype << "\n");
-    return 0;
-}
-
-void *Tidal::Internal::open(const string& path)
-{
-    LOGDEB("Tidal::open: " << path << endl);
-    string media_url = get_media_url(path);
-    if (media_url.empty()) {
-	return nullptr;
-    }
-    if (media_url.find("http") != 0) {
-	AVIOContext *avio;
-	auto result = avio_open(&avio, media_url.c_str(), AVIO_FLAG_READ);
-	if (result != 0) {
-            LOGERR("Tidal: avio_open failed for [" << media_url << "]\n");
-            return nullptr;
-	}
-	StreamHandle *hdl = new StreamHandle(this);
-        hdl->path = path;
-        hdl->media_url = media_url;
-	hdl->avio = avio;
-        LOGDEB("Tidal::open: avio_size returns " << avio_size(avio) << endl);
-        hdl->len = avio_size(avio);
-        if (hdl->len < 0)
-            hdl->len = -1;
-        hdl->opentime = time(0);
-	return hdl;
-    } else {
-        // This should not happen.
-        LOGERR("Tidal::open: called for http stream ??\n");
-        return nullptr;
-    }
-}
-
-int Tidal::Internal::read(void *_hdl, char* buf, size_t cnt)
-{
-    LOGDEB1("Tidal::read: " << cnt << endl);
-    if (!_hdl)
-	return -1;
-
-    // The pupnp http code has a default 1MB buffer size which is much
-    // too big for us (too slow, esp. because tidal will stall).
-    const int mybsize = 200 * 1024;
-    if (cnt > mybsize)
-        cnt = mybsize;
-
-    StreamHandle *hdl = (StreamHandle *)_hdl;
-
-    if (hdl->avio) {
-	auto totread = avio_read(hdl->avio, (unsigned char *)buf, cnt);
-	if (totread <= 0) {
-            LOGERR("Tidal: avio_read(" << cnt << ") failed\n");
-            return -1;
-	}
-	LOGDEB1("Tidal::read: total read: " << totread << endl);
-        hdl->offset += totread;
-	return int(totread);
-    } else {
-	LOGERR("Tidal::read: no handle\n");
-	return -1;
-    }
-}
-
-off_t Tidal::Internal::seek(void *_hdl, off_t offs, int whence)
-{
-    StreamHandle *hdl = (StreamHandle *)_hdl;
-    LOGDEB("Tidal::seek: offs "<< offs << " whence " << whence << " current " <<
-           hdl->offset << endl);
-    hdl->offset = avio_seek(hdl->avio, offs, whence);
-
-    if (hdl->offset < 0)
-        return -1;
-    return 0;
-}
-
-void Tidal::Internal::close(void *_hdl)
-{
-    LOGDEB("Tidal::close\n");
-    StreamHandle *hdl = (StreamHandle *)_hdl;
-    delete hdl;
-}
-
 
 
 Tidal::Tidal(const std::string& name, CDPluginServices *services)

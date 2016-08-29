@@ -15,7 +15,7 @@ audio captured on Windows or Mac OS X or of its own stream.
 know, it may be full of exploitable bugs. Do not run it on an
 Internet-facing host.
 
-[[upmpcli.audioformats]]
+[[upmpdcli.audioformats]]
 == Audio format support
 
 The actual audio decoding and playing is performed by *MPD*, the Music
@@ -30,6 +30,39 @@ client protocol). There is actually little reason to use raw PCM, and, for
 example, WAV streams, which have an identification header, will be handled
 just fine.
 
+However, recent versions do support audio/L16, but only with the
+development version of MPD (0.20) and there are conditions on the Media
+Server (it must output the audio formats parameters with the MIME
+type). See this Github issue for more details:
+https://github.com/medoc92/upmpdcli/issues/36#issuecomment-227761220
+
+[[upmpdcli.streaming]]
+== Streaming services support
+
+Upmpdcli versions 1.4 (not released yet) and later offer support for
+accessing music on some streaming services (where you will need a valid
+account).
+
+The initial version only supports the http://www.tidal.com[Tidal] music
+service.
+
+When the function is activated, upmpdcli creates a separate auxiliary Media
+Server, with the sole purpose of presenting the streaming server catalog
+(and proxying the streams when necessary). You will see it appear on the
+network if streaming service parameters are present in the configuration
+file. The Media Server name is the one for the upmpdcli instance, with
+"-mediaserver" appended.
+
+Streaming is not limited to the local upmpdcli renderer, and the Media
+Server should happily send music to other renderers.
+
+=== Notes on Tidal support
+
+The software is not unofficialy supported by Tidal, and may just stop to
+work one day... It only works with a valid Tidal subscription.
+
+The configuration parameters are described
+link:#_tidal_streaming_service_parameters[further down]. 
 
 [[upmpdcli.config]]
 == Configuration
