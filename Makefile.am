@@ -2,6 +2,7 @@
 AM_CPPFLAGS = -DDEBUG -g -Wall \
             -I${prefix}/include/libupnpp \
             -I$(top_srcdir)/src \
+            -I$(top_srcdir)/src/cdplugins \
             -DDATADIR=\"${pkgdatadir}\" -DCONFIGDIR=\"${sysconfdir}\"
 
 AM_CXXFLAGS = -std=c++11 
@@ -11,11 +12,11 @@ bin_PROGRAMS = upmpdcli scctl
 upmpdcli_SOURCES = \
      src/avtransport.cxx \
      src/avtransport.hxx \
-     src/cdplugins/cdplugin.hxx \
+     src/cdplugin.hxx \
      src/cdplugins/cmdtalk.cpp \
      src/cdplugins/cmdtalk.h \
-     src/cdplugins/tidal.cxx \
-     src/cdplugins/tidal.hxx \
+     src/cdplugins/tidal/tidal.cxx \
+     src/cdplugins/tidal/tidal.hxx \
      src/closefrom.cpp \
      src/closefrom.h \
      src/conf_post.h \
