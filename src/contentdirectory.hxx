@@ -23,7 +23,7 @@
 #include "libupnpp/device/device.hxx"
 #include "libupnpp/soaphelp.hxx"
 
-#include "cdplugins/cdplugin.hxx"
+#include "cdplugin.hxx"
 
 using namespace UPnPP;
 
@@ -35,6 +35,8 @@ public:
 
     /// Returns something like "/tidal" (no end slash)
     virtual std::string getpathprefix(CDPlugin *);
+    /// Return plugin based on path prefix
+    CDPlugin *getpluginforpath(const std::string& path);
 
     /// Retrieve the IP address and port for the libupnp server. URLs
     /// intended to be served this way (by adding a vdir) should use
@@ -49,7 +51,7 @@ public:
 
     /// Access the main configuration file.
     virtual ConfSimple *getconfig(CDPlugin *);
-    virtual const std::vector<std::string> getexecpath(CDPlugin *);
+    virtual std::string getexecpath(CDPlugin *);
 
 private:
     int actGetSearchCapabilities(const SoapIncoming& sc, SoapOutgoing& data);

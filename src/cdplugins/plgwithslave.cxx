@@ -15,7 +15,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include "tidal.hxx"
+#include "plgwithslave.hxx"
 
 #define LOGGER_LOCAL_LOGINC 3
 
@@ -48,7 +48,7 @@ using namespace UPnPProvider;
 
 class StreamHandle {
 public:
-    StreamHandle(Tidal::Internal *plg) {
+    StreamHandle(PlgWithSlave::Internal *plg) {
     }
     ~StreamHandle() {
         clear();
@@ -61,7 +61,7 @@ public:
         opentime = 0;
     }
     
-    Tidal::Internal *plg;
+    PlgWithSlave::Internal *plg;
     AVIOContext *avio;
     string path;
     string media_url;
@@ -69,40 +69,32 @@ public:
     time_t opentime;
 };
 
-class Tidal::Internal {
+class PlgWithSlave::Internal {
 public:
-    Internal(Tidal *tidal, const vector<string>& pth, const string& hst,
+    Internal(PlgWithSlave *_plg, const string& exe, const string& hst,
              int prt, const string& pp)
-	: plg(tidal), path(pth), host(hst), port(prt), pathprefix(pp), kbs(0),
-          laststream(this),
-          mhd(0) { }
+	: plg(_plg), exepath(exe), host(hst), port(prt), pathprefix(pp), 
+          laststream(this) {
+    }
 
-    bool maybeStartCmd(const string&);
-    string get_media_url(const std::string& path);
-    // This also sets the kbs
-    string get_mimetype(const std::string& path);
+    bool maybeStartCmd();
 
-    Tidal *plg;
+    PlgWithSlave *plg;
     CmdTalk cmd;
-    vector<string> path;
+    string exepath;
     // Host and port for the URLs we generate.
     string host;
     int port;
-    // path prefix (this is used by upmpdcli that a gets is for us).
+    // path prefix (this is used by upmpdcli that gets it for us).
     string pathprefix;
-    // mimetype is a constant for a given session, depend on quality
-    // choice only. Initialized once
-    string mimetype;
-    // kilobits/s
-    int kbs;
     
-    // Cached uri translation and stream: set in getinfo() and reused
-    // in open() (used with miniserver/vdir)
+    // Cached uri translation
     StreamHandle laststream;
-    // When using microhttpd
-    struct MHD_Daemon *mhd;
 };
 
+// microhttpd daemon handle. There is only one of these, and one port, we find
+// the right plugin by looking at the url path.
+static struct MHD_Daemon *mhd;
 
 // Microhttpd connection handler. We re-build the complete url + query
 // string (&trackid=value), use this to retrieve a Tidal URL, and
@@ -116,16 +108,34 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
                                 const char *upload_data, 
                                 size_t *upload_data_size, void **con_cls)
 {
-    LOGDEB("answer_to_connection: url " << url << " method " << method << 
-           " version " << version << endl);
-    Tidal::Internal *me = (Tidal::Internal*)cls;
-    
     static int aptr;
     if (&aptr != *con_cls) {
         /* do not respond on first call */
         *con_cls = &aptr;
         return MHD_YES;
     }
+
+    LOGDEB("answer_to_connection: url " << url << " method " << method << 
+           " version " << version << endl);
+
+    // The 'plgi' here is just whatever plugin started up the httpd task
+    // We just use it to find the appropriate plugin for this path,
+    // and then dispatch the request.
+    PlgWithSlave::Internal *plgi = (PlgWithSlave::Internal*)cls;
+    PlgWithSlave *realplg =
+      dynamic_cast<PlgWithSlave*>(plgi->plg->m_services->getpluginforpath(url));
+    if (nullptr == realplg) {
+        LOGERR("answer_to_connection: no plugin for path [" << url << endl);
+        return MHD_NO;
+    }
+
+    // We may need one day to subclass PlgWithSlave to implement a
+    // plugin-specific method. For now, existing plugins have
+    // compatible python code, and we can keep one c++ method.
+    // get_media_url() would also need changing because it accesses Internal:
+    // either make it generic or move to subclass.
+    //return realplg->answer_to_connection(connection, url, method, version,
+    //                               upload_data, upload_data_size, con_cls);
 
     // Rebuild URL + query
     string path(url);
@@ -138,15 +148,15 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
     }
     path += string("?version=1&trackId=") + stid;
 
-    // Translate to Tidal URL
-    string media_url = me->get_media_url(path);
+    // Translate to Tidal/Qobuz etc real temporary URL
+    string media_url = realplg->get_media_url(path);
     if (media_url.empty()) {
         LOGERR("answer_to_connection: no media_uri for: " << url << endl);
         return MHD_NO;
     }
 
     if (media_url.find("http") == 0) {
-        LOGDEB("Tidal: redirecting to " << media_url << endl);
+        LOGDEB("answer_to_connection: redirecting to " << media_url << endl);
 
         static char data[] = "<html><body></body></html>";
         struct MHD_Response *response =
@@ -161,8 +171,8 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
         MHD_destroy_response(response);
         return ret;
     } else {
-        LOGERR("Tidal: got non-http URL !: " << media_url << endl);
-        LOGERR("Tidal:   the code for handling these is gone !\n");
+        LOGERR("PlgWithSlave: got non-http URL !: " << media_url << endl);
+        LOGERR("PlgWithSlave:   the code for handling these is gone !\n");
         LOGERR("    will have to fetch it from git history\n");
         return MHD_NO;
     } 
@@ -174,123 +184,99 @@ static int accept_policy(void *, const struct sockaddr* sa, socklen_t addrlen)
 }
 
 // Called once for starting the Python program and do other initialization.
-bool Tidal::Internal::maybeStartCmd(const string& who)
+bool PlgWithSlave::Internal::maybeStartCmd()
 {
-    LOGDEB("Tidal::maybeStartCmd for: " << who << endl);
-    
     if (cmd.running()) {
         return true;
     }
 
-    ConfSimple *conf = plg->m_services->getconfig(plg);
-    string tidalquality;
-    if (!conf || !conf->get("tidalquality", tidalquality)) {
-        LOGERR("Tidal: can't get parameter 'tidalquality' from config\n");
-        return false;
+    if (nullptr == mhd) {
+
+        // Start the microhttpd daemon. There can be only one, and it
+        // is started with a context handle which points to whatever
+        // plugin got there first. The callback will only use the
+        // handle to get to the plugin services, and retrieve the
+        // appropriate plugin based on the url path prefix.
+        LOGDEB("PlgWithSlave: starting httpd on port "<< port << endl);
+        ConfSimple *conf = plg->m_services->getconfig(plg);
+        port = 49149;
+        string sport;
+        if (conf->get("plgmicrohttpport", sport)) {
+            port = atoi(sport.c_str());
+        }
+        mhd = MHD_start_daemon(
+            MHD_USE_THREAD_PER_CONNECTION,
+            //MHD_USE_SELECT_INTERNALLY, 
+            port, 
+            /* Accept policy callback and arg */
+            accept_policy, NULL, 
+            /* handler and arg */
+            &answer_to_connection, this, 
+            MHD_OPTION_END);
+        if (nullptr == mhd) {
+            LOGERR("PlgWithSlave: MHD_start_daemon failed\n");
+            return false;
+        }
     }
     
-    port = 49149;
-    string sport;
-    if (conf->get("tidalmicrohttpport", sport)) {
-        port = atoi(sport.c_str());
-    }
-    mhd = MHD_start_daemon(
-        MHD_USE_THREAD_PER_CONNECTION,
-        //MHD_USE_SELECT_INTERNALLY, 
-        port, 
-        /* Accept policy callback and arg */
-        accept_policy, NULL, 
-        /* handler and arg */
-        &answer_to_connection, this, 
-        MHD_OPTION_END);
-    if (nullptr == mhd) {
-        LOGERR("Tidal: MHD_start_daemon failed\n");
-        return false;
-    }
-        
     string pythonpath = string("PYTHONPATH=") +
-        path_cat(g_datadir, "cdplugins/pycommon");
+        path_cat(g_datadir, "cdplugins") + ":" +
+        path_cat(g_datadir, "cdplugins/pycommon") + ":" +
+        path_cat(g_datadir, "cdplugins/" + plg->m_name);
     string configname = string("UPMPD_CONFIG=") + g_configfilename;
     stringstream ss;
     ss << host << ":" << port;
     string hostport = string("UPMPD_HTTPHOSTPORT=") + ss.str();
     string pp = string("UPMPD_PATHPREFIX=") + pathprefix;
-    if (!cmd.startCmd("tidal.py", {/*args*/},
-                      /* env */ {pythonpath, configname, hostport, pp},
-                      /* exec path */ path)) {
-        LOGERR("Tidal::maybeStartCmd: " << who << " startCmd failed\n");
+    if (!cmd.startCmd(exepath, {/*args*/},
+                      /* env */ {pythonpath, configname, hostport, pp})) {
+        LOGERR("PlgWithSlave::maybeStartCmd: startCmd failed\n");
         return false;
     }
     return true;
 }
 
-string Tidal::Internal::get_mimetype(const std::string& path)
-{
-    if (!maybeStartCmd("get_mimetype")) {
-	return string();
-    }
-    if (mimetype.empty()) {
-	unordered_map<string, string> res;
-	if (!cmd.callproc("mimetype", {{"path", path}}, res)) {
-	    LOGERR("Tidal::get_mimetype: slave failure\n");
-	    return string();
-	}
-
-	auto it = res.find("mimetype");
-	if (it == res.end()) {
-	    LOGERR("Tidal::get_mimetype: no mimetype in result\n");
-	    return string();
-	}
-	mimetype = it->second;
-	it = res.find("kbs");
-	if (it != res.end()) {
-            kbs = atoi(it->second.c_str());
-	}
-	LOGDEB("Tidal: got mimetype [" << mimetype << "]\n");
-    }
-    return mimetype;
-}
-
-// Translate our http URL (based on the trackid), to an actual
-// temporary TIDAL one, which will be an HTTP URL pointing to either
-// an AAC or a FLAC stream.
+// Translate the slave-generated HTTP URL (based on the trackid), to
+// an actual temporary service (e.g. tidal one), which will be an HTTP
+// URL pointing to either an AAC or a FLAC stream.
 // Older versions of this module handled AAC FLV transported over
 // RTMP, apparently because of the use of a different API key. Look up
 // the git history if you need this again.
-// The Python code calls tidal.com to translate the trackid to a temp
+// The Python code calls the service to translate the trackid to a temp
 // URL. We cache the result for a few seconds to avoid multiple calls
 // to tidal.
-string Tidal::Internal::get_media_url(const std::string& path)
+string PlgWithSlave::get_media_url(const std::string& path)
 {
-    LOGDEB("Tidal::get_media_url: " << path << endl);
-    if (!maybeStartCmd("get_media_url")) {
+    LOGDEB("PlgWithSlave::get_media_url: " << path << endl);
+    if (!m->maybeStartCmd()) {
 	return string();
     }
     time_t now = time(0);
-    if (laststream.path.compare(path) || (now - laststream.opentime > 10)) {
+    if (m->laststream.path.compare(path) ||
+        (now - m->laststream.opentime > 10)) {
 	unordered_map<string, string> res;
-	if (!cmd.callproc("trackuri", {{"path", path}}, res)) {
-	    LOGERR("Tidal::get_media_url: slave failure\n");
+	if (!m->cmd.callproc("trackuri", {{"path", path}}, res)) {
+	    LOGERR("PlgWithSlave::get_media_url: slave failure\n");
 	    return string();
 	}
 
 	auto it = res.find("media_url");
 	if (it == res.end()) {
-	    LOGERR("Tidal::get_media_url: no media url in result\n");
+	    LOGERR("PlgWithSlave::get_media_url: no media url in result\n");
 	    return string();
 	}
-        laststream.clear();
-        laststream.path = path;
-        laststream.media_url = it->second;
-        laststream.opentime = now;
+        m->laststream.clear();
+        m->laststream.path = path;
+        m->laststream.media_url = it->second;
+        m->laststream.opentime = now;
     }
 
-    LOGDEB("Tidal: got media url [" << laststream.media_url << "]\n");
-    return laststream.media_url;
+    LOGDEB("PlgWithSlave: got media url [" << m->laststream.media_url << "]\n");
+    return m->laststream.media_url;
 }
 
 
-Tidal::Tidal(const std::string& name, CDPluginServices *services)
+PlgWithSlave::PlgWithSlave(const std::string& name, CDPluginServices *services)
     : CDPlugin(name, services)
 {
     m = new Internal(this, services->getexecpath(this),
@@ -299,7 +285,7 @@ Tidal::Tidal(const std::string& name, CDPluginServices *services)
                      services->getpathprefix(this));
 }
 
-Tidal::~Tidal()
+PlgWithSlave::~PlgWithSlave()
 {
     delete m;
 }
@@ -308,8 +294,8 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 			   std::vector<UpSong>& entries)
 {
     auto decoded = json::parse(encoded);
-    LOGDEB("Tidal::results: got " << decoded.size() << " entries\n");
-    LOGDEB1("Tidal::results: undecoded json: " << decoded.dump() << endl);
+    LOGDEB("PlgWithSlave::results: got " << decoded.size() << " entries\n");
+    LOGDEB1("PlgWithSlave::results: undecoded json: " << decoded.dump() << endl);
 
     for (unsigned int i = stidx; i < decoded.size(); i++) {
 	if (--cnt < 0) {
@@ -319,7 +305,7 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 	// tp is container ("ct") or item ("it")
 	auto it1 = decoded[i].find("tp");
 	if (it1 == decoded[i].end()) {
-	    LOGERR("Tidal::browse: no type in entry\n");
+	    LOGERR("PlgWithSlave::browse: no type in entry\n");
 	    continue;
 	}
 	string stp = it1.value();
@@ -343,7 +329,7 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 	    JSONTOUPS(artUri, upnp:albumArtURI);
 	    JSONTOUPS(duration_secs, duration);
 	} else {
-	    LOGERR("Tidal::browse: bad type in entry: " << it1.value() << endl);
+	    LOGERR("PlgWithSlave::browse: bad type in entry: " << it1.value() << endl);
 	    continue;
 	}
 	JSONTOUPS(id, id);
@@ -356,13 +342,13 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
     return decoded.size();
 }
 
-int Tidal::browse(const std::string& objid, int stidx, int cnt,
+int PlgWithSlave::browse(const std::string& objid, int stidx, int cnt,
 		  std::vector<UpSong>& entries,
 		  const std::vector<std::string>& sortcrits,
 		  BrowseFlag flg)
 {
-    LOGDEB("Tidal::browse\n");
-    if (!m->maybeStartCmd("browse")) {
+    LOGDEB("PlgWithSlave::browse\n");
+    if (!m->maybeStartCmd()) {
 	return -1;
     }
     string sbflg;
@@ -378,63 +364,63 @@ int Tidal::browse(const std::string& objid, int stidx, int cnt,
 
     unordered_map<string, string> res;
     if (!m->cmd.callproc("browse", {{"objid", objid}, {"flag", sbflg}}, res)) {
-	LOGERR("Tidal::browse: slave failure\n");
+	LOGERR("PlgWithSlave::browse: slave failure\n");
 	return -1;
     }
 
     auto it = res.find("entries");
     if (it == res.end()) {
-	LOGERR("Tidal::browse: no entries returned\n");
+	LOGERR("PlgWithSlave::browse: no entries returned\n");
 	return -1;
     }
     return resultToEntries(it->second, stidx, cnt, entries);
 }
 
 
-int Tidal::search(const string& ctid, int stidx, int cnt,
+int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
 		  const string& searchstr,
 		  vector<UpSong>& entries,
 		  const vector<string>& sortcrits)
 {
-    LOGDEB("Tidal::search\n");
-    if (!m->maybeStartCmd("search")) {
+    LOGDEB("PlgWithSlave::search\n");
+    if (!m->maybeStartCmd()) {
 	return -1;
     }
 
     // We only accept field xx value as search criteria
     vector<string> vs;
     stringToStrings(searchstr, vs);
-    LOGDEB("Tidal::search:search string split->" << vs.size() << " pieces\n");
     if (vs.size() != 3) {
-	LOGERR("Tidal::search: bad search string: [" << searchstr << "]\n");
+	LOGERR("PlgWithSlave::search: bad search string: [" << searchstr <<
+               "]\n");
 	return -1;
     }
     const string& upnpproperty = vs[0];
-    string tidalfield;
+    string slavefield;
     if (!upnpproperty.compare("upnp:artist") ||
 	!upnpproperty.compare("dc:author")) {
-	tidalfield = "artist";
+	slavefield = "artist";
     } else if (!upnpproperty.compare("upnp:album")) {
-	tidalfield = "album";
+	slavefield = "album";
     } else if (!upnpproperty.compare("dc:title")) {
-	tidalfield = "track";
+	slavefield = "track";
     } else {
-	LOGERR("Tidal::search: bad property: [" << upnpproperty << "]\n");
+	LOGERR("PlgWithSlave::search: bad property: [" << upnpproperty << "]\n");
 	return -1;
     }
 	
     unordered_map<string, string> res;
     if (!m->cmd.callproc("search", {
 		{"objid", ctid},
-		{"field", tidalfield},
+		{"field", slavefield},
 		{"value", vs[2]} },  res)) {
-	LOGERR("Tidal::search: slave failure\n");
+	LOGERR("PlgWithSlave::search: slave failure\n");
 	return -1;
     }
 
     auto it = res.find("entries");
     if (it == res.end()) {
-	LOGERR("Tidal::search: no entries returned\n");
+	LOGERR("PlgWithSlave::search: no entries returned\n");
 	return -1;
     }
     return resultToEntries(it->second, stidx, cnt, entries);

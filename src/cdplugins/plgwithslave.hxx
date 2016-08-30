@@ -14,8 +14,8 @@
  *   Free Software Foundation, Inc.,
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#ifndef _TIDAL_H_INCLUDED_
-#define _TIDAL_H_INCLUDED_
+#ifndef _PLGWITHSLAVE_H_INCLUDED_
+#define _PLGWITHSLAVE_H_INCLUDED_
 
 #include <vector>
 
@@ -23,10 +23,10 @@
 #include "libupnpp/device/vdir.hxx"
 
 // Tidal interface
-class Tidal : public CDPlugin {
+class PlgWithSlave : public CDPlugin {
 public:
-    Tidal(const std::string& name, CDPluginServices *services);
-    virtual ~Tidal();
+    PlgWithSlave(const std::string& name, CDPluginServices *services);
+    virtual ~PlgWithSlave();
 
     // Returns totalmatches
     virtual int browse(
@@ -41,9 +41,11 @@ public:
 	std::vector<UpSong>& entries,
 	const std::vector<std::string>& sortcrits = std::vector<std::string>());
 
+    virtual std::string get_media_url(const std::string& path);
+
     class Internal;
 private:
     Internal *m;
 };
 
-#endif /* _TIDAL_H_INCLUDED_ */
+#endif /* _PLGWITHSLAVE_H_INCLUDED_ */

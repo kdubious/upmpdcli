@@ -36,7 +36,7 @@
 #include "smallut.h"
 #include "upmpdutils.hxx"
 #include "main.hxx"
-#include "cdplugins/tidal.hxx"
+#include "cdplugins/plgwithslave.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -70,8 +70,9 @@ public:
 	    LOGDEB("ContentDirectory: host "<< host<< " port " << port << endl);
 	}
 	if (!appname.compare("tidal")) {
-	    Tidal *tidal = new Tidal("tidal", service);
-	    return tidal;
+	    return new PlgWithSlave("tidal", service);
+        } else if (!appname.compare("qobuz")) {
+	    return new PlgWithSlave("qobuz", service);
 	} else {
 	    return nullptr;
 	}
@@ -157,6 +158,7 @@ static vector<UpSong> rootdir;
 void makerootdir()
 {
     rootdir.push_back(UpSong::container("0$tidal$", "0", "Tidal"));
+    rootdir.push_back(UpSong::container("0$qobuz$", "0", "Qobuz"));
 }
 
 // Returns totalmatches
@@ -398,6 +400,33 @@ std::string ContentDirectory::getpathprefix(CDPlugin *plg)
     return string("/") + plg->getname();
 }
 
+static string firstpathelt(const string& path)
+{
+    // The parameter is normally a path, but make this work with an URL too
+    string::size_type pos = path.find("://");
+    if (pos != string::npos) {
+        pos += 3;
+        pos = path.find("/", pos);
+    } else {
+        pos = 0;
+    }
+    pos = path.find_first_not_of("/", pos);
+    if (pos == string::npos) {
+        return string();
+    }
+    string::size_type epos = path.find_first_of("/", pos);
+    if (epos != string::npos) {
+        return path.substr(pos, epos -pos);
+    } else {
+        return path.substr(pos);
+    }
+}
+
+CDPlugin *ContentDirectory::getpluginforpath(const string& path)
+{
+    string app = firstpathelt(path);
+    return m->pluginForApp(app);
+}
 
 std::string ContentDirectory::getupnpaddr(CDPlugin *)
 {
@@ -437,8 +466,9 @@ ConfSimple *ContentDirectory::getconfig(CDPlugin *)
 }
 
 
-const std::vector<std::string> ContentDirectory::getexecpath(CDPlugin *plg)
+std::string ContentDirectory::getexecpath(CDPlugin *plg)
 {
-    string pthcdplugs = path_cat(g_datadir, "cdplugins");
-    return {pthcdplugs, path_cat(pthcdplugs, plg->getname())};
+    string pth = path_cat(g_datadir, "cdplugins");
+    pth = path_cat(pth, plg->getname());
+    return path_cat(pth, plg->getname() + "-app" + ".py");
 }

@@ -15,8 +15,8 @@ upmpdcli_SOURCES = \
      src/cdplugin.hxx \
      src/cdplugins/cmdtalk.cpp \
      src/cdplugins/cmdtalk.h \
-     src/cdplugins/tidal/tidal.cxx \
-     src/cdplugins/tidal/tidal.hxx \
+     src/cdplugins/plgwithslave.cxx \
+     src/cdplugins/plgwithslave.hxx \
      src/closefrom.cpp \
      src/closefrom.h \
      src/conf_post.h \
@@ -95,7 +95,7 @@ cdpluginspycom_DATA = \
                     src/cdplugins/pycommon/routing.py
 cdpluginstidaldir = $(pkgdatadir)/cdplugins/tidal
 cdpluginstidal_DATA = \
-                  src/cdplugins/tidal/tidal.py 
+                  src/cdplugins/tidal/tidal-app.py 
 cdpluginstidallibdir = $(pkgdatadir)/cdplugins/tidal/tidalapi
 cdpluginstidallib_DATA = \
                   src/cdplugins/tidal/tidalapi/__init__.py \
@@ -120,7 +120,7 @@ install-data-hook: web.tar.gz rdpl2stream.tar.gz
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < web.tar.gz 
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < rdpl2stream.tar.gz
 	(cd $(DESTDIR)$(pkgdatadir); test -d src_scripts || mkdir src_scripts)
-	(cd $(DESTDIR)/$(cdpluginstidaldir); chmod a+x tidal.py) 
+	(cd $(DESTDIR)/$(cdpluginstidaldir); chmod a+x tidal-app.py) 
 
 dist_pkgdata_SCRIPTS = samplescripts/Analog-Input
 

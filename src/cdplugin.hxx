@@ -30,6 +30,10 @@ public:
     /// Returns something like "/tidal" (no end slash)
     virtual std::string getpathprefix(CDPlugin *) = 0;
 
+    /// Returns the plugin to which belongs the parameter path, based
+    /// on the path prefix above
+    virtual CDPlugin *getpluginforpath(const std::string& path) = 0;
+    
     /// Retrieve the IP address and port for the libupnp server. URLs
     /// intended to be served this way (by adding a vdir) should use
     /// these as host/port
@@ -43,7 +47,7 @@ public:
 
     /// Access the main configuration file.
     virtual ConfSimple *getconfig(CDPlugin *)= 0;
-    virtual const std::vector<std::string> getexecpath(CDPlugin *)= 0;
+    virtual std::string getexecpath(CDPlugin *)= 0;
 };
 
 /// Interface to media server modules
@@ -76,7 +80,6 @@ public:
 ///   obtained from the configuration. The advantage is that redirects
 ///   and range requests are possible, but it is a bit more
 ///   complicated as some libmicrohttpd knowledge is required.
-/// 
 class CDPlugin {
 public:
     CDPlugin(const std::string& name, CDPluginServices *services)

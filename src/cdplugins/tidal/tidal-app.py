@@ -149,12 +149,6 @@ def get_mimeandkbs():
     else:
         return ('video/x-flv', str(96))
 
-@dispatcher.record('mimetype')
-def mimetype(a):
-    maybelogin()
-    mime, kbs = get_mimeandkbs()
-    return {'mimetype' : mime, 'kbs' : kbs}
-
 @dispatcher.record('trackuri')
 def trackuri(a):
     msgproc.log("trackuri: [%s]" % a)
