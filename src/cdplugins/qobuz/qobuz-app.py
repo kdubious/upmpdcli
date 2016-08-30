@@ -154,6 +154,15 @@ def add_directory(title, endpoint):
         endpoint = plugin.url_for(endpoint)
     xbmcplugin.entries.append(direntry('0$qobuz$' + endpoint, xbmcplugin.objid, title))
 
+def urls_from_id(view_func, items):
+    #msgproc.log("urls_from_id: items: %s" % str([item.id for item in items]))
+    return [plugin.url_for(view_func, item.id) for item in items if str(item.id).find('http') != 0]
+
+def view(data_items, urls, end=True):
+    for item, url in zip(data_items, urls):
+        title = item.name
+        xbmcplugin.entries.append(direntry('0$qobuz$' + url, xbmcplugin.objid, title))
+
 def track_list(tracks):
     xbmcplugin.entries += trackentries(xbmcplugin.objid, tracks)
 
@@ -193,19 +202,78 @@ def root():
 
 @plugin.route('/whats_new')
 def whats_new():
-    pass
+    #add_directory('Playlists', plugin.url_for(featured, group='recommended', content_type='playlists'))
+    add_directory('Albums', plugin.url_for(featured, group='editor-picks', content_type='albums'))
+    #add_directory('Artists', plugin.url_for(featured, group='recommended', content_type='artists'))
+    xbmcplugin.endOfDirectory(plugin.handle)
+
+@plugin.route('/featured/<group>/<content_type>')
+def featured(group=None, content_type=None):
+    items = session.get_featured_items(content_type, group)
+    if content_type == 'tracks':
+        track_list(items)
+    elif content_type == 'albums':
+        xbmcplugin.setContent(plugin.handle, 'albums')
+        view(items, urls_from_id(album_view, items))
+    elif content_type == 'playlists':
+        view(items, urls_from_id(playlist_view, items))
 
 @plugin.route('/my_music')
 def my_music():
-    #add_directory('Albums', favourite_albums)
+    add_directory('Albums', favourite_albums)
     add_directory('Tracks', favourite_tracks)
-    #add_directory('Artists', favourite_artists)
+    add_directory('Artists', favourite_artists)
     xbmcplugin.endOfDirectory(plugin.handle)
     pass
+
+
+@plugin.route('/album/<album_id>')
+def album_view(album_id):
+    xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_TRACKNUM)
+    track_list(session.get_album_tracks(album_id))
+
+def ListItem(tt):
+    return tt
+
+@plugin.route('/artist/<artist_id>')
+def artist_view(artist_id):
+    xbmcplugin.setContent(plugin.handle, 'albums')
+    xbmcplugin.addDirectoryItem(
+        plugin.handle, plugin.url_for(similar_artists, artist_id),
+        ListItem('Similar Artists'), True
+    )
+    albums = session.get_artist_albums(artist_id) 
+    view(albums, urls_from_id(album_view, albums))
+
+
+@plugin.route('/artist/<artist_id>/similar')
+def similar_artists(artist_id):
+    xbmcplugin.setContent(plugin.handle, 'artists')
+    artists = session.get_artist_similar(artist_id)
+    view(artists, urls_from_id(artist_view, artists))
+
 
 @plugin.route('/favourite_tracks')
 def favourite_tracks():
     track_list(session.user.favorites.tracks())
+
+@plugin.route('/favourite_artists')
+def favourite_artists():
+    xbmcplugin.setContent(plugin.handle, 'artists')
+    try:
+        items = session.user.favorites.artists()
+    except Exception as err:
+        msgproc.log("session.user.favorite.artists failed: %s" % err)
+        return
+    if items:
+        msgproc.log("First artist name %s"% items[0].name)
+        view(items, urls_from_id(artist_view, items))
+
+@plugin.route('/favourite_albums')
+def favourite_albums():
+    xbmcplugin.setContent(plugin.handle, 'albums')
+    items = session.user.favorites.albums()
+    view(items, urls_from_id(album_view, items))
 
 @plugin.route('/playlists')
 def playlists():
