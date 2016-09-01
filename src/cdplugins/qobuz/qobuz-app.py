@@ -198,46 +198,50 @@ def browse(a):
 def root():
     add_directory("Discover", whats_new)
     add_directory('Favourites', my_music)
-    add_directory('Playlists', playlists)
 
 @plugin.route('/whats_new')
 def whats_new():
-    #add_directory('Playlists', plugin.url_for(featured, group='recommended', content_type='playlists'))
-    add_directory('Albums', plugin.url_for(featured, group='editor-picks', content_type='albums'))
-    #add_directory('Artists', plugin.url_for(featured, group='recommended', content_type='artists'))
+    add_directory('Playlists', plugin.url_for(featured, content_type='playlists'))
+    add_directory('Albums', plugin.url_for(featured, content_type='albums'))
+    add_directory('Artists', plugin.url_for(featured, content_type='artists'))
     xbmcplugin.endOfDirectory(plugin.handle)
 
-@plugin.route('/featured/<group>/<content_type>')
-def featured(group=None, content_type=None):
-    items = session.get_featured_items(content_type, group)
-    if content_type == 'tracks':
-        track_list(items)
+@plugin.route('/featured/<content_type>')
+def featured(content_type=None):
+    items = session.get_featured_items(content_type)
+    if content_type == 'artists':
+        view(items, urls_from_id(artist_view, items))
     elif content_type == 'albums':
-        xbmcplugin.setContent(plugin.handle, 'albums')
         view(items, urls_from_id(album_view, items))
     elif content_type == 'playlists':
         view(items, urls_from_id(playlist_view, items))
+    else:
+        print("qobuz-app bad featured type %s" % content_type, file=sys.stderr)
+
 
 @plugin.route('/my_music')
 def my_music():
     add_directory('Albums', favourite_albums)
     add_directory('Tracks', favourite_tracks)
     add_directory('Artists', favourite_artists)
+    add_directory('Playlists', favourite_playlists)
     xbmcplugin.endOfDirectory(plugin.handle)
     pass
 
-
 @plugin.route('/album/<album_id>')
 def album_view(album_id):
-    xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_TRACKNUM)
     track_list(session.get_album_tracks(album_id))
+
+
+@plugin.route('/playlist/<playlist_id>')
+def playlist_view(playlist_id):
+    track_list(session.get_playlist_tracks(playlist_id))
 
 def ListItem(tt):
     return tt
 
 @plugin.route('/artist/<artist_id>')
 def artist_view(artist_id):
-    xbmcplugin.setContent(plugin.handle, 'albums')
     xbmcplugin.addDirectoryItem(
         plugin.handle, plugin.url_for(similar_artists, artist_id),
         ListItem('Similar Artists'), True
@@ -248,7 +252,6 @@ def artist_view(artist_id):
 
 @plugin.route('/artist/<artist_id>/similar')
 def similar_artists(artist_id):
-    xbmcplugin.setContent(plugin.handle, 'artists')
     artists = session.get_artist_similar(artist_id)
     view(artists, urls_from_id(artist_view, artists))
 
@@ -257,9 +260,9 @@ def similar_artists(artist_id):
 def favourite_tracks():
     track_list(session.user.favorites.tracks())
 
+
 @plugin.route('/favourite_artists')
 def favourite_artists():
-    xbmcplugin.setContent(plugin.handle, 'artists')
     try:
         items = session.user.favorites.artists()
     except Exception as err:
@@ -269,41 +272,17 @@ def favourite_artists():
         msgproc.log("First artist name %s"% items[0].name)
         view(items, urls_from_id(artist_view, items))
 
+
 @plugin.route('/favourite_albums')
 def favourite_albums():
-    xbmcplugin.setContent(plugin.handle, 'albums')
     items = session.user.favorites.albums()
     view(items, urls_from_id(album_view, items))
 
-@plugin.route('/playlists')
-def playlists():
-    pass
 
-def nono():
-    maybelogin()
-    if is_logged_in:
-        msgproc.log("logged in")
-        data = session.album_getFeatured(type='most-streamed',
-                                         offset=0,
-                                         limit=100)
-        if len(data['albums']['items']) == 0:
-            raise Exception("Empty album list")
-        #msgproc.log("%s"%data)
-        for albumdata in data['albums']['items']:
-            albumid = albumdata['id']
-            onealbumdata = session.album_get(album_id = albumid)
-            #msgproc.log("%s"%json.dumps(data, indent=4))
-            for track in onealbumdata['tracks']['items']:
-                #msgproc.log("%s"%json.dumps(track, indent=4))
-                if track['streamable']:
-                    trackid = track['id']
-                    url = session.track_getFileUrl(intent="stream",
-                                                   track_id = trackid,
-                                                   format_id = 4)
-                    #msgproc.log("%s" % url['url'])
-                    sys.exit(0)
-                else:
-                    print("Track not streamable")
+@plugin.route('/favourite_playlists')
+def favourite_playlists():
+    items = session.user.favorites.playlists()
+    view(items, urls_from_id(playlist_view, items))
 
 
 msgproc.log("Qobuz running")

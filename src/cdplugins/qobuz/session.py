@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 import sys
+import json
 from models import Artist, Album, Track, Playlist, SearchResult, Category, Role
 from qobuz.api import raw
 
@@ -29,18 +30,21 @@ class Session(object):
         url = self.api.track_getFileUrl(intent="stream",
                                         track_id = trackid,
                                         format_id = 5)
-        print("%s" % url, file=sys.stderr)
+        print("get_media_url got: %s" % url, file=sys.stderr)
         return url['url'] if url and 'url' in url else None
 
     def get_album_tracks(self, albid):
         data = self.api.album_get(album_id = albid)
         album = _parse_album(data)
-        #print("%s" % data, file=sys.stderr)
         return [_parse_track(t, album) for t in data['tracks']['items']]
+
+    def get_playlist_tracks(self, plid):
+        data = self.api.playlist_get(playlist_id = plid, extra = 'tracks')
+        #print("PLAYLIST: %s" % json.dumps(data, indent=4), file=sys.stderr)
+        return [_parse_track(t) for t in data['tracks']['items']]
 
     def get_artist_albums(self, artid):
         data = self.api.artist_get(artist_id=artid, extra='albums')
-        #print("%s" % data, file=sys.stderr)
         if 'albums' in data:
             return [_parse_album(alb) for alb in data['albums']['items']]
         return []
@@ -51,17 +55,39 @@ class Session(object):
             return [_parse_artist(art) for art in data['artists']['items']]
         return []
 
-    def get_featured_items(self, content_type, type):
+    # content_type: albums/artists/playlists.  type : The type of
+    # recommandations to fetch: best-sellers, most-streamed,
+    # new-releases, press-awards, editor-picks, most-featured
+    # In practise, and despite the existence of the
+    # catalog_getFeaturedTypes call which returns the above list, I
+    # could not find a way to pass the type parameter to
+    # catalog_getFeatured (setting type triggers an
+    # error). album_getFeatured() accepts type, but it's not cleared
+    # what it does and it's
+    def get_featured_items(self, content_type, type=''):
+        #data = self.api.catalog_getFeaturedTypes()
+        #print("FEATURED TYPES: %s" % data, file=sys.stderr)
+        #ftype = 'most-featured'
+        #data = self.api.catalog_getFeatured(limit='4')
+        #print("FEATURED %s: %s" % (ftype, json.dumps(data, indent=4)),
+        #                           file=sys.stderr)
+        limit = '20'
         if content_type == 'albums':
-            # type : The type of recommandations to fetch:
-            #   best-sellers, most-streamed, new-releases, press-awards,
-            #   editor-picks, most-featured
             # genre_id - optional : The genre ID to filter the
-            # recommandations by.
-            data = self.api.album_getFeatured(type=type, limit='3')
-            #print("%s" % data, file=sys.stderr)
+            # recommandations by. The type argument seems to be mandatory
+            data = self.api.album_getFeatured(limit=limit, type='editor-picks')
             if 'albums' in data:
                 return [_parse_album(alb) for alb in data['albums']['items']]
+        else:
+            data = self.api.catalog_getFeatured(limit=limit)
+            #print("Featured: %s" % json.dumps(data,indent=4), file=sys.stderr)
+            if content_type == 'artists':
+                if 'artists' in data:
+                    return [_parse_artist(i) for i in data['artists']['items']]
+            elif content_type == 'playlists':
+                if 'playlists' in data:
+                    return [_parse_playlist(pl) for pl in \
+                            data['playlists']['items']]
         return []
 
 def _parse_artist(json_obj):
@@ -95,9 +121,25 @@ def _parse_album(json_obj, artist=None, artists=None):
             pass
     return Album(**kwargs)
 
+
+def _parse_playlist(json_obj, artist=None, artists=None):
+    kwargs = {
+        'id': json_obj['id'],
+        'name': json_obj['name'],
+        'num_tracks': json_obj.get('tracks_count'),
+        'duration': json_obj.get('duration'),
+    }
+    return Playlist(**kwargs)
+
 def _parse_track(json_obj, albumarg = None):
     if 'performer' in json_obj:
         artist = _parse_artist(json_obj['performer'])
+    elif 'artist' in json_obj:
+        artist = _parse_artist(json_obj['artist'])
+    elif 'album' in json_obj:
+        album = _parse_album(json_obj['album'])
+        if album.artist:
+            artist = album.artist
     elif albumarg:
         artist = albumarg.artist
     else:
@@ -139,7 +181,8 @@ class Favorites(object):
         return [_parse_album(item) for item in r['albums']['items']]
 
     def playlists(self):
-        return self.session._map_request(self._base_url + '/playlists', ret='playlists')
+        r = self.session.api.playlist_getUserPlaylists()
+        return [_parse_playlist(item) for item in r['playlists']['items']]
 
     def tracks(self):
         r = self.session.api.favorite_getUserFavorites(

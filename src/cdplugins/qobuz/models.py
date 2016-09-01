@@ -37,16 +37,13 @@ class Album(Model):
 
 
 class Artist(Model):
+    name = "Unknown"
     role = None
 
 
 class Playlist(Model):
+    name = None
     description = None
-    creator = None
-    type = None
-    is_public = None
-    created = None
-    last_updated = None
     num_tracks = -1
     duration = -1
 

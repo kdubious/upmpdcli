@@ -226,6 +226,17 @@ class RawApi(object):
         self._check_ka(ka, ['query'], ['limit'])
         return self._api_request(ka, '/track/search')
 
+    def catalog_search(self, **ka):
+        # type may be 'tracks', 'albums', 'artists' or 'playlists'
+        self._check_ka(ka, ['query'], ['type', 'offset', 'limit'])
+        return self._api_request(ka, '/catalog/search')
+
+    def catalog_getFeatured(self, **ka):
+        return self._api_request(ka, '/catalog/getFeatured')
+
+    def catalog_getFeaturedTypes(self, **ka):
+        return self._api_request(ka, '/catalog/getFeaturedTypes')
+    
     def track_resportStreamingStart(self, track_id):
         # Any use of the API implies your full acceptance
         # of the General Terms and Conditions
