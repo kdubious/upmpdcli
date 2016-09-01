@@ -313,8 +313,8 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 #define JSONTOUPS(fld, nm)						\
 	it1 = decoded[i].find(#nm);					\
 	if (it1 != decoded[i].end()) {					\
-	    /*LOGDEB("song." #fld " = " << it1.value() << endl);*/	\
-	    song.fld = it1.value();					\
+            if (it1.value() != nullptr)                                 \
+                song.fld = it1.value();					\
 	}
 	
 	if (!stp.compare("ct")) {
