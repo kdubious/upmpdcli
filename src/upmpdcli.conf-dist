@@ -94,6 +94,20 @@ tidalpass = your Tidal password
 # allows it.</descr></var>
 tidalquality = low/high/lossless
 
+# <grouptitle>Qobuz streaming service parameters</grouptitle>
+
+# <var name="qobuzuser" type="string"><brief>Qobuz user name.</brief>
+# <descr>Your Qobuz login name.</descr></var>
+qobuzuser = me@some.place
+# <var name="qobuzpass" type="string"><brief>Qobuz password.</brief>
+# <descr>The password for your Qobuz account.</descr></var>
+qobuzpass = agoodpassword
+# <var name="qobuzformatid" type="cstr" "values="5 7">
+# <brief>Qobuz stream quality.</brief> <descr>5 for mp3/320, 7 for FLAC if
+# your subscription allows it.</descr></var>
+qobuzformatid = 5
+
+
 # <grouptitle>MPD parameters</grouptitle>
 
 # <var name="mpdhost" type="string"><brief>Host MPD runs on.</brief>

@@ -46,7 +46,7 @@ session = Session()
 is_logged_in = False
 
 def maybelogin():
-    global quality
+    global formatid
     global httphp
     global pathprefix
     global is_logged_in
@@ -66,7 +66,12 @@ def maybelogin():
     
     username = upconfig.get('qobuzuser')
     password = upconfig.get('qobuzpass')
-    #qalstr = upconfig.get('qobuzquality')
+    formatid = upconfig.get('qobuzformatid')
+    if formatid:
+        formatid = int(formatid)
+    else:
+        formatid = 5
+        
     if not username or not password:
         raise Exception("qobuzuser and/or qobuzpass not set in configuration")
 
@@ -123,13 +128,18 @@ def trackid_from_urlpath(a):
 
 @dispatcher.record('trackuri')
 def trackuri(a):
+    global formatid
     msgproc.log("trackuri: [%s]" % a)
     trackid = trackid_from_urlpath(a)
     maybelogin()
-    media_url = session.get_media_url(trackid)
+    media_url = session.get_media_url(trackid, formatid)
     #msgproc.log("%s" % media_url)
-    mime = "audio/mpeg"
-    kbs = "128"
+    if formatid == 5:
+        mime = "audio/mpeg"
+        kbs = "320"
+    else:
+        mime = "application/flac"
+        kbs = "1410"
     return {'media_url' : media_url, 'mimetype' : mime, 'kbs' : kbs}
 
 
@@ -284,6 +294,35 @@ def favourite_playlists():
     items = session.user.favorites.playlists()
     view(items, urls_from_id(playlist_view, items))
 
+
+# It seems that Qobuz can't search a particular field (e.g. artist, title)
+# so we just ignore the 'field' value.
+@dispatcher.record('search')
+def search(a):
+    global xbmcplugin
+    xbmcplugin = XbmcPlugin()
+    msgproc.log("search: [%s]" % a)
+    objid = a['objid']
+    #field = a['field']
+    value = a['value']
+    if re.match('0\$qobuz\$', objid) is None:
+        raise Exception("bad objid [%s]" % objid)
+    xbmcplugin.objid = objid
+    maybelogin()
+    
+    searchresults = session.search(value)
+    msgproc.log("search: Got %d artists" % len(searchresults.artists))
+    view(searchresults.artists, urls_from_id(artist_view, searchresults.artists),
+        end=False)
+    view(searchresults.albums, urls_from_id(album_view, searchresults.albums),
+         end=False)
+    view(searchresults.playlists, urls_from_id(playlist_view,
+                                               searchresults.playlists),
+         end=False)
+    track_list(searchresults.tracks)
+    #msgproc.log("%s" % xbmcplugin.entries)
+    encoded = json.dumps(xbmcplugin.entries)
+    return {"entries" : encoded}
 
 msgproc.log("Qobuz running")
 msgproc.mainloop()

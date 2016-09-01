@@ -23,13 +23,13 @@ class Session(object):
         else:
             return False
 
-    def get_media_url(self, trackid):
+    def get_media_url(self, trackid, format_id=5):
         # Format id: 5 for MP3 320, 6 for FLAC Lossless, 7 for FLAC
         # Hi-Res 24 bit =< 96kHz, 27 for FLAC Hi-Res 24 bit >96 kHz &
         # =< 192 kHz
         url = self.api.track_getFileUrl(intent="stream",
                                         track_id = trackid,
-                                        format_id = 5)
+                                        format_id = format_id)
         print("get_media_url got: %s" % url, file=sys.stderr)
         return url['url'] if url and 'url' in url else None
 
@@ -89,6 +89,15 @@ class Session(object):
                     return [_parse_playlist(pl) for pl in \
                             data['playlists']['items']]
         return []
+
+    def search(self, query):
+        data = self.api.catalog_search(query=query)
+        ar = [_parse_artist(i) for i in data['artists']['items']]
+        al = [_parse_album(i) for i in data['albums']['items']]
+        pl = [_parse_playlist(i) for i in data['playlists']['items']]
+        tr = [_parse_track(i) for i in data['tracks']['items']]
+        return SearchResult(artists=ar, albums=al, playlists=pl, tracks=tr)
+
 
 def _parse_artist(json_obj):
     artist = Artist(id=json_obj['id'], name=json_obj['name'])

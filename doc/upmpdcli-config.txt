@@ -71,6 +71,15 @@ tidalquality:: Tidal stream quality. 'low' and 'high' are aac
 streams. 'lossless' is FLAC and will only work if your subscription
 allows it.
 
+=== Qobuz streaming service parameters 
+
+qobuzuser:: Qobuz user name. Your Qobuz login name.
+
+qobuzpass:: Qobuz password. The password for your Qobuz account.
+
+qobuzformatid:: Qobuz stream quality. 5 for mp3/320, 7 for FLAC if
+your subscription allows it.
+
 === MPD parameters 
 
 mpdhost:: Host MPD runs on. Defaults to localhost. This can also be specified as -h
