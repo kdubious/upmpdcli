@@ -175,7 +175,7 @@ bool CmdTalk::Internal::talk(const pair<string, string>& arg0,
             break;
 	}
 	trimstring(name, ":");
-	LOGDEB("CmdTalk: got [" << name << "] -> [" << data << "]\n");
+	LOGDEB1("CmdTalk: got [" << name << "] -> [" << data << "]\n");
 	rep[name] = data;
     }
 
