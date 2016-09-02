@@ -56,13 +56,28 @@ file. The Media Server name is the one for the upmpdcli instance, with
 Streaming is not limited to the local upmpdcli renderer, and the Media
 Server should happily send music to other renderers.
 
-=== Notes on Tidal support
+=== Notes on the Tidal interface
 
-The software is not unofficialy supported by Tidal, and may just stop to
+The software is not officialy supported by Tidal, and may just stop to
 work one day... It only works with a valid Tidal subscription.
 
 The configuration parameters are described
 link:#_tidal_streaming_service_parameters[further down]. 
+
+=== Notes on the Qobuz interface
+
+As for Tidal, the software is not officialy supported by Qobuz, and may
+just stop to work one day.
+
+You need a valid Qobuz subscription.
+
+Qobuz search does not allow specifying what field to search (e.g. are we
+searching artist names or track titles). This is a bad match with UPnP
+searches supported by upmpdcli and results in a weird interface and mixed
+up results.
+
+The configuration parameters are described
+link:#_qobuz_streaming_service_parameters[further down]. 
 
 [[upmpdcli.config]]
 == Configuration
