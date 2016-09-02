@@ -73,7 +73,7 @@ class PlgWithSlave::Internal {
 public:
     Internal(PlgWithSlave *_plg, const string& exe, const string& hst,
              int prt, const string& pp)
-	: plg(_plg), exepath(exe), host(hst), port(prt), pathprefix(pp), 
+	: plg(_plg), exepath(exe), upnphost(hst), upnpport(prt), pathprefix(pp), 
           laststream(this) {
     }
 
@@ -82,9 +82,11 @@ public:
     PlgWithSlave *plg;
     CmdTalk cmd;
     string exepath;
-    // Host and port for the URLs we generate.
-    string host;
-    int port;
+    // Upnp Host and port. This would only be used to generate URLsif
+    // we were using the libupnp miniserver. We currently use
+    // microhttp because it can do redirects
+    string upnphost;
+    int upnpport;
     // path prefix (this is used by upmpdcli that gets it for us).
     string pathprefix;
     
@@ -190,6 +192,12 @@ bool PlgWithSlave::Internal::maybeStartCmd()
         return true;
     }
 
+    ConfSimple *conf = plg->m_services->getconfig(plg);
+    int port = 49149;
+    string sport;
+    if (conf->get("plgmicrohttpport", sport)) {
+        port = atoi(sport.c_str());
+    }
     if (nullptr == mhd) {
 
         // Start the microhttpd daemon. There can be only one, and it
@@ -198,12 +206,6 @@ bool PlgWithSlave::Internal::maybeStartCmd()
         // handle to get to the plugin services, and retrieve the
         // appropriate plugin based on the url path prefix.
         LOGDEB("PlgWithSlave: starting httpd on port "<< port << endl);
-        ConfSimple *conf = plg->m_services->getconfig(plg);
-        port = 49149;
-        string sport;
-        if (conf->get("plgmicrohttpport", sport)) {
-            port = atoi(sport.c_str());
-        }
         mhd = MHD_start_daemon(
             MHD_USE_THREAD_PER_CONNECTION,
             //MHD_USE_SELECT_INTERNALLY, 
@@ -225,7 +227,7 @@ bool PlgWithSlave::Internal::maybeStartCmd()
         path_cat(g_datadir, "cdplugins/" + plg->m_name);
     string configname = string("UPMPD_CONFIG=") + g_configfilename;
     stringstream ss;
-    ss << host << ":" << port;
+    ss << upnphost << ":" << port;
     string hostport = string("UPMPD_HTTPHOSTPORT=") + ss.str();
     string pp = string("UPMPD_PATHPREFIX=") + pathprefix;
     if (!cmd.startCmd(exepath, {/*args*/},
