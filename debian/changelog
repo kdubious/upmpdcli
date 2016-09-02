@@ -1,3 +1,9 @@
+upmpdcli (1.2.0-1) unstable; urgency=low
+
+  * Streaming services
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Fri, 02 Sep 2016 14:44:00 +0200
+
 upmpdcli (1.1.4~jessie-1) jessie; urgency=low
 
   * Misc small improvements. See Changelog.
