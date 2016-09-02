@@ -295,15 +295,13 @@ def favourite_playlists():
     view(items, urls_from_id(playlist_view, items))
 
 
-# It seems that Qobuz can't search a particular field (e.g. artist, title)
-# so we just ignore the 'field' value.
 @dispatcher.record('search')
 def search(a):
     global xbmcplugin
     xbmcplugin = XbmcPlugin()
     msgproc.log("search: [%s]" % a)
     objid = a['objid']
-    #field = a['field']
+    field = a['field']
     value = a['value']
     if re.match('0\$qobuz\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
@@ -311,15 +309,23 @@ def search(a):
     maybelogin()
     
     searchresults = session.search(value)
-    msgproc.log("search: Got %d artists" % len(searchresults.artists))
-    view(searchresults.artists, urls_from_id(artist_view, searchresults.artists),
-        end=False)
-    view(searchresults.albums, urls_from_id(album_view, searchresults.albums),
-         end=False)
-    view(searchresults.playlists, urls_from_id(playlist_view,
-                                               searchresults.playlists),
-         end=False)
-    track_list(searchresults.tracks)
+
+    if field not in ['artist', 'album', 'playlist', 'track']:
+        msgproc.log('Unknown field \'%s\'' % field)
+        field = None
+    if field is None or field == 'artist':
+        view(searchresults.artists,
+             urls_from_id(artist_view, searchresults.artists), end=False)
+    if field is None or field == 'album':
+        view(searchresults.albums,
+             urls_from_id(album_view, searchresults.albums), end=False)
+    if field is None or field == 'playlist':
+        view(searchresults.playlists,
+             urls_from_id(playlist_view, searchresults.playlists), end=False)
+        
+    if field is None or field == 'track':
+        track_list(searchresults.tracks)
+
     #msgproc.log("%s" % xbmcplugin.entries)
     encoded = json.dumps(xbmcplugin.entries)
     return {"entries" : encoded}
