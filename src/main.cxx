@@ -366,7 +366,8 @@ int main(int argc, char *argv[])
         // If a streaming service is enabled (only tidal for now), we
         // need a Media Server. The way we implement it depends on the
         // command line option:
-        if (g_config->hasNameAnywhere("tidaluser")) {
+        if (g_config->hasNameAnywhere("tidaluser") ||
+            g_config->hasNameAnywhere("qobuzuser")) {
             enableMediaServer = true;
             switch (msmode) {
             case MSOnly:
