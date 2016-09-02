@@ -100,6 +100,19 @@ cdpluginstidallibdir = $(pkgdatadir)/cdplugins/tidal/tidalapi
 cdpluginstidallib_DATA = \
                   src/cdplugins/tidal/tidalapi/__init__.py \
                   src/cdplugins/tidal/tidalapi/models.py
+cdpluginsqobuzdir = $(pkgdatadir)/cdplugins/qobuz
+cdpluginsqobuz_DATA = \
+                  src/cdplugins/qobuz/debug.py  \
+                  src/cdplugins/qobuz/exception.py \
+                  src/cdplugins/qobuz/__init__.py \
+                  src/cdplugins/qobuz/models.py \
+                  src/cdplugins/qobuz/qobuz-app.py \
+                  src/cdplugins/qobuz/session.py 
+cdpluginsqobuzlibdir = $(pkgdatadir)/cdplugins/qobuz/api
+cdpluginsqobuzlib_DATA = \
+                  src/cdplugins/qobuz/api/easy.py \
+                  src/cdplugins/qobuz/api/__init__.py \
+                  src/cdplugins/qobuz/api/raw.py
 
 EXTRA_DIST = web.tar.gz rdpl2stream.tar.gz systemd/upmpdcli.service
 
@@ -121,6 +134,7 @@ install-data-hook: web.tar.gz rdpl2stream.tar.gz
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < rdpl2stream.tar.gz
 	(cd $(DESTDIR)$(pkgdatadir); test -d src_scripts || mkdir src_scripts)
 	(cd $(DESTDIR)/$(cdpluginstidaldir); chmod a+x tidal-app.py) 
+	(cd $(DESTDIR)/$(cdpluginsqobuzdir); chmod a+x qobuz-app.py) 
 
 dist_pkgdata_SCRIPTS = samplescripts/Analog-Input
 
