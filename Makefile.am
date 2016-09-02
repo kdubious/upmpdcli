@@ -30,6 +30,8 @@ upmpdcli_SOURCES = \
      src/execmd.h \
      src/httpfs.cxx \
      src/httpfs.hxx \
+     src/json.hpp \
+     src/main.hxx \
      src/main.cxx \
      src/mediaserver.cxx \
      src/mediaserver.hxx \
@@ -86,22 +88,21 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/OHRadio.xml src/ContentDirectory.xml \
                   src/protocolinfo.txt src/presentation.html
 
-cdpluginsdir = $(pkgdatadir)/cdplugins/
 cdpluginspycomdir = $(pkgdatadir)/cdplugins/pycommon
-cdpluginspycom_DATA = \
+dist_cdpluginspycom_DATA = \
                     src/cdplugins/pycommon/cmdtalk.py \
                     src/cdplugins/pycommon/cmdtalkplugin.py \
                     src/cdplugins/pycommon/conftree.py \
                     src/cdplugins/pycommon/routing.py
 cdpluginstidaldir = $(pkgdatadir)/cdplugins/tidal
-cdpluginstidal_DATA = \
+dist_cdpluginstidal_DATA = \
                   src/cdplugins/tidal/tidal-app.py 
 cdpluginstidallibdir = $(pkgdatadir)/cdplugins/tidal/tidalapi
-cdpluginstidallib_DATA = \
+dist_cdpluginstidallib_DATA = \
                   src/cdplugins/tidal/tidalapi/__init__.py \
                   src/cdplugins/tidal/tidalapi/models.py
 cdpluginsqobuzdir = $(pkgdatadir)/cdplugins/qobuz
-cdpluginsqobuz_DATA = \
+dist_cdpluginsqobuz_DATA = \
                   src/cdplugins/qobuz/debug.py  \
                   src/cdplugins/qobuz/exception.py \
                   src/cdplugins/qobuz/__init__.py \
@@ -109,7 +110,7 @@ cdpluginsqobuz_DATA = \
                   src/cdplugins/qobuz/qobuz-app.py \
                   src/cdplugins/qobuz/session.py 
 cdpluginsqobuzlibdir = $(pkgdatadir)/cdplugins/qobuz/api
-cdpluginsqobuzlib_DATA = \
+dist_cdpluginsqobuzlib_DATA = \
                   src/cdplugins/qobuz/api/easy.py \
                   src/cdplugins/qobuz/api/__init__.py \
                   src/cdplugins/qobuz/api/raw.py
