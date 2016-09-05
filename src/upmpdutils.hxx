@@ -69,6 +69,15 @@ public:
 	song.artist = annot;
 	return song;
     }
+    static UpSong item(const std::string& id, const std::string& parentid,
+                       const std::string& title) {
+	UpSong song;
+	song.iscontainer = false;
+	song.id = id;
+        song.parentid = parentid;
+        song.title = title;
+	return song;
+    }
 };
 
 // Convert between db value to percent values (Get/Set Volume and VolumeDb)
