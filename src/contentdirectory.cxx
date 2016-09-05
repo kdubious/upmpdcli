@@ -37,6 +37,7 @@
 #include "upmpdutils.hxx"
 #include "main.hxx"
 #include "cdplugins/plgwithslave.hxx"
+#include "conftree.h"
 
 using namespace std;
 using namespace std::placeholders;
@@ -157,8 +158,18 @@ int ContentDirectory::actGetSystemUpdateID(const SoapIncoming& sc, SoapOutgoing&
 static vector<UpSong> rootdir;
 void makerootdir()
 {
-    rootdir.push_back(UpSong::container("0$tidal$", "0", "Tidal"));
-    rootdir.push_back(UpSong::container("0$qobuz$", "0", "Qobuz"));
+    if (g_config->hasNameAnywhere("tidaluser")) {
+        rootdir.push_back(UpSong::container("0$tidal$", "0", "Tidal"));
+    }
+    if (g_config->hasNameAnywhere("qobuzuser")) {
+        rootdir.push_back(UpSong::container("0$qobuz$", "0", "Qobuz"));
+    }
+
+    if (rootdir.empty()) {
+        // This should not happen, as we only start the CD if services
+        // are configured !
+        rootdir.push_back(UpSong::item("0$none$", "0", "No services found"));
+    }
 }
 
 // Returns totalmatches
