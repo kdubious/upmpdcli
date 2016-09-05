@@ -363,9 +363,9 @@ static int errorEntries(const string& pid, vector<UpSong>& entries)
 }
 
 int PlgWithSlave::browse(const string& objid, int stidx, int cnt,
-		  vector<UpSong>& entries,
-		  const vector<string>& sortcrits,
-		  BrowseFlag flg)
+                         vector<UpSong>& entries,
+                         const vector<string>& sortcrits,
+                         BrowseFlag flg)
 {
     LOGDEB("PlgWithSlave::browse\n");
     if (!m->maybeStartCmd()) {
@@ -398,42 +398,68 @@ int PlgWithSlave::browse(const string& objid, int stidx, int cnt,
 
 
 int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
-		  const string& searchstr,
-		  vector<UpSong>& entries,
-		  const vector<string>& sortcrits)
+                         const string& searchstr,
+                         vector<UpSong>& entries,
+                         const vector<string>& sortcrits)
 {
     LOGDEB("PlgWithSlave::search\n");
     if (!m->maybeStartCmd()) {
 	return errorEntries(ctid, entries);
     }
 
-    // We only accept field xx value as search criteria
+    // Ok, so the upnp query language is quite powerful, but us, not
+    // so much. We get rid of parenthesis and then try to find the
+    // first searchExp on a field we can handle, pretend the operator
+    // is "contains" and just do it. I so don't want to implement a
+    // parser for the query language when the services don't support
+    // anything complicated anyway, and the users don't even want
+    // it...
+    string ss;
+    neutchars(searchstr, ss, "()");
+
+    // The search had better be space-separated. no
+    // upnp:artist="beatles" for you
     vector<string> vs;
-    stringToStrings(searchstr, vs);
-    if (vs.size() != 3) {
+    stringToStrings(ss, vs);
+
+    // The sequence can now be either [field, op, value], or
+    // [field, op, value, and/or, field, op, value,...]
+    if ((vs.size() + 1) % 4 != 0) {
 	LOGERR("PlgWithSlave::search: bad search string: [" << searchstr <<
                "]\n");
 	return errorEntries(ctid, entries);
     }
-    const string& upnpproperty = vs[0];
     string slavefield;
-    if (!upnpproperty.compare("upnp:artist") ||
-	!upnpproperty.compare("dc:author")) {
-	slavefield = "artist";
-    } else if (!upnpproperty.compare("upnp:album")) {
-	slavefield = "album";
-    } else if (!upnpproperty.compare("dc:title")) {
-	slavefield = "track";
-    } else {
-	LOGERR("PlgWithSlave::search: bad property: [" << upnpproperty << endl);
-	return errorEntries(ctid, entries);
+    string value;
+    for (unsigned int i = 0; i < vs.size()-2; i += 4) {
+        const string& upnpproperty = vs[i];
+        LOGDEB("Looking at " << vs[i] << " " << vs[i+1] << " " <<
+               vs[i+2] << endl);
+        if (!upnpproperty.compare("upnp:artist") ||
+            !upnpproperty.compare("dc:author")) {
+            slavefield = "artist";
+            value = vs[i+2];
+            break;
+        } else if (!upnpproperty.compare("upnp:album")) {
+            slavefield = "album";
+            value = vs[i+2];
+            break;
+        } else if (!upnpproperty.compare("dc:title")) {
+            slavefield = "track";
+            value = vs[i+2];
+            break;
+        }
+    }
+    if (slavefield.empty()) {
+        LOGERR("PlgWithSlave: unsupported search: [" << searchstr << "]\n");
+        return errorEntries(ctid, entries);
     }
 	
     unordered_map<string, string> res;
     if (!m->cmd.callproc("search", {
 		{"objid", ctid},
 		{"field", slavefield},
-		{"value", vs[2]} },  res)) {
+		{"value", value} },  res)) {
 	LOGERR("PlgWithSlave::search: slave failure\n");
 	return errorEntries(ctid, entries);
     }
