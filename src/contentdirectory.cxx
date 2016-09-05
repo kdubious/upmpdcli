@@ -132,7 +132,8 @@ int ContentDirectory::actGetSearchCapabilities(const SoapIncoming& sc, SoapOutgo
 {
     LOGDEB("ContentDirectory::actGetSearchCapabilities: " << endl);
 
-    std::string out_SearchCaps = "upnp:artist,dc:creator,upnp:album,dc:title";
+    std::string out_SearchCaps(
+        "upnp:class,upnp:artist,dc:creator,upnp:album,dc:title");
     data.addarg("SearchCaps", out_SearchCaps);
     return UPNP_E_SUCCESS;
 }
@@ -214,6 +215,13 @@ static string appForId(const string& id)
     return id.substr(dol0 + 1, dol1 - dol0 -1);
 }
 
+// Really preposterous: bubble (and maybe others) searches in root,
+// but we can't do this. So memorize the last browsed object ID and
+// use this as a replacement when root search is requested. Forget
+// about multiaccess, god forbid multithreading etc. Will work in most
+// cases though :)
+static string last_objid;
+
 int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
 {
     bool ok = false;
@@ -260,6 +268,8 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
 	   " RequestedCount " << in_RequestedCount <<
 	   " SortCriteria " << in_SortCriteria << endl);
 
+    last_objid = in_ObjectID;
+    
     vector<string> sortcrits;
     stringToStrings(in_SortCriteria, sortcrits);
 
@@ -373,24 +383,26 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
     vector<UpSong> entries;
     size_t totalmatches = 0;
     if (!in_ContainerID.compare("0")) {
-	// Root directory: can't search in there
-	LOGERR("ContentDirectory::actSearch: Can't search in root\n");
-    } else {
-	// Pass off request to appropriate app, defined by 1st elt in id
-	// Pass off request to appropriate app, defined by 1st elt in id
-	string app = appForId(in_ContainerID);
-	LOGDEB("ContentDirectory::actSearch: app: [" << app << "]\n");
-
-	CDPlugin *plg = m->pluginForApp(app);
-	if (plg) {
-	    totalmatches = plg->search(in_ContainerID, in_StartingIndex,
-                                       in_RequestedCount, in_SearchCriteria,
-                                       entries, sortcrits);
-	} else {
-	    LOGERR("ContentDirectory::Browse: unknown app: [" << app << "]\n");
-	}
+	// Root directory: can't search in there: we don't know what
+	// plugin to pass the search to. Substitute last browsed. Yes
+	// it does break in multiuser mode, and yes it's preposterous.
+	LOGERR("ContentDirectory::actSearch: Can't search in root. "
+               "Substituting last browsed container\n");
+        in_ContainerID = last_objid;
     }
 
+    // Pass off request to appropriate app, defined by 1st elt in id
+    string app = appForId(in_ContainerID);
+    LOGDEB("ContentDirectory::actSearch: app: [" << app << "]\n");
+
+    CDPlugin *plg = m->pluginForApp(app);
+    if (plg) {
+        totalmatches = plg->search(in_ContainerID, in_StartingIndex,
+                                   in_RequestedCount, in_SearchCriteria,
+                                   entries, sortcrits);
+    } else {
+        LOGERR("ContentDirectory::Browse: unknown app: [" << app << "]\n");
+    }
 
     // Process and send out result
     out_NumberReturned = ulltodecstr(entries.size());
