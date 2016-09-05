@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import sys
 import json
-from models import Artist, Album, Track, Playlist, SearchResult, Category, Role
+from models import Artist, Album, Track, Playlist, SearchResult, Category
 from qobuz.api import raw
 
 class Session(object):
@@ -101,10 +101,6 @@ class Session(object):
 
 def _parse_artist(json_obj):
     artist = Artist(id=json_obj['id'], name=json_obj['name'])
-    try:
-        artist.role = Role(json_obj['type'])
-    except:
-        pass
     return artist
 
 def _parse_album(json_obj, artist=None, artists=None):

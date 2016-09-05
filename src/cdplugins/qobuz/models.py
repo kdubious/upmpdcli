@@ -17,7 +17,6 @@
 
 
 from __future__ import unicode_literals
-from enum import Enum
 
 class Model(object):
     id = None
@@ -68,8 +67,3 @@ class SearchResult(Model):
 
 class Category(Model):
     image = None
-
-
-class Role(Enum):
-    main = 'MAIN'
-    featured = 'FEATURED'

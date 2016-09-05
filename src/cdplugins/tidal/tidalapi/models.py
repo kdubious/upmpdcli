@@ -17,7 +17,6 @@
 
 
 from __future__ import unicode_literals
-from enum import Enum
 
 IMG_URL = "http://images.osl.wimpmusic.com/im/im?w={width}&h={height}&{id_type}={id}"
 
@@ -86,7 +85,3 @@ class SearchResult(Model):
 class Category(Model):
     image = None
 
-
-class Role(Enum):
-    main = 'MAIN'
-    featured = 'FEATURED'

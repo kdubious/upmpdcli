@@ -22,7 +22,7 @@ import json
 import logging
 import requests
 from collections import namedtuple
-from .models import Artist, Album, Track, Playlist, SearchResult, Category, Role
+from .models import Artist, Album, Track, Playlist, SearchResult, Category
 try:
     from urlparse import urljoin
 except ImportError:
@@ -217,10 +217,6 @@ class Session(object):
 
 def _parse_artist(json_obj):
     artist = Artist(id=json_obj['id'], name=json_obj['name'])
-    try:
-        artist.role = Role(json_obj['type'])
-    except:
-        pass
     return artist
 
 

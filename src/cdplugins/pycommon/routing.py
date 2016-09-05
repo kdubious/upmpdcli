@@ -18,8 +18,12 @@ from __future__ import print_function
 
 import re
 import sys
-from urlparse import urlsplit, parse_qs
-from urllib import urlencode
+try:
+    from urlparse import urlsplit, parse_qs
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlsplit, parse_qs, urlencode
+
 
 try:
     import xbmc
