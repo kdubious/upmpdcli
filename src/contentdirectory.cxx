@@ -180,6 +180,9 @@ static size_t readroot(int offs, int cnt, vector<UpSong>& out)
 	makerootdir();
     }
     out.clear();
+    if (cnt <= 0)
+        cnt = rootdir.size();
+    
     if (offs < 0 || cnt <= 0) {
 	return rootdir.size();
     }

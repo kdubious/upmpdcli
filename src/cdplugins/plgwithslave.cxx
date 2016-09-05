@@ -299,9 +299,10 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
     auto decoded = json::parse(encoded);
     LOGDEB0("PlgWithSlave::results: got " << decoded.size() << " entries\n");
     LOGDEB1("PlgWithSlave::results: undecoded: " << decoded.dump() << endl);
-
+    bool dolimit = cnt > 0;
+    
     for (unsigned int i = stidx; i < decoded.size(); i++) {
-	if (--cnt < 0) {
+	if (dolimit && --cnt < 0) {
 	    break;
 	}
 	UpSong song;
