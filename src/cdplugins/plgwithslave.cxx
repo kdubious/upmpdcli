@@ -425,7 +425,7 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
 	
     unordered_map<string, string> res;
     if (!m->cmd.callproc("search", {
-		{"ctid", ctid},
+		{"objid", ctid},
 		{"field", slavefield},
 		{"value", vs[2]} },  res)) {
 	LOGERR("PlgWithSlave::search: slave failure\n");
