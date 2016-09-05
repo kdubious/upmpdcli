@@ -120,7 +120,7 @@ def trackentries(objid, tracks):
     return entries
 
 def direntry(id, pid, title):
-    return {'id': id, 'pid' : pid, 'tt': title, 'tp':'ct'}
+    return {'id': id, 'pid' : pid, 'tt': title, 'tp':'ct', 'searchable': '1'}
 
 def direntries(objid, ttidlist):
     content = []

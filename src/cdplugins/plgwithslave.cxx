@@ -313,7 +313,7 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 	}
 	string stp = it1.value();
 	
-#define JSONTOUPS(fld, nm)						\
+#define JSONTOUPS(fld, nm)                                              \
 	it1 = decoded[i].find(#nm);					\
 	if (it1 != decoded[i].end()) {					\
             if (it1.value() != nullptr)                                 \
@@ -322,6 +322,11 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 	
 	if (!stp.compare("ct")) {
 	    song.iscontainer = true;
+            it1 = decoded[i].find("searchable");
+            if (it1 != decoded[i].end() && it1.value() != nullptr) {
+                string ss = it1.value();
+                song.searchable = stringToBool(ss);
+            }
 	} else	if (!stp.compare("it")) {
 	    song.iscontainer = false;
 	    JSONTOUPS(uri, uri);
