@@ -247,7 +247,7 @@ bool PlgWithSlave::Internal::maybeStartCmd()
 // The Python code calls the service to translate the trackid to a temp
 // URL. We cache the result for a few seconds to avoid multiple calls
 // to tidal.
-string PlgWithSlave::get_media_url(const std::string& path)
+string PlgWithSlave::get_media_url(const string& path)
 {
     LOGDEB("PlgWithSlave::get_media_url: " << path << endl);
     if (!m->maybeStartCmd()) {
@@ -278,7 +278,7 @@ string PlgWithSlave::get_media_url(const std::string& path)
 }
 
 
-PlgWithSlave::PlgWithSlave(const std::string& name, CDPluginServices *services)
+PlgWithSlave::PlgWithSlave(const string& name, CDPluginServices *services)
     : CDPlugin(name, services)
 {
     m = new Internal(this, services->getexecpath(this),
@@ -293,11 +293,12 @@ PlgWithSlave::~PlgWithSlave()
 }
 
 static int resultToEntries(const string& encoded, int stidx, int cnt,
-			   std::vector<UpSong>& entries)
+			   vector<UpSong>& entries)
 {
+    entries.clear();
     auto decoded = json::parse(encoded);
-    LOGDEB("PlgWithSlave::results: got " << decoded.size() << " entries\n");
-    LOGDEB1("PlgWithSlave::results: undecoded json: " << decoded.dump() << endl);
+    LOGDEB0("PlgWithSlave::results: got " << decoded.size() << " entries\n");
+    LOGDEB1("PlgWithSlave::results: undecoded: " << decoded.dump() << endl);
 
     for (unsigned int i = stidx; i < decoded.size(); i++) {
 	if (--cnt < 0) {
@@ -331,7 +332,8 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 	    JSONTOUPS(artUri, upnp:albumArtURI);
 	    JSONTOUPS(duration_secs, duration);
 	} else {
-	    LOGERR("PlgWithSlave::browse: bad type in entry: " << it1.value() << endl);
+	    LOGERR("PlgWithSlave::browse: bad type in entry: " <<
+                   it1.value() << endl);
 	    continue;
 	}
 	JSONTOUPS(id, id);
@@ -344,14 +346,24 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
     return decoded.size();
 }
 
-int PlgWithSlave::browse(const std::string& objid, int stidx, int cnt,
-		  std::vector<UpSong>& entries,
-		  const std::vector<std::string>& sortcrits,
+// Better return a bogus informative entry than an outright error:
+static int errorEntries(const string& pid, vector<UpSong>& entries)
+{
+    entries.clear();
+    entries.push_back(
+        UpSong::item(pid + "$bogus", pid,
+                     "Service login or communication failure"));
+    return 1;
+}
+
+int PlgWithSlave::browse(const string& objid, int stidx, int cnt,
+		  vector<UpSong>& entries,
+		  const vector<string>& sortcrits,
 		  BrowseFlag flg)
 {
     LOGDEB("PlgWithSlave::browse\n");
     if (!m->maybeStartCmd()) {
-	return -1;
+	return errorEntries(objid, entries);
     }
     string sbflg;
     switch (flg) {
@@ -367,13 +379,13 @@ int PlgWithSlave::browse(const std::string& objid, int stidx, int cnt,
     unordered_map<string, string> res;
     if (!m->cmd.callproc("browse", {{"objid", objid}, {"flag", sbflg}}, res)) {
 	LOGERR("PlgWithSlave::browse: slave failure\n");
-	return -1;
+	return errorEntries(objid, entries);
     }
 
     auto it = res.find("entries");
     if (it == res.end()) {
 	LOGERR("PlgWithSlave::browse: no entries returned\n");
-	return -1;
+        return errorEntries(objid, entries);
     }
     return resultToEntries(it->second, stidx, cnt, entries);
 }
@@ -386,7 +398,7 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
 {
     LOGDEB("PlgWithSlave::search\n");
     if (!m->maybeStartCmd()) {
-	return -1;
+	return errorEntries(ctid, entries);
     }
 
     // We only accept field xx value as search criteria
@@ -395,7 +407,7 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
     if (vs.size() != 3) {
 	LOGERR("PlgWithSlave::search: bad search string: [" << searchstr <<
                "]\n");
-	return -1;
+	return errorEntries(ctid, entries);
     }
     const string& upnpproperty = vs[0];
     string slavefield;
@@ -407,23 +419,23 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
     } else if (!upnpproperty.compare("dc:title")) {
 	slavefield = "track";
     } else {
-	LOGERR("PlgWithSlave::search: bad property: [" << upnpproperty << "]\n");
-	return -1;
+	LOGERR("PlgWithSlave::search: bad property: [" << upnpproperty << endl);
+	return errorEntries(ctid, entries);
     }
 	
     unordered_map<string, string> res;
     if (!m->cmd.callproc("search", {
-		{"objid", ctid},
+		{"ctid", ctid},
 		{"field", slavefield},
 		{"value", vs[2]} },  res)) {
 	LOGERR("PlgWithSlave::search: slave failure\n");
-	return -1;
+	return errorEntries(ctid, entries);
     }
 
     auto it = res.find("entries");
     if (it == res.end()) {
 	LOGERR("PlgWithSlave::search: no entries returned\n");
-	return -1;
+	return errorEntries(ctid, entries);
     }
     return resultToEntries(it->second, stidx, cnt, entries);
 }
