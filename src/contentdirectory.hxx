@@ -53,6 +53,9 @@ public:
     virtual ConfSimple *getconfig(CDPlugin *);
     virtual std::string getexecpath(CDPlugin *);
 
+    /// Check if the configuration indicates that the media server needs to be started.
+    static bool mediaServerNeeded();
+    
 private:
     int actGetSearchCapabilities(const SoapIncoming& sc, SoapOutgoing& data);
     int actGetSortCapabilities(const SoapIncoming& sc, SoapOutgoing& data);

@@ -44,6 +44,7 @@
 #include "httpfs.hxx"
 #include "upmpdutils.hxx"
 #include "pathut.h"
+#include "contentdirectory.hxx"
 
 using namespace std;
 using namespace UPnPP;
@@ -84,6 +85,26 @@ static const char usage[] =
     "\n"
     ;
 
+// We can implement a Media Server in addition to the Renderer, for
+// accessing streaming services. This can happen in several modes. In
+// all cases, the Media Server is only created if the configuration
+// file does have parameters set for streaming services.
+// All this complication is needed because libupnp does not support
+// having several root devices in a single process, and because many
+// control points are confused by embedded devices.
+// 
+// - -m 0, default, Forked: this is for the main process, which will
+//   implement a Media Renderer device, and, if needed, fork/exec the
+//   Media Server (with option -m 2)
+// - -m 1, RdrOnly: for the main instance: be a Renderer, do not start the
+//   Media Server even if the configuration indicates it is needed
+//   (this is not used in normal situations, just edit the config
+//   instead!)
+// - -m 2, MSOnly Media Server only, this is for the process forked/execed
+//   by a main Renderer process.
+// - -m 3, Combined: for the main process: implement the Media Server
+//   as an embedded device. This works just fine with, for example,
+//   upplay, but confuses most of the other Control Points.
 enum MSMode {Forked, RdrOnly, MSOnly, Combined};
 
 static void
@@ -363,12 +384,12 @@ int main(int argc, char *argv[])
         if (g_config->get("scsendermpdport", value))
             sendermpdport = atoi(value.c_str());
 
-        // If a streaming service is enabled (only tidal for now), we
-        // need a Media Server. The way we implement it depends on the
-        // command line option:
-        if (g_config->hasNameAnywhere("tidaluser") ||
-            g_config->hasNameAnywhere("qobuzuser")) {
-            enableMediaServer = true;
+        // If a streaming service is enabled, we need a Media
+        // Server. We let a static ContentDirectory method decide this
+        // for us. The way we then implement it depends on the command
+        // line option (see the enum comments near the top of the file):
+        enableMediaServer = ContentDirectory::mediaServerNeeded();
+        if (enableMediaServer) {
             switch (msmode) {
             case MSOnly:
                 inprocessms = true;
@@ -387,6 +408,7 @@ int main(int argc, char *argv[])
             }
         }
     }
+
     if (Logger::getTheLog(logfilename) == 0) {
         cerr << "Can't initialize log" << endl;
         return 1;
@@ -426,7 +448,8 @@ int main(int argc, char *argv[])
     }
 
     string& mcfn = opts.cachefn;
-    if (ohmetapersist) {
+    // no cache access needed or desirable for a pure media renderer
+    if (!msonly && ohmetapersist) {
         opts.cachefn = path_cat(cachedir, "/metacache");
         if (!path_makepath(cachedir, 0755)) {
             LOGERR("makepath("<< cachedir << ") : errno : " << errno << endl);
@@ -440,7 +463,7 @@ int main(int argc, char *argv[])
                     LOGERR("chown("<< mcfn << ") : errno : " << errno << endl);
                 }
                 if (geteuid() == 0 && chown(cachedir.c_str(), runas, -1) != 0) {
-                    LOGERR("chown("<< cachedir << ") : errno : " << errno << endl);
+                    LOGERR("chown("<< cachedir << ") : errno : " <<errno<< endl);
                 }
             }
         }

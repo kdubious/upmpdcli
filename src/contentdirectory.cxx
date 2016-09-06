@@ -157,8 +157,9 @@ int ContentDirectory::actGetSystemUpdateID(const SoapIncoming& sc, SoapOutgoing&
 }
 
 static vector<UpSong> rootdir;
-void makerootdir()
+static bool makerootdir()
 {
+    rootdir.clear();
     if (g_config->hasNameAnywhere("tidaluser")) {
         rootdir.push_back(UpSong::container("0$tidal$", "0", "Tidal"));
     }
@@ -170,7 +171,15 @@ void makerootdir()
         // This should not happen, as we only start the CD if services
         // are configured !
         rootdir.push_back(UpSong::item("0$none$", "0", "No services found"));
+        return false;
+    } else {
+        return true;
     }
+}
+
+bool ContentDirectory::mediaServerNeeded()
+{
+    return makerootdir();
 }
 
 // Returns totalmatches
