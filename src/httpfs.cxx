@@ -278,7 +278,11 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
     string icondata;
     if (!iconpath.empty()) {
         if (!file_to_string(iconpath, icondata, &reason)) {
-            LOGERR("Failed reading " << iconpath << " : " << reason << endl);
+            if (iconpath.compare("/usr/share/upmpdcli/icon.png")) {
+                LOGERR("Failed reading " << iconpath << " : " << reason << endl);
+            } else {
+                LOGDEB("Failed reading " << iconpath << " : " << reason << endl);
+            }
         }
     }
     string presentationdata;
