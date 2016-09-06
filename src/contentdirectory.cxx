@@ -74,6 +74,8 @@ public:
 	    return new PlgWithSlave("tidal", service);
         } else if (!appname.compare("qobuz")) {
 	    return new PlgWithSlave("qobuz", service);
+        } else if (!appname.compare("gmusic")) {
+	    return new PlgWithSlave("gmusic", service);
 	} else {
 	    return nullptr;
 	}
@@ -160,11 +162,14 @@ static vector<UpSong> rootdir;
 static bool makerootdir()
 {
     rootdir.clear();
-    if (g_config->hasNameAnywhere("tidaluser")) {
-        rootdir.push_back(UpSong::container("0$tidal$", "0", "Tidal"));
+    if (g_config->hasNameAnywhere("gmusicuser")) {
+        rootdir.push_back(UpSong::container("0$gmusic$", "0", "Google Music"));
     }
     if (g_config->hasNameAnywhere("qobuzuser")) {
         rootdir.push_back(UpSong::container("0$qobuz$", "0", "Qobuz"));
+    }
+    if (g_config->hasNameAnywhere("tidaluser")) {
+        rootdir.push_back(UpSong::container("0$tidal$", "0", "Tidal"));
     }
 
     if (rootdir.empty()) {

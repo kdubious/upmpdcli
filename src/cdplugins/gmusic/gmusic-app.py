@@ -22,6 +22,7 @@
 from __future__ import print_function
 import sys
 import os
+import posixpath
 import json
 import re
 import conftree
@@ -29,7 +30,7 @@ import cmdtalkplugin
 from upmplgutils import *
 
 # Using kodi plugin routing plugin: lets use reuse a lot of code from
-# the addon.
+# the addon. And much convenient in general
 from routing import Plugin
 # Need bogus base_url value to avoid plugin trying to call xbmc to
 # retrieve addon id
@@ -46,7 +47,7 @@ session = Session()
 is_logged_in = False
 
 def maybelogin():
-    global formatid
+    global quality
     global httphp
     global pathprefix
     global is_logged_in
@@ -64,33 +65,40 @@ def maybelogin():
         raise Exception("No UPMPD_CONFIG in environment")
     upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
     
-    username = upconfig.get('qobuzuser')
-    password = upconfig.get('qobuzpass')
-    formatid = upconfig.get('qobuzformatid')
-    if formatid:
-        formatid = int(formatid)
-    else:
-        formatid = 5
+    username = upconfig.get('gmusicuser')
+    password = upconfig.get('gmusicpass')
+    quality = upconfig.get('gmusicquality')
+    if quality not in ('hi', 'med', 'low'):
+        raise Exception("gmusic bad quality value: " + quality)
         
     if not username or not password:
-        raise Exception("qobuzuser and/or qobuzpass not set in configuration")
+        raise Exception("gmusicuser and/or gmusicpass not set in configuration")
 
     is_logged_in = session.login(username, password)
     
+    if not is_logged_in:
+        raise Exception("gmusic login failed")
+
+
+def get_mimeandkbs():
+    if quality == 'hi':
+        return ('audio/mpeg', str(320))
+    elif quality == 'med':
+        return ('audio/mpeg', str(160))
+    elif quality == 'low':
+        return ('audio/mpeg', str(128))
+    else:
+        return ('audio/mpeg', str(128))
+
+
 @dispatcher.record('trackuri')
 def trackuri(a):
-    global formatid
+    global quality
     msgproc.log("trackuri: [%s]" % a)
     trackid = trackid_from_urlpath(pathprefix, a)
     maybelogin()
-    media_url = session.get_media_url(trackid, formatid)
-    #msgproc.log("%s" % media_url)
-    if formatid == 5:
-        mime = "audio/mpeg"
-        kbs = "320"
-    else:
-        mime = "application/flac"
-        kbs = "1410"
+    media_url = session.get_media_url(trackid, quality)
+    mime, kbs = get_mimeandkbs()
     return {'media_url' : media_url, 'mimetype' : mime, 'kbs' : kbs}
 
 
@@ -101,7 +109,7 @@ class XbmcPlugin:
         self.entries = []
         self.objid = ''
     def addDirectoryItem(self, hdl, endpoint, title, isend):
-        self.entries.append(direntry('0$qobuz$' + endpoint, self.objid, title))
+        self.entries.append(direntry('0$gmusic$' + endpoint, self.objid, title))
         return
     def endOfDirectory(self, h):
         return
@@ -113,7 +121,7 @@ class XbmcPlugin:
 def add_directory(title, endpoint):
     if callable(endpoint):
         endpoint = plugin.url_for(endpoint)
-    xbmcplugin.entries.append(direntry('0$qobuz$' + endpoint, xbmcplugin.objid, title))
+    xbmcplugin.entries.append(direntry('0$gmusic$' + endpoint, xbmcplugin.objid, title))
 
 def urls_from_id(view_func, items):
     #msgproc.log("urls_from_id: items: %s" % str([item.id for item in items]))
@@ -122,11 +130,12 @@ def urls_from_id(view_func, items):
 def view(data_items, urls, end=True):
     for item, url in zip(data_items, urls):
         title = item.name
-        xbmcplugin.entries.append(direntry('0$qobuz$' + url, xbmcplugin.objid, title))
+        xbmcplugin.entries.append(direntry('0$gmusic$' + url, xbmcplugin.objid, title))
 
 def track_list(tracks):
     xbmcplugin.entries += trackentries(httphp, pathprefix,
                                        xbmcplugin.objid, tracks)
+
 
 @dispatcher.record('browse')
 def browse(a):
@@ -138,12 +147,12 @@ def browse(a):
     objid = a['objid']
     bflg = a['flag'] if 'flag' in a else 'children'
     
-    if re.match('0\$qobuz\$', objid) is None:
+    if re.match('0\$gmusic\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
     maybelogin()
 
     xbmcplugin.objid = objid
-    idpath = objid.replace('0$qobuz$', '', 1)
+    idpath = objid.replace('0$gmusic$', '', 1)
     if bflg == 'meta':
         m = re.match('.*\$(.+)$', idpath)
         if m:
@@ -158,94 +167,14 @@ def browse(a):
 
 @plugin.route('/')
 def root():
-    add_directory("Discover", whats_new)
-    add_directory('Favourites', my_music)
-
-@plugin.route('/whats_new')
-def whats_new():
-    add_directory('Playlists', plugin.url_for(featured, content_type='playlists'))
-    add_directory('Albums', plugin.url_for(featured, content_type='albums'))
-    add_directory('Artists', plugin.url_for(featured, content_type='artists'))
-    xbmcplugin.endOfDirectory(plugin.handle)
-
-@plugin.route('/featured/<content_type>')
-def featured(content_type=None):
-    items = session.get_featured_items(content_type)
-    if content_type == 'artists':
-        view(items, urls_from_id(artist_view, items))
-    elif content_type == 'albums':
-        view(items, urls_from_id(album_view, items))
-    elif content_type == 'playlists':
-        view(items, urls_from_id(playlist_view, items))
-    else:
-        print("qobuz-app bad featured type %s" % content_type, file=sys.stderr)
-
+    add_directory('Library', my_music)
 
 @plugin.route('/my_music')
 def my_music():
-    add_directory('Albums', favourite_albums)
-    add_directory('Tracks', favourite_tracks)
-    add_directory('Artists', favourite_artists)
-    add_directory('Playlists', favourite_playlists)
-    xbmcplugin.endOfDirectory(plugin.handle)
-    pass
+    add_directory('Albums', my_music)
 
-@plugin.route('/album/<album_id>')
-def album_view(album_id):
-    track_list(session.get_album_tracks(album_id))
-
-
-@plugin.route('/playlist/<playlist_id>')
-def playlist_view(playlist_id):
-    track_list(session.get_playlist_tracks(playlist_id))
-
-def ListItem(tt):
-    return tt
-
-@plugin.route('/artist/<artist_id>')
-def artist_view(artist_id):
-    xbmcplugin.addDirectoryItem(
-        plugin.handle, plugin.url_for(similar_artists, artist_id),
-        ListItem('Similar Artists'), True
-    )
-    albums = session.get_artist_albums(artist_id) 
-    view(albums, urls_from_id(album_view, albums))
-
-
-@plugin.route('/artist/<artist_id>/similar')
-def similar_artists(artist_id):
-    artists = session.get_artist_similar(artist_id)
-    view(artists, urls_from_id(artist_view, artists))
-
-
-@plugin.route('/favourite_tracks')
-def favourite_tracks():
-    track_list(session.user.favorites.tracks())
-
-
-@plugin.route('/favourite_artists')
-def favourite_artists():
-    try:
-        items = session.user.favorites.artists()
-    except Exception as err:
-        msgproc.log("session.user.favorite.artists failed: %s" % err)
-        return
-    if items:
-        msgproc.log("First artist name %s"% items[0].name)
-        view(items, urls_from_id(artist_view, items))
-
-
-@plugin.route('/favourite_albums')
-def favourite_albums():
-    items = session.user.favorites.albums()
-    view(items, urls_from_id(album_view, items))
-
-
-@plugin.route('/favourite_playlists')
-def favourite_playlists():
-    items = session.user.favorites.playlists()
-    view(items, urls_from_id(playlist_view, items))
-
+#data = api.get_all_songs()
+#print("songs: %s" % json.dumps(data,indent=4))
 
 @dispatcher.record('search')
 def search(a):
@@ -255,7 +184,7 @@ def search(a):
     objid = a['objid']
     field = a['field']
     value = a['value']
-    if re.match('0\$qobuz\$', objid) is None:
+    if re.match('0\$gmusic\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
     xbmcplugin.objid = objid
     maybelogin()

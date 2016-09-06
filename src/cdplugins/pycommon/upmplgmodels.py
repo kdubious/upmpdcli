@@ -27,6 +27,7 @@ class Model(object):
 
 
 class Album(Model):
+    name = "Unknown"
     artist = None
     artists = []
     num_tracks = -1

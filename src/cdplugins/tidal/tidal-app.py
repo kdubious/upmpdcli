@@ -28,6 +28,8 @@ import json
 import re
 import conftree
 import cmdtalkplugin
+from upmplgutils import *
+
 import tidalapi
 from tidalapi.models import Album, Artist
 from tidalapi import Quality
@@ -89,58 +91,6 @@ def maybelogin():
     is_logged_in = True
 
 
-def trackentries(objid, tracks):
-    entries = []
-    for track in tracks:
-        if not track.available:
-            continue
-        li = {}
-        li['pid'] = objid
-        li['id'] = objid + '$' + "%s"%track.id
-        li['tt'] = track.name
-        li['uri'] = 'http://%s' % httphp + \
-                    posixpath.join(pathprefix,
-                                   'track?version=1&trackId=%s' % \
-                                   track.id)
-        #msgproc.log("URI: [%s]" % li['uri'])
-        li['tp'] = 'it'
-        if track.album:
-            li['upnp:album'] = track.album.name
-            if track.album.image:
-                li['upnp:albumArtURI'] = track.album.image
-        li['upnp:originalTrackNumber'] =  str(track.track_num)
-        li['upnp:artist'] = track.artist.name
-        li['dc:title'] = track.name
-        li['discnumber'] = str(track.disc_num)
-        li['duration'] = track.duration
-        if track.album.release_date:
-            li['releasedate'] = track.album.release_date 
-
-        entries.append(li)
-    return entries
-
-def direntry(id, pid, title):
-    return {'id': id, 'pid' : pid, 'tt': title, 'tp':'ct', 'searchable': '1'}
-
-def direntries(objid, ttidlist):
-    content = []
-    for tt,id in ttidlist:
-        content.append(direntry(objid + '$' + id, objid, tt))
-    return content
-
-def trackid_from_urlpath(a):
-    if 'path' not in a:
-        raise Exception("No path in args")
-    path = a['path']
-
-    # pathprefix + 'track?version=1&trackId=trackid
-    exp = posixpath.join(pathprefix, '''track\?version=1&trackId=(.+)$''')
-    m = re.match(exp, path)
-    if m is None:
-        raise Exception("trackuri: path [%s] does not match [%s]" % (path, exp))
-    trackid = m.group(1)
-    return trackid
-
 def get_mimeandkbs():
     if quality == Quality.lossless:
         return ('audio/flac', str(1411))
@@ -152,7 +102,7 @@ def get_mimeandkbs():
 @dispatcher.record('trackuri')
 def trackuri(a):
     msgproc.log("trackuri: [%s]" % a)
-    trackid = trackid_from_urlpath(a)
+    trackid = trackid_from_urlpath(pathprefix, a)
     
     maybelogin()
     media_url = session.get_media_url(trackid)
@@ -196,7 +146,8 @@ def view(data_items, urls, end=True):
         xbmcplugin.entries.append(direntry('0$tidal$' + url, xbmcplugin.objid, title))
 
 def track_list(tracks):
-    xbmcplugin.entries += trackentries(xbmcplugin.objid, tracks)
+    xbmcplugin.entries += trackentries(httphp, pathprefix,
+                                       xbmcplugin.objid, tracks)
        
 @dispatcher.record('browse')
 def browse(a):

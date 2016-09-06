@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import sys
 import json
-from models import Artist, Album, Track, Playlist, SearchResult, Category
+from upmplgmodels import Artist, Album, Track, Playlist, SearchResult, Category
 from qobuz.api import raw
 
 class Session(object):

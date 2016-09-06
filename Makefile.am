@@ -93,7 +93,10 @@ dist_cdpluginspycom_DATA = \
                     src/cdplugins/pycommon/cmdtalk.py \
                     src/cdplugins/pycommon/cmdtalkplugin.py \
                     src/cdplugins/pycommon/conftree.py \
-                    src/cdplugins/pycommon/routing.py
+                    src/cdplugins/pycommon/routing.py \
+                    src/cdplugins/pycommon/upmplgmodels.py \
+                    src/cdplugins/pycommon/upmplgutils.py
+
 cdpluginstidaldir = $(pkgdatadir)/cdplugins/tidal
 dist_cdpluginstidal_DATA = \
                   src/cdplugins/tidal/tidal-app.py 
@@ -101,12 +104,12 @@ cdpluginstidallibdir = $(pkgdatadir)/cdplugins/tidal/tidalapi
 dist_cdpluginstidallib_DATA = \
                   src/cdplugins/tidal/tidalapi/__init__.py \
                   src/cdplugins/tidal/tidalapi/models.py
+
 cdpluginsqobuzdir = $(pkgdatadir)/cdplugins/qobuz
 dist_cdpluginsqobuz_DATA = \
                   src/cdplugins/qobuz/debug.py  \
                   src/cdplugins/qobuz/exception.py \
                   src/cdplugins/qobuz/__init__.py \
-                  src/cdplugins/qobuz/models.py \
                   src/cdplugins/qobuz/qobuz-app.py \
                   src/cdplugins/qobuz/session.py 
 cdpluginsqobuzlibdir = $(pkgdatadir)/cdplugins/qobuz/api
@@ -114,6 +117,11 @@ dist_cdpluginsqobuzlib_DATA = \
                   src/cdplugins/qobuz/api/easy.py \
                   src/cdplugins/qobuz/api/__init__.py \
                   src/cdplugins/qobuz/api/raw.py
+
+cdpluginsgmusicdir = $(pkgdatadir)/cdplugins/gmusic
+dist_cdpluginsgmusic_DATA = \
+                  src/cdplugins/gmusic/gmusic-app.py \
+                  src/cdplugins/gmusic/session.py 
 
 EXTRA_DIST = web.tar.gz rdpl2stream.tar.gz systemd/upmpdcli.service
 
@@ -136,6 +144,7 @@ install-data-hook: web.tar.gz rdpl2stream.tar.gz
 	(cd $(DESTDIR)$(pkgdatadir); test -d src_scripts || mkdir src_scripts)
 	(cd $(DESTDIR)/$(cdpluginstidaldir); chmod a+x tidal-app.py) 
 	(cd $(DESTDIR)/$(cdpluginsqobuzdir); chmod a+x qobuz-app.py) 
+	(cd $(DESTDIR)/$(cdpluginsgmusicdir); chmod a+x gmusic-app.py) 
 
 dist_pkgdata_SCRIPTS = samplescripts/Analog-Input
 
