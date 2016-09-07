@@ -121,7 +121,7 @@
 #gmusicquality = ned
 # <var name="gmusicdeviceid" type="string"> <brief>Google Music device
 # id.</brief> <descr>Your system MAC address will be used by default, but
-# this will count agains the maximum count of registered devices for this
+# this will count against the maximum count of registered devices for this
 # account.  You can set the gmusicdeviceid value to the device ID from a
 # phone or tablet on which you also use Google Play Music.</descr></var>
 #gmusicdeviceid =
