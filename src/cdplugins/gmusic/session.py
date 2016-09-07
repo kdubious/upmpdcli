@@ -39,11 +39,15 @@ class Session(object):
     def dmpdata(self, who, data):
         print("%s: %s" % (who, json.dumps(data, indent=4)), file=sys.stderr)
         
-    def login(self, username, password):
+    def login(self, username, password, deviceid=None):
         self.api = Mobileclient(debug_logging=False)
 
-        logged_in = self.api.login(username, password,
-                                   Mobileclient.FROM_MAC_ADDRESS)
+        if deviceid is None:
+            logged_in = self.api.login(username, password,
+                                       Mobileclient.FROM_MAC_ADDRESS)
+        else:
+            logged_in = self.api.login(username, password, deviceid)
+
         #print("Logged in: %s" % logged_in)
         #data = self.api.get_registered_devices()
         #print("registered: %s" % data)
@@ -82,7 +86,7 @@ class Session(object):
 
     def get_user_playlists(self):
         pldata = self.api.get_all_playlists()
-        self.dmpdata("playlists", pldata)
+        #self.dmpdata("playlists", pldata)
         return [_parse_playlist(pl) for pl in pldata]
 
     def create_station_for_genre(self, genre_id):
@@ -144,7 +148,7 @@ class Session(object):
             return ret
 
         situation = self.sitbyid[id]
-        self.dmpdata("situation", situation)
+        #self.dmpdata("situation", situation)
         if 'situations' in situation:
             ret['situations'] = [self._parse_situation(s) \
                                  for s in situation['situations']]
@@ -203,7 +207,7 @@ class Session(object):
         data = self.api.get_artist_info(artist_id, include_albums=incalbs,
                                         max_top_tracks=maxtop,
                                         max_rel_artist=maxrel)
-        self.dmpdata("artist_info", data)
+        #self.dmpdata("artist_info", data)
         if 'albums' in data:
             ret["albums"] = [_parse_album(alb) for alb in data['albums']]
         if 'topTracks' in data:
@@ -218,7 +222,7 @@ class Session(object):
     
     def search(self, query):
         data = self.api.search(query, max_results=50)
-        self.dmpdata("Search", data)
+        #self.dmpdata("Search", data)
         #track = data['song_hits'][0]['track']
         #song_id = track['nid'] if 'nid' in track else track['id']
 
@@ -229,8 +233,10 @@ class Session(object):
         return SearchResult(artists=ar, albums=al, playlists=pl, tracks=tr)
 
 
+
 def entryOrUnknown(data, name, default="Unknown"):
     return data[name] if name in data else default
+
 
 def _parse_artist(data):
     return Artist(id=data['artistId'], name=data['name'])
@@ -244,8 +250,8 @@ def _parse_playlist(data):
 def _parse_situation_station(data):
     return Playlist(id=data['seed']['curatedStationId'], name=data['name'])
 
-def _parse_track(data, album=None):
 
+def _parse_track(data, album=None):
     artist_name = entryOrUnknown(data, 'artist')
     albartist_name = entryOrUnknown(data, 'albartistAlbum', None)
 
@@ -276,6 +282,7 @@ def _parse_track(data, album=None):
     
     return Track(**kwargs)
 
+
 def _parse_ln_album(data):
     artist = Artist(id=data['artist_metajam_id'], name=data['artist_name'])
     kwargs = {
@@ -287,6 +294,7 @@ def _parse_ln_album(data):
         kwargs['image'] = data['images'][0]['url']
 
     return Album(**kwargs)
+
 
 def _parse_album(data, artist=None):
     if artist is None:

@@ -70,11 +70,14 @@ def maybelogin():
     quality = upconfig.get('gmusicquality')
     if quality not in ('hi', 'med', 'low'):
         raise Exception("gmusic bad quality value: " + quality)
-        
+    deviceid = upconfig.get('gmusicdeviceid')
+    if not deviceid:
+        deviceid = None
+
     if not username or not password:
         raise Exception("gmusicuser and/or gmusicpass not set in configuration")
 
-    is_logged_in = session.login(username, password)
+    is_logged_in = session.login(username, password, deviceid)
     
     if not is_logged_in:
         raise Exception("gmusic login failed")
