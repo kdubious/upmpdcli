@@ -68,3 +68,6 @@ class SearchResult(Model):
 
 class Category(Model):
     image = None
+
+class Genre(Model):
+    pass
