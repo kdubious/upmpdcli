@@ -80,6 +80,21 @@ qobuzpass:: Qobuz password. The password for your Qobuz account.
 qobuzformatid:: Qobuz stream quality. 5 for mp3/320, 7 for FLAC if
 your subscription allows it.
 
+=== Google Music streaming service parameters 
+
+gmusicuser:: Google Music user name. Your Google Music login name (probably a gmail address).
+
+gmusicpass:: Google Music password. The password for your Google Music account.
+
+gmusicquality:: Google Music stream quality. 'hi' for mp3/320, 'med'
+for mp3/160, 'low' for mp3/128.
+
+gmusicdeviceid:: Google Music device
+id. Your system MAC address will be used by default, but
+this will count agains the maximum count of registered devices for this
+account.  You can set the gmusicdeviceid value to the device ID from a
+phone or tablet on which you also use Google Play Music.
+
 === MPD parameters 
 
 mpdhost:: Host MPD runs on. Defaults to localhost. This can also be specified as -h
