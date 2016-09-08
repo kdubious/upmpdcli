@@ -26,6 +26,23 @@ from __future__ import print_function, unicode_literals
 import posixpath
 import re
 
+# Bogus class instanciated as global object for helping with reusing kodi addon code
+class XbmcPlugin:
+    SORT_METHOD_TRACKNUM = 1
+    def __init__(self, idprefix):
+        self.entries = []
+        self.objid = ''
+        self.idprefix = idprefix
+    def addDirectoryItem(self, hdl, endpoint, title, isend):
+        self.entries.append(direntry(self.idprefix + endpoint, self.objid, title))
+        return
+    def endOfDirectory(self, h):
+        return
+    def setContent(self, a, b):
+        return
+    def addSortMethod(self, a, b):
+        return
+    
 def trackentries(httphp, pathprefix, objid, tracks):
     """
     Transform a list of Track objects to the format expected by the parent

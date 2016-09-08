@@ -94,22 +94,6 @@ def trackuri(a):
     return {'media_url' : media_url, 'mimetype' : mime, 'kbs' : kbs}
 
 
-# Bogus global for helping with reusing kodi addon code
-class XbmcPlugin:
-    SORT_METHOD_TRACKNUM = 1
-    def __init__(self):
-        self.entries = []
-        self.objid = ''
-    def addDirectoryItem(self, hdl, endpoint, title, isend):
-        self.entries.append(direntry('0$qobuz$' + endpoint, self.objid, title))
-        return
-    def endOfDirectory(self, h):
-        return
-    def setContent(self, a, b):
-        return
-    def addSortMethod(self, a, b):
-        return
-    
 def add_directory(title, endpoint):
     if callable(endpoint):
         endpoint = plugin.url_for(endpoint)
@@ -143,7 +127,7 @@ def track_list(tracks):
 @dispatcher.record('browse')
 def browse(a):
     global xbmcplugin
-    xbmcplugin = XbmcPlugin()
+    xbmcplugin = XbmcPlugin('0$qobuz$')
     msgproc.log("browse: [%s]" % a)
     if 'objid' not in a:
         raise Exception("No objid in args")
