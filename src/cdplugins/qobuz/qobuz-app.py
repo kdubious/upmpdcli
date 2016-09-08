@@ -259,7 +259,6 @@ def favourite_playlists():
     items = session.user.favorites.playlists()
     view(items, urls_from_id(playlist_view, items))
 
-
 @dispatcher.record('search')
 def search(a):
     global xbmcplugin
@@ -273,11 +272,14 @@ def search(a):
     xbmcplugin.objid = objid
     maybelogin()
     
-    searchresults = session.search(value)
-
     if field not in ['artist', 'album', 'playlist', 'track']:
         msgproc.log('Unknown field \'%s\'' % field)
-        field = None
+        field = 'track'
+
+    # type may be 'tracks', 'albums', 'artists' or 'playlists'
+    qfield = field + "s"
+    searchresults = session.search(value, qfield)
+
     if field is None or field == 'artist':
         view(searchresults.artists,
              urls_from_id(artist_view, searchresults.artists), end=False)

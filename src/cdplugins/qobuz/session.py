@@ -90,12 +90,24 @@ class Session(object):
                             data['playlists']['items']]
         return []
 
-    def search(self, query):
-        data = self.api.catalog_search(query=query)
-        ar = [_parse_artist(i) for i in data['artists']['items']]
-        al = [_parse_album(i) for i in data['albums']['items']]
-        pl = [_parse_playlist(i) for i in data['playlists']['items']]
-        tr = [_parse_track(i) for i in data['tracks']['items']]
+    def search(self, query, tp):
+        data = self.api.catalog_search(query=query, type=tp)
+        try:
+            ar = [_parse_artist(i) for i in data['artists']['items']]
+        except:
+            ar = []
+        try:
+            al = [_parse_album(i) for i in data['albums']['items']]
+        except:
+            al = []
+        try:
+            pl = [_parse_playlist(i) for i in data['playlists']['items']]
+        except:
+            pl = []
+        try:
+            tr = [_parse_track(i) for i in data['tracks']['items']]
+        except:
+            tr = []
         return SearchResult(artists=ar, albums=al, playlists=pl, tracks=tr)
 
 
