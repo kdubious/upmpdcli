@@ -656,6 +656,9 @@ int main(int argc, char *argv[])
         unordered_map<string, VDirContent>();
     unordered_map<string, VDirContent> *msfiles = &emptyfiles;
     vector<string> args{"-m", "2"};
+    // Having this as a stack object means that it will be
+    // deleted when we return from main (on a signal), ensuring that
+    // the child process gets killed.
     ExecCmd cmd;
     
     if (inprocessms) {

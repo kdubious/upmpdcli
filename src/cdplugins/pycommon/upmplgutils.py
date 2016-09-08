@@ -15,18 +15,23 @@
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 #
-# Shared code for the tidal, qobuz and gmusic plugins (at this
-# point). This assumes: - The interface for the entity objects (track,
-# album...)  concretely defined in models.py, but duck-typed.  - The
-# format for the permanent URLs # e module implements utility
-# functions for translating to/from what our parent expects or sends
-# on the pipe.
+"""
+Shared code for the tidal, qobuz, gmusic plugins.
+
+   - Uses the interface for the entity objects (track, album...)
+     concretely defined in models.py, but duck-typed.
+   - Defines and uses the format for the permanent URLs
+
+The module implements utility functions for translating to/from what
+our parent expects or sends on the pipe.
+"""
 from __future__ import print_function, unicode_literals
 
 import posixpath
 import re
 
-# Bogus class instanciated as global object for helping with reusing kodi addon code
+# Bogus class instanciated as global object for helping with reusing
+# kodi addon code
 class XbmcPlugin:
     SORT_METHOD_TRACKNUM = 1
     def __init__(self, idprefix):
