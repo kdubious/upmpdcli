@@ -61,27 +61,3 @@ parameters for any of the supported services. See the
 link:upmpdcli.html#upmpdcli.configfile[configuration documentation] for
 details (look for your service name).
 
-== Installation and service-specific notes
-
-The code for accessing most services is self-contained. There is an
-exception for Google Music, which needs the separate installation of a
-Python library.
-
-=== Google Music
-
-You need to install the
-link:http://unofficial-google-music-api.readthedocs.io/en/latest/usage.html#usage[gmusicapi Python Package]
-
-=== Tidal
-
-Nothing for now.
-
-=== Qobuz
-
-Nothing for now.
-
-
-
-
-
-

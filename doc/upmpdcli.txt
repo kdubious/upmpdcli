@@ -4,9 +4,15 @@
 *upmpdcli* is an UPnP Media Renderer front-end to *MPD*, the Music Player
 Daemon. It supports both pure UPnP and the OpenHome ohMedia services.
 
-In OpenHome mode, it supports radio streams and has the ability to
-interface to Linn Songcast for multiroom synchronized playing either of
-audio captured on Windows or Mac OS X or of its own stream.
+In OpenHome mode, it supports radio streams.
+
+It has the ability to interface to Linn Songcast for multiroom synchronized
+playing either of audio captured on Windows or Mac OS X or of its own
+stream.
+
+As of version 1.2.0, the software includes a Media Server gateway to
+streaming music services, with initial support for Google Play Music, Qobuz
+and Tidal.
 
 [[upmpdcli.security]]
 == Security
@@ -30,28 +36,24 @@ client protocol). There is actually little reason to use raw PCM, and, for
 example, WAV streams, which have an identification header, will be handled
 just fine.
 
-However, recent versions do support audio/L16, but only with the
-development version of MPD (0.20) and there are conditions on the Media
-Server (it must output the audio formats parameters with the MIME
-type). See this Github issue for more details:
+There is an exception: recent versions of upmpdcli do support audio/L16,
+but only with the development version of MPD (0.20) and there are
+conditions on the Media Server (it must output the audio formats parameters
+with the MIME type). See this Github issue for more details:
 https://github.com/medoc92/upmpdcli/issues/36#issuecomment-227761220
 
 [[upmpdcli.streaming]]
 == Streaming services support
 
-Upmpdcli versions 1.4 (not released yet) and later offer support for
-accessing music on some streaming services (where you will need a valid
-account).
-
-The initial version only supports the http://www.tidal.com[Tidal] music
-service.
+Upmpdcli versions 1.2.0 and later offer support for accessing music on some
+streaming services. You will need a valid account on the services you want
+to use. The initial release supports Google Play Music, Qobuz and Tidal.
 
 When the function is activated, upmpdcli creates a separate auxiliary Media
-Server, with the sole purpose of presenting the streaming server catalog
-(and proxying the streams when necessary). You will see it appear on the
-network if streaming service parameters are present in the configuration
-file. The Media Server name is the one for the upmpdcli instance, with
-"-mediaserver" appended.
+Server, with the sole purpose of presenting the streaming server
+catalog. You will see it appear on the network if streaming service
+parameters are present in the configuration file. The Media Server name is
+the one for the upmpdcli instance, with "-mediaserver" appended.
 
 Streaming is not limited to the local upmpdcli renderer, and the Media
 Server should happily send music to other renderers.
@@ -59,15 +61,17 @@ Server should happily send music to other renderers.
 === Notes on the Tidal interface
 
 The software is not officialy supported by Tidal, and may just stop to
-work one day... It only works with a valid Tidal subscription.
+work one day...
+
+It only works with a valid Tidal subscription.
 
 The configuration parameters are described
 link:#_tidal_streaming_service_parameters[further down]. 
 
 === Notes on the Qobuz interface
 
-As for Tidal, the software is not officialy supported by Qobuz, and may
-just stop to work one day.
+The WEB API is not officialy supported by Qobuz, and may just stop to work
+one day.
 
 You need a valid Qobuz subscription.
 
@@ -78,6 +82,21 @@ up results.
 
 The configuration parameters are described
 link:#_qobuz_streaming_service_parameters[further down]. 
+
+[[upmpdcli.googlemusicnotes]]
+=== Notes on the Google Music interface
+
+As for the other services, the API used is not officially supported and may
+stop to work one day.
+
+This requires the installation of the external *gmusicapi* Python
+package. 
+link:http://unofficial-google-music-api.readthedocs.io/en/latest/usage.html#usage[See the installation notes here].
+
+You will need a valid subscription for most functions.
+
+
+
 
 [[upmpdcli.config]]
 == Configuration
