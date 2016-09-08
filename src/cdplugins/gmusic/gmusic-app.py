@@ -124,16 +124,28 @@ class XbmcPlugin:
 def add_directory(title, endpoint):
     if callable(endpoint):
         endpoint = plugin.url_for(endpoint)
-    xbmcplugin.entries.append(direntry('0$gmusic$' + endpoint, xbmcplugin.objid, title))
+    xbmcplugin.entries.append(direntry('0$gmusic$' + endpoint,
+                                       xbmcplugin.objid, title))
 
 def urls_from_id(view_func, items):
     #msgproc.log("urls_from_id: items: %s" % str([item.id for item in items]))
-    return [plugin.url_for(view_func, item.id) for item in items if str(item.id).find('http') != 0]
+    return [plugin.url_for(view_func, item.id) for item in items
+            if str(item.id).find('http') != 0]
 
 def view(data_items, urls, end=True):
     for item, url in zip(data_items, urls):
         title = item.name
-        xbmcplugin.entries.append(direntry('0$gmusic$' + url, xbmcplugin.objid, title))
+        try:
+            image = item.image if item.image else None
+        except:
+            image = None
+        try:
+            artnm = item.artist.name if item.artist.name else None
+        except:
+            artnm = None
+        xbmcplugin.entries.append(
+            direntry('0$gmusic$' + url, xbmcplugin.objid, title, arturi=image,
+                     artist=artnm))
 
 def track_list(tracks):
     xbmcplugin.entries += trackentries(httphp, pathprefix,
@@ -208,11 +220,9 @@ def dynstation_view(radio_id):
 def listen_now():
     data = session.listen_now()
     items = data['albums']
-    print("listen_now: albums: %s" % items, file=sys.stderr)
     if len(items):
         view(items, urls_from_id(album_view, items))
     items = data['stations']
-    print("listen_now: stations: %s" % items, file=sys.stderr)
     if len(items):
         view(items, urls_from_id(station_view, items))
 
@@ -256,7 +266,6 @@ def user_playlists():
 @plugin.route('/user_albums')
 def user_albums():
     items = session.get_user_albums()
-    print("user_albums: got %s" % items, file=sys.stderr)
     view(items, urls_from_id(album_view, items))
 
 @plugin.route('/user_artists')

@@ -123,6 +123,12 @@ diffmaps(const unordered_map<string, string>& old,
 }
 
 
+#define UPNPXML(FLD, TAG)				       \
+	if (!FLD.empty()) {				       \
+	    ss << "<" #TAG ">" << SoapHelp::xmlQuote(FLD) <<   \
+		"</" #TAG ">";				       \
+	}
+
 string UpSong::didl()
 {
     ostringstream ss;
@@ -138,24 +144,15 @@ string UpSong::didl()
 	"<dc:title>" << SoapHelp::xmlQuote(title) << "</dc:title>";
     if (iscontainer) {
 	ss << "<upnp:class>object.container</upnp:class>" <<
-	    (artist.empty() ? string() :
-	     string("<upnp:userAnnotation>" + SoapHelp::xmlQuote(artist) +
+	    (tracknum.empty() ? string() :
+	     string("<upnp:userAnnotation>" + SoapHelp::xmlQuote(tracknum) +
 		    "</upnp:userAnnotation>"));
 	    
     } else {
 	ss << "<upnp:class>object.item.audioItem.musicTrack</upnp:class>";
 
-#define UPNPXML(FLD, TAG)				       \
-	if (!FLD.empty()) {				       \
-	    ss << "<" #TAG ">" << SoapHelp::xmlQuote(FLD) <<   \
-		"</" #TAG ">";				       \
-	}
-
-	UPNPXML(artist, dc:creator);
-	UPNPXML(artist, upnp:artist);
 	UPNPXML(genre, upnp:genre);
 	UPNPXML(tracknum, upnp:originalTrackNumber);
-	UPNPXML(artUri, upnp:albumArtURI);
 
 	ss << "<res " << "duration=\"" <<
 	    upnpduration(duration_secs * 1000)  << "\" " <<
@@ -164,6 +161,9 @@ string UpSong::didl()
 	    SoapHelp::xmlQuote(uri) <<
 	    "</res>";
     }
+    UPNPXML(artist, dc:creator);
+    UPNPXML(artist, upnp:artist);
+    UPNPXML(artUri, upnp:albumArtURI);
     ss << "</" << typetag << ">";
     return ss.str();
 }

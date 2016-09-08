@@ -41,10 +41,10 @@ public:
     std::string parentid;
     std::string uri;
     std::string name; // only set for radios apparently. 
-    std::string artist; // Reused as annot for containers
+    std::string artist; 
     std::string album;
     std::string title;
-    std::string tracknum;
+    std::string tracknum; // Reused as annot for containers
     std::string genre;
     std::string artUri;
 
@@ -60,13 +60,16 @@ public:
     // Format to DIDL fragment 
     std::string didl();
 
-    static UpSong container(const std::string& i, const std::string& p,
-			    const std::string& t, bool s = true,
+    static UpSong container(const std::string& id, const std::string& pid,
+			    const std::string& title, bool sable = true,
 			    const std::string& annot = std::string()) {
 	UpSong song;
 	song.iscontainer = true;
-	song.id = i; song.parentid = p; song.title = t; song.searchable = s;
-	song.artist = annot;
+	song.id = id;
+        song.parentid = pid;
+        song.title = title;
+        song.searchable = sable;
+	song.tracknum = annot;
 	return song;
     }
     static UpSong item(const std::string& id, const std::string& parentid,

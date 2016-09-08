@@ -113,16 +113,28 @@ class XbmcPlugin:
 def add_directory(title, endpoint):
     if callable(endpoint):
         endpoint = plugin.url_for(endpoint)
-    xbmcplugin.entries.append(direntry('0$qobuz$' + endpoint, xbmcplugin.objid, title))
+    xbmcplugin.entries.append(direntry('0$qobuz$' + endpoint,
+                                       xbmcplugin.objid, title))
 
 def urls_from_id(view_func, items):
     #msgproc.log("urls_from_id: items: %s" % str([item.id for item in items]))
-    return [plugin.url_for(view_func, item.id) for item in items if str(item.id).find('http') != 0]
+    return [plugin.url_for(view_func, item.id)
+            for item in items if str(item.id).find('http') != 0]
 
 def view(data_items, urls, end=True):
     for item, url in zip(data_items, urls):
         title = item.name
-        xbmcplugin.entries.append(direntry('0$qobuz$' + url, xbmcplugin.objid, title))
+        try:
+            image = item.image if item.image else None
+        except:
+            image = None
+        try:
+            artnm = item.artist.name if item.artist.name else None
+        except:
+            artnm = None
+        xbmcplugin.entries.append(
+            direntry('0$qobuz$' + url, xbmcplugin.objid, title, arturi=image,
+                     artist=artnm))
 
 def track_list(tracks):
     xbmcplugin.entries += trackentries(httphp, pathprefix,
@@ -163,7 +175,8 @@ def root():
 
 @plugin.route('/whats_new')
 def whats_new():
-    add_directory('Playlists', plugin.url_for(featured, content_type='playlists'))
+    add_directory('Playlists', plugin.url_for(featured,
+                                              content_type='playlists'))
     add_directory('Albums', plugin.url_for(featured, content_type='albums'))
     add_directory('Artists', plugin.url_for(featured, content_type='artists'))
     xbmcplugin.endOfDirectory(plugin.handle)

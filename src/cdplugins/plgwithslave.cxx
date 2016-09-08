@@ -158,7 +158,7 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
     }
 
     if (media_url.find("http") == 0) {
-        LOGDEB("answer_to_connection: redirecting to " << media_url << endl);
+        LOGDEB1("answer_to_connection: redirecting to " << media_url << endl);
 
         static char data[] = "<html><body></body></html>";
         struct MHD_Response *response =
@@ -249,7 +249,7 @@ bool PlgWithSlave::Internal::maybeStartCmd()
 // to tidal.
 string PlgWithSlave::get_media_url(const string& path)
 {
-    LOGDEB("PlgWithSlave::get_media_url: " << path << endl);
+    LOGDEB0("PlgWithSlave::get_media_url: " << path << endl);
     if (!m->maybeStartCmd()) {
 	return string();
     }
@@ -273,7 +273,7 @@ string PlgWithSlave::get_media_url(const string& path)
         m->laststream.opentime = now;
     }
 
-    LOGDEB("PlgWithSlave: got media url [" << m->laststream.media_url << "]\n");
+    LOGDEB("PlgWithSlave: media url [" << m->laststream.media_url << "]\n");
     return m->laststream.media_url;
 }
 
@@ -292,6 +292,13 @@ PlgWithSlave::~PlgWithSlave()
     delete m;
 }
 
+#define JSONTOUPS(fld, nm)                                              \
+	it1 = decoded[i].find(#nm);					\
+	if (it1 != decoded[i].end()) {					\
+            if (it1.value() != nullptr)                                 \
+                song.fld = it1.value();					\
+	}
+
 static int resultToEntries(const string& encoded, int stidx, int cnt,
 			   vector<UpSong>& entries)
 {
@@ -309,17 +316,10 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 	// tp is container ("ct") or item ("it")
 	auto it1 = decoded[i].find("tp");
 	if (it1 == decoded[i].end()) {
-	    LOGERR("PlgWithSlave::browse: no type in entry\n");
+	    LOGERR("PlgWithSlave::result: no type in entry\n");
 	    continue;
 	}
 	string stp = it1.value();
-	
-#define JSONTOUPS(fld, nm)                                              \
-	it1 = decoded[i].find(#nm);					\
-	if (it1 != decoded[i].end()) {					\
-            if (it1.value() != nullptr)                                 \
-                song.fld = it1.value();					\
-	}
 	
 	if (!stp.compare("ct")) {
 	    song.iscontainer = true;
@@ -332,19 +332,19 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 	    song.iscontainer = false;
 	    JSONTOUPS(uri, uri);
 	    JSONTOUPS(artist, dc:creator);
-	    JSONTOUPS(artist, upnp:artist);
 	    JSONTOUPS(genre, upnp:genre);
 	    JSONTOUPS(tracknum, upnp:originalTrackNumber);
-	    JSONTOUPS(artUri, upnp:albumArtURI);
 	    JSONTOUPS(duration_secs, duration);
 	} else {
-	    LOGERR("PlgWithSlave::browse: bad type in entry: " <<
+	    LOGERR("PlgWithSlave::result: bad type in entry: " <<
                    it1.value() << endl);
 	    continue;
 	}
 	JSONTOUPS(id, id);
 	JSONTOUPS(parentid, pid);
 	JSONTOUPS(title, tt);
+        JSONTOUPS(artUri, upnp:albumArtURI);
+        JSONTOUPS(artist, upnp:artist);
 	entries.push_back(song);
     }
     // We return the total match size, the count of actually returned
@@ -412,8 +412,7 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
     // first searchExp on a field we can handle, pretend the operator
     // is "contains" and just do it. I so don't want to implement a
     // parser for the query language when the services don't support
-    // anything complicated anyway, and the users don't even want
-    // it...
+    // anything complicated anyway, and the users don't even want it...
     string ss;
     neutchars(searchstr, ss, "()");
 
