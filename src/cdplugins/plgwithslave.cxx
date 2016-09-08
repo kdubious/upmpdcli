@@ -17,8 +17,6 @@
 
 #include "plgwithslave.hxx"
 
-#define LOGGER_LOCAL_LOGINC 3
-
 #include <fcntl.h>
 
 #include <string>
@@ -27,23 +25,18 @@
 #include <string.h>
 #include <upnp/upnp.h>
 #include <microhttpd.h>
-extern "C" {
-#include <libavformat/avio.h>
-#include <libavformat/avformat.h>
-}
-
 
 #include "cmdtalk.h"
 #include "pathut.h"
 #include "smallut.h"
 #include "log.hxx"
-#include "json.hpp"
+#include "json/json.h"
 #include "main.hxx"
 #include "conftree.h"
 
 using namespace std;
 using namespace std::placeholders;
-using json = nlohmann::json;
+//using json = nlohmann::json;
 using namespace UPnPProvider;
 
 class StreamHandle {
@@ -62,7 +55,6 @@ public:
     }
     
     PlgWithSlave::Internal *plg;
-    AVIOContext *avio;
     string path;
     string media_url;
     long long len;
@@ -292,40 +284,31 @@ PlgWithSlave::~PlgWithSlave()
     delete m;
 }
 
-#define JSONTOUPS(fld, nm)                                              \
-	it1 = decoded[i].find(#nm);					\
-	if (it1 != decoded[i].end()) {					\
-            if (it1.value() != nullptr)                                 \
-                song.fld = it1.value();					\
-	}
-
 static int resultToEntries(const string& encoded, int stidx, int cnt,
 			   vector<UpSong>& entries)
 {
     entries.clear();
-    auto decoded = json::parse(encoded);
-    LOGDEB0("PlgWithSlave::results: got " << decoded.size() << " entries\n");
+    Json::Value decoded;
+    istringstream input(encoded);
+    input >> decoded;
+    LOGDEB0("PlgWithSlave::results: got " << decoded.size() << " entries \n");
     LOGDEB1("PlgWithSlave::results: undecoded: " << decoded.dump() << endl);
     bool dolimit = cnt > 0;
     
     for (unsigned int i = stidx; i < decoded.size(); i++) {
+#define JSONTOUPS(fld, nm) {song.fld = decoded[i].get(#nm, "").asString();}
 	if (dolimit && --cnt < 0) {
 	    break;
 	}
 	UpSong song;
 	// tp is container ("ct") or item ("it")
-	auto it1 = decoded[i].find("tp");
-	if (it1 == decoded[i].end()) {
-	    LOGERR("PlgWithSlave::result: no type in entry\n");
-	    continue;
-	}
-	string stp = it1.value();
-	
+        string stp = decoded[i].get("tp", "").asString();
+        LOGDEB("PlgWithSlave::results: tp is " << stp << endl)
 	if (!stp.compare("ct")) {
 	    song.iscontainer = true;
-            it1 = decoded[i].find("searchable");
-            if (it1 != decoded[i].end() && it1.value() != nullptr) {
-                string ss = it1.value();
+            string ss = decoded[i].get("searchable", "").asString();
+            LOGDEB("PlgWithSlave::results: searchable is " << ss << endl)
+            if (!ss.empty()) {
                 song.searchable = stringToBool(ss);
             }
 	} else	if (!stp.compare("it")) {
@@ -334,10 +317,12 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 	    JSONTOUPS(artist, dc:creator);
 	    JSONTOUPS(genre, upnp:genre);
 	    JSONTOUPS(tracknum, upnp:originalTrackNumber);
-	    JSONTOUPS(duration_secs, duration);
+            string sdur = decoded[i].get("duration", "").asString();
+            if (!sdur.empty()) {
+                song.duration_secs = atoi(sdur.c_str());
+            }
 	} else {
-	    LOGERR("PlgWithSlave::result: bad type in entry: " <<
-                   it1.value() << endl);
+	    LOGERR("PlgWithSlave::result: bad type in entry: " << stp << endl);
 	    continue;
 	}
 	JSONTOUPS(id, id);

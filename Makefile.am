@@ -1,4 +1,3 @@
-
 AM_CPPFLAGS = -DDEBUG -g -Wall \
             -I${prefix}/include/libupnpp \
             -I$(top_srcdir)/src \
@@ -15,6 +14,9 @@ upmpdcli_SOURCES = \
      src/cdplugin.hxx \
      src/cdplugins/cmdtalk.cpp \
      src/cdplugins/cmdtalk.h \
+     src/cdplugins/json/json-forwards.h \
+     src/cdplugins/json/json.h \
+     src/cdplugins/jsoncpp.cpp \
      src/cdplugins/plgwithslave.cxx \
      src/cdplugins/plgwithslave.hxx \
      src/closefrom.cpp \
@@ -30,7 +32,6 @@ upmpdcli_SOURCES = \
      src/execmd.h \
      src/httpfs.cxx \
      src/httpfs.hxx \
-     src/json.hpp \
      src/main.hxx \
      src/main.cxx \
      src/mediaserver.cxx \
