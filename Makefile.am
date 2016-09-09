@@ -23,7 +23,7 @@ upmpdcli_SOURCES = \
      src/httpfs.hxx \
      src/main.cxx \
      src/main.hxx \
-     src/mediaserver/cdplugin.hxx \
+     src/mediaserver/cdplugins/cdplugin.hxx \
      src/mediaserver/cdplugins/cmdtalk.cpp \
      src/mediaserver/cdplugins/cmdtalk.h \
      src/mediaserver/cdplugins/json/json-forwards.h \
