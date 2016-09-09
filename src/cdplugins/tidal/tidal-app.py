@@ -368,7 +368,7 @@ def favourite_tracks():
 @dispatcher.record('search')
 def search(a):
     global xbmcplugin
-    xbmcplugin = XbmcPlugin()
+    xbmcplugin = XbmcPlugin('0$tidal$')
     msgproc.log("search: [%s]" % a)
     objid = a['objid']
     field = a['field']

@@ -5,7 +5,8 @@ from __future__ import print_function
 
 import sys
 import json
-from upmplgmodels import Artist, Album, Track, Playlist, SearchResult, Category
+from upmplgmodels import Artist, Album, Track, Playlist, SearchResult, \
+     Category, Genre
 from qobuz.api import raw
 
 class Session(object):
@@ -37,6 +38,13 @@ class Session(object):
         data = self.api.album_get(album_id = albid)
         album = _parse_album(data)
         return [_parse_track(t, album) for t in data['tracks']['items']]
+
+    def get_featured_albums(self, genre_id=None):
+        data = self.api.album_getFeatured(type='editor-picks',
+                                          genre_id=genre_id, limit=50)
+        if data and 'albums' in data:
+            return [_parse_album(alb) for alb in data['albums']['items']]
+        return []
 
     def get_playlist_tracks(self, plid):
         data = self.api.playlist_get(playlist_id = plid, extra = 'tracks')
@@ -90,6 +98,10 @@ class Session(object):
                             data['playlists']['items']]
         return []
 
+    def get_genres(self, parent=None):
+        data = self.api.genre_list(parent_id=parent)
+        return [_parse_genre(g) for g in data['genres']['items']]
+
     def search(self, query, tp):
         data = self.api.catalog_search(query=query, type=tp)
         try:
@@ -114,6 +126,9 @@ class Session(object):
 def _parse_artist(json_obj):
     artist = Artist(id=json_obj['id'], name=json_obj['name'])
     return artist
+
+def _parse_genre(data):
+    return Genre(id=data['id'], name=data['name'])
 
 def _parse_album(json_obj, artist=None, artists=None):
     if artist is None and 'artist' in json_obj:

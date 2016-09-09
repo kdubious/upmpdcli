@@ -268,7 +268,7 @@ def album_view(album_id):
 
 @plugin.route('/playlist/<playlist_id>')
 def playlist_view(playlist_id):
-    track_list(session.get_playlist_tracks(playlist_id))
+    track_list(session.get_user_playlist_tracks(playlist_id))
 
 def ListItem(tt):
     return tt
@@ -292,7 +292,7 @@ def related_artists(artist_id):
 @dispatcher.record('search')
 def search(a):
     global xbmcplugin
-    xbmcplugin = XbmcPlugin()
+    xbmcplugin = XbmcPlugin('0$gmusic$')
     msgproc.log("search: [%s]" % a)
     objid = a['objid']
     field = a['field']

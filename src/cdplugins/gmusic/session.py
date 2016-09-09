@@ -30,7 +30,7 @@ class Session(object):
         self.user = None
         self.lib_albums = {}
         self.lib_artists = {}
-        self.lib_tracks = []
+        self.lib_tracks = {}
         self.lib_updatetime = 0
         self.sitdata = []
         self.sitbyid = {}
@@ -60,9 +60,11 @@ class Session(object):
         if now - self.lib_updatetime < 300:
             return
         data = self.api.get_all_songs()
+        #self.dmpdata("all_songs", data)
         self.lib_updatetime = now
-        self.lib_tracks = [_parse_track(t) for t in data]
-        for track in self.lib_tracks:
+        tracks = [_parse_track(t) for t in data]
+        self.lib_tracks = dict([(t.id, t) for t in tracks])
+        for track in tracks:
             # We would like to use the album id here, but gmusic
             # associates the tracks with any compilations after
             # uploading (does not use the metadata apparently), so
@@ -89,6 +91,19 @@ class Session(object):
         #self.dmpdata("playlists", pldata)
         return [_parse_playlist(pl) for pl in pldata]
 
+    def get_user_playlist_tracks(self, playlist_id):
+        self._get_user_library()
+        data = self.api.get_all_user_playlist_contents()
+        #self.dmpdata("user_playlist_content", data)
+        trkl = [item['tracks']
+                for item in data if item['id'] == playlist_id]
+        if not trkl:
+            return []
+        try:
+            return [self.lib_tracks[track['trackId']] for track in trkl[0]]
+        except:
+            return []
+        
     def create_station_for_genre(self, genre_id):
         id = self.api.create_station("station"+genre_id, genre_id=genre_id)
         return id
@@ -97,7 +112,6 @@ class Session(object):
         data = self.api.get_all_stations()
         # parse_playlist works fine for stations
         stations = [_parse_playlist(d) for d in data]
-        #self.api.delete_stations([s.id for s in stations])
         return stations
 
     def delete_user_station(self, id):
@@ -223,13 +237,19 @@ class Session(object):
     def search(self, query):
         data = self.api.search(query, max_results=50)
         #self.dmpdata("Search", data)
-        #track = data['song_hits'][0]['track']
-        #song_id = track['nid'] if 'nid' in track else track['id']
 
         tr = [_parse_track(i['track']) for i in data['song_hits']]
+        print("track ok", file=sys.stderr)
         ar = [_parse_artist(i['artist']) for i in data['artist_hits']]
+        print("artist ok", file=sys.stderr)
         al = [_parse_album(i['album']) for i in data['album_hits']]
-        pl = [_parse_playlist(i) for i in data['playlist_hits']]
+        print("album ok", file=sys.stderr)
+        #self.dmpdata("Search playlists", data['playlist_hits'])
+        try:
+            pl = [_parse_splaylist(i) for i in data['playlist_hits']]
+        except:
+            pl = []
+        print("playlist ok", file=sys.stderr)
         return SearchResult(artists=ar, albums=al, playlists=pl, tracks=tr)
 
 
@@ -246,6 +266,10 @@ def _parse_genre(data):
 
 def _parse_playlist(data):
     return Playlist(id=data['id'], name=data['name'])
+
+def _parse_splaylist(data):
+    return Playlist(id=data['playlist']['shareToken'],
+                    name=data['playlist']['name'])
 
 def _parse_situation_station(data):
     return Playlist(id=data['seed']['curatedStationId'], name=data['name'])

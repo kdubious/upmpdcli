@@ -156,6 +156,22 @@ def browse(a):
 def root():
     add_directory("Discover", whats_new)
     add_directory('Favourites', my_music)
+    add_directory('Genres', root_genres)
+
+@plugin.route('/root_genres')
+def root_genres():
+    items = session.get_genres()
+    view(items, urls_from_id(genre_view, items))
+
+@plugin.route('/genre/<genre_id>')
+def genre_view(genre_id):
+    items = session.get_genres(genre_id)
+    if len(items) != 0:
+        # List subgenres
+        view(items, urls_from_id(genre_view, items))
+    else:
+        items = session.get_featured_albums(genre_id)
+        view(items, urls_from_id(album_view, items))
 
 @plugin.route('/whats_new')
 def whats_new():
@@ -246,7 +262,7 @@ def favourite_playlists():
 @dispatcher.record('search')
 def search(a):
     global xbmcplugin
-    xbmcplugin = XbmcPlugin()
+    xbmcplugin = XbmcPlugin('0$qobuz$')
     msgproc.log("search: [%s]" % a)
     objid = a['objid']
     field = a['field']
