@@ -23,7 +23,7 @@
 #include "libupnpp/device/device.hxx"
 #include "libupnpp/soaphelp.hxx"
 
-#include "cdplugin.hxx"
+#include "cdplugins/cdplugin.hxx"
 
 using namespace UPnPP;
 

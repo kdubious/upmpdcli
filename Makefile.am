@@ -1,7 +1,6 @@
 AM_CPPFLAGS = -DDEBUG -g -Wall \
             -I${prefix}/include/libupnpp \
             -I$(top_srcdir)/src \
-            -I$(top_srcdir)/src/cdplugins \
             -DDATADIR=\"${pkgdatadir}\" -DCONFIGDIR=\"${sysconfdir}\"
 
 AM_CXXFLAGS = -std=c++11 
@@ -11,14 +10,6 @@ bin_PROGRAMS = upmpdcli scctl
 upmpdcli_SOURCES = \
      src/avtransport.cxx \
      src/avtransport.hxx \
-     src/cdplugin.hxx \
-     src/cdplugins/cmdtalk.cpp \
-     src/cdplugins/cmdtalk.h \
-     src/cdplugins/json/json-forwards.h \
-     src/cdplugins/json/json.h \
-     src/cdplugins/jsoncpp.cpp \
-     src/cdplugins/plgwithslave.cxx \
-     src/cdplugins/plgwithslave.hxx \
      src/closefrom.cpp \
      src/closefrom.h \
      src/conf_post.h \
@@ -26,16 +17,24 @@ upmpdcli_SOURCES = \
      src/conftree.h \
      src/conman.cxx \
      src/conman.hxx \
-     src/contentdirectory.cxx \
-     src/contentdirectory.hxx \
      src/execmd.cpp \
      src/execmd.h \
      src/httpfs.cxx \
      src/httpfs.hxx \
-     src/main.hxx \
      src/main.cxx \
-     src/mediaserver.cxx \
-     src/mediaserver.hxx \
+     src/main.hxx \
+     src/mediaserver/cdplugin.hxx \
+     src/mediaserver/cdplugins/cmdtalk.cpp \
+     src/mediaserver/cdplugins/cmdtalk.h \
+     src/mediaserver/cdplugins/json/json-forwards.h \
+     src/mediaserver/cdplugins/json/json.h \
+     src/mediaserver/cdplugins/jsoncpp.cpp \
+     src/mediaserver/cdplugins/plgwithslave.cxx \
+     src/mediaserver/cdplugins/plgwithslave.hxx \
+     src/mediaserver/contentdirectory.cxx \
+     src/mediaserver/contentdirectory.hxx \
+     src/mediaserver/mediaserver.cxx \
+     src/mediaserver/mediaserver.hxx \
      src/mpdcli.cxx \
      src/mpdcli.hxx \
      src/netcon.cpp \
@@ -86,43 +85,43 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/RenderingControl.xml src/ConnectionManager.xml \
                   src/OHProduct.xml src/OHInfo.xml src/OHTime.xml \
                   src/OHVolume.xml src/OHPlaylist.xml src/OHReceiver.xml \
-                  src/OHRadio.xml src/ContentDirectory.xml \
+                  src/OHRadio.xml src/mediaserver/ContentDirectory.xml \
                   src/protocolinfo.txt src/presentation.html
 
 cdpluginspycomdir = $(pkgdatadir)/cdplugins/pycommon
 dist_cdpluginspycom_DATA = \
-                    src/cdplugins/pycommon/cmdtalk.py \
-                    src/cdplugins/pycommon/cmdtalkplugin.py \
-                    src/cdplugins/pycommon/conftree.py \
-                    src/cdplugins/pycommon/routing.py \
-                    src/cdplugins/pycommon/upmplgmodels.py \
-                    src/cdplugins/pycommon/upmplgutils.py
+                    src/mediaserver/cdplugins/pycommon/cmdtalk.py \
+                    src/mediaserver/cdplugins/pycommon/cmdtalkplugin.py \
+                    src/mediaserver/cdplugins/pycommon/conftree.py \
+                    src/mediaserver/cdplugins/pycommon/routing.py \
+                    src/mediaserver/cdplugins/pycommon/upmplgmodels.py \
+                    src/mediaserver/cdplugins/pycommon/upmplgutils.py
 
 cdpluginstidaldir = $(pkgdatadir)/cdplugins/tidal
 dist_cdpluginstidal_DATA = \
-                  src/cdplugins/tidal/tidal-app.py 
+                  src/mediaserver/cdplugins/tidal/tidal-app.py 
 cdpluginstidallibdir = $(pkgdatadir)/cdplugins/tidal/tidalapi
 dist_cdpluginstidallib_DATA = \
-                  src/cdplugins/tidal/tidalapi/__init__.py \
-                  src/cdplugins/tidal/tidalapi/models.py
+                  src/mediaserver/cdplugins/tidal/tidalapi/__init__.py \
+                  src/mediaserver/cdplugins/tidal/tidalapi/models.py
 
 cdpluginsqobuzdir = $(pkgdatadir)/cdplugins/qobuz
 dist_cdpluginsqobuz_DATA = \
-                  src/cdplugins/qobuz/debug.py  \
-                  src/cdplugins/qobuz/exception.py \
-                  src/cdplugins/qobuz/__init__.py \
-                  src/cdplugins/qobuz/qobuz-app.py \
-                  src/cdplugins/qobuz/session.py 
+                  src/mediaserver/cdplugins/qobuz/debug.py  \
+                  src/mediaserver/cdplugins/qobuz/exception.py \
+                  src/mediaserver/cdplugins/qobuz/__init__.py \
+                  src/mediaserver/cdplugins/qobuz/qobuz-app.py \
+                  src/mediaserver/cdplugins/qobuz/session.py 
 cdpluginsqobuzlibdir = $(pkgdatadir)/cdplugins/qobuz/api
 dist_cdpluginsqobuzlib_DATA = \
-                  src/cdplugins/qobuz/api/easy.py \
-                  src/cdplugins/qobuz/api/__init__.py \
-                  src/cdplugins/qobuz/api/raw.py
+                  src/mediaserver/cdplugins/qobuz/api/easy.py \
+                  src/mediaserver/cdplugins/qobuz/api/__init__.py \
+                  src/mediaserver/cdplugins/qobuz/api/raw.py
 
 cdpluginsgmusicdir = $(pkgdatadir)/cdplugins/gmusic
 dist_cdpluginsgmusic_DATA = \
-                  src/cdplugins/gmusic/gmusic-app.py \
-                  src/cdplugins/gmusic/session.py 
+                  src/mediaserver/cdplugins/gmusic/gmusic-app.py \
+                  src/mediaserver/cdplugins/gmusic/session.py 
 
 EXTRA_DIST = web.tar.gz rdpl2stream.tar.gz systemd/upmpdcli.service
 

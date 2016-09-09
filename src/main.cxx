@@ -40,11 +40,11 @@
 #include "conftree.h"
 #include "mpdcli.hxx"
 #include "upmpd.hxx"
-#include "mediaserver.hxx"
+#include "mediaserver/mediaserver.hxx"
+#include "mediaserver/contentdirectory.hxx"
 #include "httpfs.hxx"
 #include "upmpdutils.hxx"
 #include "pathut.h"
-#include "contentdirectory.hxx"
 
 using namespace std;
 using namespace UPnPP;
