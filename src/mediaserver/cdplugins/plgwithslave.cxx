@@ -25,12 +25,12 @@
 #include <string.h>
 #include <upnp/upnp.h>
 #include <microhttpd.h>
+#include <jsoncpp/json/json.h>
 
 #include "cmdtalk.h"
 #include "pathut.h"
 #include "smallut.h"
 #include "log.hxx"
-#include "json/json.h"
 #include "main.hxx"
 #include "conftree.h"
 

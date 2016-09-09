@@ -26,9 +26,6 @@ upmpdcli_SOURCES = \
      src/mediaserver/cdplugins/cdplugin.hxx \
      src/mediaserver/cdplugins/cmdtalk.cpp \
      src/mediaserver/cdplugins/cmdtalk.h \
-     src/mediaserver/cdplugins/json/json-forwards.h \
-     src/mediaserver/cdplugins/json/json.h \
-     src/mediaserver/cdplugins/jsoncpp.cpp \
      src/mediaserver/cdplugins/plgwithslave.cxx \
      src/mediaserver/cdplugins/plgwithslave.hxx \
      src/mediaserver/contentdirectory.cxx \
