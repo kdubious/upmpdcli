@@ -389,19 +389,19 @@ def search(a):
     # field is mandatory and maybe 'artist', 'album', 'playlist', 'track'
     # But quite frequently, our caller does not set it. So need to run multiple
     # searches
-    if field is None or field = 'artist':
+    if field is None or field == 'artist':
         searchresults = session.search('artist', value)
     view(searchresults.artists,
          urls_from_id(artist_view, searchresults.artists), end=False)
-    if field is None or field = 'album':
+    if field is None or field == 'album':
         searchresults = session.search('album', value)
     view(searchresults.albums,
          urls_from_id(album_view, searchresults.albums), end=False)
-    if field is None or field = 'playlist':
+    if field is None or field == 'playlist':
         searchresults = session.search('playlist', value)
     view(searchresults.playlists,
          urls_from_id(playlist_view, searchresults.playlists), end=False)
-    if field is None or field = 'track':
+    if field is None or field == 'track':
         searchresults = session.search('track', value)
     track_list(searchresults.tracks)
     #msgproc.log("%s" % xbmcplugin.entries)
