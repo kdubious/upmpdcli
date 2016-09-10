@@ -1,5 +1,13 @@
 = Upmpdcli release notes
 
+== Upmpdcli 1.2.0
+
+- Implement gateway to Google Play Music, Qobuz and Tidal by exporting a 
+  Media Server UPnP device.
+- The code now uses c++11 features, and the default build uses -std=c++11,
+  meaning that the minimum usable gcc version is 4.7.
+- Implement support for embedded devices in libupnpp
+
 == Upmpdcli 1.1.4
 
 - Support audio/L16 format (only works with patched mpd 0.19.16jfd1 until
