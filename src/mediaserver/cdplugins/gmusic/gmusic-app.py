@@ -82,6 +82,8 @@ def maybelogin():
     if not is_logged_in:
         raise Exception("gmusic login failed")
 
+    setMimeAndSamplerate('audio/mpeg', "44100")
+
 
 def get_mimeandkbs():
     if quality == 'hi':
@@ -126,9 +128,13 @@ def view(data_items, urls, end=True):
             artnm = item.artist.name if item.artist.name else None
         except:
             artnm = None
+        try:
+            upnpclass = item.upnpclass if item.upnpclass else None
+        except:
+            upnpclass = None
         xbmcplugin.entries.append(
             direntry('0$gmusic$' + url, xbmcplugin.objid, title, arturi=image,
-                     artist=artnm))
+                     artist=artnm, upnpclass=upnpclass))
 
 def track_list(tracks):
     xbmcplugin.entries += trackentries(httphp, pathprefix,
@@ -295,7 +301,7 @@ def search(a):
     xbmcplugin = XbmcPlugin('0$gmusic$')
     msgproc.log("search: [%s]" % a)
     objid = a['objid']
-    field = a['field']
+    field = a['field'] if 'field' in a else None
     value = a['value']
     if re.match('0\$gmusic\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
@@ -304,7 +310,7 @@ def search(a):
     
     searchresults = session.search(value)
 
-    if field not in ['artist', 'album', 'playlist', 'track']:
+    if field and field not in ['artist', 'album', 'playlist', 'track']:
         msgproc.log('Unknown field \'%s\'' % field)
         field = None
     if field is None or field == 'artist':
@@ -316,7 +322,6 @@ def search(a):
     if field is None or field == 'playlist':
         view(searchresults.playlists,
              urls_from_id(playlist_view, searchresults.playlists), end=False)
-        
     if field is None or field == 'track':
         track_list(searchresults.tracks)
 

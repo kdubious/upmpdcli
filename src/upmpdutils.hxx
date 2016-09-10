@@ -31,7 +31,7 @@ namespace UPnPClient {
 class UpSong {
 public:
     UpSong()
-	: duration_secs(0), mpdid(0),
+	: duration_secs(0), bitrate(0), samplefreq(0), mpdid(0),
 	  iscontainer(false), searchable(false) {
     }
     void clear() {
@@ -47,15 +47,21 @@ public:
     std::string tracknum; // Reused as annot for containers
     std::string genre;
     std::string artUri;
-
+    std::string upnpClass;
+    std::string mime;
+    
     unsigned int duration_secs;
+    unsigned int bitrate;
+    unsigned int samplefreq;
+    
     int mpdid;
     bool iscontainer;
     bool searchable;
 
     std::string dump() {
-        return std::string("Uri [") + uri + "] Artist [" + artist + "] Album ["
-            +  album + "] Title [" + title + "] Tno [" + tracknum + "]";
+        return std::string("class [" + upnpClass + "] Artist [" + artist +
+                           "] Album [" +  album + " Title [" + title +
+                           "] Tno [" + tracknum + "] Uri [" + uri + "]");
     }
     // Format to DIDL fragment 
     std::string didl();

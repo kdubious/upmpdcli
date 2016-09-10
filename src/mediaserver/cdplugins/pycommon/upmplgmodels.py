@@ -27,6 +27,7 @@ class Model(object):
 
 
 class Album(Model):
+    upnpclass = "object.container.album.musicAlbum"
     name = "Unknown"
     artist = None
     artists = []
@@ -37,11 +38,13 @@ class Album(Model):
 
 
 class Artist(Model):
+    upnpclass = "object.container.person.musicArtist"
     name = "Unknown"
     role = None
 
 
 class Playlist(Model):
+    upnpclass = "object.container.album"
     name = None
     description = None
     num_tracks = -1
@@ -49,6 +52,7 @@ class Playlist(Model):
 
 
 class Track(Model):
+    upnpclass = "object.item.audioItem.musicTrack"
     duration = -1
     track_num = -1
     disc_num = 1
@@ -68,6 +72,7 @@ class SearchResult(Model):
 
 class Category(Model):
     image = None
+
 
 class Genre(Model):
     pass

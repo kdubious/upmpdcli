@@ -71,7 +71,12 @@ def maybelogin():
         formatid = int(formatid)
     else:
         formatid = 5
-        
+    
+    if formatid == 5:
+        setMimeAndSamplerate("audio/mpeg", "44100")
+    else:
+        setMimeAndSamplerate("application/flac", "44100")
+
     if not username or not password:
         raise Exception("qobuzuser and/or qobuzpass not set in configuration")
 
@@ -79,11 +84,14 @@ def maybelogin():
     
 @dispatcher.record('trackuri')
 def trackuri(a):
-    global formatid
+    global formatid, pathprefix
     msgproc.log("trackuri: [%s]" % a)
     trackid = trackid_from_urlpath(pathprefix, a)
     maybelogin()
     media_url = session.get_media_url(trackid, formatid)
+    if not media_url:
+        media_url = ""
+        
     #msgproc.log("%s" % media_url)
     if formatid == 5:
         mime = "audio/mpeg"
@@ -113,12 +121,16 @@ def view(data_items, urls, end=True):
         except:
             image = None
         try:
+            upnpclass = item.upnpclass if item.upnpclass else None
+        except:
+            upnpclass = None
+        try:
             artnm = item.artist.name if item.artist.name else None
         except:
             artnm = None
         xbmcplugin.entries.append(
             direntry('0$qobuz$' + url, xbmcplugin.objid, title, arturi=image,
-                     artist=artnm))
+                     artist=artnm, upnpclass=upnpclass))
 
 def track_list(tracks):
     xbmcplugin.entries += trackentries(httphp, pathprefix,
@@ -265,19 +277,19 @@ def search(a):
     xbmcplugin = XbmcPlugin('0$qobuz$')
     msgproc.log("search: [%s]" % a)
     objid = a['objid']
-    field = a['field']
+    field = a['field'] if 'field' in a else None
     value = a['value']
     if re.match('0\$qobuz\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
     xbmcplugin.objid = objid
     maybelogin()
     
-    if field not in ['artist', 'album', 'playlist', 'track']:
+    if field and field not in ['artist', 'album', 'playlist', 'track']:
         msgproc.log('Unknown field \'%s\'' % field)
         field = 'track'
 
     # type may be 'tracks', 'albums', 'artists' or 'playlists'
-    qfield = field + "s"
+    qfield = field + "s" if field else None
     searchresults = session.search(value, qfield)
 
     if field is None or field == 'artist':

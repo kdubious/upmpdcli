@@ -150,8 +150,6 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
     }
 
     if (media_url.find("http") == 0) {
-        LOGDEB1("answer_to_connection: redirecting to " << media_url << endl);
-
         static char data[] = "<html><body></body></html>";
         struct MHD_Response *response =
             MHD_create_response_from_buffer(strlen(data), data,
@@ -287,7 +285,6 @@ PlgWithSlave::~PlgWithSlave()
 static int resultToEntries(const string& encoded, int stidx, int cnt,
 			   vector<UpSong>& entries)
 {
-    entries.clear();
     Json::Value decoded;
     istringstream input(encoded);
     input >> decoded;
@@ -303,11 +300,9 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 	UpSong song;
 	// tp is container ("ct") or item ("it")
         string stp = decoded[i].get("tp", "").asString();
-        LOGDEB("PlgWithSlave::results: tp is " << stp << endl)
 	if (!stp.compare("ct")) {
 	    song.iscontainer = true;
             string ss = decoded[i].get("searchable", "").asString();
-            LOGDEB("PlgWithSlave::results: searchable is " << ss << endl)
             if (!ss.empty()) {
                 song.searchable = stringToBool(ss);
             }
@@ -317,6 +312,11 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 	    JSONTOUPS(artist, dc:creator);
 	    JSONTOUPS(genre, upnp:genre);
 	    JSONTOUPS(tracknum, upnp:originalTrackNumber);
+            JSONTOUPS(mime, res:mime);
+            string srate = decoded[i].get("res:samplefreq", "").asString();
+            if (!srate.empty()) {
+                song.samplefreq = atoi(srate.c_str());
+            }
             string sdur = decoded[i].get("duration", "").asString();
             if (!sdur.empty()) {
                 song.duration_secs = atoi(sdur.c_str());
@@ -330,6 +330,8 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 	JSONTOUPS(title, tt);
         JSONTOUPS(artUri, upnp:albumArtURI);
         JSONTOUPS(artist, upnp:artist);
+        JSONTOUPS(upnpClass, upnp:class);
+        LOGDEB1("PlgWitSlave::result: pushing: " << song.dump() << endl);
 	entries.push_back(song);
     }
     // We return the total match size, the count of actually returned
@@ -340,7 +342,6 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 // Better return a bogus informative entry than an outright error:
 static int errorEntries(const string& pid, vector<UpSong>& entries)
 {
-    entries.clear();
     entries.push_back(
         UpSong::item(pid + "$bogus", pid,
                      "Service login or communication failure"));
@@ -352,7 +353,8 @@ int PlgWithSlave::browse(const string& objid, int stidx, int cnt,
                          const vector<string>& sortcrits,
                          BrowseFlag flg)
 {
-    LOGDEB("PlgWithSlave::browse\n");
+    LOGDEB1("PlgWithSlave::browse\n");
+    entries.clear();
     if (!m->maybeStartCmd()) {
 	return errorEntries(objid, entries);
     }
@@ -382,12 +384,105 @@ int PlgWithSlave::browse(const string& objid, int stidx, int cnt,
 }
 
 
+class SearchCacheEntry {
+public:
+    SearchCacheEntry()
+        : m_time(time(0)) {
+    }
+    time_t m_time;
+    vector<UpSong> m_results;
+};
+
+const int retention_secs = 300;
+class SearchCache {
+public:
+    SearchCache();
+    SearchCacheEntry *get(const string& query);
+    void set(const string& query, SearchCacheEntry &entry);
+    void flush();
+private:
+    time_t m_lastflush;
+    unordered_map<string, SearchCacheEntry> m_cache;
+};
+
+SearchCache::SearchCache()
+        : m_lastflush(time(0))
+{
+}
+
+void SearchCache::flush()
+{
+    time_t now(time(0));
+    if (now - m_lastflush < 5) {
+        return;
+    }
+    for (unordered_map<string, SearchCacheEntry>::iterator it = m_cache.begin();
+         it != m_cache.end(); ) {
+        if (now - it->second.m_time > retention_secs) {
+            LOGDEB0("SearchCache::flush: erasing " << it->first << endl);
+            it = m_cache.erase(it);
+        } else {
+            it++;
+        }
+    }
+    m_lastflush = now;
+}
+
+SearchCacheEntry *SearchCache::get(const string& key)
+{
+    flush();
+    auto it = m_cache.find(key);
+    if (it != m_cache.end()) {
+        LOGDEB0("SearchCache::get: found " << key << endl);
+        // we return a copy of the vector. Make our multi-access life simpler...
+        return new SearchCacheEntry(it->second);
+    }
+    LOGDEB0("SearchCache::get: not found " << key << endl);
+    return nullptr;
+}
+
+void SearchCache::set(const string& key, SearchCacheEntry &entry)
+{
+    LOGDEB0("SearchCache::set: " << key << endl);
+    m_cache[key] = entry;
+}
+
+static SearchCache o_scache;
+
+int resultFromCacheEntry(const string& classfilter, int stidx, int cnt,
+                         const SearchCacheEntry& e,
+                         vector<UpSong>& entries)
+{
+    const vector<UpSong>& res = e.m_results;
+    LOGDEB0("resultFromCacheEntry: filter " << classfilter << " start " <<
+            stidx << " cnt " << cnt << " res.size " << res.size() << endl);
+    entries.reserve(cnt);
+    int total = 0;
+    for (unsigned int i = 0; i < res.size(); i++) {
+        if (!classfilter.empty() && res[i].upnpClass.find(classfilter) != 0) {
+            continue;
+        }
+        total++;
+        if (stidx > int(i)) {
+            continue;
+        }
+        if (int(entries.size()) >= cnt) {
+            continue;
+        }
+        LOGDEB1("resultFromCacheEntry: pushing class "  << res[i].upnpClass <<
+               " tt " << res[i].title << endl);
+        entries.push_back(res[i]);
+    }
+    return total;
+}
+
 int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
                          const string& searchstr,
                          vector<UpSong>& entries,
                          const vector<string>& sortcrits)
 {
-    LOGDEB("PlgWithSlave::search\n");
+    LOGDEB1("PlgWithSlave::search\n");
+    entries.clear();
     if (!m->maybeStartCmd()) {
 	return errorEntries(ctid, entries);
     }
@@ -415,10 +510,11 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
     }
     string slavefield;
     string value;
+    string classfilter;
     for (unsigned int i = 0; i < vs.size()-2; i += 4) {
         const string& upnpproperty = vs[i];
-        LOGDEB("Looking at " << vs[i] << " " << vs[i+1] << " " <<
-               vs[i+2] << endl);
+        LOGDEB("PlgWithSlave::search:clause: " << vs[i] << " " << vs[i+1] <<
+               " " << vs[i+2] << endl);
         if (!upnpproperty.compare("upnp:artist") ||
             !upnpproperty.compare("dc:author")) {
             slavefield = "artist";
@@ -432,17 +528,28 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
             slavefield = "track";
             value = vs[i+2];
             break;
+        } else if (!upnpproperty.compare("upnp:class")) {
+            classfilter = vs[i+2];
         }
     }
     if (slavefield.empty()) {
         LOGERR("PlgWithSlave: unsupported search: [" << searchstr << "]\n");
         return errorEntries(ctid, entries);
     }
-	
+
+    // In cache ?
+    SearchCacheEntry *cep;
+    string cachekey(m_name + ":" + value);
+    if ((cep = o_scache.get(cachekey)) != nullptr) {
+        int total = resultFromCacheEntry(classfilter, stidx,cnt, *cep, entries);
+        delete cep;
+        return total;
+    }
+
+    // Run query
     unordered_map<string, string> res;
     if (!m->cmd.callproc("search", {
 		{"objid", ctid},
-		{"field", slavefield},
 		{"value", value} },  res)) {
 	LOGERR("PlgWithSlave::search: slave failure\n");
 	return errorEntries(ctid, entries);
@@ -453,5 +560,9 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
 	LOGERR("PlgWithSlave::search: no entries returned\n");
 	return errorEntries(ctid, entries);
     }
-    return resultToEntries(it->second, stidx, cnt, entries);
+    // Convert the whole set and store in cache
+    SearchCacheEntry e;
+    resultToEntries(it->second, 0, 0, e.m_results);
+    o_scache.set(cachekey, e);
+    return resultFromCacheEntry(classfilter, stidx, cnt, e, entries);
 }

@@ -47,6 +47,17 @@ class XbmcPlugin:
         return
     def addSortMethod(self, a, b):
         return
+
+default_mime = "audio/mpeg"
+default_samplerate = "44100"
+
+# For now, we pretend that all tracks have the same format (for the
+# resource record). For some services this may not be true, we'll see
+# if it can stay this way.
+def setMimeAndSamplerate(m, s):
+    global default_mime, default_samplerate
+    default_mime = m
+    default_samplerate = s
     
 def trackentries(httphp, pathprefix, objid, tracks):
     """
@@ -67,6 +78,7 @@ def trackentries(httphp, pathprefix, objid, tracks):
             http://host:port/pathprefix/track?version=1&trackId=<trackid>
     
     """
+    global default_mime, default_samplerate
     
     entries = []
     for track in tracks:
@@ -91,6 +103,10 @@ def trackentries(httphp, pathprefix, objid, tracks):
         li['dc:title'] = track.name
         li['discnumber'] = str(track.disc_num)
         li['duration'] = track.duration
+        li['upnp:class'] = track.upnpclass
+        li['res:mime'] = default_mime
+        li['res:samplefreq'] = default_samplerate
+           
         entries.append(li)
     return entries
 
@@ -121,20 +137,13 @@ def trackid_from_urlpath(pathprefix, a):
     return trackid
 
 
-def direntry(id, pid, title, arturi=None, artist=None):
+def direntry(id, pid, title, arturi=None, artist=None, upnpclass=None):
     """ Create container entry in format expected by parent """
     ret = {'id':id, 'pid':pid, 'tt':title, 'tp':'ct', 'searchable':'1'}
     if arturi:
         ret['upnp:albumArtURI'] = arturi
     if artist:
         ret['upnp:artist'] = artist
+    if upnpclass:
+        ret['upnp:class'] = upnpclass
     return ret
-
-
-def direntries(objid, ttidlist):
-    """ Create a list of directory entries """
-    content = []
-    for tt,id in ttidlist:
-        content.append(direntry(objid + '$' + id, objid, tt))
-    return content
-

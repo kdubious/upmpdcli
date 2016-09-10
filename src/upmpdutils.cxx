@@ -123,11 +123,16 @@ diffmaps(const unordered_map<string, string>& old,
 }
 
 
-#define UPNPXML(FLD, TAG)				       \
-	if (!FLD.empty()) {				       \
-	    ss << "<" #TAG ">" << SoapHelp::xmlQuote(FLD) <<   \
-		"</" #TAG ">";				       \
-	}
+#define UPNPXML(FLD, TAG)                                               \
+    if (!FLD.empty()) {                                                 \
+        ss << "<" #TAG ">" << SoapHelp::xmlQuote(FLD) << "</" #TAG ">"; \
+    }
+#define UPNPXMLD(FLD, TAG, DEF)                                         \
+    if (!FLD.empty()) {                                                 \
+        ss << "<" #TAG ">" << SoapHelp::xmlQuote(FLD) << "</" #TAG ">"; \
+    } else {                                                            \
+        ss << "<" #TAG ">" << SoapHelp::xmlQuote(DEF) << "</" #TAG ">"; \
+    }
 
 string UpSong::didl()
 {
@@ -142,24 +147,29 @@ string UpSong::didl()
 	parentid << "\" restricted=\"1\" searchable=\"" <<
 	(searchable ? string("1") : string("0")) << "\">" <<
 	"<dc:title>" << SoapHelp::xmlQuote(title) << "</dc:title>";
+
     if (iscontainer) {
-	ss << "<upnp:class>object.container</upnp:class>" <<
-	    (tracknum.empty() ? string() :
-	     string("<upnp:userAnnotation>" + SoapHelp::xmlQuote(tracknum) +
+        UPNPXMLD(upnpClass, upnp:class, "object.container");
+        // tracknum is reused for annotations for containers
+        ss << (tracknum.empty() ? string() :
+               string("<upnp:userAnnotation>" + SoapHelp::xmlQuote(tracknum) +
 		    "</upnp:userAnnotation>"));
 	    
     } else {
-	ss << "<upnp:class>object.item.audioItem.musicTrack</upnp:class>";
-
+        UPNPXMLD(upnpClass, upnp:class, "object.item.audioItem.musicTrack");
 	UPNPXML(genre, upnp:genre);
 	UPNPXML(tracknum, upnp:originalTrackNumber);
 
-	ss << "<res " << "duration=\"" <<
-	    upnpduration(duration_secs * 1000)  << "\" " <<
-	    "sampleFrequency=\"44100\" audioChannels=\"2\" " <<
-	    "protocolInfo=\"http-get:*:audio/mpeg:*\">" <<
-	    SoapHelp::xmlQuote(uri) <<
-	    "</res>";
+        string sfs = SoapHelp::i2s((samplefreq == 0 ? 44100 : samplefreq));
+        string lmime((mime.empty() ? "audio/mpeg" : mime));
+            
+	ss << "<res " <<
+            "duration=\"" << upnpduration(duration_secs * 1000)  << "\" " <<
+	    "sampleFrequency=\"" << sfs << "\" " <<
+            "audioChannels=\"2\" " <<
+	    "protocolInfo=\"http-get:*:" << lmime << ":*\"" << ">" <<
+            SoapHelp::xmlQuote(uri) <<
+            "</res>";
     }
     UPNPXML(artist, dc:creator);
     UPNPXML(artist, upnp:artist);

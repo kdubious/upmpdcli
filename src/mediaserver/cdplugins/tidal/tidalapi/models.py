@@ -30,6 +30,7 @@ class Model(object):
 
 
 class Album(Model):
+    upnpclass = "object.container.album.musicAlbum"
     artist = None
     artists = []
     num_tracks = -1
@@ -42,6 +43,7 @@ class Album(Model):
 
 
 class Artist(Model):
+    upnpclass = "object.container.person.musicArtist"
     role = None
 
     @property
@@ -50,6 +52,7 @@ class Artist(Model):
 
 
 class Playlist(Model):
+    upnpclass = "object.container.album"
     description = None
     creator = None
     type = None
@@ -65,6 +68,7 @@ class Playlist(Model):
 
 
 class Track(Model):
+    upnpclass = "object.item.audioItem.musicTrack"
     duration = -1
     track_num = -1
     disc_num = 1

@@ -305,8 +305,6 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
     } else {
 	// Pass off request to appropriate app, defined by 1st elt in id
 	string app = appForId(in_ObjectID);
-	LOGDEB("ContentDirectory::actBrowse: app: [" << app << "]\n");
-
 	CDPlugin *plg = m->pluginForApp(app);
 	if (plg) {
 	    totalmatches = plg->browse(in_ObjectID, in_StartingIndex,
@@ -314,9 +312,9 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
                                        sortcrits, bf);
 	} else {
 	    LOGERR("ContentDirectory::Browse: unknown app: [" << app << "]\n");
+            return UPNP_E_INVALID_PARAM;
 	}
     }
-
 
     // Process and send out result
     out_NumberReturned = ulltodecstr(entries.size());
@@ -327,6 +325,7 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
 	out_Result += entries[i].didl();
     } 
     out_Result += tailDIDL();
+    LOGDEB1("ContentDirectory::Browse: didl: " << out_Result << endl);
     
     data.addarg("Result", out_Result);
     LOGDEB1("ContentDirectory::actBrowse: result [" << out_Result << "]\n");
@@ -405,15 +404,14 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
 
     // Pass off request to appropriate app, defined by 1st elt in id
     string app = appForId(in_ContainerID);
-    LOGDEB("ContentDirectory::actSearch: app: [" << app << "]\n");
-
     CDPlugin *plg = m->pluginForApp(app);
     if (plg) {
         totalmatches = plg->search(in_ContainerID, in_StartingIndex,
                                    in_RequestedCount, in_SearchCriteria,
                                    entries, sortcrits);
     } else {
-        LOGERR("ContentDirectory::Browse: unknown app: [" << app << "]\n");
+        LOGERR("ContentDirectory::Search: unknown app: [" << app << "]\n");
+        return UPNP_E_INVALID_PARAM;
     }
 
     // Process and send out result

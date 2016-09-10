@@ -89,15 +89,19 @@ def maybelogin():
     session = tidalapi.Session(config=tidalconf)
     session.login(username, password)
     is_logged_in = True
+    if quality == Quality.lossless:
+        setMimeAndSamplerate('audio/flac', "44100")
+    else:
+        setMimeAndSamplerate('audio/mpeg', "44100")
 
 
 def get_mimeandkbs():
     if quality == Quality.lossless:
         return ('audio/flac', str(1411))
     elif quality == Quality.high:
-        return ('video/x-flv', str(320))
+        return ('audio/mpeg', str(320))
     else:
-        return ('video/x-flv', str(96))
+        return ('audio/mpeg', str(96))
 
 @dispatcher.record('trackuri')
 def trackuri(a):
@@ -134,12 +138,16 @@ def view(data_items, urls, end=True):
         except:
             image = None
         try:
+            upnpclass = item.upnpclass if item.upnpclass else None
+        except:
+            upnpclass = None
+        try:
             artnm = item.artist.name if item.artist.name else None
         except:
             artnm = None
         xbmcplugin.entries.append(
             direntry('0$tidal$' + url, xbmcplugin.objid, title, arturi=image,
-                     artist=artnm))
+                     artist=artnm, upnpclass=upnpclass))
 
 def track_list(tracks):
     xbmcplugin.entries += trackentries(httphp, pathprefix,
@@ -371,22 +379,30 @@ def search(a):
     xbmcplugin = XbmcPlugin('0$tidal$')
     msgproc.log("search: [%s]" % a)
     objid = a['objid']
-    field = a['field']
+    field = a['field'] if 'field' in a else None
     value = a['value']
     if re.match('0\$tidal\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
     xbmcplugin.objid = objid
     maybelogin()
     
-    searchresults = session.search(field, value)
-    msgproc.log("search: Got %d artists" % len(searchresults.artists))
-    view(searchresults.artists, urls_from_id(artist_view, searchresults.artists),
-        end=False)
-    view(searchresults.albums, urls_from_id(album_view, searchresults.albums),
-         end=False)
-    view(searchresults.playlists, urls_from_id(playlist_view,
-                                               searchresults.playlists),
-         end=False)
+    # field is mandatory and maybe 'artist', 'album', 'playlist', 'track'
+    # But quite frequently, our caller does not set it. So need to run multiple
+    # searches
+    if field is None or field = 'artist':
+        searchresults = session.search('artist', value)
+    view(searchresults.artists,
+         urls_from_id(artist_view, searchresults.artists), end=False)
+    if field is None or field = 'album':
+        searchresults = session.search('album', value)
+    view(searchresults.albums,
+         urls_from_id(album_view, searchresults.albums), end=False)
+    if field is None or field = 'playlist':
+        searchresults = session.search('playlist', value)
+    view(searchresults.playlists,
+         urls_from_id(playlist_view, searchresults.playlists), end=False)
+    if field is None or field = 'track':
+        searchresults = session.search('track', value)
     track_list(searchresults.tracks)
     #msgproc.log("%s" % xbmcplugin.entries)
     encoded = json.dumps(xbmcplugin.entries)
