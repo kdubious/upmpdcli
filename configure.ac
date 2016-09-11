@@ -43,9 +43,15 @@ SCCTL_LIBS=$LIBS
 AC_CHECK_LIB([microhttpd], [MHD_queue_response], [], [])
 
 AC_LANG_PUSH([C++])
+
+AC_CHECK_HEADERS(json/json.h jsoncpp/json/json.h)
 LIBS="$LIBS -ljsoncpp"
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
-    [#include <jsoncpp/json/json.h>], [Json::Features dummy])],
+    [[#ifdef HAVE_JSONCPP_JSON_JSON_H
+    #include <jsoncpp/json/json.h>
+    #else
+    #include <json/json.h>
+    #endif]], [Json::Features dummy])],
     [HAVE_JSONCPP=1],
     [AC_MSG_ERROR([libjsoncpp not found.])])
 AC_LANG_POP

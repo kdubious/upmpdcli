@@ -6,6 +6,9 @@
 /* Define to 1 if you have the <jsoncpp/json/json.h> header file. */
 #undef HAVE_JSONCPP_JSON_JSON_H
 
+/* "json in jsoncpp directory" */
+#undef HAVE_JSON_INJSONCPP
+
 /* Define to 1 if you have the <json/json.h> header file. */
 #undef HAVE_JSON_JSON_H
 

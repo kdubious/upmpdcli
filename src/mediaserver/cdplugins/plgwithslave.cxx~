@@ -14,7 +14,6 @@
  *   Free Software Foundation, Inc.,
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#include "config.h"
 
 #include "plgwithslave.hxx"
 
@@ -26,11 +25,7 @@
 #include <string.h>
 #include <upnp/upnp.h>
 #include <microhttpd.h>
-#ifdef HAVE_JSONCPP_JSON_JSON_H
 #include <jsoncpp/json/json.h>
-#else
-#include <json/json.h>
-#endif
 
 #include "cmdtalk.h"
 #include "pathut.h"
