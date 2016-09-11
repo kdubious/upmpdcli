@@ -1,11 +1,12 @@
 Summary:        UPnP Media Renderer front-end to MPD, the Music Player Daemon
 Name:           upmpdcli
-Version:        1.1.3
+Version:        1.2.2
 Release:        1%{?dist}
 Group:          Applications/Multimedia
 License:        GPLv2+
 URL:            http://www.lesbonscomptes.com/updmpdcli
 Source0:        http://www.lesbonscomptes.com/upmpdcli/downloads/upmpdcli-%{version}.tar.gz
+Patch0:         json-not-in-jsoncpp.patch
 Requires(pre):  shadow-utils
 Requires(post): systemd
 Requires(preun): systemd
@@ -13,6 +14,8 @@ Requires(postun): systemd
 BuildRequires:  libupnpp
 BuildRequires:  libupnp-devel
 BuildRequires:  libmpdclient-devel
+BuildRequires:  libmicrohttpd-devel
+BuildRequires:  jsoncpp-devel
 BuildRequires:  expat-devel
 BuildRequires:  systemd-units
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -25,6 +28,7 @@ on Android tablets or phones.
 
 %prep
 %setup -q
+%patch0 -p1
 
 %build
 %configure
@@ -66,6 +70,9 @@ install -D -m644 systemd/upmpdcli.service \
 %systemd_postun_with_restart upmpdcli.service 
 
 %changelog
+* Sun Sep 11 2016 J.F. Dockes <jf@dockes.org> - 1.2.2
+- Implement Media Server for acessing streaming services (Google Play
+  Music, Qobuz and Tidal)
 * Thu Mar 17 2016 J.F. Dockes <jf@dockes.org> - 1.1.3
 - Fix cover art display, which sometimes vanished.
 - Allow changing the xml data directory in the run time config.

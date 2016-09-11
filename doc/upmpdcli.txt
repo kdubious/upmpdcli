@@ -60,7 +60,13 @@ Server should happily send music to other renderers.
 
 === Notes on the Tidal interface
 
-The software is not officialy supported by Tidal, and may just stop to
+This is based on the
+link:https://github.com/tamland/kodi-tidal[Kodi Tidal add-on] and the
+link:https://github.com/tamland/python-tidal[Tidal API], by Thomas
+Amland (also using other useful modules by Thomas). I was able to reuse
+most of the Kodi code. 
+
+The software is not officially supported by Tidal, and may just stop to
 work one day...
 
 It only works with a valid Tidal subscription.
@@ -70,7 +76,12 @@ link:#_tidal_streaming_service_parameters[further down].
 
 === Notes on the Qobuz interface
 
-The WEB API is not officialy supported by Qobuz, and may just stop to work
+This is based on the service API from the
+link:https://github.com/tidalf/plugin.audio.qobuz[Kodi add-on], by Joachim
+Basmaison and Cyril Leclerc, with the upper-level code adapted from the
+Tidal add-on.
+
+The WEB API is not officially supported by Qobuz, and may just stop to work
 one day.
 
 You need a valid Qobuz subscription.
@@ -86,6 +97,10 @@ link:#_qobuz_streaming_service_parameters[further down].
 [[upmpdcli.googlemusicnotes]]
 === Notes on the Google Music interface
 
+This is based on the
+link:https://github.com/simon-weber/gmusicapi[gmusicapi] Python package by
+Simon Weber, with upper-level code from the Tidal Kodi add-on.
+
 As for the other services, the API used is not officially supported and may
 stop to work one day.
 
@@ -95,7 +110,8 @@ link:http://unofficial-google-music-api.readthedocs.io/en/latest/usage.html#usag
 
 You will need a valid subscription for most functions.
 
-
+The configuration parameters are described 
+link:#_google_music_streaming_service_parameters[further down].
 
 
 [[upmpdcli.config]]
