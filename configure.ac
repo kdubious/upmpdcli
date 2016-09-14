@@ -35,10 +35,10 @@ dnl AC_CHECK_LIB([upnp], [UpnpInit], [], AC_MSG_ERROR([libupnp not found]))
 dnl AC_CHECK_LIB([curl], [curl_easy_init], [],AC_MSG_ERROR([libcurl not found]))
 dnl AC_CHECK_LIB([expat], [XML_ParserCreate], [],AC_MSG_ERROR([libexpat not found]))
 
-AC_CHECK_LIB([upnpp], [getsyshwaddr], [], [AC_MSG_ERROR([libupnpp])])
+PKG_CHECK_MODULES([upnpp], [libupnpp], [], [AC_MSG_ERROR([libupnpp])])
 AC_CHECK_LIB([mpdclient], [mpd_connection_new], [],
                           AC_MSG_ERROR([libmpdclient not found]))
-SCCTL_LIBS=$LIBS
+SCCTL_LIBS="$LIBS $upnpp_LIBS"
 
 AC_CHECK_LIB([microhttpd], [MHD_queue_response], [], [])
 
@@ -56,8 +56,8 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
     [AC_MSG_ERROR([libjsoncpp not found.])])
 AC_LANG_POP
 
-UPMPDCLI_LIBS=$LIBS
-echo "UPMPDCLI_LIBS=$LIBS"
+UPMPDCLI_LIBS="$LIBS $upnpp_LIBS"
+echo "UPMPDCLI_LIBS=$UPMPDCLI_LIBS"
 
 LIBS=""
 
