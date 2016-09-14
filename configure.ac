@@ -40,7 +40,7 @@ AC_CHECK_LIB([mpdclient], [mpd_connection_new], [],
                           AC_MSG_ERROR([libmpdclient not found]))
 SCCTL_LIBS=$LIBS
 
-AC_CHECK_LIB([microhttpd], [MHD_queue_response], [], [])
+AC_CHECK_LIB([microhttpd], [MHD_queue_response], [], AC_MSG_ERROR([libmicrohttpd not found]))
 
 AC_LANG_PUSH([C++])
 
