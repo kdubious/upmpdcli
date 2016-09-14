@@ -35,7 +35,7 @@
 #include "cmdtalk.h"
 #include "pathut.h"
 #include "smallut.h"
-#include "log.hxx"
+#include "libupnpp/log.hxx"
 #include "main.hxx"
 #include "conftree.h"
 
