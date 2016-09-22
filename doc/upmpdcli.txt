@@ -11,8 +11,7 @@ playing either of audio captured on Windows or Mac OS X or of its own
 stream.
 
 As of version 1.2.0, the software includes a Media Server gateway to
-streaming music services, with initial support for Google Play Music, Qobuz
-and Tidal.
+cloud streaming music services.
 
 [[upmpdcli.security]]
 == Security
@@ -47,7 +46,8 @@ https://github.com/medoc92/upmpdcli/issues/36#issuecomment-227761220
 
 Upmpdcli versions 1.2.0 and later offer support for accessing music on some
 streaming services. You will need a valid account on the services you want
-to use. The initial release supports Google Play Music, Qobuz and Tidal.
+to use. The initial release supports Google Play Music, Qobuz and Tidal
+(which does not work any more, see the notes in the Tidal section).
 
 When the function is activated, upmpdcli creates a separate auxiliary Media
 Server, with the sole purpose of presenting the streaming server
@@ -58,9 +58,33 @@ the one for the upmpdcli instance, with "-mediaserver" appended.
 Streaming is not limited to the local upmpdcli renderer, and the Media
 Server should happily send music to other renderers.
 
+NOTE: The streaming services passwords are stored in the upmpdcli
+configuration file ('/etc/upmpdcli.conf'). The 1.2.2 installer does not
+make this file r/w by owner only. This will be fixed, but for now, you
+should probably do it after setting the password:
++chmod&#160;600&#160;/etc/upmpdcli.conf+ Actually, it would quite probably
+be a good idea not to use the same account for your mail and music uses.
+
+NOTE: I have no reason to believe that upmpdcli is technically mis-using
+the streaming services in any way, but it is definitely not approved by any
+of them, and you are using it under your own responsibility.
+
 === Notes on the Tidal interface
 
-This is based on the
+[NOTE]
+===================================
+There seems to be problems when streaming Tidal lossless/FLAC streams,
+with the default MPD configuration. A preliminary and rather superficial
+enquiry seems to indicate that this is caused by too much buffering by
+MPD. Adding the following parameters to the MPD configuration file
+(/etc/mpd.conf) reduces the pre-fetch period from 20 S to 10 S and seems to
+fix the issues for me:
+
+    audio_buffer_size "2048"
+    buffer_before_play "20%"
+====================================
+
+The Tidal module code is is based on the
 link:https://github.com/tamland/kodi-tidal[Kodi Tidal add-on] and the
 link:https://github.com/tamland/python-tidal[Tidal API], by Thomas
 Amland (also using other useful modules by Thomas). I was able to reuse
@@ -73,6 +97,12 @@ It only works with a valid Tidal subscription.
 
 The configuration parameters are described
 link:#_tidal_streaming_service_parameters[further down]. 
+
+NOTE: as of 2016-09-17, the Tidal interface does not seem to work any
+more. It appears that the Kodi add-on has problems too, so this probably
+comes from a change on the Tidal side, maybe they invalidated the API key
+which was used by most open-source interfaces. 
+
 
 === Notes on the Qobuz interface
 
