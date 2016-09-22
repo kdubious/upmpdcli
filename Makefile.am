@@ -1,5 +1,5 @@
 AM_CPPFLAGS = -DDEBUG -g -Wall \
-            -I${prefix}/include/libupnpp \
+            $(upnpp_CFLAGS) \
             -I$(top_srcdir)/src \
             -DDATADIR=\"${pkgdatadir}\" -DCONFIGDIR=\"${sysconfdir}\"
 
