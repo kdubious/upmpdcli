@@ -1,11 +1,34 @@
 AM_CPPFLAGS = -DDEBUG -g -Wall \
             $(upnpp_CFLAGS) \
             -I$(top_srcdir)/src \
+            -I$(top_srcdir)/src/mediaserver/cdplugins \
             -DDATADIR=\"${pkgdatadir}\" -DCONFIGDIR=\"${sysconfdir}\"
 
 AM_CXXFLAGS = -std=c++11 
 
 bin_PROGRAMS = upmpdcli scctl
+
+# We import the log facility from libupnpp, which requires fixing
+# include directives for files which expect to live in the same
+# directory as log.h
+BUILT_SOURCES = src/conftree-fixed.cpp src/execmd-fixed.cpp \
+              src/mediaserver/cdplugins/cmdtalk-fixed.cpp src/netcon-fixed.cpp
+src/conftree-fixed.cpp : $(top_srcdir)/src/conftree.cpp
+	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
+		$(top_srcdir)/src/conftree.cpp > src/conftree-fixed.cpp
+src/execmd-fixed.cpp : $(top_srcdir)/src/execmd.cpp
+	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
+		$(top_srcdir)/src/execmd.cpp > src/execmd-fixed.cpp
+src/netcon-fixed.cpp : $(top_srcdir)/src/netcon.cpp
+	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
+		$(top_srcdir)/src/netcon.cpp > src/netcon-fixed.cpp
+src/mediaserver/cdplugins/cmdtalk-fixed.cpp : \
+		$(top_srcdir)/src/mediaserver/cdplugins/cmdtalk.cpp
+	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
+		$(top_srcdir)/src/mediaserver/cdplugins/cmdtalk.cpp > \
+		src/mediaserver/cdplugins/cmdtalk-fixed.cpp
+
+CLEANFILES = $(BUILT_SOURCES)
 
 upmpdcli_SOURCES = \
      src/avtransport.cxx \
@@ -13,18 +36,18 @@ upmpdcli_SOURCES = \
      src/closefrom.cpp \
      src/closefrom.h \
      src/conf_post.h \
-     src/conftree.cpp \
+     src/conftree-fixed.cpp \
      src/conftree.h \
      src/conman.cxx \
      src/conman.hxx \
-     src/execmd.cpp \
+     src/execmd-fixed.cpp \
      src/execmd.h \
      src/httpfs.cxx \
      src/httpfs.hxx \
      src/main.cxx \
      src/main.hxx \
      src/mediaserver/cdplugins/cdplugin.hxx \
-     src/mediaserver/cdplugins/cmdtalk.cpp \
+     src/mediaserver/cdplugins/cmdtalk-fixed.cpp \
      src/mediaserver/cdplugins/cmdtalk.h \
      src/mediaserver/cdplugins/plgwithslave.cxx \
      src/mediaserver/cdplugins/plgwithslave.hxx \
@@ -34,7 +57,7 @@ upmpdcli_SOURCES = \
      src/mediaserver/mediaserver.hxx \
      src/mpdcli.cxx \
      src/mpdcli.hxx \
-     src/netcon.cpp \
+     src/netcon-fixed.cpp \
      src/netcon.h \
      src/ohinfo.cxx \
      src/ohinfo.hxx \
@@ -72,7 +95,7 @@ upmpdcli_LDADD = $(UPMPDCLI_LIBS)
 
 scctl_SOURCES = \
     scctl_src/scctl.cpp \
-    src/netcon.cpp \
+    src/netcon-fixed.cpp \
     src/smallut.cpp \
     src/upmpdutils.cxx
 
@@ -135,7 +158,7 @@ bogus:
 
 install-data-hook: web.tar.gz rdpl2stream.tar.gz
 	(cd $(DESTDIR)$(sysconfdir); test -f upmpdcli.conf || \
-        	mv upmpdcli.conf-dist upmpdcli.conf)
+		mv upmpdcli.conf-dist upmpdcli.conf)
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < web.tar.gz 
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < rdpl2stream.tar.gz
 	(cd $(DESTDIR)$(pkgdatadir); test -d src_scripts || mkdir src_scripts)
@@ -146,7 +169,7 @@ install-data-hook: web.tar.gz rdpl2stream.tar.gz
 dist_pkgdata_SCRIPTS = samplescripts/Analog-Input
 
 dist_sysconf_DATA = src/upmpdcli.conf-dist
-            
+
 dist_man1_MANS = man/upmpdcli.1
 
 dist-hook:
