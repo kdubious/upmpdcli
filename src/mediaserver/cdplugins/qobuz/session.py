@@ -58,12 +58,19 @@ class Session(object):
             return [_parse_artist(art) for art in data['artists']['items']]
         return []
 
-    def get_featured_albums(self, genre_id=None):
-        data = self.api.album_getFeatured(type='editor-picks',
-                                          genre_id=genre_id, limit=50)
+    def get_featured_albums(self, genre_id=None, type='new-releases'):
+        data = self.api.album_getFeatured(type=type,
+                                          genre_id=genre_id, limit=40)
         if data and 'albums' in data:
             albums = [_parse_album(alb) for alb in data['albums']['items']] 
             return [alb for alb in albums if alb.available]
+        return []
+
+    def get_featured_playlists(self, genre_id=None):
+        data = self.api.playlist_getFeatured(type='editor-picks',
+                                             genre_id=genre_id, limit=40)
+        if data and 'playlists' in data:
+            return [_parse_playlist(pl) for pl in data['playlists']['items']]
         return []
 
     # content_type: albums/artists/playlists.  type : The type of

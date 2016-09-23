@@ -315,6 +315,11 @@ class RawApi(object):
         self._check_ka(ka, ['playlist_id'], ['extra', 'limit', 'offset'])
         return self._api_request(ka, '/playlist/get')
 
+    def playlist_getFeatured(self, **ka):
+        # type is 'last-created' or 'editor-picks'
+        self._check_ka(ka, ['type'], ['genre_id', 'limit', 'offset'])
+        return self._api_request(ka, '/playlist/getFeatured')
+
     def playlist_getUserPlaylists(self, **ka):
         self._check_ka(ka, [], ['user_id', 'username', 'order', 'offset', 'limit'])
         if not 'user_id' in ka and not 'username' in ka:
