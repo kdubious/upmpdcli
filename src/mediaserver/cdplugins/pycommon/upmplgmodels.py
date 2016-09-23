@@ -35,7 +35,7 @@ class Album(Model):
     duration = -1
     release_date = None
     image = None
-
+    available = True
 
 class Artist(Model):
     upnpclass = "object.container.person.musicArtist"

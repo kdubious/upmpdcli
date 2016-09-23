@@ -29,15 +29,18 @@ from __future__ import print_function, unicode_literals
 
 import posixpath
 import re
+import sys
 
 # Bogus class instanciated as global object for helping with reusing
 # kodi addon code
 class XbmcPlugin:
     SORT_METHOD_TRACKNUM = 1
     def __init__(self, idprefix):
+        global g_idprefix
         self.entries = []
         self.objid = ''
         self.idprefix = idprefix
+        g_idprefix = idprefix
     def addDirectoryItem(self, hdl, endpoint, title, isend):
         self.entries.append(direntry(self.idprefix + endpoint, self.objid, title))
         return
@@ -83,6 +86,12 @@ def trackentries(httphp, pathprefix, objid, tracks):
     entries = []
     for track in tracks:
         if not track.available:
+            if 1:
+                uplog("NOT AVAILABLE")
+                try:
+                    uplog("%s by %s" % (track.name, track.artist.name))
+                except:
+                    pass
             continue
         li = {}
         li['pid'] = objid
@@ -147,3 +156,7 @@ def direntry(id, pid, title, arturi=None, artist=None, upnpclass=None):
     if upnpclass:
         ret['upnp:class'] = upnpclass
     return ret
+
+
+def uplog(s):
+    print("%s: %s" % (g_idprefix, s), file=sys.stderr)

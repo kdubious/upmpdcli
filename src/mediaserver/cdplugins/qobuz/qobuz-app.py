@@ -178,8 +178,10 @@ def root_genres():
 @plugin.route('/genre/<genre_id>')
 def genre_view(genre_id):
     items = session.get_genres(genre_id)
-    if len(items) != 0:
-        # List subgenres
+    if False and len(items) != 0:
+        # List subgenres. We don't do it any more as they all contain
+        # the same data (there is no actual discrimination between
+        # e.g. metal and pop, same list arrives.
         view(items, urls_from_id(genre_view, items))
     else:
         items = session.get_featured_albums(genre_id)

@@ -7,6 +7,7 @@ import sys
 import json
 from upmplgmodels import Artist, Album, Track, Playlist, SearchResult, \
      Category, Genre
+from upmplgutils import *
 from qobuz.api import raw
 
 class Session(object):
@@ -39,13 +40,6 @@ class Session(object):
         album = _parse_album(data)
         return [_parse_track(t, album) for t in data['tracks']['items']]
 
-    def get_featured_albums(self, genre_id=None):
-        data = self.api.album_getFeatured(type='editor-picks',
-                                          genre_id=genre_id, limit=50)
-        if data and 'albums' in data:
-            return [_parse_album(alb) for alb in data['albums']['items']]
-        return []
-
     def get_playlist_tracks(self, plid):
         data = self.api.playlist_get(playlist_id = plid, extra = 'tracks')
         #print("PLAYLIST: %s" % json.dumps(data, indent=4), file=sys.stderr)
@@ -54,13 +48,22 @@ class Session(object):
     def get_artist_albums(self, artid):
         data = self.api.artist_get(artist_id=artid, extra='albums')
         if 'albums' in data:
-            return [_parse_album(alb) for alb in data['albums']['items']]
+            albums = [_parse_album(alb) for alb in data['albums']['items']]
+            return [alb for alb in albums if alb.available]
         return []
 
     def get_artist_similar(self, artid):
         data = self.api.artist_getSimilarArtists(artist_id=artid)
         if 'artists' in data and 'items' in data['artists']:
             return [_parse_artist(art) for art in data['artists']['items']]
+        return []
+
+    def get_featured_albums(self, genre_id=None):
+        data = self.api.album_getFeatured(type='editor-picks',
+                                          genre_id=genre_id, limit=50)
+        if data and 'albums' in data:
+            albums = [_parse_album(alb) for alb in data['albums']['items']] 
+            return [alb for alb in albums if alb.available]
         return []
 
     # content_type: albums/artists/playlists.  type : The type of
@@ -70,32 +73,23 @@ class Session(object):
     # catalog_getFeaturedTypes call which returns the above list, I
     # could not find a way to pass the type parameter to
     # catalog_getFeatured (setting type triggers an
-    # error). album_getFeatured() accepts type, but it's not cleared
-    # what it does and it's
+    # error). album_getFeatured() accepts type, but it's not clear
+    # what it does.
     def get_featured_items(self, content_type, type=''):
-        #data = self.api.catalog_getFeaturedTypes()
-        #print("FEATURED TYPES: %s" % data, file=sys.stderr)
-        #ftype = 'most-featured'
-        #data = self.api.catalog_getFeatured(limit='4')
-        #print("FEATURED %s: %s" % (ftype, json.dumps(data, indent=4)),
-        #                           file=sys.stderr)
-        limit = '20'
-        if content_type == 'albums':
-            # genre_id - optional : The genre ID to filter the
-            # recommandations by. The type argument seems to be mandatory
-            data = self.api.album_getFeatured(limit=limit, type='editor-picks')
+        uplog("FEATURED TYPES: %s" % self.api.catalog_getFeaturedTypes())
+        limit = '40'
+        data = self.api.catalog_getFeatured(limit=limit)
+        #print("Featured: %s" % json.dumps(data,indent=4), file=sys.stderr)
+        if content_type == 'artists':
+            if 'artists' in data:
+                return [_parse_artist(i) for i in data['artists']['items']]
+        elif content_type == 'playlists':
+            if 'playlists' in data:
+                return [_parse_playlist(pl) for pl in data['playlists']['items']]
+        elif content_type == 'albums':
+            uplog("content_type: albums")
             if 'albums' in data:
                 return [_parse_album(alb) for alb in data['albums']['items']]
-        else:
-            data = self.api.catalog_getFeatured(limit=limit)
-            #print("Featured: %s" % json.dumps(data,indent=4), file=sys.stderr)
-            if content_type == 'artists':
-                if 'artists' in data:
-                    return [_parse_artist(i) for i in data['artists']['items']]
-            elif content_type == 'playlists':
-                if 'playlists' in data:
-                    return [_parse_playlist(pl) for pl in \
-                            data['playlists']['items']]
         return []
 
     def get_genres(self, parent=None):
@@ -110,6 +104,7 @@ class Session(object):
             ar = []
         try:
             al = [_parse_album(i) for i in data['albums']['items']]
+            al = [alb for alb in al if alb.available]
         except:
             al = []
         try:
@@ -135,12 +130,14 @@ def _parse_album(json_obj, artist=None, artists=None):
         artist = _parse_artist(json_obj['artist'])
     #if artists is None:
     #    artists = _parse_artists(json_obj['artists'])
+    available = json_obj['streamable'] if 'streamable' in json_obj else false
     kwargs = {
         'id': json_obj['id'],
         'name': json_obj['title'],
         'num_tracks': json_obj.get('tracks_count'),
         'duration': json_obj.get('duration'),
         'artist': artist,
+        'available': available,
         #'artists': artists,
     }
     if 'image' in json_obj and 'large' in json_obj['image']:
@@ -176,6 +173,9 @@ def _parse_track(json_obj, albumarg = None):
         artist = albumarg.artist
     else:
         artist = Artist()
+
+    available = json_obj['streamable'] if 'streamable' in json_obj else false
+
     #artists = _parse_artists(json_obj['artists'])
     kwargs = {
         'id': json_obj['id'],
@@ -184,6 +184,7 @@ def _parse_track(json_obj, albumarg = None):
         'track_num': json_obj['track_number'],
         'disc_num': json_obj['media_number'],
         'artist': artist,
+        'available': available
         #'artists': artists,
     }
     if 'album' in json_obj:
@@ -210,7 +211,8 @@ class Favorites(object):
             user_id = self.session.user.id,
             type = 'albums')
         #print("%s" % r, file=sys.stderr)
-        return [_parse_album(item) for item in r['albums']['items']]
+        albums = [_parse_album(item) for item in r['albums']['items']]
+        return [alb for alb in albums if alb.available]
 
     def playlists(self):
         r = self.session.api.playlist_getUserPlaylists()
