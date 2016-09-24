@@ -1,3 +1,10 @@
+upmpdcli (1.2.3-1) unstable; urgency=low
+
+  * Moved the streaming service plugins into separate packages
+  * Improved Qobuz navigation.
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Sat, 24 Sep 2016 19:23:00 +0200
+
 upmpdcli (1.2.2-1) unstable; urgency=low
 
   * Improved streaming service search

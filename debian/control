@@ -2,16 +2,17 @@ Source: upmpdcli
 Section: contrib/sound
 Priority: extra
 Maintainer: Jean-Francois Dockes <jf@dockes.org>
-Build-Depends: debhelper (>= 9.0.0), dh-systemd, autotools-dev,
+Build-Depends: debhelper (>= 9.0.0), dh-systemd,
+               autotools-dev, python, pkg-config,
                libmpdclient-dev, libmicrohttpd-dev, python-requests,
                libupnpp3-dev, libupnp6-dev, libjsoncpp-dev
-Standards-Version: 3.9.3
+Standards-Version: 3.9.6
 Homepage: http://www.lesbonscomptes.com/upmpdcli
 
 Package: upmpdcli
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
-Recommends: python
+Depends: ${shlibs:Depends}, ${misc:Depends}, adduser, python
+Section: contrib/sound
 Description: UPnP Media Renderer front-end to MPD, the Music Player Daemon
  upmpdcli acts as an UPnP Media Renderer on the front-end so that you can
  control it with any UPnP controller like, e.g. Audionet or BubbleUPnP on an
@@ -22,8 +23,35 @@ Description: UPnP Media Renderer front-end to MPD, the Music Player Daemon
 
 Package: scweb
 Architecture: all
-Section: python
-Depends: upmpdcli, ${python:Depends}
+Section: contrib/sound
+Depends: python, upmpdcli, ${python:Depends}, ${misc:Depends}
 Description: web interface for controlling multiple Songcast Receivers
- scweb is a web front-end to the scctl songcast receiver control command
+ scweb is a web front-end to the scctl songcast receiver control command.
+
+
+Package: upmpdcli-qobuz
+Architecture: all
+Section: contrib/sound
+Depends: python, upmpdcli, ${python:Depends}, ${misc:Depends}
+Description: upmpdcli Qobuz plugin
+ upmpdcli-qobuz allows upmpdcli to proxy access to the Qobuz music
+ streaming service.
+
+
+Package: upmpdcli-tidal
+Architecture: all
+Section: contrib/sound
+Depends: python, upmpdcli, ${python:Depends}, ${misc:Depends}
+Description: upmpdcli Tidal plugin
+ upmpdcli-tidal allows upmpdcli to proxy access to the Tidal music
+ streaming service.
+
+
+Package: upmpdcli-gmusic
+Architecture: all
+Section: contrib/sound
+Depends: python, upmpdcli, ${python:Depends}, ${misc:Depends}
+Description: upmpdcli Google Play Music plugin
+ upmpdcli-gmusic allows upmpdcli to proxy access to the Google Play Music
+ streaming service.
 
