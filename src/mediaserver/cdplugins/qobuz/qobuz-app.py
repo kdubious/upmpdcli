@@ -167,8 +167,8 @@ def browse(a):
 @plugin.route('/')
 def root():
     add_directory("Discover", whats_new)
-    add_directory('Favourites', my_music)
     add_directory('Genres', root_genres)
+    add_directory('Favourites', my_music)
 
 @plugin.route('/root_genres')
 def root_genres():
