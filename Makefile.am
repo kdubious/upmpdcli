@@ -146,7 +146,9 @@ dist_cdpluginsgmusic_DATA = \
                   src/mediaserver/cdplugins/gmusic/gmusic-app.py \
                   src/mediaserver/cdplugins/gmusic/session.py 
 
-EXTRA_DIST = web.tar.gz rdpl2stream.tar.gz systemd/upmpdcli.service
+EXTRA_DIST = web.tar.gz rdpl2stream.tar.gz systemd/upmpdcli.service \
+    src/conftree.cpp src/execmd.cpp src/mediaserver/cdplugins/cmdtalk.cpp \
+    src/netcon.cpp
 
 web.tar.gz: bogus
 	if test -d $(srcdir)/web; then \
