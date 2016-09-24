@@ -36,27 +36,17 @@ dnl AC_CHECK_LIB([curl], [curl_easy_init], [],AC_MSG_ERROR([libcurl not found]))
 dnl AC_CHECK_LIB([expat], [XML_ParserCreate], [],AC_MSG_ERROR([libexpat not found]))
 
 PKG_CHECK_MODULES([upnpp], [libupnpp], [], [AC_MSG_ERROR([libupnpp])])
-AC_CHECK_LIB([mpdclient], [mpd_connection_new], [],
-                          AC_MSG_ERROR([libmpdclient not found]))
-SCCTL_LIBS="$LIBS $upnpp_LIBS"
+PKG_CHECK_MODULES([libmpdclient], [libmpdclient], [],
+	[AC_MSG_ERROR([libmpdclient not found])])
+SCCTL_LIBS="$LIBS $upnpp_LIBS $libmpdclient_LIBS"
 
-AC_CHECK_LIB([microhttpd], [MHD_queue_response], [], AC_MSG_ERROR([libmicrohttpd not found]))
-
-AC_LANG_PUSH([C++])
+PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd], [],
+	[AC_MSG_ERROR([libmicrohttpd not found])])
 
 AC_CHECK_HEADERS(json/json.h jsoncpp/json/json.h)
-LIBS="$LIBS -ljsoncpp"
-AC_LINK_IFELSE([AC_LANG_PROGRAM(
-    [[#ifdef HAVE_JSONCPP_JSON_JSON_H
-    #include <jsoncpp/json/json.h>
-    #else
-    #include <json/json.h>
-    #endif]], [Json::Features dummy])],
-    [HAVE_JSONCPP=1],
-    [AC_MSG_ERROR([libjsoncpp not found.])])
-AC_LANG_POP
+PKG_CHECK_MODULES([jsoncpp], [jsoncpp], [], [AC_MSG_ERROR([jsoncpp not found])])
 
-UPMPDCLI_LIBS="$LIBS $upnpp_LIBS"
+UPMPDCLI_LIBS="$LIBS $upnpp_LIBS $libmpdclient_LIBS $libmicrohttpd_LIBS $jsoncpp_LIBS"
 echo "UPMPDCLI_LIBS=$UPMPDCLI_LIBS"
 
 LIBS=""

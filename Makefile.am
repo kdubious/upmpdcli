@@ -1,5 +1,6 @@
 AM_CPPFLAGS = -DDEBUG -g -Wall \
-            $(upnpp_CFLAGS) \
+            $(upnpp_CFLAGS)  $(libmpdclient_CFLAGS) $(libmicrohttpd_CFLAGS) \
+            $($jsoncpp_CFLAGS) \
             -I$(top_srcdir)/src \
             -I$(top_srcdir)/src/mediaserver/cdplugins \
             -DDATADIR=\"${pkgdatadir}\" -DCONFIGDIR=\"${sysconfdir}\"
