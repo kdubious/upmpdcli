@@ -26,11 +26,7 @@
 #include <string.h>
 #include <upnp/upnp.h>
 #include <microhttpd.h>
-#ifdef HAVE_JSONCPP_JSON_JSON_H
-#include <jsoncpp/json/json.h>
-#else
 #include <json/json.h>
-#endif
 
 #include "cmdtalk.h"
 #include "pathut.h"

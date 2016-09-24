@@ -43,7 +43,6 @@ SCCTL_LIBS="$LIBS $upnpp_LIBS $libmpdclient_LIBS"
 PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd], [],
 	[AC_MSG_ERROR([libmicrohttpd not found])])
 
-AC_CHECK_HEADERS(json/json.h jsoncpp/json/json.h)
 PKG_CHECK_MODULES([jsoncpp], [jsoncpp], [], [AC_MSG_ERROR([jsoncpp not found])])
 
 UPMPDCLI_LIBS="$LIBS $upnpp_LIBS $libmpdclient_LIBS $libmicrohttpd_LIBS $jsoncpp_LIBS"

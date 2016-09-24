@@ -3,18 +3,6 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the <jsoncpp/json/json.h> header file. */
-#undef HAVE_JSONCPP_JSON_JSON_H
-
-/* Define to 1 if you have the <json/json.h> header file. */
-#undef HAVE_JSON_JSON_H
-
-/* Define to 1 if you have the `microhttpd' library (-lmicrohttpd). */
-#undef HAVE_LIBMICROHTTPD
-
-/* Define to 1 if you have the `mpdclient' library (-lmpdclient). */
-#undef HAVE_LIBMPDCLIENT
-
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
 
