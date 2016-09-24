@@ -68,15 +68,7 @@ public:
             port = usport;
 	    LOGDEB("ContentDirectory: host "<< host<< " port " << port << endl);
 	}
-	if (!appname.compare("tidal")) {
-	    return new PlgWithSlave("tidal", service);
-        } else if (!appname.compare("qobuz")) {
-	    return new PlgWithSlave("qobuz", service);
-        } else if (!appname.compare("gmusic")) {
-	    return new PlgWithSlave("gmusic", service);
-	} else {
-	    return nullptr;
-	}
+        return new PlgWithSlave(appname, service);
     }
     CDPlugin *pluginForApp(const string& appname) {
 	auto it = plugins.find(appname);
@@ -160,14 +152,29 @@ static vector<UpSong> rootdir;
 static bool makerootdir()
 {
     rootdir.clear();
-    if (g_config->hasNameAnywhere("gmusicuser")) {
-        rootdir.push_back(UpSong::container("0$gmusic$", "0", "Google Music"));
+    string pathplg = path_cat(g_datadir, "cdplugins");
+    string reason;
+    set<string> entries;
+    if (!readdir(pathplg, reason, entries)) {
+        LOGERR("ContentDirectory::makerootdir: can't read " << pathplg <<
+               " : " << reason << endl);
+        return false;
     }
-    if (g_config->hasNameAnywhere("qobuzuser")) {
-        rootdir.push_back(UpSong::container("0$qobuz$", "0", "Qobuz"));
-    }
-    if (g_config->hasNameAnywhere("tidaluser")) {
-        rootdir.push_back(UpSong::container("0$tidal$", "0", "Tidal"));
+
+    for (const auto& entry : entries) {
+        if (!entry.compare("pycommon")) {
+            continue;
+        }
+        // We compute the title from the plugin name. Maybe it would
+        // be better to have it as a parameter either in the plugin
+        // directory (somehow), or in the global config
+        string title = stringtoupper((const string&)entry.substr(0,1)) +
+            entry.substr(1, entry.size()-1);
+        string userparam = entry + "user";
+        if (g_config->hasNameAnywhere(userparam)) {
+            rootdir.push_back(UpSong::container("0$" + entry + "$",
+                                                "0", title));
+        }
     }
 
     if (rootdir.empty()) {

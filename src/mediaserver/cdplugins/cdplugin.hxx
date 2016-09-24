@@ -97,7 +97,8 @@ public:
     ///
     /// This reflects an UPnP Browse action. Refer to UPnP documentation.
     /// 
-    /// @param objid the object to browse.
+    /// @param objid the object to browse. The top directory for a plugin will
+    //     be '0$plugin_name$', e.g. '0$qobuz$'
     /// @param stidx first entry to return.
     /// @param cnt number of entries.
     /// @param[output] entries output content.
