@@ -2,7 +2,7 @@
 # after data). White space / newlines will be stripped and everything else
 # concatenated 
 # Lines beginning with @ enable dynamic editing of the data at startup,
-# depending, e.g. on mpd version. If you want static data, just remove the
+# depending, e.g. on mpd version. If you want static data, just replace the
 # @xx@ tag with whatever you want (e.g. # or empty), or delete the lines.
 
 #http-get:*:audio/mpeg:DLNA.ORG_PN=MP3,
@@ -30,4 +30,5 @@ http-get:*:audio/x-vorbis+ogg:*,
 http-get:*:audio/ogg:*,
 http-get:*:audio/x-ogg:*,
 http-get:*:audio/x-scpls:*
+http-get:*:video/mp4:*
 
