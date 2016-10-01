@@ -48,9 +48,8 @@ class Config(object):
         # in rtmp / flv stream containers which are ennoying to handle. No idea
         # where it comes from (the other is from the older wimpy api), or why
         # they do this.
-        #        self.api_token = 'P5Xbeo5LFvESeDy6' if self.quality == \
-        #            Quality.lossless else 'wdgaB1CilGA-S_s2',
-        self.api_token = 'P5Xbeo5LFvESeDy6'
+        self.api_token = 'P5Xbeo5LFvESeDy6' if self.quality == \
+                         Quality.lossless else 'wdgaB1CilGA-S_s2'
 
 
 class Session(object):

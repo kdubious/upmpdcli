@@ -225,6 +225,9 @@ static bool read_protocolinfo(const string& fn, bool enableL16, string& out)
             eof = true;
 	}
         trimstring(line, " \t\n\r");
+        if (line[line.size()-1] != ',') {
+            line += ",";
+        }
         if (enableL16 && line[0] == '@') {
             line = regsub1("@ENABLEL16@", line, "");
         } else {

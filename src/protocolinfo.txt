@@ -11,6 +11,9 @@
 @ENABLEL16@http-get:*:audio/L16:DLNA.ORG_PN=LPCM,
 
 http-get:*:audio/dsd:*,
+http-get:*:audio/x-dsd:*,
+http-get:*:audio/dff:*,
+http-get:*:audio/x-dff:*,
 http-get:*:audio/wav:*,
 http-get:*:audio/wave:*,
 http-get:*:audio/x-wav:*,

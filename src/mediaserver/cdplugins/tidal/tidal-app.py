@@ -110,7 +110,7 @@ def trackuri(a):
     
     maybelogin()
     media_url = session.get_media_url(trackid)
-    #msgproc.log("%s" % media_url)
+    msgproc.log("%s" % media_url)
     if not media_url.startswith('http://') and not \
            media_url.startswith('https://'):
         host, tail = media_url.split('/', 1)
