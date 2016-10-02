@@ -161,7 +161,7 @@ static UpnpDevice *dev;
 string g_datadir(DATADIR "/");
 
 // Global
-string g_configfilename(CONFIGDIR "/upmpdcli.conf");
+string g_configfilename;
 std::mutex g_configlock;
 ConfSimple *g_config;
 
@@ -406,6 +406,13 @@ int main(int argc, char *argv[])
                 msonly = false;
                 break;
             }
+        }
+    } else {
+        // g_configfilename is empty. Create an empty config anyway
+        g_config = new ConfSimple(string(), 1, true);
+        if (!g_config || !g_config->ok()) {
+            cerr << "Could not create empty config\n";
+            return 1;
         }
     }
 
