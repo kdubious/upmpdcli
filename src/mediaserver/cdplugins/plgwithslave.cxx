@@ -540,7 +540,7 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
 
     // In cache ?
     SearchCacheEntry *cep;
-    string cachekey(m_name + ":" + value);
+    string cachekey(m_name + ":" + slavefield + ":" + value);
     if ((cep = o_scache.get(cachekey)) != nullptr) {
         int total = resultFromCacheEntry(classfilter, stidx,cnt, *cep, entries);
         delete cep;
@@ -551,6 +551,7 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
     unordered_map<string, string> res;
     if (!m->cmd.callproc("search", {
 		{"objid", ctid},
+                {"field", slavefield},
 		{"value", value} },  res)) {
 	LOGERR("PlgWithSlave::search: slave failure\n");
 	return errorEntries(ctid, entries);
