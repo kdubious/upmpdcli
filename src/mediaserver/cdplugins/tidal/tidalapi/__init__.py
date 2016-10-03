@@ -15,97 +15,187 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 
+import sys
+import re
 import datetime
 import json
+import random
 import logging
 import requests
+from requests.packages import urllib3
 from collections import namedtuple
+from .models import SubscriptionType, Quality
 from .models import Artist, Album, Track, Playlist, SearchResult, Category
 try:
     from urlparse import urljoin
 except ImportError:
     from urllib.parse import urljoin
 
+class MLog(object):
+    def __init__(self):
+        self.f = sys.stderr
+        self.level = 1
+    def isEnabledFor(self, l):
+        return True
+    def debug(self, msg):
+        if self.level >= 3:
+            print("%s" % msg, file=self.f)
+    def info(self, msg):
+        if self.level >= 2:
+            print("%s" % msg, file=self.f)
+    def error(self, msg):
+        if self.level >= 1:
+            print("%s" % msg, file=self.f)
 
-log = logging.getLogger(__name__)
+#log = logging.getLogger(__name__)
+log = MLog()
 
-Api = namedtuple('API', ['location', 'token'])
-
-
-class Quality(object):
-    lossless = 'LOSSLESS'
-    high = 'HIGH'
-    low = 'LOW'
-
-
+# See https://github.com/arnesongit/python-tidal/ for token descs
 class Config(object):
     def __init__(self, quality=Quality.high):
         self.quality = quality
-        self.api_location = 'https://api.tidalhifi.com/v1/'
-        # For some reason, Kodi uses the following keys. The 2nd one results
-        # in rtmp / flv stream containers which are ennoying to handle. No idea
-        # where it comes from (the other is from the older wimpy api), or why
-        # they do this.
-        self.api_token = 'P5Xbeo5LFvESeDy6' if self.quality == \
-                         Quality.lossless else 'wdgaB1CilGA-S_s2'
+        self.api_location = 'https://api.tidal.com/v1/'
+        self.api_token = 'kgsOOmYk3zShYrNP'
+        self.preview_token = "8C7kRFdkaRp0dLBp" # Token for Preview Mode
 
 
 class Session(object):
 
     def __init__(self, config=Config()):
-        self.session_id = None
-        self.country_code = None
-        self.user = None
-        self._config = config
         """:type _config: :class:`Config`"""
+        self._config = config
+        self.session_id = None
+        self.user = None
+        self.country_code = 'US'   # Enable Trial Mode
+        self.client_unique_key = None
+        urllib3.disable_warnings() # Disable OpenSSL Warnings in URLLIB3
 
-    def load_session(self, session_id, country_code, user_id):
+    def logout(self):
+        self.session_id = None
+        self.user = None
+
+    def load_session(self, session_id, country_code, user_id=None,
+                     subscription_type=None, unique_key=None):
         self.session_id = session_id
+        self.client_unique_key = unique_key
         self.country_code = country_code
-        self.user = User(self, id=user_id)
+        if not self.country_code:
+            # Set Local Country Code to enable Trial Mode 
+            self.country_code = self.local_country_code()
+        if user_id:
+            self.user = self.init_user(user_id=user_id,
+                                       subscription_type=subscription_type)
+        else:
+            self.user = None
 
-    def login(self, username, password):
+    def generate_client_unique_key(self):
+        return format(random.getrandbits(64), '02x')
+
+    def login(self, username, password, subscription_type=None):
+        self.logout()
+        if not username or not password:
+            return False
+        if not subscription_type:
+            # Set Subscription Type corresponding to the given playback quality
+            subscription_type = SubscriptionType.hifi if \
+                                self._config.quality == Quality.lossless else \
+                                SubscriptionType.premium
+        if not self.client_unique_key:
+            # Generate a random client key if no key is given
+            self.client_unique_key = self.generate_client_unique_key()
         url = urljoin(self._config.api_location, 'login/username')
-        params = {'token': self._config.api_token}
+        headers = { "X-Tidal-Token": self._config.api_token }
         payload = {
             'username': username,
             'password': password,
+            'clientUniqueKey': self.client_unique_key
         }
-        r = requests.post(url, data=payload, params=params)
-        r.raise_for_status()
-        body = r.json()
-        self.session_id = body['sessionId']
-        self.country_code = body['countryCode']
-        self.user = User(self, id=body['userId'])
-        return True
+        log.debug('Using Token "%s" with clientUniqueKey "%s"' %
+                  (self._config.api_token, self.client_unique_key))
+        r = requests.post(url, data=payload, headers=headers)
+        if not r.ok:
+            try:
+                msg = r.json().get('userMessage')
+            except:
+                msg = r.reason
+            log.error(msg)
+        else:
+            try:
+                body = r.json()
+                self.session_id = body['sessionId']
+                self.country_code = body['countryCode']
+                self.user = self.init_user(user_id=body['userId'],
+                                           subscription_type=subscription_type)
+            except Exception as err:
+                log.error('Login failed. err %s %s' % (err, body))
+                self.logout()
 
+        return self.is_logged_in
+
+    def init_user(self, user_id, subscription_type):
+        return User(self, user_id=user_id, subscription_type=subscription_type)
+
+    def local_country_code(self):
+        url = urljoin(self._config.api_location, 'country/context')
+        headers = { "X-Tidal-Token": self._config.api_token}
+        r = requests.request('GET', url, params={'countryCode': 'WW'},
+                             headers=headers)
+        if not r.ok:
+            return 'US'
+        return r.json().get('countryCode')
+
+    @property
+    def is_logged_in(self):
+        return True if self.session_id and self.country_code and self.user \
+               else False
+    
     def check_login(self):
         """ Returns true if current session is valid, false otherwise. """
-        if self.user is None or not self.user.id or not self.session_id:
+        if not self.is_logged_in:
             return False
-        url = urljoin(self._config.api_location, 'users/%s/subscription' % self.user.id)
-        return requests.get(url, params={'sessionId': self.session_id}).ok
+        self.user.subscription = self.get_user_subscription(self.user.id)
+        return True if self.user.subscription != None else False
 
-    def request(self, method, path, params=None, data=None):
+    def request(self, method, path, params=None, data=None, headers=None):
+        request_headers = {}
         request_params = {
             'sessionId': self.session_id,
             'countryCode': self.country_code,
             'limit': '999',
         }
+        if headers:
+            request_headers.update(headers)
         if params:
             request_params.update(params)
         url = urljoin(self._config.api_location, path)
-        r = requests.request(method, url, params=request_params, data=data)
-        log.debug("request: %s" % r.request.url)
+        if self.is_logged_in:
+            # Request with API Session if SessionId is not given in headers parameter
+            if not 'X-Tidal-SessionId' in request_headers:
+                request_headers.update({'X-Tidal-SessionId': self.session_id})
+        else:
+            # Request with Preview-Token. Remove SessionId if given via headers parameter
+            request_headers.pop('X-Tidal-SessionId', None)
+            request_params.update({'token': self._config.preview_token})
+        r = requests.request(method, url, params=request_params, data=data, headers=request_headers)
+        log.debug("%s %s" % (method, r.request.url))
+        if not r.ok:
+            log.error(r.url)
+            try:
+                log.error(r.json().get('userMessage'))
+            except:
+                log.error(r.reason)
         r.raise_for_status()
-        if r.content:
-            log.debug("response: %s" % json.dumps(r.json(), indent=4))
+        if r.content and log.isEnabledFor(logging.INFO):
+            log.info("response: %s" % json.dumps(r.json(), indent=4))
         return r
 
     def get_user(self, user_id):
         return self._map_request('users/%s' % user_id, ret='user')
+
+    def get_user_subscription(self, user_id):
+        return self._map_request('users/%s/subscription' % user_id, ret='subscription')
 
     def get_user_playlists(self, user_id):
         return self._map_request('users/%s/playlists' % user_id, ret='playlists')
@@ -339,14 +429,10 @@ class User(object):
 
     favorites = None
 
-    def __init__(self, session, id):
-        """
-        :type session: :class:`Session`
-        :param id: The user ID
-        """
+    def __init__(self, session, user_id, subscription_type=SubscriptionType.hifi):
         self._session = session
-        self.id = id
+        self.id = user_id
         self.favorites = Favorites(session, self.id)
-
+        
     def playlists(self):
         return self._session.get_user_playlists(self.id)

@@ -21,6 +21,18 @@ from __future__ import unicode_literals
 IMG_URL = "http://images.osl.wimpmusic.com/im/im?w={width}&h={height}&{id_type}={id}"
 
 
+class Quality(object):
+    lossless = 'LOSSLESS'
+    high = 'HIGH'
+    low = 'LOW'
+    trial = 'TRIAL' # 30 Seconds MP3 Stream
+
+
+class SubscriptionType(object):
+    premium = 'PREMIUM'
+    hifi = 'HIFI'
+    free = 'FREE'
+
 class Model(object):
     id = None
     name = None
