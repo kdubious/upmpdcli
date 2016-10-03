@@ -2,10 +2,13 @@ Source: upmpdcli
 Section: contrib/sound
 Priority: extra
 Maintainer: Jean-Francois Dockes <jf@dockes.org>
+# note: libexpat1-dev and libcurl-dev are only here because of pkg-config:
+# not directly needed for building upmpdcli
 Build-Depends: debhelper (>= 9.0.0), dh-python, dh-systemd,
                autotools-dev, python, pkg-config,
                libmpdclient-dev, libmicrohttpd-dev, python-requests,
-               libupnpp3-dev, libupnp6-dev, libjsoncpp-dev
+               libupnpp3-dev, libupnp6-dev, libjsoncpp-dev,
+               libexpat1-dev, libcurl-dev
 Standards-Version: 3.9.6
 Homepage: http://www.lesbonscomptes.com/upmpdcli
 

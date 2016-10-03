@@ -1,9 +1,15 @@
+upmpdcli (1.2.5-1) unstable; urgency=low
+
+  * Tidal repaired thanks to the Kodi addon developers !
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Mon, 03 Oct 2016 18:54:00 +0200
+
 upmpdcli (1.2.4-1) unstable; urgency=low
 
   * Fix streaming service search (type was ignored)
   * Fix crash with absent config
   
- -- Jean-Francois Dockes <jf@dockes.org>  Sat, 24 Sep 2016 19:23:00 +0200
+ -- Jean-Francois Dockes <jf@dockes.org>  Mon, 03 Oct 2016 12:10:00 +0200
 
 upmpdcli (1.2.3-1) unstable; urgency=low
 

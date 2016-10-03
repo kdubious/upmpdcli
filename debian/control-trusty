@@ -5,7 +5,8 @@ Maintainer: Jean-Francois Dockes <jf@dockes.org>
 Build-Depends: debhelper (>= 9.0.0), dh-python, 
                autotools-dev, python, pkg-config,
                libmpdclient-dev, libmicrohttpd-dev, python-requests,
-               libupnpp3-dev, libupnp6-dev, libjsoncpp-dev
+               libupnpp3-dev, libupnp6-dev, libjsoncpp-dev,
+               libexpat1-dev, libcurl-dev
 Standards-Version: 3.9.6
 Homepage: http://www.lesbonscomptes.com/upmpdcli
 

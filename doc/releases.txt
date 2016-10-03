@@ -1,5 +1,16 @@
 = Upmpdcli release notes
 
+== Upmpdcli 1.2.5
+
+- Tidal repaired (you only need the tidal Python code, the rest of upmpdcli
+  is unchanged).
+  
+== Upmpdcli 1.2.4
+
+- Misc bug fixes.
+- Split the Debian / Ubuntu packages to separate the main package from the
+  different streaming services ones.
+  
 == Upmpdcli 1.2.0
 
 - Implement gateway to Google Play Music, Qobuz and Tidal by exporting a 
