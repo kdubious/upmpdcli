@@ -2,7 +2,7 @@ Source: upmpdcli
 Section: contrib/sound
 Priority: extra
 Maintainer: Jean-Francois Dockes <jf@dockes.org>
-Build-Depends: debhelper (>= 9.0.0),
+Build-Depends: debhelper (>= 9.0.0), dh-python, 
                autotools-dev, python, pkg-config,
                libmpdclient-dev, libmicrohttpd-dev, python-requests,
                libupnpp3-dev, libupnp6-dev, libjsoncpp-dev

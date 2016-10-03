@@ -13,4 +13,4 @@
 # export CXX=g++-4.7
 
 %:
-	dh $@  --with autotools-dev,systemd --parallel
+	dh $@  --with autotools-dev,python2,systemd --parallel
