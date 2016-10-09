@@ -329,5 +329,5 @@ def search(a):
     encoded = json.dumps(xbmcplugin.entries)
     return {"entries" : encoded}
 
-msgproc.log("Qobuz running")
+msgproc.log("Gmusic running")
 msgproc.mainloop()

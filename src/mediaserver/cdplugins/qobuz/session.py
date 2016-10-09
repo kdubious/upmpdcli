@@ -59,11 +59,15 @@ class Session(object):
         return []
 
     def get_featured_albums(self, genre_id=None, type='new-releases'):
+        #uplog("get_featured_albums, genre_id %s type %s " % (genre_id, type))
         data = self.api.album_getFeatured(type=type,
                                           genre_id=genre_id, limit=40)
-        if data and 'albums' in data:
-            albums = [_parse_album(alb) for alb in data['albums']['items']] 
-            return [alb for alb in albums if alb.available]
+        try:
+            albums = [_parse_album(alb) for alb in data['albums']['items']]
+            if albums:
+                return [alb for alb in albums if alb.available]
+        except:
+            pass
         return []
 
     def get_featured_playlists(self, genre_id=None):
