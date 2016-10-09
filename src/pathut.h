@@ -77,6 +77,7 @@ extern long long path_filesize(const std::string& path);
 /// Only st_mtime, st_ctime, st_size, st_mode (file type bits) are set on
 /// all systems. st_dev and st_ino are set for special posix usage.
 /// The rest is zeroed.
+/// @ret 0 for success
 struct stat;
 extern int path_fileprops(const std::string path, struct stat *stp,
                           bool follow = true);

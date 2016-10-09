@@ -14,12 +14,6 @@
  *   Free Software Foundation, Inc.,
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#ifdef BUILDING_RECOLL
-#include "autoconfig.h"
-#else
-#include "config.h"
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -523,16 +517,13 @@ string escapeHtml(const string& in)
 {
     string out;
     for (string::size_type pos = 0; pos < in.length(); pos++) {
-        switch (in.at(pos)) {
-        case '<':
-            out += "&lt;";
-            break;
-        case '&':
-            out += "&amp;";
-            break;
-        default:
-            out += in.at(pos);
-        }
+	switch(in.at(pos)) {
+	case '<': out += "&lt;"; break;
+	case '>': out += "&gt;"; break;
+	case '&': out += "&amp;"; break;
+	case '"': out += "&quot;"; break;
+	default: out += in.at(pos); break;
+	}
     }
     return out;
 }
@@ -1322,6 +1313,66 @@ bool SimpleRegexp::operator() (const string& val) const
 {
     return simpleMatch(val);
 }
+
+string flagsToString(const vector<CharFlags>& flags, unsigned int val)
+{
+    const char *s;
+    string out;
+    for (auto& flag : flags) {
+        if ((val & flag.value) == flag.value) {
+            s = flag.yesname;
+        } else {
+            s = flag.noname;
+        }
+        if (s && *s) {
+            /* We have something to write */
+            if (out.length()) {
+                // If not first, add '|' separator
+                out.append("|");
+            }
+            out.append(s);
+        }
+    }
+    return out;
+}
+
+string valToString(const vector<CharFlags>& flags, unsigned int val)
+{
+    string out;
+    for (auto& flag : flags) {
+        if (flag.value == val) {
+            out = flag.yesname;
+            return out;
+        }
+    }
+    {
+        char mybuf[100];
+        sprintf(mybuf, "Unknown Value 0x%x", val);
+        out = mybuf;
+    }
+    return out;
+}
+
+unsigned int stringToFlags(const vector<CharFlags>& flags,
+                           const string& input, const char *sep)
+{
+    unsigned int out = 0;
+
+    vector<string> toks;
+    stringToTokens(input, toks, sep);
+    for (auto& tok: toks) {
+        trimstring(tok);
+        for (auto& flag : flags) {
+            if (!tok.compare(flag.yesname)) {
+                /* Note: we don't break: the same name could conceivably
+                   set several flags. */
+                out |= flag.value;
+            }
+        }
+    }
+    return out;
+}
+
 
 // Initialization for static stuff to be called from main thread before going
 // multiple

@@ -218,4 +218,29 @@ private:
     Internal *m;
 };
 
+/// Utilities for printing names for defined values (Ex: O_RDONLY->"O_RDONLY")
+
+/// Entries for the descriptive table
+struct CharFlags {
+    unsigned int value; // Flag or value
+    const char *yesname;// String to print if flag set or equal
+    const char *noname; // String to print if flag not set (unused for values)
+};
+
+/// Helper macro for the common case where we want to print the
+/// flag/value defined name
+#define CHARFLAGENTRY(NM) {NM, #NM}
+
+/// Translate a bitfield into string description
+extern std::string flagsToString(const std::vector<CharFlags>&,
+                                 unsigned int flags);
+
+/// Translate a value into a name
+extern std::string valToString(const std::vector<CharFlags>&, unsigned int val);
+
+/// Reverse operation: translate string into bitfield
+extern unsigned int
+stringToFlags(const std::vector<CharFlags>&, const std::string& input,
+              const char *sep = "|");
+
 #endif /* _SMALLUT_H_INCLUDED_ */
