@@ -6,11 +6,11 @@ Group:          Applications/Multimedia
 License:        GPLv2+
 URL:            http://www.lesbonscomptes.com/updmpdcli
 Source0:        http://www.lesbonscomptes.com/upmpdcli/downloads/upmpdcli-%{version}.tar.gz
-Patch0:         json-not-in-jsoncpp.patch
 Requires(pre):  shadow-utils
 Requires(post): systemd
 Requires(preun): systemd
 Requires(postun): systemd
+Requires: python-requests
 BuildRequires:  libupnpp
 BuildRequires:  libupnp-devel
 BuildRequires:  libmpdclient-devel
@@ -28,7 +28,6 @@ on Android tablets or phones.
 
 %prep
 %setup -q
-%patch0 -p1
 
 %build
 %configure

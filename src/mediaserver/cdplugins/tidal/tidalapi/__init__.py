@@ -24,7 +24,10 @@ import json
 import random
 import logging
 import requests
-from requests.packages import urllib3
+try:
+    from requests.packages import urllib3
+except:
+    import urllib3
 from collections import namedtuple
 from .models import SubscriptionType, Quality
 from .models import Artist, Album, Track, Playlist, SearchResult, Category
@@ -70,7 +73,10 @@ class Session(object):
         self.user = None
         self.country_code = 'US'   # Enable Trial Mode
         self.client_unique_key = None
-        urllib3.disable_warnings() # Disable OpenSSL Warnings in URLLIB3
+        try:
+            urllib3.disable_warnings() # Disable OpenSSL Warnings in URLLIB3
+        except:
+            pass
 
     def logout(self):
         self.session_id = None

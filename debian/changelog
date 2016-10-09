@@ -1,3 +1,9 @@
+upmpdcli (1.2.7-1) unstable; urgency=low
+
+  * Raspbian wheezy compat tweak, tidal python module only
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Sun, 09 Oct 2016 18:30:00 +0200
+
 upmpdcli (1.2.6-1) unstable; urgency=low
 
   * Small fixes, missing entries in protocolinfo etc.
