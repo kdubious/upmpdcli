@@ -1,3 +1,9 @@
+upmpdcli (1.2.6-1) unstable; urgency=low
+
+  * Small fixes, missing entries in protocolinfo etc.
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Sun, 09 Oct 2016 17:23:00 +0200
+
 upmpdcli (1.2.5-1) unstable; urgency=low
 
   * Tidal repaired thanks to the Kodi addon developers !

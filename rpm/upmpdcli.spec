@@ -1,6 +1,6 @@
 Summary:        UPnP Media Renderer front-end to MPD, the Music Player Daemon
 Name:           upmpdcli
-Version:        1.2.2
+Version:        1.2.6
 Release:        1%{?dist}
 Group:          Applications/Multimedia
 License:        GPLv2+
@@ -70,6 +70,8 @@ install -D -m644 systemd/upmpdcli.service \
 %systemd_postun_with_restart upmpdcli.service 
 
 %changelog
+* Sun Oct 09 2016 J.F. Dockes <jf@dockes.org> - 1.2.6
+- Small fixes.
 * Sun Sep 11 2016 J.F. Dockes <jf@dockes.org> - 1.2.2
 - Implement Media Server for acessing streaming services (Google Play
   Music, Qobuz and Tidal)
