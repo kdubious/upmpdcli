@@ -224,10 +224,8 @@ static bool read_protocolinfo(const string& fn, bool enableL16, string& out)
 	    // eof ends with a backslash, or there is no final \n
             eof = true;
 	}
-        trimstring(line, " \t\n\r");
-        if (line[line.size()-1] != ',') {
-            line += ",";
-        }
+        trimstring(line, " \t\n\r,");
+        line += ',';
         if (enableL16 && line[0] == '@') {
             line = regsub1("@ENABLEL16@", line, "");
         } else {
