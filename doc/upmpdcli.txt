@@ -59,7 +59,7 @@ Streaming is not limited to the local upmpdcli renderer, and the Media
 Server should happily send music to other renderers.
 
 NOTE: The streaming services passwords are stored in the upmpdcli
-configuration file ('/etc/upmpdcli.conf'). The 1.2.2 installer does not
+configuration file ('/etc/upmpdcli.conf'). The installer does not
 make this file r/w by owner only. This will be fixed, but for now, you
 should probably do it after setting the password:
 +chmod&#160;600&#160;/etc/upmpdcli.conf+ Actually, it would quite probably

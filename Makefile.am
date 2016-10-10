@@ -163,7 +163,7 @@ bogus:
 
 install-data-hook: web.tar.gz rdpl2stream.tar.gz
 	(cd $(DESTDIR)$(sysconfdir); test -f upmpdcli.conf || \
-		mv upmpdcli.conf-dist upmpdcli.conf)
+		mv upmpdcli.conf-dist upmpdcli.conf; chmod 600 upmpdcli.conf)
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < web.tar.gz 
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < rdpl2stream.tar.gz
 	(cd $(DESTDIR)$(pkgdatadir); test -d src_scripts || mkdir src_scripts)
