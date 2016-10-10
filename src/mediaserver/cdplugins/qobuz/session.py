@@ -61,7 +61,7 @@ class Session(object):
     def get_featured_albums(self, genre_id=None, type='new-releases'):
         #uplog("get_featured_albums, genre_id %s type %s " % (genre_id, type))
         data = self.api.album_getFeatured(type=type,
-                                          genre_id=genre_id, limit=40)
+                                          genre_id=genre_id, limit=100)
         try:
             albums = [_parse_album(alb) for alb in data['albums']['items']]
             if albums:
@@ -72,7 +72,7 @@ class Session(object):
 
     def get_featured_playlists(self, genre_id=None):
         data = self.api.playlist_getFeatured(type='editor-picks',
-                                             genre_id=genre_id, limit=40)
+                                             genre_id=genre_id, limit=100)
         if data and 'playlists' in data:
             return [_parse_playlist(pl) for pl in data['playlists']['items']]
         return []
@@ -88,7 +88,7 @@ class Session(object):
     # what it does.
     def get_featured_items(self, content_type, type=''):
         uplog("FEATURED TYPES: %s" % self.api.catalog_getFeaturedTypes())
-        limit = '40'
+        limit = '100'
         data = self.api.catalog_getFeatured(limit=limit)
         #print("Featured: %s" % json.dumps(data,indent=4), file=sys.stderr)
         if content_type == 'artists':
