@@ -209,7 +209,11 @@ def genre_view_type(genre_id, type):
     items = session.get_featured_albums(genre_id=genre_id, type=type)
     view(items, urls_from_id(album_view, items))
 
-@plugin.route('/featured/<genre_id>/playlists')
+# This used to be /featured/<genre_id>/playlist, but this path can be
+# matched by the one for genre_view_type, and the wrong function may
+# be called, depending on the rules ordering (meaning we had the
+# problem on an rpi, but not ubuntu...)
+@plugin.route('/featured_playlists/<genre_id>')
 def genre_view_playlists(genre_id):
     items = session.get_featured_playlists(genre_id=genre_id)
     view(items, urls_from_id(playlist_view, items))
