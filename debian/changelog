@@ -1,3 +1,9 @@
+upmpdcli (1.2.9-1) unstable; urgency=low
+
+  * Fix bug in format of protocolinfo data
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Mon, 14 Oct 2016 12:56:00 +0200
+
 upmpdcli (1.2.8-1) unstable; urgency=low
 
   * Small fix in qobuz module.

@@ -1,9 +1,10 @@
 = Upmpdcli release notes
 
-== Upmpdcli 1.2.6/7
+== Upmpdcli 1.2.6/7/8/9
 
-- Small fixes (qobuz), added protocolinfo entries, etc. Tidal is at 1.2.7
-  because of a last minute Rasbian wheezy compatibility tweak.
+- Small fixes (qobuz,tidal), added protocolinfo entries, etc.
+- 1.2.9 fixes a bug in the format of the protocolinfo data sent to the
+        control points. 
 
 == Upmpdcli 1.2.5
 

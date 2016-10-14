@@ -206,9 +206,11 @@ static vector<const char *> ohxmlfilenames =
  */
 static bool read_protocolinfo(const string& fn, bool enableL16, string& out)
 {
+    LOGDEB1("read_protocolinfo: fn " << fn << "\n");
     ifstream input;
     input.open(fn, ios::in);
     if (!input.is_open()) {
+        LOGERR("read_protocolinfo: open failed: " << fn << "\n");
 	return false;
     }	    
     bool eof = false;
@@ -217,6 +219,7 @@ static bool read_protocolinfo(const string& fn, bool enableL16, string& out)
 	getline(input, line);
 	if (!input.good()) {
 	    if (input.bad()) {
+                LOGERR("read_protocolinfo: read error: " << fn << "\n");
 		return false;
 	    }
 	    // Must be eof ? But maybe we have a partial line which
@@ -225,18 +228,22 @@ static bool read_protocolinfo(const string& fn, bool enableL16, string& out)
             eof = true;
 	}
         trimstring(line, " \t\n\r,");
-        line += ',';
-        if (enableL16 && line[0] == '@') {
-            line = regsub1("@ENABLEL16@", line, "");
-        } else {
-            line = regsub1("@ENABLEL16@", line, "#");
+        if (!line.empty()) {
+            if (enableL16 && line[0] == '@') {
+                line = regsub1("@ENABLEL16@", line, "");
+            } else {
+                line = regsub1("@ENABLEL16@", line, "#");
+            }
+            if (line[0] == '#')
+                continue;
+
+            out += line + ',';
         }
-        if (line[0] == '#')
-            continue;
-        out += line;
         if (eof) 
             break;
     }
+    trimstring(out, ",");
+    LOGDEB0("read_protocolinfo data: [" << out << "]\n");
     return true;
 }
 
