@@ -27,7 +27,6 @@
 #include "libupnpp/log.hxx"
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/upnpavutils.hxx"
-#include "libupnpp/control/cdircontent.hxx"
 
 #include "mpdcli.hxx"
 #include "ohplaylist.hxx"
