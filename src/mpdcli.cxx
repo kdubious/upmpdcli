@@ -53,9 +53,6 @@ MPDCli::MPDCli(const string& host, int port, const string& pass)
     }
     m_have_addtagid = checkForCommand("addtagid");
 
-    m_ok = true;
-    m_ok = updStatus();
-
     std::unique_lock<std::mutex>(g_configlock);
     g_config->get("onstart", m_onstart);
     g_config->get("onplay", m_onplay);
@@ -71,6 +68,9 @@ MPDCli::MPDCli(const string& host, int port, const string& pass)
     if (g_config->get("externalvolumecontrol", value)) {
         m_externalvolumecontrol = atoi(value.c_str()) != 0;
     }
+
+    m_ok = true;
+    m_ok = updStatus();
 }
 
 MPDCli::~MPDCli()
@@ -217,6 +217,7 @@ bool MPDCli::updStatus()
     m_stat.consume = mpd_status_get_consume(mpds);
     m_stat.qlen = mpd_status_get_queue_length(mpds);
     m_stat.qvers = mpd_status_get_queue_version(mpds);
+    m_stat.state = MpdStatus::MPDS_UNK;
 
     switch (mpd_status_get_state(mpds)) {
     case MPD_STATE_STOP:
@@ -231,7 +232,8 @@ bool MPDCli::updStatus()
         break;
     case MPD_STATE_PLAY:
         // Only execute onplay command if mpd was stopped
-        if (!m_onplay.empty() && m_stat.state == MpdStatus::MPDS_STOP) {
+        if (!m_onplay.empty() && (m_stat.state == MpdStatus::MPDS_UNK ||
+                                  m_stat.state == MpdStatus::MPDS_STOP)) {
             if (system(m_onplay.c_str())) {
                 LOGERR("MPDCli::updStatus: " << m_onplay << " failed "<< endl);
             }
