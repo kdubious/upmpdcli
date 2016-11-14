@@ -215,8 +215,7 @@ public:
 /// Base class for connections that actually transfer data. T
 class NetconData : public Netcon {
 public:
-    NetconData() : m_buf(0), m_bufbase(0), m_bufbytes(0), m_bufsize(0) {
-    }
+    NetconData(bool cancellable = false);
     virtual ~NetconData();
 
     /// Write data to the connection.
@@ -232,18 +231,20 @@ public:
     /// @param cnt the number of bytes we should try to read (but we return
     ///   as soon as we get data)
     /// @param timeo maximum number of seconds we should be waiting for data.
-    /// @return the count of bytes actually read. 0 for timeout (call
-    ///        didtimo() to discriminate from EOF). -1 if an error occurred.
+    /// @return the count of bytes actually read (0 for EOF), or
+    ///    TimeoutOrError (-1) for timeout or error (call timedout() to
+    ///    discriminate and reset), Cancelled (-2) if cancelled.
+    enum RcvReason {Eof = 0, TimeoutOrError = -1, Cancelled = -2};
     virtual int receive(char *buf, int cnt, int timeo = -1);
+    virtual void cancelReceive();
+
     /// Loop on receive until cnt bytes are actually read or a timeout occurs
     virtual int doreceive(char *buf, int cnt, int timeo = -1);
-    /// Check for data being available for reading
-    virtual int readready();
-    /// Check for data being available for writing
-    virtual int writeready();
+
     /// Read a line of text on an ascii connection. Returns -1 or byte count
     /// including final 0. \n is kept
     virtual int getline(char *buf, int cnt, int timeo = -1);
+
     /// Set handler to be called when the connection is placed in the
     /// selectloop and an event occurs.
     virtual void setcallback(std::shared_ptr<NetconWorker> user) {
@@ -251,10 +252,14 @@ public:
     }
 
 private:
+
     char *m_buf;    // Buffer. Only used when doing getline()s
     char *m_bufbase;    // Pointer to current 1st byte of useful data
     int m_bufbytes; // Bytes of data.
     int m_bufsize;  // Total buffer size
+
+    int m_wkfds[2];
+    
     std::shared_ptr<NetconWorker> m_user;
     virtual int cando(Netcon::Event reason); // Selectloop slot
 };
@@ -262,8 +267,8 @@ private:
 /// Network endpoint, client side.
 class NetconCli : public NetconData {
 public:
-    NetconCli(int silent = 0) {
-        m_silentconnectfailure = silent;
+    NetconCli(bool cancellable = false)
+        : NetconData(cancellable), m_silentconnectfailure(false) {
     }
 
     /// Open connection to specified host and named service. Set host
@@ -284,12 +289,12 @@ public:
     int setconn(int fd);
 
     /// Do not log message if openconn() fails.
-    void setSilentFail(int onoff) {
+    void setSilentFail(bool onoff) {
         m_silentconnectfailure = onoff;
     }
 
 private:
-    int m_silentconnectfailure; // No logging of connection failures if set
+    bool m_silentconnectfailure; // No logging of connection failures if set
 };
 
 class NetconServCon;
