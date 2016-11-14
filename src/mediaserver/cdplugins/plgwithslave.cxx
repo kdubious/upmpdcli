@@ -312,6 +312,7 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
 	    JSONTOUPS(uri, uri);
 	    JSONTOUPS(artist, dc:creator);
 	    JSONTOUPS(genre, upnp:genre);
+            JSONTOUPS(album, upnp:album);
 	    JSONTOUPS(tracknum, upnp:originalTrackNumber);
             JSONTOUPS(mime, res:mime);
             string srate = decoded[i].get("res:samplefreq", "").asString();

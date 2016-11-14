@@ -158,6 +158,7 @@ string UpSong::didl()
     } else {
         UPNPXMLD(upnpClass, upnp:class, "object.item.audioItem.musicTrack");
 	UPNPXML(genre, upnp:genre);
+	UPNPXML(album, upnp:album);
 	UPNPXML(tracknum, upnp:originalTrackNumber);
 
         string sfs = SoapHelp::i2s((samplefreq == 0 ? 44100 : samplefreq));
@@ -274,7 +275,7 @@ string didlmake(const UpSong& song)
        // Bitrate keeps changing for VBRs and forces events. Keeping
        // it out for now.
        //       << "bitrate=\"" << mpds.kbrate << "\" "
-       << "sampleFrequency=\"44100\" audioChannels=\"2\" "
+       << "sampleFrequency=\"44100\" nrAudioChannels=\"2\" "
        << "protocolInfo=\"http-get:*:audio/mpeg:DLNA.ORG_PN=MP3;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000\""
        << ">"
        << SoapHelp::xmlQuote(song.uri)
