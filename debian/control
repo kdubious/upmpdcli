@@ -6,7 +6,7 @@ Maintainer: Jean-Francois Dockes <jf@dockes.org>
 # not directly needed for building upmpdcli
 Build-Depends: debhelper (>= 9.0.0), dh-python, dh-systemd,
                autotools-dev, python, pkg-config,
-               libmpdclient-dev, libmicrohttpd-dev, python-requests,
+               libmpdclient-dev, libmicrohttpd-dev, 
                libupnpp3-dev, libupnp6-dev, libjsoncpp-dev,
                libexpat1-dev, libcurl-dev
 Standards-Version: 3.9.6
@@ -35,7 +35,7 @@ Description: web interface for controlling multiple Songcast Receivers
 Package: upmpdcli-qobuz
 Architecture: all
 Section: contrib/sound
-Depends: python, upmpdcli, ${python:Depends}, ${misc:Depends}
+Depends: python, python-requests, upmpdcli, ${python:Depends}, ${misc:Depends}
 Description: upmpdcli Qobuz plugin
  upmpdcli-qobuz allows upmpdcli to proxy access to the Qobuz music
  streaming service.
@@ -44,7 +44,7 @@ Description: upmpdcli Qobuz plugin
 Package: upmpdcli-tidal
 Architecture: all
 Section: contrib/sound
-Depends: python, upmpdcli, ${python:Depends}, ${misc:Depends}
+Depends: python, python-requests, upmpdcli, ${python:Depends}, ${misc:Depends}
 Description: upmpdcli Tidal plugin
  upmpdcli-tidal allows upmpdcli to proxy access to the Tidal music
  streaming service.
@@ -53,7 +53,7 @@ Description: upmpdcli Tidal plugin
 Package: upmpdcli-gmusic
 Architecture: all
 Section: contrib/sound
-Depends: python, upmpdcli, ${python:Depends}, ${misc:Depends}
+Depends: python, python-requests, upmpdcli, ${python:Depends}, ${misc:Depends}
 Description: upmpdcli Google Play Music plugin
  upmpdcli-gmusic allows upmpdcli to proxy access to the Google Play Music
  streaming service.
