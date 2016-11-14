@@ -1,4 +1,4 @@
-= Upmpdcli: MPD UPnP Renderer Front-End
+i= Upmpdcli: MPD UPnP Renderer Front-End
 
 
 *upmpdcli* is an UPnP Media Renderer front-end to *MPD*, the Music Player
@@ -135,6 +135,9 @@ This requires the installation of the external *gmusicapi* Python
 package. 
 link:http://unofficial-google-music-api.readthedocs.io/en/latest/usage.html#usage[See the installation notes here].
 
+NOTE: gmusicapi needs Python 2.7.9 or better (e.g. the standard Python
+version on Ubuntu Trusty is too old). Older Python versions *will* crash.
+
 You will need a valid subscription for most functions.
 
 The configuration parameters are described 
@@ -256,6 +259,10 @@ just work.
 For building from source, you will need a recent `C++` compiler (`C++11`),
 and the development packages for *libupnp* version 1.6, *libcurl*,
 *libmpdclient*, and *libexpat*.
+
+Also the Python modules for streaming service support use the
+python-requests package, so you may need to install it (it's only needed at
+run time). Also gmusicapi for Google Music.
 
 If you are using the source from Github, you will also need the
 autoconf/automake/libtool trio. Use the `autogen.sh` script to set things
