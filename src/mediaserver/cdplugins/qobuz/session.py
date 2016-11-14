@@ -172,21 +172,20 @@ def _parse_playlist(json_obj, artist=None, artists=None):
     return Playlist(**kwargs)
 
 def _parse_track(json_obj, albumarg = None):
+        
+    artist = Artist()
+    if 'performer' in json_obj:
+        artist = _parse_artist(json_obj['performer'])
+    elif 'artist' in json_obj:
+        artist = _parse_artist(json_obj['artist'])
+    elif albumarg and albumarg.artist:
+        artist = albumarg.artist
+
     album = None
     if 'album' in json_obj:
         album = _parse_album(json_obj['album'], artist)
     else:
         album = albumarg
-        
-    if 'performer' in json_obj:
-        artist = _parse_artist(json_obj['performer'])
-    elif 'artist' in json_obj:
-        artist = _parse_artist(json_obj['artist'])
-    elif album:
-        if album.artist:
-            artist = album.artist
-    else:
-        artist = Artist()
 
     available = json_obj['streamable'] if 'streamable' in json_obj else false
 
