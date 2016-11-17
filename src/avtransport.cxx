@@ -394,14 +394,6 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
         return UPNP_E_INVALID_PARAM;
     }
 
-    if ((m_dev->m_options & UpMpd::upmpdOwnQueue) && !setnext) {
-        // If we own the queue, just clear it before setting the
-        // track.  Else it's difficult to impossible to prevent it
-        // from growing if upmpdcli restarts. If the option is not set, the
-        // user prefers to live with the issue.
-        m_dev->m_mpdcli->clearQueue();
-    }
-
     bool is_song = (st == MpdStatus::MPDS_PLAY) ||
 	(st == MpdStatus::MPDS_PAUSE);
     UPMPD_UNUSED(is_song);
@@ -409,6 +401,16 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
     LOGDEB1("UpMpdAVTransport::set" << (setnext?"Next":"") << 
             "AVTransportURI: curpos: " <<
             curpos << " is_song " << is_song << " qlen " << mpds.qlen << endl);
+
+    if ((m_dev->m_options & UpMpd::upmpdOwnQueue) && !setnext) {
+        // If we own the queue, just clear it before setting the
+        // track.  Else it's difficult to impossible to prevent it
+        // from growing if upmpdcli restarts. If the option is not set, the
+        // user prefers to live with the issue.
+        m_dev->m_mpdcli->clearQueue();
+        // mpds is now invalid!
+        curpos = -1;
+    }
 
     // curpos == -1 means that the playlist was cleared or we just started. A
     // play will use position 0, so it's actually equivalent to curpos == 0
