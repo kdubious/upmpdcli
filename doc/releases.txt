@@ -1,5 +1,11 @@
 = Upmpdcli release notes
 
+== Upmpdcli 1.2.10
+
+- Improves streaming services search
+- Fix bug in UPnP/AV mode (seeking after gapless transition would not
+  work).
+  
 == Upmpdcli 1.2.6/7/8/9
 
 - Small fixes (qobuz,tidal), added protocolinfo entries, etc.

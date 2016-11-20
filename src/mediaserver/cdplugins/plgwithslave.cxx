@@ -532,6 +532,7 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
                        || beginswith(what, "object.container.playlist")) {
                 objkind = "playlist";
             }
+            classfilter = what;
         } else if (!upnpproperty.compare("upnp:artist") ||
             !upnpproperty.compare("dc:author")) {
             slavefield = "artist";
@@ -545,8 +546,6 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
             slavefield = "track";
             value = vs[i+2];
             break;
-        } else if (!upnpproperty.compare("upnp:class")) {
-            classfilter = vs[i+2];
         }
     }
     if (slavefield.empty()) {
@@ -558,7 +557,7 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
     SearchCacheEntry *cep;
     string cachekey(m_name + ":" + objkind + ":" + slavefield + ":" + value);
     if ((cep = o_scache.get(cachekey)) != nullptr) {
-        int total = resultFromCacheEntry(classfilter, stidx,cnt, *cep, entries);
+        int total = resultFromCacheEntry(classfilter, stidx, cnt, *cep, entries);
         delete cep;
         return total;
     }
