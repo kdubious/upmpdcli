@@ -888,7 +888,7 @@ again:
     int n = con->getline(buf, BS, timeosecs);
     if (n < 0) {
         if (con->timedout()) {
-            LOGDEB("ExecCmd::getline: timeout\n");
+            LOGDEB0("ExecCmd::getline: select timeout, report and retry\n");
             if (m->m_advise) {
                 m->m_advise->newData(0);
             }

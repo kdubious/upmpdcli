@@ -92,11 +92,11 @@ public:
 static struct MHD_Daemon *mhd;
 
 // Microhttpd connection handler. We re-build the complete url + query
-// string (&trackid=value), use this to retrieve a Tidal URL, and
-// redirect to it (HTTP). A previous version handled rtmp streams, and
-// had to read them. Look up the history if you need the code again
-// (the apparition of RTMP streams was apparently linked to the use of
-// a different API key).
+// string (&trackid=value), use this to retrieve a service URL
+// (tidal/qobuz...), and redirect to it (HTTP). A previous version
+// handled rtmp streams, and had to read them. Look up the history if
+// you need the code again (the apparition of RTMP streams was
+// apparently linked to the use of a different API key).
 static int answer_to_connection(void *cls, struct MHD_Connection *connection, 
                                 const char *url, 
                                 const char *method, const char *version, 
@@ -483,7 +483,7 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
                          vector<UpSong>& entries,
                          const vector<string>& sortcrits)
 {
-    LOGDEB1("PlgWithSlave::search\n");
+    LOGDEB("PlgWithSlave::search: [" << searchstr << "]\n");
     entries.clear();
     if (!m->maybeStartCmd()) {
 	return errorEntries(ctid, entries);
@@ -513,11 +513,26 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
     string slavefield;
     string value;
     string classfilter;
+    string objkind;
     for (unsigned int i = 0; i < vs.size()-2; i += 4) {
         const string& upnpproperty = vs[i];
         LOGDEB("PlgWithSlave::search:clause: " << vs[i] << " " << vs[i+1] <<
                " " << vs[i+2] << endl);
-        if (!upnpproperty.compare("upnp:artist") ||
+        if (!upnpproperty.compare("upnp:class")) {
+            // This defines -what- we are looking for (track/album/artist)
+            const string& what(vs[i+2]);
+            if (beginswith(what, "object.item")) {
+                objkind = "track";
+            } else if (beginswith(what, "object.container.person")) {
+                objkind = "artist";
+            } else if (beginswith(what, "object.container.musicAlbum") ||
+                       beginswith(what, "object.container.album")) {
+                objkind = "album";
+            } else if (beginswith(what, "object.container.playlistContainer")
+                       || beginswith(what, "object.container.playlist")) {
+                objkind = "playlist";
+            }
+        } else if (!upnpproperty.compare("upnp:artist") ||
             !upnpproperty.compare("dc:author")) {
             slavefield = "artist";
             value = vs[i+2];
@@ -541,7 +556,7 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
 
     // In cache ?
     SearchCacheEntry *cep;
-    string cachekey(m_name + ":" + slavefield + ":" + value);
+    string cachekey(m_name + ":" + objkind + ":" + slavefield + ":" + value);
     if ((cep = o_scache.get(cachekey)) != nullptr) {
         int total = resultFromCacheEntry(classfilter, stidx,cnt, *cep, entries);
         delete cep;
@@ -552,6 +567,7 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
     unordered_map<string, string> res;
     if (!m->cmd.callproc("search", {
 		{"objid", ctid},
+		{"objkind", objkind},
                 {"field", slavefield},
 		{"value", value} },  res)) {
 	LOGERR("PlgWithSlave::search: slave failure\n");

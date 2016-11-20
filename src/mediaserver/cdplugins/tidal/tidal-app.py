@@ -380,28 +380,29 @@ def search(a):
     msgproc.log("search: [%s]" % a)
     objid = a['objid']
     field = a['field'] if 'field' in a else None
+    objkind = a['objkind'] if 'objkind' in a else None
+
     value = a['value']
     if re.match('0\$tidal\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
     xbmcplugin.objid = objid
     maybelogin()
     
-    # field is mandatory and maybe 'artist', 'album', 'playlist', 'track'
-    # But quite frequently, our caller does not set it. So need to run multiple
-    # searches
-    if field is None or field == 'artist':
+    # objkind is mandatory and maybe 'artist', 'album', 'playlist', 'track'
+    # If our caller does not set it, we run multiple searches
+    if objkind is None or objkind == 'artist':
         searchresults = session.search('artist', value)
     view(searchresults.artists,
          urls_from_id(artist_view, searchresults.artists), end=False)
-    if field is None or field == 'album':
+    if objkind is None or objkind == 'album':
         searchresults = session.search('album', value)
     view(searchresults.albums,
          urls_from_id(album_view, searchresults.albums), end=False)
-    if field is None or field == 'playlist':
+    if objkind is None or objkind == 'playlist':
         searchresults = session.search('playlist', value)
     view(searchresults.playlists,
          urls_from_id(playlist_view, searchresults.playlists), end=False)
-    if field is None or field == 'track':
+    if objkind is None or objkind == 'track':
         searchresults = session.search('track', value)
     track_list(searchresults.tracks)
     #msgproc.log("%s" % xbmcplugin.entries)

@@ -185,14 +185,6 @@ int stringuppercmp(const string& s1, const string& s2)
     }
 }
 
-bool beginswith(const std::string& big, const std::string& small)
-{
-    if (big.compare(0, small.size(), small)) {
-        return false;
-    }
-    return true;
-}
-
 // Compare charset names, removing the more common spelling variations
 bool samecharset(const string& cs1, const string& cs2)
 {

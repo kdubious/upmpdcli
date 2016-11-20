@@ -312,6 +312,8 @@ def search(a):
     objid = a['objid']
     field = a['field'] if 'field' in a else None
     value = a['value']
+    objkind = a['objkind'] if 'objkind' in a else None
+    
     if re.match('0\$qobuz\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
     xbmcplugin.objid = objid
@@ -321,21 +323,24 @@ def search(a):
         msgproc.log('Unknown field \'%s\'' % field)
         field = 'track'
 
-    # type may be 'tracks', 'albums', 'artists' or 'playlists'
-    qfield = field + "s" if field else None
-    searchresults = session.search(value, qfield)
+    if objkind and objkind not in ['artist', 'album', 'playlist', 'track']:
+        msgproc.log('Unknown objkind \'%s\'' % objkind)
+        objkind = 'track'
 
-    if field is None or field == 'artist':
+    # type may be 'tracks', 'albums', 'artists' or 'playlists'
+    qkind = objkind + "s" if field else None
+    searchresults = session.search(value, qkind)
+
+    if objkind is None or objkind == 'artist':
         view(searchresults.artists,
              urls_from_id(artist_view, searchresults.artists), end=False)
-    if field is None or field == 'album':
+    if objkind is None or objkind == 'album':
         view(searchresults.albums,
              urls_from_id(album_view, searchresults.albums), end=False)
-    if field is None or field == 'playlist':
+    if objkind is None or objkind == 'playlist':
         view(searchresults.playlists,
              urls_from_id(playlist_view, searchresults.playlists), end=False)
-        
-    if field is None or field == 'track':
+    if objkind is None or objkind == 'track':
         track_list(searchresults.tracks)
 
     #msgproc.log("%s" % xbmcplugin.entries)
