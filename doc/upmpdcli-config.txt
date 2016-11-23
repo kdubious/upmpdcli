@@ -167,11 +167,13 @@ definitions. Radio stations can be defined at the end of
 the the main file, or in a separate one (or both). Using an external file
 can ease distribution to multiple machines. Either way, each radio
 station is defined as a section with a name beginning with "radio",
-containing an URL parameter, and an optional icon URL. Example:
+containing an URL parameter, and an optional icon URL. See details
+further in the manual. Example:
 ----
 [radio My Radio]
 url = http://some.host/some/path.pls
 artUrl = http://some.host/icon/path.png
+artScript = /path/to/script/dynamic-art-getter
 ----
 
 

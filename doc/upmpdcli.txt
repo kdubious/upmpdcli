@@ -1,4 +1,4 @@
-i= Upmpdcli: MPD UPnP Renderer Front-End
+= Upmpdcli: MPD UPnP Renderer Front-End
 
 
 *upmpdcli* is an UPnP Media Renderer front-end to *MPD*, the Music Player
@@ -199,12 +199,15 @@ This facility uses Python 2.x, which must be available on the system for
 the radio links to work.
 
 Radio stations can be defined in the configuration (at the end because of
-the use of section indicators). Example:
+the use of section indicators), or in in a separate file by setting the
+'radiolist' parameter in the main configuration.
+Example entry:
 
 ----
 [radio Radio Teddy]
 url = http://opml.radiotime.com/Tune.ashx?id=s80044
 artUrl = http://cdn-radiotime-logos.tunein.com/s80044q.png
+artScript = /path/to/some/script
 ----
 
 The section name must begin with `radio`, the rest will be displayed as the
@@ -214,8 +217,19 @@ icon. `artUrl` is optional.
 Radio channels can be accessed by selecting the `Radio` Source from an
 OpenHome Control Point.
 
-You can also define the radio stations in a separate file by setting the
-'radiolist' parameter in the main configuration.
+
+Some radios (e.g. radioparadise) publish the album art for the currently
+playing title. The details vary. `artScript`, if set, should point to an
+executable script which prints this dynamic art Uri to stdout. The
+image will supercede the radio logo, to be displayed by control
+points. Beware that the path to the script must be accessible by the
+`upmpdcli` user, which may not be the case for your home. `/usr/local/bin` is
+your friend. As a very rough example here follows a command which would
+retrieve the radioparadise uri (as long as they don't change their format,
+a proper approach would use an xml parser of course):
+
+    curl -s http://radioparadise.com/xml/now.xml | \
+         grep '<coverart>' | sed -e 's/<coverart>//' -e 's!</coverart>!!'
 
 [[upmpdcli.songcast]]
 == Songcast integration
