@@ -29,7 +29,7 @@ struct mpd_song;
 
 class MpdStatus {
 public:
-    MpdStatus() : trackcounter(0), detailscounter(0) {}
+    MpdStatus() : state(MPDS_UNK), trackcounter(0), detailscounter(0) {}
 
     enum State {MPDS_UNK, MPDS_STOP, MPDS_PLAY, MPDS_PAUSE};
 
