@@ -217,7 +217,6 @@ bool MPDCli::updStatus()
     m_stat.consume = mpd_status_get_consume(mpds);
     m_stat.qlen = mpd_status_get_queue_length(mpds);
     m_stat.qvers = mpd_status_get_queue_version(mpds);
-    m_stat.state = MpdStatus::MPDS_UNK;
 
     switch (mpd_status_get_state(mpds)) {
     case MPD_STATE_STOP:
