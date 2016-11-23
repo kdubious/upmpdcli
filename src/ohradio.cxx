@@ -49,12 +49,14 @@ static const string sTpProduct("urn:av-openhome-org:service:Radio:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Radio");
 
 struct RadioMeta {
-    RadioMeta(const string& t, const string& u, const string& au)
-        : title(t), uri(u), artUri(au) {
+    RadioMeta(const string& t, const string& u, const string& au = string(),
+              const string& as = string())
+        : title(t), uri(u), artUri(au), artScript(as) {
     }
     string title;
     string uri;
     string artUri;
+    string artScript;
 };
 
 static vector<RadioMeta> o_radios;
@@ -114,12 +116,14 @@ static void getRadiosFromConf(ConfSimple* conf)
     vector<string> allsubk = conf->getSubKeys_unsorted();
     for (auto it = allsubk.begin(); it != allsubk.end(); it++) {
         if (it->find("radio ") == 0) {
-            string uri, artUri;
+            string uri, artUri, artScript;
             string title = it->substr(6);
             bool ok = conf->get("url", uri, *it);
             conf->get("artUrl", artUri, *it);
+            conf->get("artScript", artScript, *it);
+            trimstring(artScript, " \t\n\r");
             if (ok && !uri.empty()) {
-                o_radios.push_back(RadioMeta(title, uri, artUri));
+                o_radios.push_back(RadioMeta(title, uri, artUri, artScript));
                 LOGDEB1("OHRadio::readRadios:RADIO: [" << title << "] uri ["
                         << uri << "] artUri [" << artUri << "]\n");
             }
@@ -195,7 +199,32 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
         if (mpds.currentsong.album.empty()) {
             mpds.currentsong.album = o_radios[m_id].title;
         }
-        mpds.currentsong.artUri = o_radios[m_id].artUri;
+
+        // Some radios provide a url to the art for the current song. Possibly
+        // execute script to retrieve it
+        LOGDEB("OHRadio::makestate: artScript: " << o_radios[m_id].artScript <<
+               endl);
+        if (o_radios[m_id].artScript.size()) {
+            string nsong(mpds.currentsong.title+mpds.currentsong.artist);
+            if (nsong.compare(m_currentsong)) {
+                m_currentsong = nsong;
+                string uri;
+                vector<string> cmd;
+                stringToStrings(o_radios[m_id].artScript, cmd);
+                if (ExecCmd::backtick(cmd, uri)) {
+                    trimstring(uri, " \t\r\n");
+                    LOGDEB("OHRadio::makestate: artScript got: [" <<
+                           uri << "]\n");
+                    m_dynarturi = mpds.currentsong.artUri = uri;
+                } else {
+                    m_dynarturi =mpds.currentsong.artUri = o_radios[m_id].artUri;
+                }
+            } else {
+                mpds.currentsong.artUri = m_dynarturi;
+            }
+        } else {
+            mpds.currentsong.artUri = o_radios[m_id].artUri;
+        }
         string meta = didlmake(mpds.currentsong);
         st["Metadata"] =  meta;
         m_dev->m_ohif->setMetatext(meta);

@@ -75,7 +75,10 @@ private:
     MpdState m_mpdsavedstate;
     // Current channel id set by setId
     unsigned int m_id; 
-
+    // Current track data. Used for detecting changes, only for
+    // executing possible configured art uri fetch script
+    std::string m_currentsong;
+    std::string m_dynarturi;
     bool m_ok;
 };
 
