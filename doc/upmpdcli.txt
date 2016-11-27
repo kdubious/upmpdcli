@@ -190,6 +190,7 @@ be set in the configuration file.
 [[upmpdcli.configfile]]
 include::upmpdcli-config.txt[]
 
+[[radio-definitions]]
 === Radio station definitions
 
 Recent Upmpdcli versions (after 0.13) implement an OpenHome Radio service
