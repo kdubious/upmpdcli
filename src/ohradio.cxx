@@ -425,7 +425,7 @@ string OHRadio::metaForId(unsigned int id)
             meta = m_state["Metadata"];
         } else {
             meta = radioDidlMake(o_radios[id].title, o_radios[id].uri, 
-                                 o_radios[id].dynArtUri);
+                                 o_radios[id].artUri);
         }
     }
     return meta;
