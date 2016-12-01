@@ -32,7 +32,7 @@ class Session(object):
         url = self.api.track_getFileUrl(intent="stream",
                                         track_id = trackid,
                                         format_id = format_id)
-        print("get_media_url got: %s" % url, file=sys.stderr)
+        uplog("get_media_url got: %s" % url)
         return url['url'] if url and 'url' in url else None
 
     def get_album_tracks(self, albid):
@@ -42,7 +42,7 @@ class Session(object):
 
     def get_playlist_tracks(self, plid):
         data = self.api.playlist_get(playlist_id = plid, extra = 'tracks')
-        #print("PLAYLIST: %s" % json.dumps(data, indent=4), file=sys.stderr)
+        #uplog("PLAYLIST: %s" % json.dumps(data, indent=4))
         return [_parse_track(t) for t in data['tracks']['items']]
 
     def get_artist_albums(self, artid):
@@ -87,10 +87,10 @@ class Session(object):
     # error). album_getFeatured() accepts type, but it's not clear
     # what it does.
     def get_featured_items(self, content_type, type=''):
-        uplog("FEATURED TYPES: %s" % self.api.catalog_getFeaturedTypes())
+        #uplog("FEATURED TYPES: %s" % self.api.catalog_getFeaturedTypes())
         limit = '100'
         data = self.api.catalog_getFeatured(limit=limit)
-        #print("Featured: %s" % json.dumps(data,indent=4), file=sys.stderr)
+        #uplog("Featured: %s" % json.dumps(data,indent=4)))
         if content_type == 'artists':
             if 'artists' in data:
                 return [_parse_artist(i) for i in data['artists']['items']]
@@ -98,7 +98,6 @@ class Session(object):
             if 'playlists' in data:
                 return [_parse_playlist(pl) for pl in data['playlists']['items']]
         elif content_type == 'albums':
-            uplog("content_type: albums")
             if 'albums' in data:
                 return [_parse_album(alb) for alb in data['albums']['items']]
         return []
@@ -107,27 +106,66 @@ class Session(object):
         data = self.api.genre_list(parent_id=parent)
         return [_parse_genre(g) for g in data['genres']['items']]
 
-    def search(self, query, tp):
-        data = self.api.catalog_search(query=query, type=tp)
-        try:
-            ar = [_parse_artist(i) for i in data['artists']['items']]
-        except:
-            ar = []
-        try:
-            al = [_parse_album(i) for i in data['albums']['items']]
-            al = [alb for alb in al if alb.available]
-        except:
-            al = []
-        try:
-            pl = [_parse_playlist(i) for i in data['playlists']['items']]
-        except:
-            pl = []
-        try:
-            tr = [_parse_track(i) for i in data['tracks']['items']]
-        except:
-            tr = []
+    def _search1(self, query, tp):
+        limit = 200
+        slice = 100
+        if tp == 'artists':
+            limit = 20
+            slice = 20
+        elif tp == 'albums' or tp == 'playlists':
+            # I think that qobuz actually imposes a limit of
+            # 20 for album searches.
+            limit = 50
+            slice = 20
+        offset = 0
+        ar = []
+        al = []
+        pl = []
+        tr = []
+        while offset < limit:
+            data = self.api.catalog_search(query=query, type=tp,
+                                           offset=offset, limit=slice)
+            try:
+                ar_ = [_parse_artist(i) for i in data['artists']['items']]
+            except:
+                ar_ = []
+            try:
+                al_ = [_parse_album(i) for i in data['albums']['items']]
+                al_ = [alb for alb in al_ if alb.available]
+            except:
+                al_ = []
+            try:
+                pl_ = [_parse_playlist(i) for i in data['playlists']['items']]
+            except:
+                pl_ = []
+            try:
+                tr_ = [_parse_track(i) for i in data['tracks']['items']]
+            except:
+                tr_ = []
+            ar.extend(ar_)
+            al.extend(al_)
+            pl.extend(pl_)
+            tr.extend(tr_)
+            offset += slice
+        
+        uplog("_search1: got %d artists %d albs %d tracks %d pl" %
+              (len(ar), len(al), len(tr), len(pl)))
         return SearchResult(artists=ar, albums=al, playlists=pl, tracks=tr)
 
+    def search(self, query, tp):
+        if tp:
+            return self._search1(query, tp)
+        else:
+            cplt = SearchResult()
+            res = self._search1(query, 'artists')
+            cplt.artists = res.artists
+            res = self._search1(query, 'albums')
+            cplt.albums = res.albums
+            res = self._search1(query, 'tracks')
+            cplt.tracks = res.tracks
+            res = self._search1(query, 'playlists')
+            cplt.playlists = res.playlists
+            return cplt
 
 def _parse_artist(json_obj):
     artist = Artist(id=json_obj['id'], name=json_obj['name'])
@@ -142,6 +180,8 @@ def _parse_album(json_obj, artist=None, artists=None):
     #if artists is None:
     #    artists = _parse_artists(json_obj['artists'])
     available = json_obj['streamable'] if 'streamable' in json_obj else false
+    #if not available:
+    #    uplog("Album not streamable: %s " % json_obj['title'])
     kwargs = {
         'id': json_obj['id'],
         'name': json_obj['title'],
@@ -172,7 +212,6 @@ def _parse_playlist(json_obj, artist=None, artists=None):
     return Playlist(**kwargs)
 
 def _parse_track(json_obj, albumarg = None):
-        
     artist = Artist()
     if 'performer' in json_obj:
         artist = _parse_artist(json_obj['performer'])
@@ -188,6 +227,8 @@ def _parse_track(json_obj, albumarg = None):
         album = albumarg
 
     available = json_obj['streamable'] if 'streamable' in json_obj else false
+    #if not available:
+    #uplog("Track no not streamable: %s " % json_obj['title'])
 
     #artists = _parse_artists(json_obj['artists'])
     kwargs = {
@@ -215,14 +256,14 @@ class Favorites(object):
         r = self.session.api.favorite_getUserFavorites(
             user_id = self.session.user.id,
             type = 'artists')
-        #print("%s" % r, file=sys.stderr)
+        #uplog("%s" % r)
         return [_parse_artist(item) for item in r['artists']['items']]
 
     def albums(self):
         r = self.session.api.favorite_getUserFavorites(
             user_id = self.session.user.id,
             type = 'albums')
-        #print("%s" % r, file=sys.stderr)
+        #uplog("%s" % r)
         albums = [_parse_album(item) for item in r['albums']['items']]
         return [alb for alb in albums if alb.available]
 
@@ -234,7 +275,7 @@ class Favorites(object):
         r = self.session.api.favorite_getUserFavorites(
             user_id = self.session.user.id,
             type = 'tracks')
-        #print("%s" % r, file=sys.stderr)
+        #uplog("%s" % r)
         return [_parse_track(item) for item in r['tracks']['items']]
 
 

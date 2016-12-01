@@ -312,7 +312,7 @@ def search(a):
     objid = a['objid']
     field = a['field'] if 'field' in a else None
     value = a['value']
-    objkind = a['objkind'] if 'objkind' in a else None
+    objkind = a['objkind'] if 'objkind' in a and a['objkind'] else None
     
     if re.match('0\$qobuz\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
@@ -328,7 +328,7 @@ def search(a):
         objkind = 'track'
 
     # type may be 'tracks', 'albums', 'artists' or 'playlists'
-    qkind = objkind + "s" if field else None
+    qkind = objkind + "s" if objkind else None
     searchresults = session.search(value, qkind)
 
     if objkind is None or objkind == 'artist':
