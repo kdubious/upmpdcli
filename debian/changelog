@@ -1,9 +1,15 @@
+upmpdcli (1.2.10-3) unstable; urgency=low
+
+  * Fix bad option in rules file
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Sat, 03 Dec 2016 17:43:00 +0100
+
 upmpdcli (1.2.10-1) unstable; urgency=low
 
   * Improve streaming services searches
   * Fix bug in upnp/av mode (seek after gapless transition)
   
- -- Jean-Francois Dockes <jf@dockes.org>  Sun, 20 Nov 2016 10:11:00 +0200
+ -- Jean-Francois Dockes <jf@dockes.org>  Sun, 20 Nov 2016 10:11:00 +0100
 
 upmpdcli (1.2.9-1) unstable; urgency=low
 
