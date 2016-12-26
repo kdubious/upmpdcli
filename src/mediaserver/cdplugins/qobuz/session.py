@@ -58,10 +58,14 @@ class Session(object):
             return [_parse_artist(art) for art in data['artists']['items']]
         return []
 
-    def get_featured_albums(self, genre_id=None, type='new-releases'):
+    def get_featured_albums(self, genre_id='None', type='new-releases'):
         #uplog("get_featured_albums, genre_id %s type %s " % (genre_id, type))
-        data = self.api.album_getFeatured(type=type,
-                                          genre_id=genre_id, limit=100)
+        if genre_id != 'None':
+            data = self.api.album_getFeatured(type=type,
+                                              genre_id=genre_id, limit=100)
+        else:
+            data = self.api.album_getFeatured(type=type, limit=100)
+            
         try:
             albums = [_parse_album(alb) for alb in data['albums']['items']]
             if albums:
@@ -70,9 +74,13 @@ class Session(object):
             pass
         return []
 
-    def get_featured_playlists(self, genre_id=None):
-        data = self.api.playlist_getFeatured(type='editor-picks',
-                                             genre_id=genre_id, limit=100)
+    def get_featured_playlists(self, genre_id='None'):
+        if genre_id != 'None':
+            data = self.api.playlist_getFeatured(type='editor-picks',
+                                                 genre_id=genre_id, limit=100)
+        else:
+            data = self.api.playlist_getFeatured(type='editor-picks',
+                                                 limit=100)
         if data and 'playlists' in data:
             return [_parse_playlist(pl) for pl in data['playlists']['items']]
         return []
@@ -84,11 +92,10 @@ class Session(object):
     # catalog_getFeaturedTypes call which returns the above list, I
     # could not find a way to pass the type parameter to
     # catalog_getFeatured (setting type triggers an
-    # error). album_getFeatured() accepts type, but it's not clear
-    # what it does.
+    # error). album_getFeatured() and playlist_getFeatured() do accept type.
     def get_featured_items(self, content_type, type=''):
         #uplog("FEATURED TYPES: %s" % self.api.catalog_getFeaturedTypes())
-        limit = '100'
+        limit = '40'
         data = self.api.catalog_getFeatured(limit=limit)
         #uplog("Featured: %s" % json.dumps(data,indent=4)))
         if content_type == 'artists':
@@ -104,7 +111,8 @@ class Session(object):
 
     def get_genres(self, parent=None):
         data = self.api.genre_list(parent_id=parent)
-        return [_parse_genre(g) for g in data['genres']['items']]
+        return [Genre(id=None, name='All Genres')] + \
+               [_parse_genre(g) for g in data['genres']['items']]
 
     def _search1(self, query, tp):
         limit = 200

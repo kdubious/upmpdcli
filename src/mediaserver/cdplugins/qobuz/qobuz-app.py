@@ -166,8 +166,8 @@ def browse(a):
 
 @plugin.route('/')
 def root():
-    add_directory("Discover", whats_new)
-    add_directory('Genres', root_genres)
+    add_directory('Discover Catalog', whats_new)
+    add_directory('Discover Genres', root_genres)
     add_directory('Favourites', my_music)
 
 @plugin.route('/root_genres')
@@ -177,32 +177,25 @@ def root_genres():
 
 @plugin.route('/genre/<genre_id>')
 def genre_view(genre_id):
-    items = session.get_genres(genre_id)
-    if False and len(items) != 0:
-        # List subgenres. We don't do it any more as they all contain
-        # the same data (there is no actual discrimination between
-        # e.g. metal and pop, same list arrives.
-        view(items, urls_from_id(genre_view, items))
-    else:
-        add_directory('New Releases', plugin.url_for(genre_view_type,
-                                                      genre_id=genre_id,
-                                                      type='new-releases'))
-        add_directory('Qobuz Playlists', plugin.url_for(genre_view_playlists,
-                                                      genre_id=genre_id))
-        add_directory('Most Streamed', plugin.url_for(genre_view_type,
-                                                      genre_id=genre_id,
-                                                      type='most-streamed'))
-        add_directory('Most Downloaded', plugin.url_for(genre_view_type,
-                                                        genre_id=genre_id,
-                                                        type='best-sellers'))
-        add_directory('Editor Picks', plugin.url_for(genre_view_type,
-                                                        genre_id=genre_id,
-                                                        type='editor-picks'))
-        add_directory('Press Awards', plugin.url_for(genre_view_type,
-                                                        genre_id=genre_id,
-                                                        type='press-awards'))
-        items = session.get_featured_albums(genre_id)
-        view(items, urls_from_id(album_view, items))
+    add_directory('New Releases', plugin.url_for(genre_view_type,
+                                                 genre_id=genre_id,
+                                                 type='new-releases'))
+    add_directory('Qobuz Playlists', plugin.url_for(genre_view_playlists,
+                                                    genre_id=genre_id))
+    add_directory('Most Streamed', plugin.url_for(genre_view_type,
+                                                  genre_id=genre_id,
+                                                  type='most-streamed'))
+    add_directory('Most Downloaded', plugin.url_for(genre_view_type,
+                                                    genre_id=genre_id,
+                                                    type='best-sellers'))
+    add_directory('Editor Picks', plugin.url_for(genre_view_type,
+                                                 genre_id=genre_id,
+                                                 type='editor-picks'))
+    add_directory('Press Awards', plugin.url_for(genre_view_type,
+                                                 genre_id=genre_id,
+                                                 type='press-awards'))
+    items = session.get_featured_albums(genre_id)
+    view(items, urls_from_id(album_view, items))
 
 @plugin.route('/featured/<genre_id>/<type>')
 def genre_view_type(genre_id, type):

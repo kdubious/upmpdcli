@@ -159,4 +159,5 @@ def direntry(id, pid, title, arturi=None, artist=None, upnpclass=None):
 
 
 def uplog(s):
-    print("%s: %s" % (g_idprefix, s), file=sys.stderr)
+    print(("%s: %s" % (g_idprefix, s)).encode('utf-8'), file=sys.stderr)
+
