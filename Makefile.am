@@ -179,7 +179,5 @@ dist_man1_MANS = man/upmpdcli.1
 
 dist-hook:
 	rm -rf rdpl2stream/__pycache__/
-	test -z "`git status -s | grep -v upmpdcli-${VERSION} | \
-                     grep -v rdpl2stream.tar.gz | \
-                     grep -v -- -fixed.cpp`" 
+	test -z "`git status -s | grep -v '??' | grep -v Makefile.am`" 
 	git tag -f -a upmpdcli-v$(VERSION) -m 'version $(VERSION)'
