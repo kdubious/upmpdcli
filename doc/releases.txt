@@ -1,5 +1,10 @@
 = Upmpdcli release notes
 
+== Upmpdcli 1.2.11
+
+- Allow dynamic retrieving of radio stream artwork.
+- Improved Qobuz interface.
+  
 == Upmpdcli 1.2.10
 
 - Improves streaming services search

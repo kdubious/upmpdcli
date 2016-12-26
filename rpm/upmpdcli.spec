@@ -1,6 +1,6 @@
 Summary:        UPnP Media Renderer front-end to MPD, the Music Player Daemon
 Name:           upmpdcli
-Version:        1.2.10
+Version:        1.2.11
 Release:        1%{?dist}
 Group:          Applications/Multimedia
 License:        GPLv2+
@@ -69,6 +69,8 @@ install -D -m644 systemd/upmpdcli.service \
 %systemd_postun_with_restart upmpdcli.service 
 
 %changelog
+* Mon Dec 26 2016 J.F. Dockes <jf@dockes.org> - 1.2.11
+- Radio dynamic artwork and improved qobuz interface
 * Sun Nov 20 2016 J.F. Dockes <jf@dockes.org> - 1.2.10
 - Small bug fixes.
 * Sun Oct 09 2016 J.F. Dockes <jf@dockes.org> - 1.2.6

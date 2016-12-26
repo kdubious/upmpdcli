@@ -1,3 +1,10 @@
+upmpdcli (1.2.11-1) unstable; urgency=low
+
+  * Improve Qobuz interface
+  * Allow dynamic retrieval of artwork for radios currently playing track
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Mon, 26 Dec 2016 14:05:00 +0100
+
 upmpdcli (1.2.10-3) unstable; urgency=low
 
   * Fix bad option in rules file
