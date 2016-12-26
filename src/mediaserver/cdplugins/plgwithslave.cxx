@@ -341,6 +341,102 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
     return decoded.size();
 }
 
+
+class ContentCacheEntry {
+public:
+    ContentCacheEntry()
+        : m_time(time(0)) {
+    }
+    int toResult(const string& classfilter, int stidx, int cnt,
+                 vector<UpSong>& entries) const;
+    time_t m_time;
+    vector<UpSong> m_results;
+};
+
+int ContentCacheEntry::toResult(const string& classfilter, int stidx, int cnt,
+                                vector<UpSong>& entries) const
+{
+    const vector<UpSong>& res = m_results;
+    LOGDEB0("searchCacheEntryToResult: filter " << classfilter << " start " <<
+            stidx << " cnt " << cnt << " res.size " << res.size() << endl);
+    entries.reserve(cnt);
+    int total = 0;
+    for (unsigned int i = 0; i < res.size(); i++) {
+        if (!classfilter.empty() && res[i].upnpClass.find(classfilter) != 0) {
+            continue;
+        }
+        total++;
+        if (stidx > int(i)) {
+            continue;
+        }
+        if (int(entries.size()) >= cnt) {
+            break;
+        }
+        LOGDEB1("ContentCacheEntry::toResult: pushing class " <<
+                res[i].upnpClass << " tt " << res[i].title << endl);
+        entries.push_back(res[i]);
+    }
+    return total;
+}
+
+class ContentCache {
+public:
+    ContentCache(int retention_secs = 300);
+    ContentCacheEntry *get(const string& query);
+    void set(const string& query, ContentCacheEntry &entry);
+    void purge();
+private:
+    time_t m_lastpurge;
+    int m_retention_secs;
+    unordered_map<string, ContentCacheEntry> m_cache;
+};
+
+ContentCache::ContentCache(int retention_secs)
+    : m_lastpurge(time(0)), m_retention_secs(retention_secs)
+{
+}
+
+void ContentCache::purge()
+{
+    time_t now(time(0));
+    if (now - m_lastpurge < 5) {
+        return;
+    }
+    for (auto it = m_cache.begin(); it != m_cache.end(); ) {
+        if (now - it->second.m_time > m_retention_secs) {
+            LOGDEB0("ContentCache::purge: erasing " << it->first << endl);
+            it = m_cache.erase(it);
+        } else {
+            it++;
+        }
+    }
+    m_lastpurge = now;
+}
+
+ContentCacheEntry *ContentCache::get(const string& key)
+{
+    purge();
+    auto it = m_cache.find(key);
+    if (it != m_cache.end()) {
+        LOGDEB0("ContentCache::get: found " << key << endl);
+        // we return a copy of the vector. Make our multi-access life simpler...
+        return new ContentCacheEntry(it->second);
+    }
+    LOGDEB0("ContentCache::get: not found " << key << endl);
+    return nullptr;
+}
+
+void ContentCache::set(const string& key, ContentCacheEntry &entry)
+{
+    LOGDEB0("ContentCache::set: " << key << endl);
+    m_cache[key] = entry;
+}
+
+// Cache for searches
+static ContentCache o_scache(300);
+// Cache for browsing
+static ContentCache o_bcache(180);
+
 // Better return a bogus informative entry than an outright error:
 static int errorEntries(const string& pid, vector<UpSong>& entries)
 {
@@ -350,6 +446,12 @@ static int errorEntries(const string& pid, vector<UpSong>& entries)
     return 1;
 }
 
+// Note that the offset and count don't get to the plugin for
+// now. Plugins just return a (plugin-dependant) fixed number of
+// entries from offset 0, which we cache. There is no good reason for
+// this, beyond the fact that we have to cap the entry count anyway,
+// else the CP is going to read to the end which might be
+// reaaaaalllllyyyy long.
 int PlgWithSlave::browse(const string& objid, int stidx, int cnt,
                          vector<UpSong>& entries,
                          const vector<string>& sortcrits,
@@ -371,6 +473,17 @@ int PlgWithSlave::browse(const string& objid, int stidx, int cnt,
         break;
     }
 
+    string cachekey(m_name + ":" + objid);
+    if (flg == CDPlugin::BFChildren) {
+        // Check cache
+        ContentCacheEntry *cep;
+        if ((cep = o_bcache.get(cachekey)) != nullptr) {
+            int total = cep->toResult("", stidx, cnt, entries);
+            delete cep;
+            return total;
+        }
+    }
+    
     unordered_map<string, string> res;
     if (!m->cmd.callproc("browse", {{"objid", objid}, {"flag", sbflg}}, res)) {
 	LOGERR("PlgWithSlave::browse: slave failure\n");
@@ -382,102 +495,23 @@ int PlgWithSlave::browse(const string& objid, int stidx, int cnt,
 	LOGERR("PlgWithSlave::browse: no entries returned\n");
         return errorEntries(objid, entries);
     }
-    return resultToEntries(it->second, stidx, cnt, entries);
-}
 
-
-class SearchCacheEntry {
-public:
-    SearchCacheEntry()
-        : m_time(time(0)) {
+    if (flg == CDPlugin::BFChildren) {
+        ContentCacheEntry e;
+        resultToEntries(it->second, 0, 0, e.m_results);
+        o_bcache.set(cachekey, e);
+        return e.toResult("", stidx, cnt, entries);
+    } else {
+        return resultToEntries(it->second, stidx, cnt, entries);
     }
-    time_t m_time;
-    vector<UpSong> m_results;
-};
-
-const int retention_secs = 300;
-class SearchCache {
-public:
-    SearchCache();
-    SearchCacheEntry *get(const string& query);
-    void set(const string& query, SearchCacheEntry &entry);
-    void flush();
-private:
-    time_t m_lastflush;
-    unordered_map<string, SearchCacheEntry> m_cache;
-};
-
-SearchCache::SearchCache()
-        : m_lastflush(time(0))
-{
 }
 
-void SearchCache::flush()
-{
-    time_t now(time(0));
-    if (now - m_lastflush < 5) {
-        return;
-    }
-    for (unordered_map<string, SearchCacheEntry>::iterator it = m_cache.begin();
-         it != m_cache.end(); ) {
-        if (now - it->second.m_time > retention_secs) {
-            LOGDEB0("SearchCache::flush: erasing " << it->first << endl);
-            it = m_cache.erase(it);
-        } else {
-            it++;
-        }
-    }
-    m_lastflush = now;
-}
-
-SearchCacheEntry *SearchCache::get(const string& key)
-{
-    flush();
-    auto it = m_cache.find(key);
-    if (it != m_cache.end()) {
-        LOGDEB0("SearchCache::get: found " << key << endl);
-        // we return a copy of the vector. Make our multi-access life simpler...
-        return new SearchCacheEntry(it->second);
-    }
-    LOGDEB0("SearchCache::get: not found " << key << endl);
-    return nullptr;
-}
-
-void SearchCache::set(const string& key, SearchCacheEntry &entry)
-{
-    LOGDEB0("SearchCache::set: " << key << endl);
-    m_cache[key] = entry;
-}
-
-static SearchCache o_scache;
-
-int resultFromCacheEntry(const string& classfilter, int stidx, int cnt,
-                         const SearchCacheEntry& e,
-                         vector<UpSong>& entries)
-{
-    const vector<UpSong>& res = e.m_results;
-    LOGDEB0("resultFromCacheEntry: filter " << classfilter << " start " <<
-            stidx << " cnt " << cnt << " res.size " << res.size() << endl);
-    entries.reserve(cnt);
-    int total = 0;
-    for (unsigned int i = 0; i < res.size(); i++) {
-        if (!classfilter.empty() && res[i].upnpClass.find(classfilter) != 0) {
-            continue;
-        }
-        total++;
-        if (stidx > int(i)) {
-            continue;
-        }
-        if (int(entries.size()) >= cnt) {
-            continue;
-        }
-        LOGDEB1("resultFromCacheEntry: pushing class "  << res[i].upnpClass <<
-               " tt " << res[i].title << endl);
-        entries.push_back(res[i]);
-    }
-    return total;
-}
-
+// Note that the offset and count don't get to the plugin for
+// now. Plugins just return a (plugin-dependant) fixed number of
+// entries from offset 0, which we cache. There is no good reason for
+// this, beyond the fact that we have to cap the entry count anyway,
+// else the CP is going to read to the end which might be
+// reaaaaalllllyyyy long.
 int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
                          const string& searchstr,
                          vector<UpSong>& entries,
@@ -554,10 +588,10 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
     }
 
     // In cache ?
-    SearchCacheEntry *cep;
+    ContentCacheEntry *cep;
     string cachekey(m_name + ":" + objkind + ":" + slavefield + ":" + value);
     if ((cep = o_scache.get(cachekey)) != nullptr) {
-        int total = resultFromCacheEntry(classfilter, stidx, cnt, *cep, entries);
+        int total = cep->toResult(classfilter, stidx, cnt, entries);
         delete cep;
         return total;
     }
@@ -579,8 +613,8 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
 	return errorEntries(ctid, entries);
     }
     // Convert the whole set and store in cache
-    SearchCacheEntry e;
+    ContentCacheEntry e;
     resultToEntries(it->second, 0, 0, e.m_results);
     o_scache.set(cachekey, e);
-    return resultFromCacheEntry(classfilter, stidx, cnt, e, entries);
+    return e.toResult(classfilter, stidx, cnt, entries);
 }
