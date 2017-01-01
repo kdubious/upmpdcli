@@ -369,7 +369,7 @@ int ContentCacheEntry::toResult(const string& classfilter, int stidx, int cnt,
         if (stidx > int(i)) {
             continue;
         }
-        if (int(entries.size()) >= cnt) {
+        if (cnt && int(entries.size()) >= cnt) {
             break;
         }
         LOGDEB1("ContentCacheEntry::toResult: pushing class " <<
