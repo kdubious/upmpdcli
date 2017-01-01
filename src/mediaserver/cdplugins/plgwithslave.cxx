@@ -376,7 +376,7 @@ int ContentCacheEntry::toResult(const string& classfilter, int stidx, int cnt,
                 res[i].upnpClass << " tt " << res[i].title << endl);
         entries.push_back(res[i]);
     }
-    return total;
+    return res.size();
 }
 
 class ContentCache {
