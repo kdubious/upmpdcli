@@ -4,7 +4,14 @@
 
 - Allow dynamic retrieving of radio stream artwork.
 - Improved Qobuz interface.
-  
+
+NOTE: Known Bug: when accessing the streaming services plugins from Linn
+Kazoo (and maybe some others), only the very beginning of each directory is
+displayed (1-2 entries). This is a bug in upmpdcli, and a new version will
+be released shortly to correct it. Meanwhile, you can use Upplay or Bubble
+UPNP which do things in a different way and are not affected by the issue.
+
+
 == Upmpdcli 1.2.10
 
 - Improves streaming services search
