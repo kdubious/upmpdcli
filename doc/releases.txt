@@ -1,5 +1,9 @@
 = Upmpdcli release notes
 
+== Upmpdcli 1.2.12
+
+- Fixes the 1.2.11 Content Directory bug.
+
 == Upmpdcli 1.2.11
 
 - Allow dynamic retrieving of radio stream artwork.
