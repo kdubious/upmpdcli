@@ -364,7 +364,7 @@
 #  artUrl (optional) points to the radio icon
 
 [radio FIP autour du rock]
-url = http://webradiofip1.scdn.arkena.com/webradiofip1.mp3
+url = http://direct.fipradio.fr/live/fip-webradio1.mp3
 artUrl = http://www.fipradio.fr/sites/all/themes/custom/fip/img/logo_fip_header.png
 
 [radio Radio Eins]
