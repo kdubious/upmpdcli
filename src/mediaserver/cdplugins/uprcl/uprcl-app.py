@@ -31,16 +31,10 @@ dispatcher = cmdtalkplugin.Dispatch()
 # Pipe message handler
 msgproc = cmdtalkplugin.Processor(dispatcher)
 
-is_logged_in = False
-
-def maybelogin():
+def module_init():
     global httphp
     global pathprefix
-    global is_logged_in
     
-    if is_logged_in:
-        return True
-
     if "UPMPD_HTTPHOSTPORT" not in os.environ:
         raise Exception("No UPMPD_HTTPHOSTPORT in environment")
     httphp = os.environ["UPMPD_HTTPHOSTPORT"]
@@ -50,15 +44,35 @@ def maybelogin():
     if "UPMPD_CONFIG" not in os.environ:
         raise Exception("No UPMPD_CONFIG in environment")
     upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
-    
+
+    global uprclhost, pathmap
+
+    uprclhost = upconfig.get("uprclhost")
+    if uprclhost is None:
+        msgproc.log("uprcl init: no uprclhost in config file")
+        return False
+
+    pthstr = upconfig.get("uprclpaths")
+    if pthstr is None:
+        msgproc.log("uprcl init: no uprclpaths in config file")
+        return False
+    lpth = pthstr.split(',')
+    pathmap = {}
+    for ptt in lpth:
+        l = ptt.split(':')
+        pathmap[l[0]] = l[1]
+
+    return True
 
 @dispatcher.record('trackuri')
 def trackuri(a):
     msgproc.log("trackuri: [%s]" % a)
-    trackid = trackid_from_urlpath(pathprefix, a)
-    maybelogin()
-    mime, kbs = get_mimeandkbs()
-    return {'media_url' : media_url, 'mimetype' : mime, 'kbs' : kbs}
+    if 'path' not in a:
+        raise Exception("trackuri: no 'path' in args")
+    path = a['path']
+    media_url = rclpathtoreal(path, pathprefix, uprclhost, pathmap)
+    msgproc.log("trackuri: returning: %s" % media_url)
+    return {'media_url' : media_url}
 
 
 @dispatcher.record('browse')
@@ -71,7 +85,6 @@ def browse(a):
     
     if re.match('0\$uprcl\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
-    maybelogin()
 
     idpath = objid.replace('0$uprcl$', '', 1)
     msgproc.log("browse: idpath: %s" % idpath)
@@ -84,15 +97,15 @@ def browse(a):
             trackid = m.group(1)
             # get doc from trackid or whatever
             doc = {}
-            entries += trackentries(httphp, pathprefix,
-                                    objid, [])
+            entries += trackentries(httphp, pathprefix, objid, [])
     else:
         if not idpath:
-            # Root dir
+            # Build up root directory. No external data needed, this is our
+            # top internal structure
             entries.append(rcldirentry('0$uprcl$' + 'folders', '0$uprcl$',
                                         '[folders]'))
-        if idpath.startswith("folders"):
-            entries = folders.browse(objid, bflg)
+        elif idpath.startswith("folders"):
+            entries = folders.browse(objid, bflg, httphp, pathprefix)
         else:
             pass
 
@@ -100,6 +113,7 @@ def browse(a):
     #msgproc.log("%s" % entries)
     encoded = json.dumps(entries)
     return {"entries" : encoded}
+
 
 @dispatcher.record('search')
 def search(a):
@@ -111,7 +125,6 @@ def search(a):
 
     if re.match('0\$uprcl\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
-    maybelogin()
     
     searchresults = session.search(value)
 
@@ -133,6 +146,10 @@ def search(a):
     #msgproc.log("%s" % xbmcplugin.entries)
     encoded = json.dumps(xbmcplugin.entries)
     return {"entries" : encoded}
+
+if not module_init():
+    msgproc.log("Uprcl init failed")
+    sys.exit(1)
 
 msgproc.log("Uprcl running")
 msgproc.mainloop()

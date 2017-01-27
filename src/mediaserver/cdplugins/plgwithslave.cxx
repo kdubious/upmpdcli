@@ -132,16 +132,19 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
     //return realplg->answer_to_connection(connection, url, method, version,
     //                               upload_data, upload_data_size, con_cls);
 
-    // Rebuild URL + query
     string path(url);
+
+    // The streaming services plugins set a trackId parameter in the
+    // URIs. This gets parsed out by mhttpd. We rebuild a full url
+    // which we pass to them for translation (they will extract the
+    // trackid and use it, the rest of the path is bogus).
+    // The uprcl module has a real path and no trackid. Handle both cases
     const char* stid =
         MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND,
                                     "trackId");
-    if (!stid || !*stid) {
-        LOGERR("answer_to_connection: no trackId in args\n");
-        return MHD_NO;
+    if (stid && *stid) {
+        path += string("?version=1&trackId=") + stid;
     }
-    path += string("?version=1&trackId=") + stid;
 
     // Translate to Tidal/Qobuz etc real temporary URL
     string media_url = realplg->get_media_url(path);

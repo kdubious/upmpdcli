@@ -9,15 +9,11 @@ from uprclutils import *
 from recoll import recoll
 from recoll import rclconfig
 
-confdir = "/home/dockes/.recoll-mp3"
+g_myprefix = '0$uprcl$folders'
 
-rclconf = rclconfig.RclConfig(confdir)
 
-topdirs = [os.path.expanduser(d) for d in
-           shlex.split(rclconf.getConfParam('topdirs'))]
-
-# Create the directory tree (folders view) from the doc array by
-# splitting the url in each doc.
+# Internal init: create the directory tree (folders view) from the doc
+# array by splitting the url in each doc.
 #
 # The dirvec vector has one entry for each directory. Each entry is a
 # dictionary, mapping the names inside the directory to a pair (i,j),
@@ -29,9 +25,13 @@ topdirs = [os.path.expanduser(d) for d in
 # configuration. The entries are paths instead of simple names, and
 # the doc index (j) is 0. The dir index points normally to a dirvec
 # entry.
-def rcl2folders(docs):
+def rcl2folders(docs, confdir):
     global dirvec
     dirvec = []
+
+    rclconf = rclconfig.RclConfig(confdir)
+    topdirs = [os.path.expanduser(d) for d in
+               shlex.split(rclconf.getConfParam('topdirs'))]
 
     topidx = 0
     dirvec.append({})
@@ -109,9 +109,9 @@ def rcl2folders(docs):
 
     return dirvec
 
-# Fetch all the docs by querying Recoll with [mime:*], which is
-# guaranteed to match every doc without overflowing the query size
-# (because the number of mime types is limited). Something like
+# Internal init: fetch all the docs by querying Recoll with [mime:*],
+# which is guaranteed to match every doc without overflowing the query
+# size (because the number of mime types is limited). Something like
 # title:* would overflow.
 def fetchalldocs(confdir):
     allthedocs = []
@@ -133,28 +133,60 @@ def fetchalldocs(confdir):
     uplog("Retrieved %d docs" % (totcnt,))
     return allthedocs
 
+
+# Internal init
 def inittree(confdir):
     global g_alldocs, g_dirvec
     
     g_alldocs = fetchalldocs(confdir)
-    g_dirvec = rcl2folders(g_alldocs)
+    g_dirvec = rcl2folders(g_alldocs, confdir)
 
 
-g_myprefix = '0$uprcl$folders'
+## This needs to come from upmpdcli.conf
+confdir = "/home/dockes/.recoll-mp3"
+inittree(confdir)
+
+
+def cmpentries(e1, e2):
+    #uplog("cmpentries: %s %s" % (e1['tt'], e2['tt']))
+    tp1 = e1['tp']
+    tp2 = e2['tp']
+
+    # Containers come before items, and are sorted in alphabetic order
+    if tp1 == 'ct' and tp2 != 'ct':
+        return 1
+    elif tp1 != 'ct' and tp2 == 'ct':
+        return -1
+    elif tp1 == 'ct' and tp2 == 'ct':
+        if tp1 < tp2:
+            return -1
+        elif tp1 > tp2:
+            return 1
+        else:
+            return 0
+
+    # 2 tracks. Sort by album then track number
+    k = 'upnp:album'
+    a1 = e1[k] if k in e1 else ""
+    a2 = e2[k] if k in e2 else ""
+    if a1 < a2:
+        return -1
+    elif a1 > a2:
+        return 1
+
+    k = 'upnp:originalTrackNumber'
+    a1 = e1[k] if k in e1 else "0"
+    a2 = e2[k] if k in e2 else "0"
+    return int(a1) - int(a2)
 
 # objid is like folders$index
 # flag is meta or children. 
-def browse(pid, flag):
+def browse(pid, flag, httphp, pathprefix):
     global g_alldocs, g_dirvec
 
     if not pid.startswith(g_myprefix):
         uplog("folders.browse: bad pid %s" % pid)
         return []
-
-    try:
-        len(g_alldocs)
-    except:
-        inittree(confdir)
 
     if len(g_alldocs) == 0:
         uplog("folders:browse: no docs")
@@ -164,16 +196,32 @@ def browse(pid, flag):
     if not diridx:
         diridx = 0
     else:
-        diridx = int(diridx[1:])
+        diridx = int(diridx[2:])
     
     if diridx >= len(g_dirvec):
         uplog("folders:browse: bad pid %s" % pid)
         return []
 
     entries = []
-    Need to treat diridx 0 special (take simple paths)
-    for nm,ids in g_dirvec[diridx].iteritems():
-        id = g_myprefix + '$' + str(ids[0])
-        entries.append(rcldirentry(id, pid, nm))
 
-    return entries
+    # The basename call is just for diridx==0 (topdirs). Remove it if
+    # this proves a performance issue
+    for nm,ids in g_dirvec[diridx].iteritems():
+        thisdiridx = ids[0]
+        thisdocidx = ids[1]
+        if thisdiridx >= 0:
+            id = g_myprefix + '$' + 'd' + str(thisdiridx)
+            entries.append(rcldirentry(id, pid, os.path.basename(nm)))
+        else:
+            # Not a directory. docidx had better been set
+            if thisdocidx == -1:
+                uplog("folders:docidx -1 for non-dir entry %s"%nm)
+                continue
+            doc = g_alldocs[thisdocidx]
+            id = g_myprefix + '$' + 'i' + str(thisdocidx)
+            e = rcldoctoentry(id, pid, httphp, pathprefix, doc)
+            if e:
+                entries.append(e)
+
+    #return entries
+    return sorted(entries, cmp=cmpentries)
