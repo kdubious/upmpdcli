@@ -23,17 +23,22 @@ import posixpath
 import re
 import conftree
 import cmdtalkplugin
-import folders
+
+import uprclfolders
+import uprclsearch
 from uprclutils import *
+
+from recoll import recoll
+from recoll import rclconfig
+g_myprefix = '0$uprcl$folders'
 
 # Func name to method mapper
 dispatcher = cmdtalkplugin.Dispatch()
 # Pipe message handler
 msgproc = cmdtalkplugin.Processor(dispatcher)
 
-def module_init():
-    global httphp
-    global pathprefix
+def uprcl_init():
+    global httphp, pathprefix, uprclhost, pathmap
     
     if "UPMPD_HTTPHOSTPORT" not in os.environ:
         raise Exception("No UPMPD_HTTPHOSTPORT in environment")
@@ -45,24 +50,26 @@ def module_init():
         raise Exception("No UPMPD_CONFIG in environment")
     upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
 
-    global uprclhost, pathmap
-
     uprclhost = upconfig.get("uprclhost")
     if uprclhost is None:
-        msgproc.log("uprcl init: no uprclhost in config file")
-        return False
+        raise Exception("uprclhost not in config")
 
     pthstr = upconfig.get("uprclpaths")
     if pthstr is None:
-        msgproc.log("uprcl init: no uprclpaths in config file")
-        return False
+        raise Exception("uprclpaths not in config")
     lpth = pthstr.split(',')
     pathmap = {}
     for ptt in lpth:
         l = ptt.split(':')
         pathmap[l[0]] = l[1]
 
-    return True
+    global rclconfdir
+    rclconfdir = upconfig.get("uprclconfdir")
+    if rclconfdir is None:
+        raise Exception("uprclconfdir not in config")
+
+    uprclfolders.inittree(rclconfdir)
+
 
 @dispatcher.record('trackuri')
 def trackuri(a):
@@ -105,7 +112,7 @@ def browse(a):
             entries.append(rcldirentry('0$uprcl$' + 'folders', '0$uprcl$',
                                         '[folders]'))
         elif idpath.startswith("folders"):
-            entries = folders.browse(objid, bflg, httphp, pathprefix)
+            entries = uprclfolders.browse(objid, bflg, httphp, pathprefix)
         else:
             pass
 
@@ -119,37 +126,36 @@ def browse(a):
 def search(a):
     msgproc.log("search: [%s]" % a)
     objid = a['objid']
-    field = a['field'] if 'field' in a else None
-    value = a['value']
-    objkind = a['objkind'] if 'objkind' in a else None
-
     if re.match('0\$uprcl\$', objid) is None:
         raise Exception("bad objid [%s]" % objid)
+
+    upnps = a['origsearch']
+    rcls = uprclsearch.upnpsearchtorecoll(upnps)
+    uplog("Search: recoll search: %s" % rcls)
     
-    searchresults = session.search(value)
+    rcldb = recoll.connect(confdir=rclconfdir)
+    rclq = rcldb.query()
+    rclq.execute(rcls)
+    uplog("Estimated query results: %d" % (rclq.rowcount))
 
-    if objkind and objkind not in ['artist', 'album', 'playlist', 'track']:
-        msgproc.log('Unknown objkind \'%s\'' % objkind)
-        objkind = None
-    if objkind is None or objkind == 'artist':
-        view(searchresults.artists,
-             urls_from_id(artist_view, searchresults.artists), end=False)
-    if objkind is None or objkind == 'album':
-        view(searchresults.albums,
-             urls_from_id(album_view, searchresults.albums), end=False)
-    if objkind is None or objkind == 'playlist':
-        view(searchresults.playlists,
-             urls_from_id(playlist_view, searchresults.playlists), end=False)
-    if objkind is None or objkind == 'track':
-        track_list(searchresults.tracks)
+    entries = []
+    maxcnt = 0
+    totcnt = 0
+    while True:
+        docs = rclq.fetchmany()
+        for doc in docs:
+            id = g_myprefix + '$' + 'seeyoulater'
+            e = rcldoctoentry(id, objid, httphp, pathprefix, doc)
+            entries.append(e)
+            totcnt += 1
+        if (maxcnt > 0 and totcnt >= maxcnt) or len(docs) != rclq.arraysize:
+            break
+    uplog("Search retrieved %d docs" % (totcnt,))
 
-    #msgproc.log("%s" % xbmcplugin.entries)
-    encoded = json.dumps(xbmcplugin.entries)
+    encoded = json.dumps(entries)
     return {"entries" : encoded}
 
-if not module_init():
-    msgproc.log("Uprcl init failed")
-    sys.exit(1)
+uprcl_init()
 
 msgproc.log("Uprcl running")
 msgproc.mainloop()

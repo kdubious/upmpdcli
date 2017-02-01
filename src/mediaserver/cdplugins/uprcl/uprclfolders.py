@@ -25,7 +25,7 @@ g_myprefix = '0$uprcl$folders'
 # configuration. The entries are paths instead of simple names, and
 # the doc index (j) is 0. The dir index points normally to a dirvec
 # entry.
-def rcl2folders(docs, confdir):
+def _rcl2folders(docs, confdir):
     global dirvec
     dirvec = []
 
@@ -113,7 +113,7 @@ def rcl2folders(docs, confdir):
 # which is guaranteed to match every doc without overflowing the query
 # size (because the number of mime types is limited). Something like
 # title:* would overflow.
-def fetchalldocs(confdir):
+def _fetchalldocs(confdir):
     allthedocs = []
 
     rcldb = recoll.connect(confdir=confdir)
@@ -134,37 +134,33 @@ def fetchalldocs(confdir):
     return allthedocs
 
 
-# Internal init
+# Initialize (read recoll data and build tree)
 def inittree(confdir):
     global g_alldocs, g_dirvec
     
-    g_alldocs = fetchalldocs(confdir)
-    g_dirvec = rcl2folders(g_alldocs, confdir)
+    g_alldocs = _fetchalldocs(confdir)
+    g_dirvec = _rcl2folders(g_alldocs, confdir)
 
 
-## This needs to come from upmpdcli.conf
-confdir = "/home/dockes/.recoll-mp3"
-inittree(confdir)
-
-
-def cmpentries(e1, e2):
-    #uplog("cmpentries: %s %s" % (e1['tt'], e2['tt']))
+def _cmpentries(e1, e2):
     tp1 = e1['tp']
     tp2 = e2['tp']
-
+    isct1 = tp1 == 'ct'
+    isct2 = tp2 == 'ct'
     # Containers come before items, and are sorted in alphabetic order
-    if tp1 == 'ct' and tp2 != 'ct':
+    if isct1 and  not isct2:
         return 1
-    elif tp1 != 'ct' and tp2 == 'ct':
+    elif not isct1 and isct2:
         return -1
-    elif tp1 == 'ct' and tp2 == 'ct':
-        if tp1 < tp2:
+    elif isct1 and isct2:
+        tt1 = e1['tt']
+        tt2 = e2['tt']
+        if tt1 < tt2:
             return -1
-        elif tp1 > tp2:
+        elif tt1 > tt2:
             return 1
         else:
             return 0
-
     # 2 tracks. Sort by album then track number
     k = 'upnp:album'
     a1 = e1[k] if k in e1 else ""
@@ -179,6 +175,8 @@ def cmpentries(e1, e2):
     a2 = e2[k] if k in e2 else "0"
     return int(a1) - int(a2)
 
+
+# Browse method
 # objid is like folders$index
 # flag is meta or children. 
 def browse(pid, flag, httphp, pathprefix):
@@ -224,4 +222,4 @@ def browse(pid, flag, httphp, pathprefix):
                 entries.append(e)
 
     #return entries
-    return sorted(entries, cmp=cmpentries)
+    return sorted(entries, cmp=_cmpentries)
