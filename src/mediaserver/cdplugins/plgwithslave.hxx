@@ -22,7 +22,8 @@
 #include "cdplugin.hxx"
 #include "libupnpp/device/vdir.hxx"
 
-// Tidal interface
+// Interface to a content plugin implemented through a Python subprocess,
+// e.g. the Tidal, Qobuz and Gmusic interfaces.
 class PlgWithSlave : public CDPlugin {
 public:
     PlgWithSlave(const std::string& name, CDPluginServices *services);
@@ -41,6 +42,8 @@ public:
 	std::vector<UpSong>& entries,
 	const std::vector<std::string>& sortcrits = std::vector<std::string>());
 
+    // This is for internal use only, but moving it to Internal would
+    // make things quite more complicated for a number of reasons.
     virtual std::string get_media_url(const std::string& path);
 
     class Internal;

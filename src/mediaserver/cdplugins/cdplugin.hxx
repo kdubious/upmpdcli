@@ -45,8 +45,12 @@ public:
     virtual bool setfileops(CDPlugin *, const std::string& path,
                             UPnPProvider::VirtualDir::FileOps ops)= 0;
 
-    /// Access the main configuration file.
+    /// Get a pointer to the the main configuration file contents.
     virtual ConfSimple *getconfig(CDPlugin *)= 0;
+
+    /// This calls plg->getname() and returns something like
+    /// datadir/nm/nm-app.py. Can't see why this is in contentdirectory
+    /// since it seems very specific to plgwithslave...
     virtual std::string getexecpath(CDPlugin *)= 0;
 };
 
