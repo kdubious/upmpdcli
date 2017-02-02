@@ -127,8 +127,8 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
     // We may need one day to subclass PlgWithSlave to implement a
     // plugin-specific method. For now, existing plugins have
     // compatible python code, and we can keep one c++ method.
-    // get_media_url() would also need changing because it accesses Internal:
-    // either make it generic or move to subclass.
+    // get_media_url() would also need changing because it is in
+    // Internal: either make it generic or move to subclass.
     //return realplg->answer_to_connection(connection, url, method, version,
     //                               upload_data, upload_data_size, con_cls);
 
@@ -604,6 +604,7 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
     if (!m->cmd.callproc("search", {
 		{"objid", ctid},
 		{"objkind", objkind},
+                {"origsearch", searchstr},
                 {"field", slavefield},
 		{"value", value} },  res)) {
 	LOGERR("PlgWithSlave::search: slave failure\n");
