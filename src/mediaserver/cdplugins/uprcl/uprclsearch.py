@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+import uprclfolders
+from uprclutils import *
+from recoll import recoll
+
 def _getchar(s, i):
     if i < len(s):
         return i+1,s[i]
@@ -39,6 +43,7 @@ def _readstring(s, i):
     return len(s), str
 
 def upnpsearchtorecoll(s):
+    uplog("upnpsearchtorecoll:in: <%s>" % s)
     s = s.replace('\t', ' ')
     s = s.replace('\n', ' ')
     s = s.replace('\r', ' ')
@@ -97,7 +102,7 @@ def upnpsearchtorecoll(s):
                 # Does not work because OR/AND priorities are reversed
                 # between recoll and upnp. This would be very
                 # difficult to correct, let's hope that the callers
-                # use parenthesese
+                # use parentheses
                 out.append('OR')
             else:
                 if hadDerived:
@@ -111,7 +116,46 @@ def upnpsearchtorecoll(s):
     ostr = ""
     for tok in out:
         ostr += tok + " "
+    uplog("upnpsearchtorecoll:out: <%s>" % ostr)
     return ostr
+
+
+def search(rclconfdir, objid, upnps, idprefix, httphp, pathprefix):
+    rcls = upnpsearchtorecoll(upnps)
+
+    filterdir = uprclfolders.dirpath(objid)
+    rcls += " dir:\"" + filterdir + "\""
+    
+    uplog("Search: recoll search: %s" % rcls)
+
+    rcldb = recoll.connect(confdir=rclconfdir)
+    try:
+        rclq = rcldb.query()
+        rclq.execute(rcls)
+    except Exception as e:
+        uplog("Search: recoll query raised: %s" % e)
+        return []
+    
+    uplog("Estimated query results: %d" % (rclq.rowcount))
+    if rclq.rowcount == 0:
+        return []
+    
+    entries = []
+    maxcnt = 0
+    totcnt = 0
+    while True:
+        docs = rclq.fetchmany()
+        for doc in docs:
+            id = idprefix + '$' + 'seeyoulater'
+            e = rcldoctoentry(id, objid, httphp, pathprefix, doc)
+            entries.append(e)
+            totcnt += 1
+        if (maxcnt > 0 and totcnt >= maxcnt) or len(docs) != rclq.arraysize:
+            break
+    uplog("Search retrieved %d docs" % (totcnt,))
+
+    return entries
+
 
 
 if __name__ == '__main__':

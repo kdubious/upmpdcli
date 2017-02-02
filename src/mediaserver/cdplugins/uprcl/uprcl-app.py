@@ -38,7 +38,7 @@ dispatcher = cmdtalkplugin.Dispatch()
 msgproc = cmdtalkplugin.Processor(dispatcher)
 
 def uprcl_init():
-    global httphp, pathprefix, uprclhost, pathmap
+    global httphp, pathprefix, uprclhost, pathmap, rclconfdir
     
     if "UPMPD_HTTPHOSTPORT" not in os.environ:
         raise Exception("No UPMPD_HTTPHOSTPORT in environment")
@@ -130,28 +130,9 @@ def search(a):
         raise Exception("bad objid [%s]" % objid)
 
     upnps = a['origsearch']
-    rcls = uprclsearch.upnpsearchtorecoll(upnps)
-    uplog("Search: recoll search: %s" % rcls)
+
+    entries = uprclsearch.search(rclconfdir, objid, upnps, g_myprefix, httphp, pathprefix)
     
-    rcldb = recoll.connect(confdir=rclconfdir)
-    rclq = rcldb.query()
-    rclq.execute(rcls)
-    uplog("Estimated query results: %d" % (rclq.rowcount))
-
-    entries = []
-    maxcnt = 0
-    totcnt = 0
-    while True:
-        docs = rclq.fetchmany()
-        for doc in docs:
-            id = g_myprefix + '$' + 'seeyoulater'
-            e = rcldoctoentry(id, objid, httphp, pathprefix, doc)
-            entries.append(e)
-            totcnt += 1
-        if (maxcnt > 0 and totcnt >= maxcnt) or len(docs) != rclq.arraysize:
-            break
-    uplog("Search retrieved %d docs" % (totcnt,))
-
     encoded = json.dumps(entries)
     return {"entries" : encoded}
 
