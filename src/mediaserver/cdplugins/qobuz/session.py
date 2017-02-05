@@ -261,18 +261,37 @@ class Favorites(object):
         self.session = session
 
     def artists(self):
-        r = self.session.api.favorite_getUserFavorites(
-            user_id = self.session.user.id,
-            type = 'artists')
-        #uplog("%s" % r)
-        return [_parse_artist(item) for item in r['artists']['items']]
+        offset = 0
+        artists = []
+        while True:
+            r = self.session.api.favorite_getUserFavorites(
+                user_id = self.session.user.id,
+                type = 'artists', offset=offset, limit=45)
+            #uplog("%s" % r)
+            arts = [_parse_artist(item) for item in r['artists']['items']]
+            artists += arts
+            uplog("Favourite artists: got %d at offs %d"% (len(arts), offset))
+            offset += len(arts)
+            if len(arts) != 45:
+                break
+
+        return artists
 
     def albums(self):
-        r = self.session.api.favorite_getUserFavorites(
-            user_id = self.session.user.id,
-            type = 'albums')
-        #uplog("%s" % r)
-        albums = [_parse_album(item) for item in r['albums']['items']]
+        offset = 0
+        albums = []
+        while True:
+            r = self.session.api.favorite_getUserFavorites(
+                user_id = self.session.user.id,
+                type = 'albums', offset = offset, limit=45)
+            #uplog("%s" % r)
+            albs = [_parse_album(item) for item in r['albums']['items']]
+            albums += albs
+            uplog("Favourite albums: got %d at offset %d"% (len(albs), offset))
+            offset += len(albs)
+            if len(albs) != 45:
+                break
+
         return [alb for alb in albums if alb.available]
 
     def playlists(self):
@@ -280,11 +299,21 @@ class Favorites(object):
         return [_parse_playlist(item) for item in r['playlists']['items']]
 
     def tracks(self):
-        r = self.session.api.favorite_getUserFavorites(
-            user_id = self.session.user.id,
-            type = 'tracks')
-        #uplog("%s" % r)
-        return [_parse_track(item) for item in r['tracks']['items']]
+        offset = 0
+        result = []
+        while True:
+            r = self.session.api.favorite_getUserFavorites(
+                user_id = self.session.user.id,
+                type = 'tracks', offset=offset, limit=45)
+            #uplog("%s" % r)
+            res = [_parse_track(item) for item in r['tracks']['items']]
+            result += res
+            uplog("Favourite tracks: got %d at offs %d"% (len(res), offset))
+            offset += len(res)
+            if len(res) != 45:
+                break
+
+        return [trk for trk in result if trk.available]
 
 
 class User(object):
