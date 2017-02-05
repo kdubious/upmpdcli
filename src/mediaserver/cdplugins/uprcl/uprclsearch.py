@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+import re
+
 import uprclfolders
 from uprclutils import *
 from recoll import recoll
@@ -44,10 +46,8 @@ def _readstring(s, i):
 
 def upnpsearchtorecoll(s):
     uplog("upnpsearchtorecoll:in: <%s>" % s)
-    s = s.replace('\t', ' ')
-    s = s.replace('\n', ' ')
-    s = s.replace('\r', ' ')
-    s = s.replace('\f', ' ')
+
+    s = re.sub('[\t\n\r\f ]+', ' ', s)
 
     out = []
     hadDerived = False
