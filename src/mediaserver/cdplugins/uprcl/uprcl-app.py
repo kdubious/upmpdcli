@@ -23,6 +23,7 @@ import posixpath
 import re
 import conftree
 import cmdtalkplugin
+import urllib
 
 import uprclfolders
 import uprclsearch
@@ -76,7 +77,7 @@ def trackuri(a):
     msgproc.log("trackuri: [%s]" % a)
     if 'path' not in a:
         raise Exception("trackuri: no 'path' in args")
-    path = a['path']
+    path = urllib.quote(a['path'])
     media_url = rclpathtoreal(path, pathprefix, uprclhost, pathmap)
     msgproc.log("trackuri: returning: %s" % media_url)
     return {'media_url' : media_url}
@@ -131,7 +132,8 @@ def search(a):
 
     upnps = a['origsearch']
 
-    entries = uprclsearch.search(rclconfdir, objid, upnps, g_myprefix, httphp, pathprefix)
+    entries = uprclsearch.search(rclconfdir, objid, upnps, g_myprefix,
+                                 httphp, pathprefix)
     
     encoded = json.dumps(entries)
     return {"entries" : encoded}

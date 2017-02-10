@@ -144,40 +144,6 @@ def inittree(confdir):
     g_dirvec = _rcl2folders(g_alldocs, confdir)
 
 
-def _cmpentries(e1, e2):
-    tp1 = e1['tp']
-    tp2 = e2['tp']
-    isct1 = tp1 == 'ct'
-    isct2 = tp2 == 'ct'
-    # Containers come before items, and are sorted in alphabetic order
-    if isct1 and  not isct2:
-        return 1
-    elif not isct1 and isct2:
-        return -1
-    elif isct1 and isct2:
-        tt1 = e1['tt']
-        tt2 = e2['tt']
-        if tt1 < tt2:
-            return -1
-        elif tt1 > tt2:
-            return 1
-        else:
-            return 0
-    # 2 tracks. Sort by album then track number
-    k = 'upnp:album'
-    a1 = e1[k] if k in e1 else ""
-    a2 = e2[k] if k in e2 else ""
-    if a1 < a2:
-        return -1
-    elif a1 > a2:
-        return 1
-
-    k = 'upnp:originalTrackNumber'
-    a1 = e1[k] if k in e1 else "0"
-    a2 = e2[k] if k in e2 else "0"
-    return int(a1) - int(a2)
-
-
 def _objidtodiridx(pid):
     if not pid.startswith(g_myprefix):
         raise Exception("folders.browse: bad pid %s" % pid)
@@ -230,13 +196,21 @@ def browse(pid, flag, httphp, pathprefix):
             if e:
                 entries.append(e)
 
-    return sorted(entries, cmp=_cmpentries)
+    return sorted(entries, cmp=cmpentries)
 
 # return path for objid, which has to be a container. This is good old pwd
 def dirpath(objid):
 
-    diridx = _objidtodiridx(objid)
+    # We may get called from search, on the top dir (above [folders]). Return
+    # empty in this case
+    try:
+        diridx = _objidtodiridx(objid)
+    except:
+        return ""
 
+    if diridx == 0:
+        return "/"
+    
     lpath = []
     while True:
         fathidx = g_dirvec[diridx][".."][0]

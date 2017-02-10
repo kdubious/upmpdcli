@@ -21,29 +21,70 @@ def _readword(s, i):
         w += s[j]
     return j,w
 
-# Called with '"' already read:
-def _readstring(s, i):
-    str = '"'
+# Called with '"' already read.
+
+# Upnp search term strings are double quoted, but we should not take
+# them as recoll phrases. We separate parts which are internally
+# quoted, and become phrases, and lists of words which we interpret as
+# an and search (comma-separated). Internal quotes come backslash-escaped
+def _parsestring(s, i=0):
+    uplog("parseString: input: <%s>" % s[i:])
+    # First change '''"hello \"one phrase\"''' world" into
+    #  '''hello "one phrase" world'''
+    # Note that we can't handle quoted dquotes inside string
+    str = ''
     escape = False
+    instring = False
     for j in range(i, len(s)):
-        #print("s[j] [%s] out now [%s]" % (s[j],out))
-        if s[j] == '\\':
-            if not escape:
-                escape = True
-                str += '\\'
-            continue
+        if instring:
+            if escape:
+                if s[j] == '"':
+                    str += '"'
+                    instring = False
+                else:
+                    str += '\\' + s[j]
+                escape = False
+            else:
+                if s[j] == '\\':
+                    escape = True
+                else:
+                    str += s[j]
 
-        if s[j] == '"':
-            str += '"'
-            if not escape:
-                return j+1, str
         else:
-            str += s[j]
-        
-        escape = False        
+            if escape:
+                str += s[j]
+                escape = False
+                if s[j] == '"':
+                    instring = True
+            else:
+                if s[j] == '\\':
+                    escape = True
+                elif s[j] == '"':
+                    j += 2
+                    break
+                else:
+                    str += s[j]
+                
+    tokens = stringToStrings(str)
+    return j, tokens
 
-    return len(s), str
-
+def _appendterms(out, v, field, oper):
+    uplog("_appendterms: v %s field <%s> oper <%s>" % (v,field,oper))
+    swords = ""
+    phrases = []
+    for w in v:
+        if len(w.split()) == 1:
+            if swords:
+                swords += ","
+            swords += w
+        else:
+            phrases.append(w)
+    out.append(swords)
+    for ph in phrases:
+        out.append(field)
+        out.append(oper)
+        out.append('"' + ph + '"')
+            
 def upnpsearchtorecoll(s):
     uplog("upnpsearchtorecoll:in: <%s>" % s)
 
@@ -52,6 +93,8 @@ def upnpsearchtorecoll(s):
     out = []
     hadDerived = False
     i = 0
+    field = ""
+    oper = ""
     while True:
         i,c = _getchar(s, i)
         if not c:
@@ -67,13 +110,18 @@ def upnpsearchtorecoll(s):
             out = ["mime:*"]
             break
 
-        if c == '(' or c == ')' or c == '>' or c == '<' or c == '=':
+        if c == '(' or c == ')': 
             out.append(c)
+        elif c == '>' or c == '<' or c == '=':
+            oper += c
         else:
             if c == '"':
-                i,w = _readstring(s, i)
-                if not w.endswith('"'):
-                    raise Exception("Unterminated string in [%s]" % out)
+                i,v = _parsestring(s, i)
+                uplog("_parsestring ret: %s" % v)
+                _appendterms(out, v, field, oper)
+                oper = ""
+                field = ""
+                continue
             else:
                 i -= 1
                 i,w = _readword(s, i)
@@ -81,20 +129,25 @@ def upnpsearchtorecoll(s):
             #print("Got word [%s]" % w)
             if w == 'contains':
                 out.append(':')
+                oper = ':'
             elif w == 'doesNotContain':
                 if len(out) < 1:
                     raise Exception("doesNotContain can't be the first word")
                 out.insert(-1, "-")
                 out.append(':')
+                oper = ':'
             elif w == 'derivedFrom':
                 hadDerived = True
                 out.append(':')
+                oper = ':'
             elif w == 'true':
                 out.append('*')
+                oper = ""
             elif w == 'false':
                 out.append('xxxjanzocsduochterrrrm')
             elif w == 'exists':
                 out.append(':')
+                oper = ':'
             elif w == 'and':
                 # Recoll has implied AND, but see next
                 pass
@@ -105,13 +158,9 @@ def upnpsearchtorecoll(s):
                 # use parentheses
                 out.append('OR')
             else:
-                if hadDerived:
-                    hadDerived = False
-                    if len(w) >= 1 and w[-1] == '"':
-                        w = w[:-1] + '*' + '"'
-                    else:
-                        w += '*'
-                out.append(w)
+                field = upnp2rclfields[w]
+                out.append(field)
+                oper = ""
 
     ostr = ""
     for tok in out:
@@ -124,9 +173,10 @@ def search(rclconfdir, objid, upnps, idprefix, httphp, pathprefix):
     rcls = upnpsearchtorecoll(upnps)
 
     filterdir = uprclfolders.dirpath(objid)
-    rcls += " dir:\"" + filterdir + "\""
+    if filterdir and filterdir != "/":
+        rcls += " dir:\"" + filterdir + "\""
     
-    uplog("Search: recoll search: %s" % rcls)
+    uplog("Search: recoll search: <%s>" % rcls)
 
     rcldb = recoll.connect(confdir=rclconfdir)
     try:
@@ -142,19 +192,19 @@ def search(rclconfdir, objid, upnps, idprefix, httphp, pathprefix):
     
     entries = []
     maxcnt = 0
-    totcnt = 0
     while True:
         docs = rclq.fetchmany()
         for doc in docs:
             id = idprefix + '$' + 'seeyoulater'
             e = rcldoctoentry(id, objid, httphp, pathprefix, doc)
-            entries.append(e)
-            totcnt += 1
-        if (maxcnt > 0 and totcnt >= maxcnt) or len(docs) != rclq.arraysize:
+            if e:
+                entries.append(e)
+        if (maxcnt > 0 and len(entries) >= maxcnt) or \
+               len(docs) != rclq.arraysize:
             break
-    uplog("Search retrieved %d docs" % (totcnt,))
+    uplog("Search retrieved %d docs" % (len(entries),))
 
-    return entries
+    return sorted(entries, cmp=cmpentries)
 
 
 

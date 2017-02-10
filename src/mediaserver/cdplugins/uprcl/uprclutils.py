@@ -3,6 +3,7 @@ from __future__ import print_function
 import sys
 import posixpath
 import urllib
+import os
 
 audiomtypes = frozenset([
     'audio/mpeg',
@@ -11,9 +12,20 @@ audiomtypes = frozenset([
     'audio/aac',
     'audio/mp4',
     'audio/x-aiff',
-    'audio/x-wav'
+    'audio/x-wav',
+    'inode/directory'
     ])
 
+upnp2rclfields = {'upnp:album': 'album',
+                  'releasedate' : 'date',
+                  'upnp:originalTrackNumber' : 'tracknumber',
+                  'upnp:artist' : 'artist',
+                  'upnp:genre' : 'genre',
+                  'res:mime' : 'mtype',
+                  'duration' : 'duration',
+                  'res:samplefreq' : 'sample_rate'
+                  }
+    
 def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     """
     Transform a Doc objects into the format expected by the parent
@@ -38,8 +50,8 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
             http://host:port/pathprefix/track?version=1&trackId=<trackid>
     
     """
-    uplog("rcldoctoentry:  pid %s id %s httphp %s pathprefix %s" %
-          (pid, id, httphp, pathprefix))
+    uplog("rcldoctoentry:  pid %s id %s mtype %s" %
+          (pid, id, doc.mtype))
     
     li = {}
     if doc.mtype not in audiomtypes:
@@ -47,7 +59,7 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
 
     li['pid'] = pid
     li['id'] = id
-    li['tp'] = 'it'
+    li['tp'] = 'ct' if doc.mtype == 'inode/directory' else 'it'
     # Why no dc.title??
     li['tt'] = doc.title
 
@@ -72,11 +84,7 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     #lyricist=
     #lyrics=
 
-    for oname,dname in [('upnp:album', 'album'), ('releasedate','date'),
-                        ('upnp:originalTrackNumber', 'tracknumber'),
-                        ('upnp:artist', 'artist'), ('upnp:genre', 'genre'),
-                        ('res:mime', 'mtype'), ('duration', 'duration'),
-                        ('res:samplefreq', 'sample_rate')]:
+    for oname,dname in upnp2rclfields.iteritems():
         val = getattr(doc, dname)
         if val:
             li[oname] = val
@@ -98,6 +106,49 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     uplog("rcldoctoentry: uri: %s" % li['uri'])
     return li
 
+def cmpentries(e1, e2):
+    tp1 = e1['tp']
+    tp2 = e2['tp']
+    isct1 = tp1 == 'ct'
+    isct2 = tp2 == 'ct'
+
+    # Containers come before items, and are sorted in alphabetic order
+    if isct1 and  not isct2:
+        return 1
+    elif not isct1 and isct2:
+        return -1
+    elif isct1 and isct2:
+        tt1 = e1['tt']
+        tt2 = e2['tt']
+        if tt1 < tt2:
+            return -1
+        elif tt1 > tt2:
+            return 1
+        else:
+            return 0
+
+    # Tracks. Sort by album then directory then track number
+    k = 'upnp:album'
+    a1 = e1[k] if k in e1 else ""
+    a2 = e2[k] if k in e2 else ""
+    if a1 < a2:
+        return -1
+    elif a1 > a2:
+        return 1
+
+    d1 = os.path.dirname(e1['uri'])
+    d2 = os.path.dirname(e2['uri'])
+    if d1 < d2:
+        return -1
+    elif d1 > d2:
+        return 1
+    
+    k = 'upnp:originalTrackNumber'
+    a1 = e1[k] if k in e1 else "0"
+    a2 = e2[k] if k in e2 else "0"
+    return int(a1) - int(a2)
+
+
 def rclpathtoreal(path, pathprefix, httphp, pathmap):
     path = path.replace(pathprefix, '', 1)
     found = False
@@ -109,9 +160,10 @@ def rclpathtoreal(path, pathprefix, httphp, pathmap):
         return None
     return "http://" + httphp + path
 
-def rcldirentry(id, pid, title, arturi=None, artist=None, upnpclass=None):
+def rcldirentry(id, pid, title, arturi=None, artist=None, upnpclass=None,
+                searchable='1'):
     """ Create container entry in format expected by parent """
-    ret = {'id':id, 'pid':pid, 'tt':title, 'tp':'ct', 'searchable':'1'}
+    ret = {'id':id, 'pid':pid, 'tt':title, 'tp':'ct', 'searchable':searchable}
     if arturi:
         ret['upnp:albumArtURI'] = arturi
     if artist:
@@ -124,3 +176,70 @@ def rcldirentry(id, pid, title, arturi=None, artist=None, upnpclass=None):
 
 def uplog(s):
     print(("%s: %s" % ('uprcl', s)).encode('utf-8'), file=sys.stderr)
+
+
+# Parse string into (possibly multiword) tokens
+# 'a b "one phrase" c' -> [a, b, 'one phrase', c]
+def stringToStrings(str):
+    # States. Note that ESCAPE can only occur inside INQUOTE
+    SPACE, TOKEN, INQUOTE, ESCAPE = range(4)
+    
+    tokens = []
+    curtok = ""
+    state = SPACE;
+
+    for c in str:
+        if c == '"':
+            if state == SPACE:
+                state = INQUOTE
+            elif state == TOKEN:
+                curtok += '"'
+            elif state == INQUOTE:
+                if curtok:
+                    tokens.append(curtok);
+                curtok = ""
+                state = SPACE
+            elif state == ESCAPE:
+                curtok += '"'
+                state = INQUOTE
+            continue;
+
+        elif c == '\\':
+            if state == SPACE or state == TOKEN:
+                curtok += '\\'
+                state = TOKEN
+            elif state == INQUOTE:
+                state = ESCAPE
+            elif state == ESCAPE:
+                curtok += '\\'
+                state = INQUOTE
+            continue
+
+        elif c == ' ' or c == '\t' or c == '\n' or c == '\r':
+            if state == SPACE or state == TOKEN:
+                if curtok:
+                    tokens.append(curtok)
+                curtok = ""
+                state = SPACE
+            elif state == INQUOTE or state == ESCAPE:
+                curtok += c
+            continue;
+
+        else:
+            if state == ESCAPE:
+                state = INQUOTE
+            elif state == SPACE:
+                state = TOKEN
+            elif state == TOKEN or state == INQUOTE:
+                pass
+            curtok += c
+
+    if state == SPACE:
+        pass
+    elif state == TOKEN:
+        if curtok:
+            tokens.append(curtok)
+    elif state == INQUOTE or state == ESCAPE:
+        raise Exception("Bad string: <" + str + ">")
+
+    return tokens
