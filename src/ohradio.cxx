@@ -215,7 +215,8 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
                 string uri;
                 if (ExecCmd::backtick(radio.artScript, uri)) {
                     trimstring(uri, " \t\r\n");
-                    LOGDEB("OHRadio::makestate: artScript got: [" << uri << "]\n");
+                    LOGDEB("OHRadio::makestate: artScript got: [" << uri <<
+                           "]\n");
                     radio.dynArtUri = uri;
                 }
             }
@@ -417,13 +418,21 @@ static string radioDidlMake(const string& title, const string& uri,
     return out;
 }
 
+// This is called from read, and readlist. Don't send current metadata
+// (including dynamic art and song title) for the current channel,
+// else the radio logo AND name are replaced by the song's in channel
+// selection interfaces. Only send the song metadata with
+// OHRadio::Channel and Info:Metatext
 string OHRadio::metaForId(unsigned int id)
 {
+    LOGDEB1("OHRadio::metaForId: id " << id << " m_id " << m_id << endl);
     string meta;
     if (id >= 0 && id  < o_radios.size()) {
-        if (0 && id == m_id) {
+        if (false && id == m_id) {
+            LOGDEB1("OHRadio::metaForId: using Metatext\n");
             meta = m_state["Metadata"];
         } else {
+            LOGDEB1("OHRadio::metaForId: using list data\n");
             meta = radioDidlMake(o_radios[id].title, o_radios[id].uri, 
                                  o_radios[id].artUri);
         }
