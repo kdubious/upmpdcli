@@ -99,6 +99,7 @@ def upnpsearchtorecoll(s):
         i,c = _getchar(s, i)
         if not c:
             break
+        #uplog("upnpsearchtorecoll: nextchar: <%s>" % c)
 
         if c.isspace():
             continue
@@ -125,8 +126,8 @@ def upnpsearchtorecoll(s):
             else:
                 i -= 1
                 i,w = _readword(s, i)
+                #uplog("_readword returned <%s>" % w)
 
-            #print("Got word [%s]" % w)
             if w == 'contains':
                 out.append(':')
                 oper = ':'
@@ -158,7 +159,10 @@ def upnpsearchtorecoll(s):
                 # use parentheses
                 out.append('OR')
             else:
-                field = upnp2rclfields[w]
+                try:
+                    field = upnp2rclfields[w]
+                except:
+                    field = w
                 out.append(field)
                 oper = ""
 

@@ -40,6 +40,7 @@ def _rcl2folders(docs, confdir):
     rclconf = rclconfig.RclConfig(confdir)
     topdirs = [os.path.expanduser(d) for d in
                shlex.split(rclconf.getConfParam('topdirs'))]
+    topdirs = [d.rstrip('/') for d in topdirs]
 
     dirvec.append({})
     dirvec[0][".."] = (0, -1)
