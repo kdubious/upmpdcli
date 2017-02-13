@@ -1,3 +1,9 @@
+upmpdcli (1.2.13-1) unstable; urgency=low
+
+  * Experimental version: do not use if not talking with me.
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Mon, 13 Feb 2017 17:59:00 +0100
+
 upmpdcli (1.2.12-1) unstable; urgency=low
 
   * Fixed bugs in the content directory interface: prevented Linn Kazoo to
