@@ -213,6 +213,7 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
             if (nsong.compare(m_currentsong)) {
                 m_currentsong = nsong;
                 string uri;
+                radio.dynArtUri.clear();
                 if (ExecCmd::backtick(radio.artScript, uri)) {
                     trimstring(uri, " \t\r\n");
                     LOGDEB("OHRadio::makestate: artScript got: [" << uri <<
@@ -221,7 +222,8 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
                 }
             }
         }
-        mpds.currentsong.artUri = radio.dynArtUri;
+        mpds.currentsong.artUri = radio.dynArtUri.empty() ? radio.artUri :
+            radio.dynArtUri;
 
         string meta = didlmake(mpds.currentsong);
         st["Metadata"] =  meta;

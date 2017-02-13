@@ -54,6 +54,7 @@ private:
                      std::string& bitdepth, std::string& samplerate);
 
     std::string m_metatext;
+    int m_metatextcnt{0};
     OHPlaylist *m_ohpl;
 };
 

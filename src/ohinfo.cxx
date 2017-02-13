@@ -61,12 +61,19 @@ void OHInfo::urimetadata(string& uri, string& metadata)
 
     if (is_song) {
         uri = mpds.currentsong.uri;
-        // Prefer metadata from cache (copy from media server) to
-        // whatever comes from mpd
-        if (m_ohpl && m_ohpl->cacheFind(uri, metadata)) {
-            return;
+        // If somebody (e.g. ohradio) took care to set the metatext, use it.
+        // Metatext is reset by OHProduct::setSourceIndex.
+        if (!m_metatext.empty()) {
+            metadata = m_metatext;
+        } else {
+            // Playlist or AVTransport playing, probably.
+            // Prefer metadata from cache (copy from media server) to
+            // whatever comes from mpd.
+            if (m_ohpl && m_ohpl->cacheFind(uri, metadata)) {
+                return;
+            }
+            metadata = didlmake(mpds.currentsong);
         }
-        metadata = didlmake(mpds.currentsong);
     } else {
         uri.clear();
         metadata.clear();
@@ -99,7 +106,7 @@ bool OHInfo::makestate(unordered_map<string, string> &st)
                                      m_dev->m_mpds->trackcounter : 0);
     st["DetailsCount"] = SoapHelp::i2s(m_dev->m_mpds ? 
                                        m_dev->m_mpds->detailscounter : 0);
-    st["MetatextCount"] = "0";
+    st["MetatextCount"] = SoapHelp::i2s(m_metatextcnt);
     string uri, metadata;
     urimetadata(uri, metadata);
     st["Uri"] = uri;
@@ -119,7 +126,7 @@ int OHInfo::counters(const SoapIncoming& sc, SoapOutgoing& data)
                                             m_dev->m_mpds->trackcounter : 0));
     data.addarg("DetailsCount", SoapHelp::i2s(m_dev->m_mpds ?
                                               m_dev->m_mpds->detailscounter:0));
-    data.addarg("MetatextCount", "0");
+    data.addarg("MetatextCount", SoapHelp::i2s(m_metatextcnt));
     return UPNP_E_SUCCESS;
 }
 
@@ -159,5 +166,8 @@ int OHInfo::metatext(const SoapIncoming& sc, SoapOutgoing& data)
 void OHInfo::setMetatext(const string& metatext)
 {
     //LOGDEB1("OHInfo::setMetatext: " << metatext << endl);
-    m_metatext = metatext;
+    if (metatext.compare(m_metatext)) {
+        m_metatext = metatext;
+        m_metatextcnt++;
+    }
 }
