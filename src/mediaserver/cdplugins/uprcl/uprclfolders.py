@@ -124,7 +124,7 @@ def _fetchalldocs(confdir):
     rclq.execute("mime:*", stemming=0)
     uplog("Estimated alldocs query results: %d" % (rclq.rowcount))
 
-    maxcnt = 0
+    maxcnt = 2000
     totcnt = 0
     while True:
         docs = rclq.fetchmany()
@@ -143,7 +143,7 @@ def inittree(confdir):
     
     g_alldocs = _fetchalldocs(confdir)
     g_dirvec = _rcl2folders(g_alldocs, confdir)
-
+    return g_alldocs
 
 def _objidtodiridx(pid):
     if not pid.startswith(g_myprefix):
@@ -165,6 +165,8 @@ def _objidtodiridx(pid):
 
     return diridx
 
+def rootentries(pid):
+    return [rcldirentry(pid + 'folders', pid, '[folders]'),]
 
 # Browse method
 # objid is like folders$index
@@ -192,7 +194,7 @@ def browse(pid, flag, httphp, pathprefix):
                 uplog("folders:docidx -1 for non-dir entry %s"%nm)
                 continue
             doc = g_alldocs[thisdocidx]
-            id = g_myprefix + '$' + 'i' + str(thisdocidx)
+            id = g_myprefix + '$i' + str(thisdocidx)
             e = rcldoctoentry(id, pid, httphp, pathprefix, doc)
             if e:
                 entries.append(e)

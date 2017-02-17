@@ -26,12 +26,18 @@ import cmdtalkplugin
 import urllib
 
 import uprclfolders
+import uprcltags
 import uprclsearch
 from uprclutils import *
 
 from recoll import recoll
 from recoll import rclconfig
-g_myprefix = '0$uprcl$folders'
+
+# This must be consistent with what contentdirectory.cxx does
+g_myprefix = '0$uprcl$'
+
+# The recoll documents
+g_rcldocs = []
 
 # Func name to method mapper
 dispatcher = cmdtalkplugin.Dispatch()
@@ -39,7 +45,7 @@ dispatcher = cmdtalkplugin.Dispatch()
 msgproc = cmdtalkplugin.Processor(dispatcher)
 
 def uprcl_init():
-    global httphp, pathprefix, uprclhost, pathmap, rclconfdir
+    global httphp, pathprefix, uprclhost, pathmap, rclconfdir, g_rcldocs
     
     if "UPMPD_HTTPHOSTPORT" not in os.environ:
         raise Exception("No UPMPD_HTTPHOSTPORT in environment")
@@ -69,8 +75,8 @@ def uprcl_init():
     if rclconfdir is None:
         raise Exception("uprclconfdir not in config")
 
-    uprclfolders.inittree(rclconfdir)
-
+    g_rcldocs = uprclfolders.inittree(rclconfdir)
+    uprcltags.recolltosql(g_rcldocs)
 
 @dispatcher.record('trackuri')
 def trackuri(a):
@@ -82,41 +88,61 @@ def trackuri(a):
     msgproc.log("trackuri: returning: %s" % media_url)
     return {'media_url' : media_url}
 
+# objid prefix to module map
+rootmap = {}
+
+def _rootentries():
+    # Build up root directory. This is our top internal structure. We
+    # let the different modules return their stuff, and we take note
+    # of the objid prefixes for later dispatching
+    entries = []
+    nents = uprclfolders.rootentries(g_myprefix)
+    for e in nents:
+        rootmap[e['id']] = 'folders'
+    entries += nents
+
+    nents = uprcltags.rootentries(g_myprefix)
+    for e in nents:
+        rootmap[e['id']] = 'tags'
+    entries += nents
+    uplog("Browse root: rootmap now %s" % rootmap)
+    return entries
+
+def _browsedispatch(objid, bflg, httphp, pathprefix):
+    for id,mod in rootmap.iteritems():
+        uplog("Testing %s against %s" % (objid, id))
+        if objid.startswith(id):
+            if mod == 'folders':
+                return uprclfolders.browse(objid, bflg, httphp, pathprefix)
+            elif mod == 'tags':
+                return uprcltags.browse(objid, bflg, httphp, pathprefix)
+            else:
+                raise Exception("Browse: dispatch: bad mod " + mod)
+    raise Exception("Browse: dispatch: bad objid not in rootmap" + objid)
 
 @dispatcher.record('browse')
 def browse(a):
-    msgproc.log("browse: [%s]" % a)
+    msgproc.log("browse: %s" % a)
     if 'objid' not in a:
         raise Exception("No objid in args")
     objid = a['objid']
     bflg = a['flag'] if 'flag' in a else 'children'
     
-    if re.match('0\$uprcl\$', objid) is None:
-        raise Exception("bad objid [%s]" % objid)
+    if not objid.startswith(g_myprefix):
+        raise Exception("bad objid <%s>" % objid)
 
-    idpath = objid.replace('0$uprcl$', '', 1)
-    msgproc.log("browse: idpath: %s" % idpath)
+    idpath = objid.replace(g_myprefix, '', 1)
+    msgproc.log("browse: idpath: <%s>" % idpath)
 
     entries = []
 
     if bflg == 'meta':
-        m = re.match('.*\$(.+)$', idpath)
-        if m:
-            trackid = m.group(1)
-            # get doc from trackid or whatever
-            doc = {}
-            entries += trackentries(httphp, pathprefix, objid, [])
+        raise Exception("uprcl-app: browse: can't browse meta for now")
     else:
         if not idpath:
-            # Build up root directory. No external data needed, this is our
-            # top internal structure
-            entries.append(rcldirentry('0$uprcl$' + 'folders', '0$uprcl$',
-                                        '[folders]'))
-        elif idpath.startswith("folders"):
-            entries = uprclfolders.browse(objid, bflg, httphp, pathprefix)
+            entries = _rootentries()
         else:
-            pass
-
+            entries = _browsedispatch(objid, bflg, httphp, pathprefix)
 
     #msgproc.log("%s" % entries)
     encoded = json.dumps(entries)

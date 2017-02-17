@@ -16,15 +16,25 @@ audiomtypes = frozenset([
     'inode/directory'
     ])
 
-upnp2rclfields = {'upnp:album': 'album',
-                  'releasedate' : 'date',
-                  'upnp:originalTrackNumber' : 'tracknumber',
-                  'upnp:artist' : 'artist',
-                  'upnp:genre' : 'genre',
-                  'res:mime' : 'mtype',
-                  'duration' : 'duration',
-                  'res:samplefreq' : 'sample_rate'
-                  }
+# Correspondance between Recoll field names (on the right), defined by
+# rclaudio and the Recoll configuration 'fields' file, and what
+# plgwithslave.cxx expects, which is less than consistent.
+upnp2rclfields = {
+    'dc:creator' : '?',
+    'upnp:genre' : 'genre',
+    'upnp:album': 'album',
+    'upnp:originalTrackNumber' : 'tracknumber',
+    'res:mime' : 'mtype',
+    'res:samplefreq' : 'sample_rate',
+    'res:channels' : 'channels',
+    'res:bitrate' : 'bitrate',
+    'duration' : 'duration',
+    'upnp:artist' : 'artist',
+    'dc:date' : 'date',
+    'tt' : 'title',
+    'composer' : 'composer',
+    'conductor' : 'conductor'
+    }
     
 def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     """
@@ -59,19 +69,21 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
 
     li['pid'] = pid
     li['id'] = id
-    li['tp'] = 'ct' if doc.mtype == 'inode/directory' else 'it'
-    # Why no dc.title??
-    li['tt'] = doc.title
+    if doc.mtype == 'inode/directory':
+        li['tp'] = 'ct'
+        li['upnp:class'] = 'object.container'
+    else:
+        li['tp']= 'it'
+        # TBD
+        li['upnp:class'] = 'object.item.audioItem.musicTrack'
 
-    # TBD
-    li['upnp:class'] = 'object.item.audioItem.musicTrack'
+    for oname,dname in upnp2rclfields.iteritems():
+        val = getattr(doc, dname)
+        if val:
+            li[oname] = val
 
     # TBD Date format ?
     # !! Albumart will have to come from somewhere else !
-    # li['upnp:class'] = doc.upnpclass
-    #li['res:channels'] =
-    #li['res:size'] =
-    #li['res:bitrate'] = 
     ###     #if doc.albumarturi:
     ###        #li['upnp:albumArtURI'] = track.album.image
     ### li['discnumber'] = str(track.disc_num)
@@ -84,10 +96,6 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     #lyricist=
     #lyrics=
 
-    for oname,dname in upnp2rclfields.iteritems():
-        val = getattr(doc, dname)
-        if val:
-            li[oname] = val
 
     try:
         val = li['upnp:originalTrackNumber']
@@ -105,6 +113,11 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     li['uri'] = "http://%s%s" % (httphp, urllib.quote(path))
     uplog("rcldoctoentry: uri: %s" % li['uri'])
     return li
+
+def docfolder(doc):
+    path = doc.getbinurl()
+    path = path[7:]
+    return os.path.dirname(path)
 
 def cmpentries(e1, e2):
     tp1 = e1['tp']
