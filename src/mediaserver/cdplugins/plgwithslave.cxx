@@ -286,6 +286,18 @@ PlgWithSlave::~PlgWithSlave()
     delete m;
 }
 
+static void catstring(string& dest, const string& s2)
+{
+    if (s2.empty()) {
+        return;
+    }
+    if (dest.empty()) {
+        dest = s2;
+    } else {
+        dest += string(" ") + s2;
+    }
+}
+
 static int resultToEntries(const string& encoded, int stidx, int cnt,
                            vector<UpSong>& entries)
 {
@@ -297,7 +309,8 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
     bool dolimit = cnt > 0;
     
     for (unsigned int i = stidx; i < decoded.size(); i++) {
-#define JSONTOUPS(fld, nm) {song.fld = decoded[i].get(#nm, "").asString();}
+#define JSONTOUPS(fld, nm) {catstring(song.fld, \
+                                      decoded[i].get(#nm, "").asString());}
         if (dolimit && --cnt < 0) {
             break;
         }
@@ -324,13 +337,26 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
             JSONTOUPS(album, upnp:album);
             JSONTOUPS(tracknum, upnp:originalTrackNumber);
             JSONTOUPS(mime, res:mime);
-            string srate = decoded[i].get("res:samplefreq", "").asString();
-            if (!srate.empty()) {
-                song.samplefreq = atoi(srate.c_str());
+
+            string ss = decoded[i].get("duration", "").asString();
+            if (!ss.empty()) {
+                song.duration_secs = atoi(ss.c_str());
             }
-            string sdur = decoded[i].get("duration", "").asString();
-            if (!sdur.empty()) {
-                song.duration_secs = atoi(sdur.c_str());
+            ss = decoded[i].get("res:size", "").asString();
+            if (!ss.empty()) {
+                song.size = atoll(ss.c_str());
+            }
+            ss = decoded[i].get("res:bitrate", "").asString();
+            if (!ss.empty()) {
+                song.bitrate = atoi(ss.c_str());
+            }
+            ss = decoded[i].get("res:samplefreq", "").asString();
+            if (!ss.empty()) {
+                song.samplefreq = atoi(ss.c_str());
+            }
+            ss = decoded[i].get("res:channels", "").asString();
+            if (!ss.empty()) {
+                song.channels = atoi(ss.c_str());
             }
         } else {
             LOGERR("PlgWithSlave::result: bad type in entry: " << stp <<
