@@ -20,20 +20,21 @@ audiomtypes = frozenset([
 # rclaudio and the Recoll configuration 'fields' file, and what
 # plgwithslave.cxx expects, which is less than consistent.
 upnp2rclfields = {
-    'dc:creator' : '?',
-    'upnp:genre' : 'genre',
-    'upnp:album': 'album',
-    'upnp:originalTrackNumber' : 'tracknumber',
+    'composer' : 'composer',
+    'conductor' : 'conductor',
+#    'dc:creator' : 'artist',
+    'dc:date' : 'date',
+    'duration' : 'duration',
+    'res:bitrate' : 'bitrate',
+    'res:channels' : 'channels',
     'res:mime' : 'mtype',
     'res:samplefreq' : 'sample_rate',
-    'res:channels' : 'channels',
-    'res:bitrate' : 'bitrate',
-    'duration' : 'duration',
-    'upnp:artist' : 'artist',
-    'dc:date' : 'date',
+    'res:size' : 'fbytes',
     'tt' : 'title',
-    'composer' : 'composer',
-    'conductor' : 'conductor'
+    'upnp:album': 'album',
+    'upnp:artist' : 'artist',
+    'upnp:genre' : 'genre',
+    'upnp:originalTrackNumber' : 'tracknumber',
     }
     
 def rcldoctoentry(id, pid, httphp, pathprefix, doc):

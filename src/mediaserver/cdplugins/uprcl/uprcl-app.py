@@ -96,15 +96,17 @@ def _rootentries():
     # let the different modules return their stuff, and we take note
     # of the objid prefixes for later dispatching
     entries = []
-    nents = uprclfolders.rootentries(g_myprefix)
-    for e in nents:
-        rootmap[e['id']] = 'folders'
-    entries += nents
 
     nents = uprcltags.rootentries(g_myprefix)
     for e in nents:
         rootmap[e['id']] = 'tags'
     entries += nents
+
+    nents = uprclfolders.rootentries(g_myprefix)
+    for e in nents:
+        rootmap[e['id']] = 'folders'
+    entries += nents
+
     uplog("Browse root: rootmap now %s" % rootmap)
     return entries
 

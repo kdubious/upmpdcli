@@ -26,7 +26,8 @@ g_myprefix = '0$uprcl$folders'
 # the doc index (j) is 0. The dir index points normally to a dirvec
 # entry.
 
-# Create new directory entry: insert in father and append dirvec slot (with ".." entry)
+# Create new directory entry: insert in father and append dirvec slot
+# (with ".." entry)
 def _createdir(dirvec, fathidx, docidx, nm):
     dirvec.append({})
     dirvec[fathidx][nm] = (len(dirvec) - 1, docidx)
