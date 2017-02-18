@@ -30,9 +30,7 @@ namespace UPnPClient {
 // to general purpose track/container descriptor
 class UpSong {
 public:
-    UpSong()
-	: duration_secs(0), bitrate(0), samplefreq(0), mpdid(0),
-	  iscontainer(false), searchable(false) {
+    UpSong() {
     }
     void clear() {
 	*this = UpSong();
@@ -48,15 +46,17 @@ public:
     std::string genre;
     std::string artUri;
     std::string upnpClass;
-    std::string mime;
+    std::string mime{"audio/mpeg"};
     
-    unsigned int duration_secs;
-    unsigned int bitrate;
-    unsigned int samplefreq;
+    int duration_secs{0};
+    int64_t size{0};
+    int bitrate{192000};
+    int samplefreq{44100};
+    int channels{2};
     
-    int mpdid;
-    bool iscontainer;
-    bool searchable;
+    int mpdid{0};
+    bool iscontainer{false};
+    bool searchable{false};
 
     std::string dump() {
         return std::string("class [" + upnpClass + "] Artist [" + artist +

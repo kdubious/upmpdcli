@@ -161,14 +161,13 @@ string UpSong::didl()
 	UPNPXML(album, upnp:album);
 	UPNPXML(tracknum, upnp:originalTrackNumber);
 
-        string sfs = SoapHelp::i2s((samplefreq == 0 ? 44100 : samplefreq));
-        string lmime((mime.empty() ? "audio/mpeg" : mime));
-            
 	ss << "<res " <<
             "duration=\"" << upnpduration(duration_secs * 1000)  << "\" " <<
-	    "sampleFrequency=\"" << sfs << "\" " <<
-            "audioChannels=\"2\" " <<
-	    "protocolInfo=\"http-get:*:" << lmime << ":*\"" << ">" <<
+            "size=\"" << lltodecstr(size)                        << "\" " <<
+            "bitrate=\"" << SoapHelp::i2s(bitrate)               << "\" " <<
+	    "sampleFrequency=\"" << SoapHelp::i2s(samplefreq)    << "\" " <<
+            "nrAudioChannels=\"" << SoapHelp::i2s(channels)      << "\" " <<
+	    "protocolInfo=\"http-get:*:" << mime << ":* "        << "\" >"<<
             SoapHelp::xmlQuote(uri) <<
             "</res>";
     }
@@ -176,6 +175,7 @@ string UpSong::didl()
     UPNPXML(artist, upnp:artist);
     UPNPXML(artUri, upnp:albumArtURI);
     ss << "</" << typetag << ">";
+    LOGDEB("UpSong::didl(): " << ss.str() << endl);
     return ss.str();
 }
 
