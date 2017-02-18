@@ -125,7 +125,7 @@ def _fetchalldocs(confdir):
     rclq.execute("mime:*", stemming=0)
     uplog("Estimated alldocs query results: %d" % (rclq.rowcount))
 
-    maxcnt = 2000
+    maxcnt = 0
     totcnt = 0
     while True:
         docs = rclq.fetchmany()

@@ -27,6 +27,7 @@ import urllib
 
 import uprclfolders
 import uprcltags
+import uprcluntagged
 import uprclsearch
 from uprclutils import *
 
@@ -77,6 +78,7 @@ def uprcl_init():
 
     g_rcldocs = uprclfolders.inittree(rclconfdir)
     uprcltags.recolltosql(g_rcldocs)
+    uprcluntagged.recoll2untagged(g_rcldocs)
 
 @dispatcher.record('trackuri')
 def trackuri(a):
@@ -102,6 +104,11 @@ def _rootentries():
         rootmap[e['id']] = 'tags'
     entries += nents
 
+    nents = uprcluntagged.rootentries(g_myprefix)
+    for e in nents:
+        rootmap[e['id']] = 'untagged'
+    entries += nents
+
     nents = uprclfolders.rootentries(g_myprefix)
     for e in nents:
         rootmap[e['id']] = 'folders'
@@ -118,6 +125,8 @@ def _browsedispatch(objid, bflg, httphp, pathprefix):
                 return uprclfolders.browse(objid, bflg, httphp, pathprefix)
             elif mod == 'tags':
                 return uprcltags.browse(objid, bflg, httphp, pathprefix)
+            elif mod == 'untagged':
+                return uprcluntagged.browse(objid, bflg, httphp, pathprefix)
             else:
                 raise Exception("Browse: dispatch: bad mod " + mod)
     raise Exception("Browse: dispatch: bad objid not in rootmap" + objid)

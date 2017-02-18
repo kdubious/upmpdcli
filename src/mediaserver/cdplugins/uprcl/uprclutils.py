@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import sys
-import posixpath
 import urllib
 import os
 
@@ -110,8 +109,12 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     # parent process to match urls to plugins)
     path = doc.getbinurl()
     path = path[7:]
+    if 'tt' not in li:
+        li['tt'] = os.path.basename(path.decode('UTF-8', errors = 'replace'))
+
     path = pathprefix + path
     li['uri'] = "http://%s%s" % (httphp, urllib.quote(path))
+
     uplog("rcldoctoentry: uri: %s" % li['uri'])
     return li
 
