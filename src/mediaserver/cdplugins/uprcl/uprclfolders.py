@@ -11,6 +11,8 @@ from recoll import rclconfig
 
 g_myprefix = '0$uprcl$folders'
 
+# Debug : limit processed recoll entries for speed
+g_maxrecollcnt = 5000
 
 # Internal init: create the directory tree (folders view) from the doc
 # array by splitting the url in each doc.
@@ -55,6 +57,14 @@ def _rcl2folders(docs, confdir):
     # entry
     for docidx in range(len(docs)):
         doc = docs[docidx]
+
+        # No need to include non-audio types in the visible
+        # tree.
+        # TBD: We'll have to do some processing on image types though
+        # (will go before these lines)
+        if doc.mtype not in audiomtypes:
+            continue
+
         url = doc.getbinurl()
         url = url[7:]
         try:
@@ -78,6 +88,14 @@ def _rcl2folders(docs, confdir):
         if len(url1) == 0:
             continue
 
+        # If there is a contentgroup field, just add it as a virtual
+        # directory in the path. This only affects the visible tree,
+        # not the 'real' URLs of course.
+        if doc.contentgroup:
+            a = os.path.dirname(url1).decode('utf-8', errors='replace')
+            b = os.path.basename(url1).decode('utf-8', errors='replace')
+            url1 = os.path.join(a, doc.contentgroup, b)
+            
         # Split path, then walk the vector, possibly creating
         # directory entries as needed
         path = url1.split('/')[1:]
@@ -125,14 +143,14 @@ def _fetchalldocs(confdir):
     rclq.execute("mime:*", stemming=0)
     uplog("Estimated alldocs query results: %d" % (rclq.rowcount))
 
-    maxcnt = 0
     totcnt = 0
     while True:
         docs = rclq.fetchmany()
         for doc in docs:
             allthedocs.append(doc)
             totcnt += 1
-        if (maxcnt > 0 and totcnt >= maxcnt) or len(docs) != rclq.arraysize:
+        if (g_maxrecollcnt > 0 and totcnt >= g_maxrecollcnt) or \
+               len(docs) != rclq.arraysize:
             break
     uplog("Retrieved %d docs" % (totcnt,))
     return allthedocs
@@ -176,6 +194,12 @@ def browse(pid, flag, httphp, pathprefix):
 
     diridx = _objidtodiridx(pid)
 
+    # If there is only one entry in root, skip it. This means that 0
+    # and 1 point to the same dir, but this does not seem to be an
+    # issue
+    if diridx == 0 and len(dirvec[0]) == 2:
+        diridx = 1
+        
     entries = []
 
     # The basename call is just for diridx==0 (topdirs). Remove it if
@@ -187,6 +211,9 @@ def browse(pid, flag, httphp, pathprefix):
         thisdiridx = ids[0]
         thisdocidx = ids[1]
         if thisdiridx >= 0:
+            # Skip empty directories
+            if len(dirvec[thisdiridx]) == 1:
+                continue
             id = g_myprefix + '$' + 'd' + str(thisdiridx)
             entries.append(rcldirentry(id, pid, os.path.basename(nm)))
         else:

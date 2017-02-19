@@ -19,20 +19,20 @@ audiomtypes = frozenset([
 # rclaudio and the Recoll configuration 'fields' file, and what
 # plgwithslave.cxx expects, which is less than consistent.
 upnp2rclfields = {
+    'upnp:album': 'album',
+    'upnp:artist' : 'artist',
+    'comment' : 'comment',
     'composer' : 'composer',
     'conductor' : 'conductor',
-#    'dc:creator' : 'artist',
     'dc:date' : 'date',
-    'duration' : 'duration',
+    'upnp:genre' : 'genre',
+    'duration' : 'duration', #should be res:
     'res:bitrate' : 'bitrate',
     'res:channels' : 'channels',
     'res:mime' : 'mtype',
     'res:samplefreq' : 'sample_rate',
     'res:size' : 'fbytes',
     'tt' : 'title',
-    'upnp:album': 'album',
-    'upnp:artist' : 'artist',
-    'upnp:genre' : 'genre',
     'upnp:originalTrackNumber' : 'tracknumber',
     }
     
@@ -137,9 +137,9 @@ def cmpentries(e1, e2):
     elif isct1 and isct2:
         tt1 = e1['tt']
         tt2 = e2['tt']
-        if tt1 < tt2:
+        if tt1.lower() < tt2.lower():
             return -1
-        elif tt1 > tt2:
+        elif tt1.lower() > tt2.lower():
             return 1
         else:
             return 0

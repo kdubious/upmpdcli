@@ -175,7 +175,7 @@ string UpSong::didl()
     UPNPXML(artist, upnp:artist);
     UPNPXML(artUri, upnp:albumArtURI);
     ss << "</" << typetag << ">";
-    LOGDEB("UpSong::didl(): " << ss.str() << endl);
+    LOGDEB1("UpSong::didl(): " << ss.str() << endl);
     return ss.str();
 }
 
