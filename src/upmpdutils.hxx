@@ -46,7 +46,7 @@ public:
     std::string genre;
     std::string artUri;
     std::string upnpClass;
-    std::string mime{"audio/mpeg"};
+    std::string mime;
     
     int duration_secs{0};
     int64_t size{0};
