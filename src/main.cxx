@@ -101,7 +101,7 @@ static const char usage[] =
 //   (this is not used in normal situations, just edit the config
 //   instead!)
 // - -m 2, MSOnly Media Server only, this is for the process forked/execed
-//   by a main Renderer process.
+//   by a main Renderer process, or a standalone Media Server.
 // - -m 3, Combined: for the main process: implement the Media Server
 //   as an embedded device. This works just fine with, for example,
 //   upplay, but confuses most of the other Control Points.
@@ -416,6 +416,13 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (msmode == MSOnly && !enableMediaServer) {
+        cerr << "Pure Media Server mode requested, but this is "
+            "disabled by the configuration or by absent Media Server "
+            "modules.\n";
+        return 1;
+    }
+
     if (Logger::getTheLog(logfilename) == 0) {
         cerr << "Can't initialize log" << endl;
         return 1;
@@ -455,7 +462,7 @@ int main(int argc, char *argv[])
     }
 
     string& mcfn = opts.cachefn;
-    // no cache access needed or desirable for a pure media renderer
+    // no cache access needed or desirable for a pure media server
     if (!msonly && ohmetapersist) {
         opts.cachefn = path_cat(cachedir, "/metacache");
         if (!path_makepath(cachedir, 0755)) {
@@ -555,28 +562,31 @@ int main(int argc, char *argv[])
 
     // Initialize MPD client object. Retry until it works or power fail.
     MPDCli *mpdclip = 0;
-    int mpdretrysecs = 2;
-    for (;;) {
-        mpdclip = new MPDCli(mpdhost, mpdport, mpdpassword);
-        if (mpdclip == 0) {
-            LOGFAT("Can't allocate MPD client object" << endl);
-            return 1;
+    bool enableL16 = false;
+    if (!msonly) {
+        int mpdretrysecs = 2;
+        for (;;) {
+            mpdclip = new MPDCli(mpdhost, mpdport, mpdpassword);
+            if (mpdclip == 0) {
+                LOGFAT("Can't allocate MPD client object" << endl);
+                return 1;
+            }
+            if (!mpdclip->ok()) {
+                LOGERR("MPD connection failed" << endl);
+                delete mpdclip;
+                mpdclip = 0;
+                sleep(mpdretrysecs);
+                mpdretrysecs = MIN(2*mpdretrysecs, 120);
+            } else {
+                break;
+            }
         }
-        if (!mpdclip->ok()) {
-            LOGERR("MPD connection failed" << endl);
-            delete mpdclip;
-            mpdclip = 0;
-            sleep(mpdretrysecs);
-            mpdretrysecs = MIN(2*mpdretrysecs, 120);
-        } else {
-            break;
-        }
+        const MpdStatus& mpdstat = mpdclip->getStatus();
+        // Only the "special" upmpdcli 0.19.16 version has patch != 0
+        enableL16 = mpdstat.versmajor >= 1 || mpdstat.versminor >= 20 ||
+            mpdstat.verspatch >= 16; 
     }
-
-    const MpdStatus& mpdstat = mpdclip->getStatus();
-    // Only the "special" upmpdcli 0.19.16 version has patch != 0
-    bool enableL16 = mpdstat.versmajor >= 1 || mpdstat.versminor >= 20 ||
-        mpdstat.verspatch >= 16; 
+    
         
     // Initialize libupnpp, and check health
     LibUPnP *mylib = 0;
