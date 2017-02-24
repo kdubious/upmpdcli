@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (C) 2016 J.F.Dockes
+# Copyright (C) 2017 J.F.Dockes
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import print_function
 import sys
 import os
 import json
@@ -24,11 +23,13 @@ import re
 import conftree
 import cmdtalkplugin
 import urllib
+import threading
 
 import uprclfolders
 import uprcltags
 import uprcluntagged
 import uprclsearch
+import uprclhttp
 from uprclutils import *
 
 from recoll import recoll
@@ -46,7 +47,7 @@ dispatcher = cmdtalkplugin.Dispatch()
 msgproc = cmdtalkplugin.Processor(dispatcher)
 
 def uprcl_init():
-    global httphp, pathprefix, uprclhost, pathmap, rclconfdir, g_rcldocs
+    global httphp, pathprefix, uprclhostport, pathmap, rclconfdir, g_rcldocs
     
     if "UPMPD_HTTPHOSTPORT" not in os.environ:
         raise Exception("No UPMPD_HTTPHOSTPORT in environment")
@@ -58,8 +59,8 @@ def uprcl_init():
         raise Exception("No UPMPD_CONFIG in environment")
     upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
 
-    uprclhost = upconfig.get("uprclhost")
-    if uprclhost is None:
+    uprclhostport = upconfig.get("uprclhostport")
+    if uprclhostport is None:
         raise Exception("uprclhost not in config")
 
     pthstr = upconfig.get("uprclpaths")
@@ -80,13 +81,20 @@ def uprcl_init():
     uprcltags.recolltosql(g_rcldocs)
     uprcluntagged.recoll2untagged(g_rcldocs)
 
+    host,port = uprclhostport.split(':')
+    httpthread = threading.Thread(target=uprclhttp.runHttp,
+                                  kwargs = {'host':host , 'port':int(port),
+                                            'pathmap':pathmap})
+    httpthread.daemon = True 
+    httpthread.start()
+
 @dispatcher.record('trackuri')
 def trackuri(a):
     msgproc.log("trackuri: [%s]" % a)
     if 'path' not in a:
         raise Exception("trackuri: no 'path' in args")
     path = urllib.quote(a['path'])
-    media_url = rclpathtoreal(path, pathprefix, uprclhost, pathmap)
+    media_url = rclpathtoreal(path, pathprefix, uprclhostport, pathmap)
     msgproc.log("trackuri: returning: %s" % media_url)
     return {'media_url' : media_url}
 

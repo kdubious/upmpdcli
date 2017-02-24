@@ -1,4 +1,18 @@
-from __future__ import print_function
+#
+# Copyright (C) 2017 J.F.Dockes
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 import sqlite3
@@ -189,8 +203,7 @@ def rootentries(pid):
 
 # Check what tags still have multiple values inside the selected set,
 # and return their list.
-def subtreetags(sqconn, recs):
-    docids = ','.join([str(r[0]) for r in recs])
+def subtreetags(sqconn, docids):
     uplog("subtreetags, docids %s" % docids)
     c1 = sqconn.cursor()
     tags = []
@@ -206,7 +219,15 @@ def subtreetags(sqconn, recs):
                 tags.append(tt)
     return tags
 
-def subtreealbums(sqconn, recs):
+def subtreealbums(sqconn, docids):
+    c1 = sqconn.cursor()
+    albids = []
+    stmt = 'SELECT album_id from tracks where docidx IN (' + docids + ') ' + \
+           'GROUP BY album_id'
+    c1.execute(stmt)
+    for r in c1:
+        albids.append(r[0])
+    return albids
     
 # Main browsing routine. Given an objid, translate it into a select
 # statement, plus further processing, and return the corresponding
@@ -222,6 +243,11 @@ def seltagsbrowse(pid, qpath, flag, httphp, pathprefix):
         elt = qpath[i]
         if elt.startswith('='):
             col = tagtables[elt[1:]] 
+
+        #detect the special values albums items etc. here. Their
+        #presence changes how we process the rest (showing tracks and
+       #albums and not dealing with other tags any more
+
         selwhere = selwhere + ' AND ' if selwhere else ' WHERE '
         if i == qlen - 1:
             # We want to display all unique values for the column
@@ -249,7 +275,18 @@ def seltagsbrowse(pid, qpath, flag, httphp, pathprefix):
         uplog("seltagsbrowse: executing <%s> values %s" % (stmt, values))
         c.execute(stmt, values)
         recs = c.fetchall()
-        subqs = subtreetags(sqconn, recs)
+        docids = ','.join([str(r[0]) for r in recs])
+        albids = subtreealbums(sqconn, docids)
+        if len(albids) > 1:
+            id = pid + '$albums'
+            entries.append(rcldirentry(id, pid, str(len(albids)) + ' albums'))
+            id = pid + '$items'
+            entries.append(rcldirentry(id, pid, str(len(recs)) + ' items'))
+        elif len(albids) == 1:
+            id = pid + '$items'
+            entries.append(rcldirentry(id, pid, str(len(recs)) + ' items'))
+
+        subqs = subtreetags(sqconn, docids)
         if not subqs:
             for r in recs:
                 docidx = r[0]
