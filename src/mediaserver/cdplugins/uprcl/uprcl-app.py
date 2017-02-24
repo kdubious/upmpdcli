@@ -47,11 +47,8 @@ dispatcher = cmdtalkplugin.Dispatch()
 msgproc = cmdtalkplugin.Processor(dispatcher)
 
 def uprcl_init():
-    global httphp, pathprefix, uprclhostport, pathmap, rclconfdir, g_rcldocs
+    global httphp, pathprefix, pathmap, rclconfdir, g_rcldocs
     
-    if "UPMPD_HTTPHOSTPORT" not in os.environ:
-        raise Exception("No UPMPD_HTTPHOSTPORT in environment")
-    httphp = os.environ["UPMPD_HTTPHOSTPORT"]
     if "UPMPD_PATHPREFIX" not in os.environ:
         raise Exception("No UPMPD_PATHPREFIX in environment")
     pathprefix = os.environ["UPMPD_PATHPREFIX"]
@@ -59,9 +56,9 @@ def uprcl_init():
         raise Exception("No UPMPD_CONFIG in environment")
     upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
 
-    uprclhostport = upconfig.get("uprclhostport")
-    if uprclhostport is None:
-        raise Exception("uprclhost not in config")
+    httphp = upconfig.get("uprclhostport")
+    if httphp is None:
+        raise Exception("uprclhostport not in config")
 
     pthstr = upconfig.get("uprclpaths")
     if pthstr is None:
@@ -81,22 +78,25 @@ def uprcl_init():
     uprcltags.recolltosql(g_rcldocs)
     uprcluntagged.recoll2untagged(g_rcldocs)
 
-    host,port = uprclhostport.split(':')
+    host,port = httphp.split(':')
     httpthread = threading.Thread(target=uprclhttp.runHttp,
-                                  kwargs = {'host':host , 'port':int(port),
-                                            'pathmap':pathmap})
+                                  kwargs = {'host':host ,
+                                            'port':int(port),
+                                            'pathmap':pathmap,
+                                            'pathprefix':pathprefix})
     httpthread.daemon = True 
     httpthread.start()
 
 @dispatcher.record('trackuri')
 def trackuri(a):
+    # This is used for plugins which generate temporary local urls
+    # pointing to the microhttpd instance. The microhttpd
+    # answer_to_connection() routine in plgwithslave calls 'trackuri'
+    # to get a real URI to redirect to. We generate URIs which
+    # directly point to our python http server, so this method should
+    # never be called.
     msgproc.log("trackuri: [%s]" % a)
-    if 'path' not in a:
-        raise Exception("trackuri: no 'path' in args")
-    path = urllib.quote(a['path'])
-    media_url = rclpathtoreal(path, pathprefix, uprclhostport, pathmap)
-    msgproc.log("trackuri: returning: %s" % media_url)
-    return {'media_url' : media_url}
+    raise Exception("trackuri: should not be called for uprcl!")
 
 # objid prefix to module map
 rootmap = {}
@@ -137,7 +137,7 @@ def _browsedispatch(objid, bflg, httphp, pathprefix):
                 return uprcluntagged.browse(objid, bflg, httphp, pathprefix)
             else:
                 raise Exception("Browse: dispatch: bad mod " + mod)
-    raise Exception("Browse: dispatch: bad objid not in rootmap" + objid)
+    raise Exception("Browse: dispatch: bad objid not in rootmap: " + objid)
 
 @dispatcher.record('browse')
 def browse(a):

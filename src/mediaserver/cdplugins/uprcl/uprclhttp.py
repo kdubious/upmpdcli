@@ -60,7 +60,7 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         """Serve a GET request."""
         f, start_range, end_range = self.send_head()
         if f:
-            uplog("do_GET: Got (%d,%d)" % (start_range,end_range))
+            #uplog("do_GET: Got (%d,%d)" % (start_range,end_range))
             f.seek(start_range, 0)
             chunk = 0x1000
             total = 0
@@ -94,6 +94,7 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         """
         uplog("HTTP: path: %s" % self.path)
         path = self.translate_path(self.path)
+        uplog("HTTP: translated path: %s" % urllib.quote(path))
         if not path or not os.path.exists(path):
             self.send_error(404)
             return (None, 0, 0)
@@ -145,9 +146,11 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def translate_path(self, opath):
         path = urllib.unquote(opath)
-        for p in self.uprclpathmap.itervalues():
-            if path.startswith(p):
-                return path
+        path = path.replace(self.uprclpathprefix, '', 1)
+        for fsp,htp in self.uprclpathmap.iteritems():
+            if path.startswith(fsp):
+                return path.replace(fsp, htp, 1)
+
         uplog("HTTP: translate_path: %s not found in path map" % opath)
         return None
 
@@ -190,10 +193,11 @@ class ThreadingSimpleServer(SocketServer.ThreadingMixIn,
     pass
 
 
-def runHttp(host='', port=8080, pathmap={}):
+def runHttp(host='', port=8080, pathprefix='', pathmap={}):
 
     # Set pathmap as request handler class variable
     RangeHTTPRequestHandler.uprclpathmap = pathmap
+    RangeHTTPRequestHandler.uprclpathprefix = pathprefix
     
     server = ThreadingSimpleServer((host, port), RangeHTTPRequestHandler)
     while 1:

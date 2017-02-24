@@ -203,37 +203,116 @@ def rootentries(pid):
 
 # Check what tags still have multiple values inside the selected set,
 # and return their list.
-def subtreetags(sqconn, docids):
+def subtreetags(docidsl):
+    docids = ','.join([str(i) for i in docidsl])
     uplog("subtreetags, docids %s" % docids)
-    c1 = sqconn.cursor()
+    c = sqconn.cursor()
     tags = []
     for tt,tb in tagtables.iteritems():
         stmt = 'SELECT COUNT(DISTINCT ' + colid(tb) + \
                ') FROM tracks WHERE docidx IN (' + docids + ')'
         uplog("subtreetags: executing: <%s>" % stmt)
-        c1.execute(stmt)
-        for r in c1:
+        c.execute(stmt)
+        for r in c:
             cnt = r[0]
             uplog("Found %d distinct values for %s" % (cnt, tb))
             if cnt > 1:
                 tags.append(tt)
     return tags
 
-def subtreealbums(sqconn, docids):
-    c1 = sqconn.cursor()
+def trackentriesforstmt(stmt, values, pid, httphp, pathprefix):
+    c = sqconn.cursor()
+    c.execute(stmt, values)
+    entries = []
+    for r in c:
+        docidx = r[0]
+        id = pid + '$i' + str(docidx)
+        entries.append(rcldoctoentry(id, pid, httphp, pathprefix,
+                                     g_alldocs[docidx]))
+    return sorted(entries, cmp=cmpentries)
+    
+
+# Return a list of trackids as selected by the current
+# path <selwhere> is like: WHERE col1_id = ? AND col2_id = ? [...], and
+# <values> holds the corresponding values
+def docidsforsel(selwhere, values):
+    c = sqconn.cursor()
+    stmt = 'SELECT docidx FROM tracks ' + selwhere + ' ORDER BY trackno'
+    uplog("docidsforsel: executing <%s> values %s" % (stmt, values))
+    c.execute(stmt, values)
+    return [r[0] for r in c.fetchall()]
+
+def trackentriesforalbum(albid, pid, httphp, pathprefix):
+    stmt = 'SELECT docidx FROM tracks WHERE album_id = ? ORDER BY trackno'
+    return trackentriesforstmt(stmt, (albid,), pid, httphp, pathprefix)
+    
+# This is called when an 'albums' element is encountered in the
+# selection path.
+def tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp, pathprefix):
+    c = sqconn.cursor()
+    docidsl = docidsforsel(selwhere, values)
+    entries = []
+    if i == len(qpath)-1:
+        albidsl = subtreealbums(docidsl)
+        albids = ','.join([str(a) for a in albidsl])
+        c.execute('SELECT album_id, albtitle FROM albums WHERE album_id in (' +
+                  albids + ') ORDER BY albtitle')
+        for r in c:
+            id = pid + '$' + str(r[0])
+            entries.append(rcldirentry(id, pid, r[1]))
+    elif i == len(qpath)-2:
+        albid = int(qpath[-1])
+        docids = ','.join([str(i) for i in docidsl])
+        stmt = 'SELECT COUNT(docidx) FROM tracks WHERE album_id = ?'
+        c.execute(stmt, (albid,))
+        r = c.fetchone()
+        ntracks = int(r[0])
+        stmt = 'SELECT docidx FROM tracks WHERE album_id = ? AND docidx IN (' +\
+               docids + ')'
+        entries = trackentriesforstmt(stmt, (albid,), pid, httphp, pathprefix)
+        if ntracks != len(entries):
+            id = pid + '$' + 'showca'
+            entries = [rcldirentry(id, pid, '>> Complete Album')] + entries
+    elif i == len(qpath)-3:
+        # Note that minim has an additional level here, probably to
+        # present groups or multiple groups ? The trackids ids are
+        # like: 
+        #    0$=Composer$17738$albums$2$showca.0$hcalbum$*i13458
+        # I don't know what the .0 is for.
+        # The 'hcalbum' level usually has 2 entries '>> Hide Content' 
+        # and the album title. TBD
+        albid = int(qpath[-2])
+        entries = trackentriesforalbum(albid, pid, httphp, pathprefix)
+        
+    return entries
+
+# This is called when an 'items' element is encountered in the
+# selection path. We just list the selected tracks
+def tagsbrowseitems(pid, qpath, i, selwhere, values, httphp, pathprefix):
+    stmt = 'SELECT docidx FROM tracks ' + selwhere
+    return trackentriesforstmt(stmt, values, pid, httphp, pathprefix)
+
+
+# Return all albums ids to which any of the currently selected tracks
+# (designated by a docid set) belong
+def subtreealbums(docidsl):
+    docids = ','.join([str(r) for r in docidsl])
     albids = []
     stmt = 'SELECT album_id from tracks where docidx IN (' + docids + ') ' + \
            'GROUP BY album_id'
-    c1.execute(stmt)
-    for r in c1:
+    c = sqconn.cursor()
+    uplog('subtreealbums: executing %s' % stmt)
+    c.execute(stmt)
+    for r in c:
         albids.append(r[0])
+    uplog('subtreealbums: returning %s' % albids)
     return albids
     
 # Main browsing routine. Given an objid, translate it into a select
 # statement, plus further processing, and return the corresponding
 # records
-def seltagsbrowse(pid, qpath, flag, httphp, pathprefix):
-    uplog("seltagsbrowse. qpath %s" % qpath)
+def tagsbrowse(pid, qpath, flag, httphp, pathprefix):
+    uplog("tagsbrowse. pid %s qpath %s" % (pid, qpath))
     qlen = len(qpath)
     selwhat = ''
     selwhere = ''
@@ -241,13 +320,24 @@ def seltagsbrowse(pid, qpath, flag, httphp, pathprefix):
     i = 0
     while i < qlen:
         elt = qpath[i]
+
+        # '=colname'. Set the current column name, which will be used
+        # in different ways depending if this is the last element or
+        # not.
         if elt.startswith('='):
             col = tagtables[elt[1:]] 
 
-        #detect the special values albums items etc. here. Their
-        #presence changes how we process the rest (showing tracks and
-       #albums and not dealing with other tags any more
-
+        
+        # detect the special values albums items etc. here. Their
+        # presence changes how we process the rest (showing tracks and
+        # albums and not dealing with other tags any more)
+        if elt == 'albums':
+            return tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp,
+                                    pathprefix)
+        elif elt == 'items':
+            return tagsbrowseitems(pid, qpath, i, selwhere, values, httphp,
+                                  pathprefix)
+            
         selwhere = selwhere + ' AND ' if selwhere else ' WHERE '
         if i == qlen - 1:
             # We want to display all unique values for the column
@@ -264,32 +354,26 @@ def seltagsbrowse(pid, qpath, flag, httphp, pathprefix):
             values.append(int(qpath[i]))
         i += 1
             
-    c = sqconn.cursor()
-    #for r in c:
-    #    uplog("selres: %s" % r)
+
+    # TBD: Need a ">> Complete Album" entry if there is a single
+    # album, no subqs and not all the tracks are listed
     entries = []
     if selwhat == 'tracks.docidx':
-        # SELECT docidx FROM tracks
-        # WHERE col1_id = ? AND col2_id = ?
-        stmt = "SELECT docidx FROM tracks %s ORDER BY trackno" % selwhere
-        uplog("seltagsbrowse: executing <%s> values %s" % (stmt, values))
-        c.execute(stmt, values)
-        recs = c.fetchall()
-        docids = ','.join([str(r[0]) for r in recs])
-        albids = subtreealbums(sqconn, docids)
+        docids = docidsforsel(selwhere, values)
+        albids = subtreealbums(docids)
+        subqs = subtreetags(docids)
         if len(albids) > 1:
             id = pid + '$albums'
             entries.append(rcldirentry(id, pid, str(len(albids)) + ' albums'))
+            if subqs:
+                id = pid + '$items'
+                entries.append(rcldirentry(id,pid, str(len(docids)) + ' items'))
+        elif len(albids) == 1 and subqs:
             id = pid + '$items'
-            entries.append(rcldirentry(id, pid, str(len(recs)) + ' items'))
-        elif len(albids) == 1:
-            id = pid + '$items'
-            entries.append(rcldirentry(id, pid, str(len(recs)) + ' items'))
+            entries.append(rcldirentry(id, pid, str(len(docids)) + ' items'))
 
-        subqs = subtreetags(sqconn, docids)
         if not subqs:
-            for r in recs:
-                docidx = r[0]
+            for docidx in docids:
                 id = pid + '$*i' + str(docidx)
                 entries.append(rcldoctoentry(id, pid, httphp, pathprefix,
                                              g_alldocs[docidx]))
@@ -307,7 +391,8 @@ def seltagsbrowse(pid, qpath, flag, httphp, pathprefix):
                selwhere + \
                " GROUP BY tracks." + colid(col) + \
                " ORDER BY value"
-        uplog("seltagsbrowse: executing <%s> values %s" % (stmt, values))
+        uplog("tagsbrowse: executing <%s> values %s" % (stmt, values))
+        c = sqconn.cursor()
         c.execute(stmt, values)
         for r in c:
             id = pid + '$' + str(r[0])
@@ -315,12 +400,14 @@ def seltagsbrowse(pid, qpath, flag, httphp, pathprefix):
     return entries
 
 
+# Browse the top-level tree named like 'xxx albums'. There are just 2
+# levels: the whole albums list, then for each entry the specified
+# albums track list
 def albumsbrowse(pid, qpath, flag, httphp, pathprefix):
     c = sqconn.cursor()
     entries = []
     if len(qpath) == 1:
-        c.execute('''SELECT album_id, albtitle FROM albums
-        ORDER BY albtitle''')
+        c.execute('SELECT album_id, albtitle FROM albums ORDER BY albtitle')
         for r in c:
             id = pid + '$*' + str(r[0])
             entries.append(rcldirentry(id, pid, r[1]))
@@ -329,13 +416,7 @@ def albumsbrowse(pid, qpath, flag, httphp, pathprefix):
         if not e1.startswith("*"):
             raise Exception("Bad album id in albums tree. Pth: %s" %idpath)
         album_id = int(e1[1:])
-        c.execute('''SELECT docidx FROM tracks WHERE album_id = ? ORDER BY
-        trackno''', (album_id,))
-        for r in c:
-            docidx = r[0]
-            id = pid + '$*i' + str(docidx)
-            entries.append(rcldoctoentry(id, pid, httphp, pathprefix,
-                                         g_alldocs[docidx]))
+        entries = trackentriesforalbum(album_id, pid, httphp, pathprefix)
     else:
         raise Exception("Bad path in album tree (too deep): <%s>"%idpath)
 
@@ -350,17 +431,12 @@ def browse(pid, flag, httphp, pathprefix):
     entries = []
     qpath = idpath.split('$')
     if idpath.startswith('items'):
-        c = sqconn.cursor()
-        c.execute('''SELECT docidx FROM tracks ORDER BY title''')
-        for r in c:
-            docidx = r[0]
-            id = pid + '$*i' + str(docidx)
-            entries.append(rcldoctoentry(id, pid, httphp, pathprefix,
-                                         g_alldocs[docidx]))
+        stmt = 'SELECT docidx FROM tracks'
+        entries = trackentriesforstmt(stmt, (), pid, httphp, pathprefix)
     elif idpath.startswith('albums'):
         entries = albumsbrowse(pid, qpath, flag, httphp, pathprefix)
     elif idpath.startswith('='):
-        entries = seltagsbrowse(pid, qpath, flag, httphp, pathprefix)
+        entries = tagsbrowse(pid, qpath, flag, httphp, pathprefix)
     else:
         raise Exception('Bad path in tags tree (start): <%s>' % idpath)
     return entries

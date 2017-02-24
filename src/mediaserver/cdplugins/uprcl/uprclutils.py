@@ -181,17 +181,6 @@ def cmpentries(e1, e2):
     return int(a1) - int(a2)
 
 
-def rclpathtoreal(path, pathprefix, httphp, pathmap):
-    path = path.replace(pathprefix, '', 1)
-    found = False
-    for fsp,htp in pathmap.iteritems():
-        if path.startswith(fsp):
-            path = path.replace(fsp, htp, 1)
-            found = True
-    if not found:
-        return None
-    return "http://" + httphp + path
-
 def rcldirentry(id, pid, title, arturi=None, artist=None, upnpclass=None,
                 searchable='1'):
     """ Create container entry in format expected by parent """
