@@ -24,6 +24,7 @@ import conftree
 import cmdtalkplugin
 import urllib
 import threading
+import subprocess
 
 import uprclfolders
 import uprcltags
@@ -79,14 +80,34 @@ def uprcl_init():
     uprcluntagged.recoll2untagged(g_rcldocs)
 
     host,port = httphp.split(':')
-    httpthread = threading.Thread(target=uprclhttp.runHttp,
-                                  kwargs = {'host':host ,
-                                            'port':int(port),
-                                            'pathmap':pathmap,
-                                            'pathprefix':pathprefix})
-    httpthread.daemon = True 
-    httpthread.start()
-
+    if False:
+        # Running the server as a thread. We get into trouble because
+        # something somewhere writes to stdout a bunch of --------.
+        # Could not find where they come from, happens after a sigpipe
+        # when a client closes a stream. The --- seem to happen before
+        # and after the exception strack trace, e.g:
+        # ----------------------------------------
+        #   Exception happened during processing of request from ('192...
+        #   Traceback...
+        #   [...]
+        # error: [Errno 32] Broken pipe
+        # ----------------------------------------
+        httpthread = threading.Thread(target=uprclhttp.runHttp,
+                                      kwargs = {'host':host ,
+                                                'port':int(port),
+                                                'pthstr':pthstr,
+                                                'pathprefix':pathprefix})
+        httpthread.daemon = True 
+        httpthread.start()
+    else:
+        # Running the HTTP server as a separate process
+        cmdpath = os.path.join(os.path.dirname(sys.argv[0]), 'uprclhttp.py')
+        cmd = subprocess.Popen((cmdpath, host, port, pthstr, pathprefix),
+                               stdin = open('/dev/null'),
+                               stdout = sys.stderr,
+                               stderr = sys.stderr,
+                               close_fds = True)
+            
 @dispatcher.record('trackuri')
 def trackuri(a):
     # This is used for plugins which generate temporary local urls

@@ -19,6 +19,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import print_function
 
 import SocketServer
 import BaseHTTPServer
@@ -30,6 +31,8 @@ import urllib
 import cgi
 import shutil
 import mimetypes
+import sys
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -193,8 +196,13 @@ class ThreadingSimpleServer(SocketServer.ThreadingMixIn,
     pass
 
 
-def runHttp(host='', port=8080, pathprefix='', pathmap={}):
+def runHttp(host='', port=8080, pthstr='', pathprefix=''):
 
+    lpth = pthstr.split(',')
+    pathmap = {}
+    for ptt in lpth:
+        l = ptt.split(':')
+        pathmap[l[0]] = l[1]
     # Set pathmap as request handler class variable
     RangeHTTPRequestHandler.uprclpathmap = pathmap
     RangeHTTPRequestHandler.uprclpathprefix = pathprefix
@@ -202,3 +210,11 @@ def runHttp(host='', port=8080, pathprefix='', pathmap={}):
     server = ThreadingSimpleServer((host, port), RangeHTTPRequestHandler)
     while 1:
         server.handle_request()
+
+if __name__ == '__main__':
+    if len(sys.argv) != 5:
+        print("Usage: uprclhttp.py <host> <port> <pthmap> <pthprefix>",
+              file=sys.stderr)
+        sys.exit(1)
+    runHttp(host=sys.argv[1], port = int(sys.argv[2]), pthstr=sys.argv[3],
+            pathprefix=sys.argv[4])
