@@ -21,6 +21,7 @@ import os
 
 audiomtypes = frozenset([
     'audio/mpeg',
+    'audio/flac',
     'application/x-flac',
     'application/ogg',
     'audio/aac',
@@ -97,12 +98,13 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
         if val:
             li[oname] = val
 
+    if 'upnp:artist' not in li and doc.albumartist:
+        li['upnp:artist'] = doc.albumartist
+
+
     # TBD Date format ?
-    # !! Albumart will have to come from somewhere else !
-    ###     #if doc.albumarturi:
-    ###        #li['upnp:albumArtURI'] = track.album.image
+        
     ### li['discnumber'] = str(track.disc_num)
-    #albumartist=
     #comment=
     #composer=
     #conductor=
@@ -126,9 +128,13 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     path = path[7:]
     if 'tt' not in li:
         li['tt'] = os.path.basename(path.decode('UTF-8', errors = 'replace'))
-
-    path = pathprefix + path
+    path = os.path.join(pathprefix, path)
     li['uri'] = "http://%s%s" % (httphp, urllib.quote(path))
+
+    # The album art uri is precooked with httphp and prefix
+    if doc.albumarturi:
+        li['upnp:albumArtURI'] = doc.albumarturi
+        #uplog("Set upnp:albumArtURI to %s" % li['upnp:albumArtURI'])
 
     uplog("rcldoctoentry: uri: %s" % li['uri'])
     return li
@@ -137,6 +143,38 @@ def docfolder(doc):
     path = doc.getbinurl()
     path = path[7:]
     return os.path.dirname(path)
+
+# Find cover art for directory. We are usually called repeatedly for
+# the same dir, so we cache one result
+_foldercache = {}
+_artnames = ('folder.jpg', 'folder.png', 'cover.jpg', 'cover.png')
+def docarturi(doc, httphp, pathprefix):
+    global _foldercache, _artnames
+
+    folder = docfolder(doc)
+
+    if folder not in _foldercache:
+        _foldercache = {}
+        _foldercache[folder] = None
+        candidates =  [f for f in os.listdir(folder) if
+                       f.lower().startswith('folder.')
+                       or f.lower().startswith('cover.')]
+        artnm = None
+        for targ in _artnames:
+            for nm in candidates:
+                if nm == targ:
+                    artnm = nm
+                    break
+                elif nm.lower() == targ:
+                    artnm = nm
+                    break
+            if artnm:
+                path = urllib.quote(os.path.join(pathprefix, folder, artnm))
+                _foldercache[folder] = "http://%s%s" % (httphp, path)
+                break
+
+    return _foldercache[folder]
+
 
 def cmpentries(e1, e2):
     tp1 = e1['tp']

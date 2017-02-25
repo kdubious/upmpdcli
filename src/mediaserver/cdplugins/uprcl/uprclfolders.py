@@ -27,7 +27,7 @@ from recoll import rclconfig
 g_myprefix = '0$uprcl$folders'
 
 # Debug : limit processed recoll entries for speed
-g_maxrecollcnt = 5000
+g_maxrecollcnt = 0
 
 # Internal init: create the directory tree (folders view) from the doc
 # array by splitting the url in each doc.
@@ -51,7 +51,7 @@ def _createdir(dirvec, fathidx, docidx, nm):
     dirvec[-1][".."] = (fathidx, -1)
     return len(dirvec) - 1
 
-def _rcl2folders(docs, confdir):
+def _rcl2folders(docs, confdir, httphp, pathprefix):
     global dirvec
     dirvec = []
 
@@ -72,13 +72,17 @@ def _rcl2folders(docs, confdir):
     # entry
     for docidx in range(len(docs)):
         doc = docs[docidx]
-
-        # No need to include non-audio types in the visible
-        # tree.
-        # TBD: We'll have to do some processing on image types though
-        # (will go before these lines)
+            
+        # No need to include non-audio types in the visible tree.
         if doc.mtype not in audiomtypes:
             continue
+
+        if doc.mtype != 'inode/directory':
+            arturi = docarturi(doc, httphp, pathprefix)
+            if arturi:
+                # The uri is quoted, so it's ascii and we can just store
+                # it as a doc attribute
+                doc.albumarturi = arturi
 
         url = doc.getbinurl()
         url = url[7:]
@@ -122,8 +126,8 @@ def _rcl2folders(docs, confdir):
                 # If this is the last entry in the path, maybe update
                 # the doc idx (previous entries were created for
                 # intermediate elements without a Doc).
-                #uplog("NEED TO UPDATE DOC")
-                dirvec[fathidx][elt] = (dirvec[fathidx][elt][0], docidx)
+                if idx == len(path) -1:
+                    dirvec[fathidx][elt] = (dirvec[fathidx][elt][0], docidx)
                 # Update fathidx for next iteration
                 fathidx = dirvec[fathidx][elt][0]
             else:
@@ -172,13 +176,20 @@ def _fetchalldocs(confdir):
 
 
 # Initialize (read recoll data and build tree)
-def inittree(confdir):
+def inittree(confdir, httphp, pathprefix):
     global g_alldocs, g_dirvec
     
     g_alldocs = _fetchalldocs(confdir)
-    g_dirvec = _rcl2folders(g_alldocs, confdir)
+    g_dirvec = _rcl2folders(g_alldocs, confdir, httphp, pathprefix)
     return g_alldocs
 
+
+
+##############
+# Browsing the initialized [folders] hierarchy
+
+
+# Extract dirvec index from objid, according to the way we generate them.
 def _objidtodiridx(pid):
     if not pid.startswith(g_myprefix):
         raise Exception("folders.browse: bad pid %s" % pid)
@@ -199,8 +210,19 @@ def _objidtodiridx(pid):
 
     return diridx
 
+
 def rootentries(pid):
     return [rcldirentry(pid + 'folders', pid, '[folders]'),]
+
+
+# Look all docs inside directory, and return the cover art we find.
+def arturifordir(diridx):
+    for nm,ids in g_dirvec[diridx].iteritems():
+        if ids[1] >= 0:
+            doc = g_alldocs[ids[1]]
+            if doc.mtype != 'inode/directory' and doc.albumarturi:
+                return doc.albumarturi
+              
 
 # Browse method
 # objid is like folders$index
@@ -230,7 +252,9 @@ def browse(pid, flag, httphp, pathprefix):
             if len(dirvec[thisdiridx]) == 1:
                 continue
             id = g_myprefix + '$' + 'd' + str(thisdiridx)
-            entries.append(rcldirentry(id, pid, os.path.basename(nm)))
+            arturi = arturifordir(thisdiridx)
+            entries.append(rcldirentry(id, pid, os.path.basename(nm),
+                                       arturi=arturi))
         else:
             # Not a directory. docidx had better been set
             if thisdocidx == -1:

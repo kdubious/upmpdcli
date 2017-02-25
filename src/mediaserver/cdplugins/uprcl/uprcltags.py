@@ -31,8 +31,9 @@ sqconn = sqlite3.connect(':memory:')
 # Tags for which we create auxiliary tables for facet descent.
 #
 # TBD: The list will come from the config file one day
+# TBD: alias et al configuration
 #
-# TBD: All Artists, Group
+# TBD: All Artists
 #
 # Maybe we'd actually need a 3rd value for the recoll field name, but
 # it can be the same for the currently relevant fields.
@@ -91,8 +92,7 @@ def createsqdb(conn):
 # Insert new value if not existing, return rowid of new or existing row
 def auxtableinsert(sqconn, tb, value):
     c = sqconn.cursor()
-    col = colid(tb)
-    stmt = 'SELECT ' + col + ' FROM ' + tb + ' WHERE value = ?'
+    stmt = 'SELECT ' + colid(tb) + ' FROM ' + tb + ' WHERE value = ?'
     c.execute(stmt, (value,))
     r = c.fetchone()
     if r:
@@ -139,7 +139,8 @@ def recolltosql(docs):
         album = getattr(doc, 'album', None)
         if not album:
             if doc.mtype != 'inode/directory':
-                uplog("No album: mtype %s title %s" % (doc.mtype, doc.url))
+                pass
+                #uplog("No album: mtype %s title %s" % (doc.mtype, doc.url))
             album = '[no album]'
             continue
 
@@ -342,7 +343,7 @@ def tagsbrowse(pid, qpath, flag, httphp, pathprefix):
         if i == qlen - 1:
             # We want to display all unique values for the column
             # artist.artist_id, artist.value
-            selwhat = col + '.' + col + '_id, ' + col + '.value'
+            selwhat = col + '.' + colid(col) + ', ' + col + '.value'
             # tracks.artist_id = artist.artist_id
             selwhere += 'tracks.' + colid(col) + ' = ' + col + '.' + colid(col)
         else:

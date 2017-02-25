@@ -74,7 +74,7 @@ def uprcl_init():
     if rclconfdir is None:
         raise Exception("uprclconfdir not in config")
 
-    g_rcldocs = uprclfolders.inittree(rclconfdir)
+    g_rcldocs = uprclfolders.inittree(rclconfdir, httphp, pathprefix)
     uprcltags.recolltosql(g_rcldocs)
     uprcluntagged.recoll2untagged(g_rcldocs)
 
