@@ -23,23 +23,22 @@ from __future__ import print_function
 
 import SocketServer
 import BaseHTTPServer
-import SimpleHTTPServer
 import os
 import posixpath
-import BaseHTTPServer
 import urllib
-import cgi
+import urlparse
 import shutil
 import mimetypes
 import sys
+
+import mutagen
 
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
 
-from uprclutils import uplog
-
+from uprclutils import uplog,printable
 
 
 __version__ = "0.1"
@@ -95,9 +94,11 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         None, in which case the caller has nothing further to do.
 
         """
-        uplog("HTTP: path: %s" % self.path)
-        path = self.translate_path(self.path)
-        uplog("HTTP: translated path: %s" % urllib.quote(path))
+
+        path,embedded = self.translate_path(self.path)
+        #uplog("HTTP: translated: embedded %s path: %s" %
+        #      (embedded, printable(path)))
+
         if not path or not os.path.exists(path):
             self.send_error(404)
             return (None, 0, 0)
@@ -107,10 +108,17 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             return (None, 0, 0)
 
         f = None
-        ctype = self.guess_type(path)
         try:
-            f = open(path, 'rb')
-        except:
+            if embedded:
+                ctype, size, f = self.embedded_open(path)
+                fs = os.stat(path)
+                #uplog("embedded, got ctype %s size %s" %(ctype, size))
+            else:
+                ctype = self.guess_type(path)
+                f = open(path, 'rb')
+                fs = os.fstat(f.fileno())
+                size = int(fs[6])
+        except Exception as err:
             self.send_error(404, "File not found")
             return (None, 0, 0)
 
@@ -119,9 +127,8 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         else:
             self.send_response(200)
 
+        self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
         self.send_header("Content-type", ctype)
-        fs = os.fstat(f.fileno())
-        size = int(fs[6])
         start_range = 0
         end_range = size
         self.send_header("Accept-Ranges", "bytes")
@@ -141,7 +148,6 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                          'bytes ' + str(start_range) + '-' +
                          str(end_range - 1) + '/' + str(size))
         self.send_header("Content-Length", end_range - start_range)
-        self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
         self.end_headers()
         #uplog("Sending Bytes %d to %d" % (start_range, end_range))
         return (f, start_range, end_range)
@@ -150,12 +156,66 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def translate_path(self, opath):
         path = urllib.unquote(opath)
         path = path.replace(self.uprclpathprefix, '', 1)
+
+        q = urlparse.urlparse(path)
+        path = q.path
+        embedded = False
+        pq = urlparse.parse_qs(q.query)
+        if 'embed' in pq:
+            embedded = True
+
         for fsp,htp in self.uprclpathmap.iteritems():
             if path.startswith(fsp):
-                return path.replace(fsp, htp, 1)
+                path = path.replace(fsp, htp, 1)
+                if embedded:
+                    # Embedded image urls have had a .jpg or .png
+                    # appended. Remove it to restore the track path
+                    # name.
+                    i = path.rfind('.')
+                    path = path[:i]
+                return path, embedded
 
+        # Security feature here: never allow access to anything not in
+        # the path map
         uplog("HTTP: translate_path: %s not found in path map" % opath)
-        return None
+        return None, None
+
+
+    # Open embedded image. Returns mtype, size, f
+    def embedded_open(self, path):
+        try:
+            mutf = mutagen.File(path)
+        except Exception as err:
+            raise err
+        
+        f = None
+        size = 0
+        if 'audio/mp3' in mutf.mime:
+            for tagname in mutf.iterkeys():
+                if tagname.startswith('APIC:'):
+                    #self.em.rclog("mp3 img: %s" % mutf[tagname].mime)
+                    mtype = mutf[tagname].mime
+                    s = mutf[tagname].data
+                    size = len(s)
+                    f = StringIO(s)
+        elif 'audio/x-flac' in mutf.mime:
+            if mutf.pictures:
+                mtype = mutf.pictures[0].mime
+                size = len(mutf.pictures[0].data)
+                f = StringIO(mutf.pictures[0].data)
+        elif 'audio/mp4' in mutf.mime:
+            if 'covr' in mutf.iterkeys():
+                format = mutf['covr'][0].imageformat 
+                if format == mutagen.mp4.AtomDataType.JPEG:
+                    mtype = 'image/jpeg'
+                else:
+                    mtype = 'image/png'
+                size = len(mutf['covr'][0])
+                f = StringIO(mutf['covr'][0])
+        if f is None:
+            raise Exception("can't open embedded image")
+        else:
+            return mtype, size, f
 
     def guess_type(self, path):
         """Guess the type of a file.

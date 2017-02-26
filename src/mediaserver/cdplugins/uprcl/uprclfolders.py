@@ -73,16 +73,15 @@ def _rcl2folders(docs, confdir, httphp, pathprefix):
     for docidx in range(len(docs)):
         doc = docs[docidx]
             
+        arturi = docarturi(doc, httphp, pathprefix)
+        if arturi:
+            # The uri is quoted, so it's ascii and we can just store
+            # it as a doc attribute
+            doc.albumarturi = arturi
+
         # No need to include non-audio types in the visible tree.
         if doc.mtype not in audiomtypes:
             continue
-
-        if doc.mtype != 'inode/directory':
-            arturi = docarturi(doc, httphp, pathprefix)
-            if arturi:
-                # The uri is quoted, so it's ascii and we can just store
-                # it as a doc attribute
-                doc.albumarturi = arturi
 
         url = doc.getbinurl()
         url = url[7:]
@@ -128,6 +127,7 @@ def _rcl2folders(docs, confdir, httphp, pathprefix):
                 # intermediate elements without a Doc).
                 if idx == len(path) -1:
                     dirvec[fathidx][elt] = (dirvec[fathidx][elt][0], docidx)
+                    #uplog("updating docidx for %s" % decoded)
                 # Update fathidx for next iteration
                 fathidx = dirvec[fathidx][elt][0]
             else:
@@ -141,6 +141,7 @@ def _rcl2folders(docs, confdir, httphp, pathprefix):
                     # Last element. If directory, needs a dirvec entry
                     if doc.mtype == 'inode/directory':
                         fathidx = _createdir(dirvec, fathidx, docidx, elt)
+                        #uplog("Setting docidx for %s" % decoded)
                     else:
                         dirvec[fathidx][elt] = (-1, docidx)
 
@@ -242,17 +243,26 @@ def browse(pid, flag, httphp, pathprefix):
     # The basename call is just for diridx==0 (topdirs). Remove it if
     # this proves a performance issue
     for nm,ids in g_dirvec[diridx].iteritems():
-        #uplog("folders:browse: got nm %s" % nm.decode('utf-8'))
+        uplog("folders:browse: got nm %s" % printable(nm))
         if nm == "..":
             continue
         thisdiridx = ids[0]
         thisdocidx = ids[1]
+        if thisdocidx >= 0:
+            doc = g_alldocs[thisdocidx]
+        else:
+            uplog("No doc for %s" % pid)
+            doc = None
+            
         if thisdiridx >= 0:
             # Skip empty directories
             if len(dirvec[thisdiridx]) == 1:
                 continue
             id = g_myprefix + '$' + 'd' + str(thisdiridx)
-            arturi = arturifordir(thisdiridx)
+            if doc and doc.albumarturi:
+                arturi = doc.albumarturi
+            else:
+                arturi = arturifordir(thisdiridx)
             entries.append(rcldirentry(id, pid, os.path.basename(nm),
                                        arturi=arturi))
         else:

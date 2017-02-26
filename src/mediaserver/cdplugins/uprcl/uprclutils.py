@@ -26,6 +26,7 @@ audiomtypes = frozenset([
     'application/ogg',
     'audio/aac',
     'audio/mp4',
+    'video/mp4',
     'audio/x-aiff',
     'audio/x-wav',
     'inode/directory'
@@ -142,15 +143,44 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
 def docfolder(doc):
     path = doc.getbinurl()
     path = path[7:]
-    return os.path.dirname(path)
+    if doc.mtype == 'inode/directory':
+        return path
+    else:
+        return os.path.dirname(path)
 
-# Find cover art for directory. We are usually called repeatedly for
-# the same dir, so we cache one result
+def embdimgurl(doc, httphp, pathprefix):
+    if doc.embdimg == 'jpg':
+        ext = '.jpg'
+    elif doc.embdimg == '.png':
+        ext = 'png'
+    else:
+        return None
+    path = doc.getbinurl()
+    path = path[7:]
+    path = urllib.quote(os.path.join(pathprefix, path+ext))
+    path +=  "?embed=1"
+    return "http://%s%s" % (httphp, path)
+
+def printable(s):
+    return s.decode('utf-8', errors='replace') if s else ""
+
+# Find cover art for doc. We return both a value for the directory
+# cover art (if there is a cover.jpg or equiv, and a file own uri if
+# there is embedded img data.
+#
+# We are usually called repeatedly for the same directory, so we cache
+# one result
 _foldercache = {}
 _artnames = ('folder.jpg', 'folder.png', 'cover.jpg', 'cover.png')
 def docarturi(doc, httphp, pathprefix):
     global _foldercache, _artnames
 
+    if doc.embdimg:
+        arturi = embdimgurl(doc, httphp, pathprefix)
+        if arturi:
+            #uplog("docarturi: embedded: %s"%printable(arturi))
+            return arturi
+    
     folder = docfolder(doc)
 
     if folder not in _foldercache:
@@ -173,7 +203,13 @@ def docarturi(doc, httphp, pathprefix):
                 _foldercache[folder] = "http://%s%s" % (httphp, path)
                 break
 
-    return _foldercache[folder]
+    arturi = _foldercache[folder]
+    if arturi:
+        if doc.mtype == 'inode/directory':
+            #uplog("docarturi: external: %s->%s" %
+            #      (printable(folder), printable(arturi)))
+            pass
+    return arturi
 
 
 def cmpentries(e1, e2):
