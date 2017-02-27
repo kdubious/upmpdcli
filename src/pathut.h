@@ -118,6 +118,7 @@ extern std::string path_pathtofileurl(const std::string& path);
 #ifdef _WIN32
 /// Convert \ separators to /
 void path_slashize(std::string& s);
+void path_backslashize(std::string& s);
 #endif
 
 /// Lock/pid file class. This is quite close to the pidfile_xxx

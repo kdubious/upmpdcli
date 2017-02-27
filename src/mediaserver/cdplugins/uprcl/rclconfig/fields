@@ -1,0 +1,42 @@
+[prefixes]
+album        =  XYTAL
+albumartist  =  XYTPI
+artist       =  XYTPJ
+comment      =  XYCOM
+composer     =  XYTCM
+conductor    =  XYTPK
+date         =  XYTYE
+discnumber   =  XYTPA
+genre        =  XYTCO
+lyricist     =  XYTXT
+lyrics       =  XYULT
+performer    =  XYTPP
+tracknumber  =  XYTRK
+
+[stored]
+album=
+albumartist=
+artist=
+bitrate=
+bits_per_sample=
+channels=
+comment=
+composer=
+conductor=
+contentgroup=
+date=
+discnumber=
+duration=
+embdimg=
+genre=
+lyricist=
+lyrics=
+orchestra=
+sample_rate=
+totaldiscs=
+totaltracks=
+tracknumber=
+
+[queryaliases]
+filename = fn
+containerfilename = cfn

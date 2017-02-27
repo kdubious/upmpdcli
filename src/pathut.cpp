@@ -69,6 +69,14 @@ void path_slashize(string& s)
         }
     }
 }
+void path_backslashize(string& s)
+{
+    for (string::size_type i = 0; i < s.size(); i++) {
+        if (s[i] == '/') {
+            s[i] = '\\';
+        }
+    }
+}
 static bool path_strlookslikedrive(const string& s)
 {
     return s.size() == 2 && isalpha(s[0]) && s[1] == ':';
@@ -436,6 +444,14 @@ string path_canon(const string& is, const string* cwd)
     } else {
         ret = "/";
     }
+
+#ifdef _WIN32
+    // Raw drive needs a final /
+    if (path_strlookslikedrive(ret)) {
+        path_catslash(ret);
+    }
+#endif
+
     return ret;
 }
 
