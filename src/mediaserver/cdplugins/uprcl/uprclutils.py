@@ -19,6 +19,9 @@ import sys
 import urllib
 import os
 
+# This must be consistent with what contentdirectory.cxx does
+g_myprefix = '0$uprcl$'
+
 audiomtypes = frozenset([
     'audio/mpeg',
     'audio/flac',

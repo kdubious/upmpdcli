@@ -17,10 +17,10 @@
 from __future__ import print_function
 
 import re
-
 import uprclfolders
-from uprclutils import *
 from recoll import recoll
+
+from uprclutils import uplog, stringToStrings, rcldoctoentry, cmpentries
 
 def _getchar(s, i):
     if i < len(s):

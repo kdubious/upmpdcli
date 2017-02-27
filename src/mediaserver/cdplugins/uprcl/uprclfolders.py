@@ -19,15 +19,15 @@ import shlex
 import urllib
 import sys
 
-from uprclutils import *
-
+from uprclutils import uplog, docarturi, audiomtypes, rcldirentry, \
+     rcldoctoentry, cmpentries
 from recoll import recoll
 from recoll import rclconfig
 
-g_myprefix = '0$uprcl$folders'
+g_foldersIdPrefix = '0$uprcl$folders'
 
 # Debug : limit processed recoll entries for speed
-g_maxrecollcnt = 0
+g_maxrecollcnt = 1000
 
 # Internal init: create the directory tree (folders view) from the doc
 # array by splitting the url in each doc.
@@ -192,13 +192,13 @@ def inittree(confdir, httphp, pathprefix):
 
 # Extract dirvec index from objid, according to the way we generate them.
 def _objidtodiridx(pid):
-    if not pid.startswith(g_myprefix):
+    if not pid.startswith(g_foldersIdPrefix):
         raise Exception("folders.browse: bad pid %s" % pid)
 
     if len(g_alldocs) == 0:
         raise Exception("folders:browse: no docs")
 
-    diridx = pid[len(g_myprefix):]
+    diridx = pid[len(g_foldersIdPrefix):]
     if not diridx:
         diridx = 0
     else:
@@ -212,12 +212,14 @@ def _objidtodiridx(pid):
     return diridx
 
 
+# Tell the top module what entries we define in the root
 def rootentries(pid):
     return [rcldirentry(pid + 'folders', pid, '[folders]'),]
 
 
-# Look all docs inside directory, and return the cover art we find.
-def arturifordir(diridx):
+# Look all non-directory docs inside directory, and return the cover
+# art we find.
+def _arturifordir(diridx):
     for nm,ids in g_dirvec[diridx].iteritems():
         if ids[1] >= 0:
             doc = g_alldocs[ids[1]]
@@ -225,9 +227,10 @@ def arturifordir(diridx):
                 return doc.albumarturi
               
 
-# Browse method
+# Folder hierarchy browse method.
 # objid is like folders$index
-# flag is meta or children. 
+# flag is meta or children.
+# httphp and pathprefix are used to generate URIs
 def browse(pid, flag, httphp, pathprefix):
 
     diridx = _objidtodiridx(pid)
@@ -243,7 +246,6 @@ def browse(pid, flag, httphp, pathprefix):
     # The basename call is just for diridx==0 (topdirs). Remove it if
     # this proves a performance issue
     for nm,ids in g_dirvec[diridx].iteritems():
-        uplog("folders:browse: got nm %s" % printable(nm))
         if nm == "..":
             continue
         thisdiridx = ids[0]
@@ -258,11 +260,11 @@ def browse(pid, flag, httphp, pathprefix):
             # Skip empty directories
             if len(dirvec[thisdiridx]) == 1:
                 continue
-            id = g_myprefix + '$' + 'd' + str(thisdiridx)
+            id = g_foldersIdPrefix + '$' + 'd' + str(thisdiridx)
             if doc and doc.albumarturi:
                 arturi = doc.albumarturi
             else:
-                arturi = arturifordir(thisdiridx)
+                arturi = _arturifordir(thisdiridx)
             entries.append(rcldirentry(id, pid, os.path.basename(nm),
                                        arturi=arturi))
         else:
@@ -271,16 +273,17 @@ def browse(pid, flag, httphp, pathprefix):
                 uplog("folders:docidx -1 for non-dir entry %s"%nm)
                 continue
             doc = g_alldocs[thisdocidx]
-            id = g_myprefix + '$i' + str(thisdocidx)
+            id = g_foldersIdPrefix + '$i' + str(thisdocidx)
             e = rcldoctoentry(id, pid, httphp, pathprefix, doc)
             if e:
                 entries.append(e)
 
     return sorted(entries, cmp=cmpentries)
 
-# return path for objid, which has to be a container. This is good old pwd
+# Return path for objid, which has to be a container.This is good old
+# pwd... It is called from the search module for generating a dir:
+# recoll filtering directive.
 def dirpath(objid):
-
     # We may get called from search, on the top dir (above [folders]). Return
     # empty in this case
     try:

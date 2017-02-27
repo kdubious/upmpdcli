@@ -19,13 +19,9 @@ import shlex
 import urllib
 import sys
 
-from uprclutils import *
+from uprclutils import uplog, rcldoctoentry, rcldirentry, cmpentries
 
-from recoll import recoll
-from recoll import rclconfig
-
-g_myprefix = '0$uprcl$untagged'
-
+untg_prefix = '0$uprcl$untagged'
 
 def recoll2untagged(docs):
     global g_utidx, g_rcldocs
@@ -47,13 +43,13 @@ def recoll2untagged(docs):
             g_utidx.append(docidx)
 
 def _objidtoidx(pid):
-    if not pid.startswith(g_myprefix):
+    if not pid.startswith(untg_prefix):
         raise Exception("untagged.browse: bad pid %s" % pid)
 
     if len(g_rcldocs) == 0:
         raise Exception("untagged:browse: no docs")
 
-    idx = pid[len(g_myprefix):]
+    idx = pid[len(untg_prefix):]
     if not idx:
         idx = 0
     else:
@@ -82,14 +78,14 @@ def browse(pid, flag, httphp, pathprefix):
         # Browsing root
         for i in range(len(g_utidx))[1:]:
             doc = g_rcldocs[g_utidx[i]]
-            id = g_myprefix + '$u' + str(i)
+            id = untg_prefix + '$u' + str(i)
             e = rcldoctoentry(id, pid, httphp, pathprefix, doc)
             if e:
                 entries.append(e)
     else:
         # Non root: only items in there. flag needs to be 'meta'
         doc = g_rcldocs[thisdocidx]
-        id = g_myprefix + '$u' + str(idx)
+        id = untg_prefix + '$u' + str(idx)
         e = rcldoctoentry(id, pid, httphp, pathprefix, doc)
         if e:
             entries.append(e)

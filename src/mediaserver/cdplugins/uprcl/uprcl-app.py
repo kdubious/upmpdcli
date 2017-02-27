@@ -18,11 +18,9 @@
 import sys
 import os
 import json
-import posixpath
 import re
 import conftree
 import cmdtalkplugin
-import urllib
 import threading
 import subprocess
 
@@ -31,13 +29,7 @@ import uprcltags
 import uprcluntagged
 import uprclsearch
 import uprclhttp
-from uprclutils import *
-
-from recoll import recoll
-from recoll import rclconfig
-
-# This must be consistent with what contentdirectory.cxx does
-g_myprefix = '0$uprcl$'
+from uprclutils import uplog, g_myprefix
 
 # The recoll documents
 g_rcldocs = []
@@ -48,7 +40,7 @@ dispatcher = cmdtalkplugin.Dispatch()
 msgproc = cmdtalkplugin.Processor(dispatcher)
 
 def uprcl_init():
-    global httphp, pathprefix, pathmap, rclconfdir, g_rcldocs
+    global httphp, pathprefix, rclconfdir, g_rcldocs
     
     if "UPMPD_PATHPREFIX" not in os.environ:
         raise Exception("No UPMPD_PATHPREFIX in environment")
@@ -70,7 +62,6 @@ def uprcl_init():
         l = ptt.split(':')
         pathmap[l[0]] = l[1]
 
-    global rclconfdir
     rclconfdir = upconfig.get("uprclconfdir")
     if rclconfdir is None:
         raise Exception("uprclconfdir not in config")
@@ -203,6 +194,7 @@ def search(a):
     
     encoded = json.dumps(entries)
     return {"entries" : encoded}
+
 
 uprcl_init()
 

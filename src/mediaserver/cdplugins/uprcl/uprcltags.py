@@ -18,12 +18,12 @@ import sys
 import sqlite3
 from timeit import default_timer as timer
 
-from uprclutils import *
+from uprclutils import g_myprefix, audiomtypes, docfolder, uplog, \
+     rcldirentry, rcldoctoentry, cmpentries
 
-# After initialization, this holds the list of all records out of recoll
+# After initialization, this holds the list of all records out of
+# recoll (it's a reference to the original in uprclfolders)
 g_alldocs = []
-
-g_myprefix = '0$uprcl$'
 
 sqconn = sqlite3.connect(':memory:')
 #sqconn = sqlite3.connect('/tmp/tracks.sqlite')
@@ -55,13 +55,13 @@ coltorclfield = {
     }
 
 
-def colid(col):
+def _clid(col):
     return col + '_id'
 
 # Create the db. Each tag table has 2 columns: <tagname>_id and
 # value. The join column in the main tracks table is also named
 # <tagname>_id
-def createsqdb(conn):
+def _createsqdb(conn):
     c = conn.cursor()
     try:
         c.execute('''DROP TABLE albums''')
@@ -81,18 +81,18 @@ def createsqdb(conn):
         except:
             pass
         stmt = 'CREATE TABLE ' + tb + \
-               ' (' + colid(tb) + ' INTEGER PRIMARY KEY, value TEXT)'
+               ' (' + _clid(tb) + ' INTEGER PRIMARY KEY, value TEXT)'
         c.execute(stmt)
-        tracksstmt += ',' + colid(tb) + ' INT'
+        tracksstmt += ',' + _clid(tb) + ' INT'
 
     tracksstmt += ')'
     c.execute(tracksstmt)
     
 
 # Insert new value if not existing, return rowid of new or existing row
-def auxtableinsert(sqconn, tb, value):
+def _auxtableinsert(sqconn, tb, value):
     c = sqconn.cursor()
-    stmt = 'SELECT ' + colid(tb) + ' FROM ' + tb + ' WHERE value = ?'
+    stmt = 'SELECT ' + _clid(tb) + ' FROM ' + tb + ' WHERE value = ?'
     c.execute(stmt, (value,))
     r = c.fetchone()
     if r:
@@ -110,7 +110,7 @@ def recolltosql(docs):
     global g_alldocs
     g_alldocs = docs
     
-    createsqdb(sqconn)
+    _createsqdb(sqconn)
 
     # Compute a list of table names and corresponding recoll
     # fields. most often they are identical
@@ -176,8 +176,8 @@ def recolltosql(docs):
             value = getattr(doc, rclfld, None)
             if not value:
                 continue
-            rowid = auxtableinsert(sqconn, tb, value)
-            columns += ',' + colid(tb)
+            rowid = _auxtableinsert(sqconn, tb, value)
+            columns += ',' + _clid(tb)
             values.append(rowid)
             placehold += ',?'
 
@@ -187,6 +187,7 @@ def recolltosql(docs):
 
     sqconn.commit()
     uplog("recolltosql: processed %d docs" % totcnt)
+
 
 # Create our top-level directories, with fixed entries, and stuff from
 # the tags tables
@@ -204,13 +205,13 @@ def rootentries(pid):
 
 # Check what tags still have multiple values inside the selected set,
 # and return their list.
-def subtreetags(docidsl):
+def _subtreetags(docidsl):
     docids = ','.join([str(i) for i in docidsl])
     uplog("subtreetags, docids %s" % docids)
     c = sqconn.cursor()
     tags = []
     for tt,tb in tagtables.iteritems():
-        stmt = 'SELECT COUNT(DISTINCT ' + colid(tb) + \
+        stmt = 'SELECT COUNT(DISTINCT ' + _clid(tb) + \
                ') FROM tracks WHERE docidx IN (' + docids + ')'
         uplog("subtreetags: executing: <%s>" % stmt)
         c.execute(stmt)
@@ -221,7 +222,7 @@ def subtreetags(docidsl):
                 tags.append(tt)
     return tags
 
-def trackentriesforstmt(stmt, values, pid, httphp, pathprefix):
+def _trackentriesforstmt(stmt, values, pid, httphp, pathprefix):
     c = sqconn.cursor()
     c.execute(stmt, values)
     entries = []
@@ -236,25 +237,25 @@ def trackentriesforstmt(stmt, values, pid, httphp, pathprefix):
 # Return a list of trackids as selected by the current
 # path <selwhere> is like: WHERE col1_id = ? AND col2_id = ? [...], and
 # <values> holds the corresponding values
-def docidsforsel(selwhere, values):
+def _docidsforsel(selwhere, values):
     c = sqconn.cursor()
     stmt = 'SELECT docidx FROM tracks ' + selwhere + ' ORDER BY trackno'
     uplog("docidsforsel: executing <%s> values %s" % (stmt, values))
     c.execute(stmt, values)
     return [r[0] for r in c.fetchall()]
 
-def trackentriesforalbum(albid, pid, httphp, pathprefix):
+def _trackentriesforalbum(albid, pid, httphp, pathprefix):
     stmt = 'SELECT docidx FROM tracks WHERE album_id = ? ORDER BY trackno'
-    return trackentriesforstmt(stmt, (albid,), pid, httphp, pathprefix)
+    return _trackentriesforstmt(stmt, (albid,), pid, httphp, pathprefix)
     
 # This is called when an 'albums' element is encountered in the
 # selection path.
-def tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp, pathprefix):
+def _tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp, pathprefix):
     c = sqconn.cursor()
-    docidsl = docidsforsel(selwhere, values)
+    docidsl = _docidsforsel(selwhere, values)
     entries = []
     if i == len(qpath)-1:
-        albidsl = subtreealbums(docidsl)
+        albidsl = _subtreealbums(docidsl)
         albids = ','.join([str(a) for a in albidsl])
         c.execute('SELECT album_id, albtitle FROM albums WHERE album_id in (' +
                   albids + ') ORDER BY albtitle')
@@ -270,7 +271,7 @@ def tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp, pathprefix):
         ntracks = int(r[0])
         stmt = 'SELECT docidx FROM tracks WHERE album_id = ? AND docidx IN (' +\
                docids + ')'
-        entries = trackentriesforstmt(stmt, (albid,), pid, httphp, pathprefix)
+        entries = _trackentriesforstmt(stmt, (albid,), pid, httphp, pathprefix)
         if ntracks != len(entries):
             id = pid + '$' + 'showca'
             entries = [rcldirentry(id, pid, '>> Complete Album')] + entries
@@ -283,20 +284,20 @@ def tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp, pathprefix):
         # The 'hcalbum' level usually has 2 entries '>> Hide Content' 
         # and the album title. TBD
         albid = int(qpath[-2])
-        entries = trackentriesforalbum(albid, pid, httphp, pathprefix)
+        entries = _trackentriesforalbum(albid, pid, httphp, pathprefix)
         
     return entries
 
 # This is called when an 'items' element is encountered in the
 # selection path. We just list the selected tracks
-def tagsbrowseitems(pid, qpath, i, selwhere, values, httphp, pathprefix):
+def _tagsbrowseitems(pid, qpath, i, selwhere, values, httphp, pathprefix):
     stmt = 'SELECT docidx FROM tracks ' + selwhere
-    return trackentriesforstmt(stmt, values, pid, httphp, pathprefix)
+    return _trackentriesforstmt(stmt, values, pid, httphp, pathprefix)
 
 
 # Return all albums ids to which any of the currently selected tracks
 # (designated by a docid set) belong
-def subtreealbums(docidsl):
+def _subtreealbums(docidsl):
     docids = ','.join([str(r) for r in docidsl])
     albids = []
     stmt = 'SELECT album_id from tracks where docidx IN (' + docids + ') ' + \
@@ -312,7 +313,7 @@ def subtreealbums(docidsl):
 # Main browsing routine. Given an objid, translate it into a select
 # statement, plus further processing, and return the corresponding
 # records
-def tagsbrowse(pid, qpath, flag, httphp, pathprefix):
+def _tagsbrowse(pid, qpath, flag, httphp, pathprefix):
     uplog("tagsbrowse. pid %s qpath %s" % (pid, qpath))
     qlen = len(qpath)
     selwhat = ''
@@ -333,24 +334,24 @@ def tagsbrowse(pid, qpath, flag, httphp, pathprefix):
         # presence changes how we process the rest (showing tracks and
         # albums and not dealing with other tags any more)
         if elt == 'albums':
-            return tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp,
+            return _tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp,
                                     pathprefix)
         elif elt == 'items':
-            return tagsbrowseitems(pid, qpath, i, selwhere, values, httphp,
-                                  pathprefix)
+            return _tagsbrowseitems(pid, qpath, i, selwhere, values, httphp,
+                                    pathprefix)
             
         selwhere = selwhere + ' AND ' if selwhere else ' WHERE '
         if i == qlen - 1:
             # We want to display all unique values for the column
             # artist.artist_id, artist.value
-            selwhat = col + '.' + colid(col) + ', ' + col + '.value'
+            selwhat = col + '.' + _clid(col) + ', ' + col + '.value'
             # tracks.artist_id = artist.artist_id
-            selwhere += 'tracks.' + colid(col) + ' = ' + col + '.' + colid(col)
+            selwhere += 'tracks.' + _clid(col) + ' = ' + col + '.' + _clid(col)
         else:
             # Look at the value specified for the =xx column. The
             # selwhat value is only used as a flag
             selwhat = 'tracks.docidx'
-            selwhere += 'tracks.' + colid(col) + ' =  ?'
+            selwhere += 'tracks.' + _clid(col) + ' =  ?'
             i += 1
             values.append(int(qpath[i]))
         i += 1
@@ -360,9 +361,9 @@ def tagsbrowse(pid, qpath, flag, httphp, pathprefix):
     # album, no subqs and not all the tracks are listed
     entries = []
     if selwhat == 'tracks.docidx':
-        docids = docidsforsel(selwhere, values)
-        albids = subtreealbums(docids)
-        subqs = subtreetags(docids)
+        docids = _docidsforsel(selwhere, values)
+        albids = _subtreealbums(docids)
+        subqs = _subtreetags(docids)
         if len(albids) > 1:
             id = pid + '$albums'
             entries.append(rcldirentry(id, pid, str(len(albids)) + ' albums'))
@@ -390,7 +391,7 @@ def tagsbrowse(pid, qpath, flag, httphp, pathprefix):
         # ORDER BY col.value
         stmt = "SELECT " + selwhat + " FROM tracks, " + col + \
                selwhere + \
-               " GROUP BY tracks." + colid(col) + \
+               " GROUP BY tracks." + _clid(col) + \
                " ORDER BY value"
         uplog("tagsbrowse: executing <%s> values %s" % (stmt, values))
         c = sqconn.cursor()
@@ -404,7 +405,7 @@ def tagsbrowse(pid, qpath, flag, httphp, pathprefix):
 # Browse the top-level tree named like 'xxx albums'. There are just 2
 # levels: the whole albums list, then for each entry the specified
 # albums track list
-def albumsbrowse(pid, qpath, flag, httphp, pathprefix):
+def _albumsbrowse(pid, qpath, flag, httphp, pathprefix):
     c = sqconn.cursor()
     entries = []
     if len(qpath) == 1:
@@ -417,7 +418,7 @@ def albumsbrowse(pid, qpath, flag, httphp, pathprefix):
         if not e1.startswith("*"):
             raise Exception("Bad album id in albums tree. Pth: %s" %idpath)
         album_id = int(e1[1:])
-        entries = trackentriesforalbum(album_id, pid, httphp, pathprefix)
+        entries = _trackentriesforalbum(album_id, pid, httphp, pathprefix)
     else:
         raise Exception("Bad path in album tree (too deep): <%s>"%idpath)
 
@@ -433,11 +434,11 @@ def browse(pid, flag, httphp, pathprefix):
     qpath = idpath.split('$')
     if idpath.startswith('items'):
         stmt = 'SELECT docidx FROM tracks'
-        entries = trackentriesforstmt(stmt, (), pid, httphp, pathprefix)
+        entries = _trackentriesforstmt(stmt, (), pid, httphp, pathprefix)
     elif idpath.startswith('albums'):
-        entries = albumsbrowse(pid, qpath, flag, httphp, pathprefix)
+        entries = _albumsbrowse(pid, qpath, flag, httphp, pathprefix)
     elif idpath.startswith('='):
-        entries = tagsbrowse(pid, qpath, flag, httphp, pathprefix)
+        entries = _tagsbrowse(pid, qpath, flag, httphp, pathprefix)
     else:
         raise Exception('Bad path in tags tree (start): <%s>' % idpath)
     return entries
