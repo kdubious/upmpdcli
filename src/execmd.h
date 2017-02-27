@@ -199,6 +199,8 @@ public:
                   // because it avoids windows appearing and
                   // disappearing when executing stuff for previewing
                   EXF_SHOWWINDOW = 1,
+                  // Windows only: show maximized
+                  EXF_MAXIMIZED = 2,
                  };
     ExecCmd(int flags = 0);
     ~ExecCmd();
