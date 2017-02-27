@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import os
 import sqlite3
 from timeit import default_timer as timer
 
@@ -69,8 +70,8 @@ def _createsqdb(conn):
     except:
         pass
     c.execute(
-        '''CREATE TABLE albums
-           (album_id INTEGER PRIMARY KEY, albtitle TEXT, albfolder TEXT)''')
+        '''CREATE TABLE albums (album_id INTEGER PRIMARY KEY, artist_id INT,
+           albtitle TEXT, albfolder TEXT)''')
 
     tracksstmt = '''CREATE TABLE tracks
     (docidx INT, album_id INT, trackno INT, title TEXT'''
@@ -129,22 +130,31 @@ def recolltosql(docs):
         doc = docs[docidx]
         totcnt += 1
 
-        # No need to include non-audio types in the visible
-        # tree.
-        # TBD: We'll have to do some processing on image types though
-        # (will go before these lines)
-        if doc.mtype not in audiomtypes:
+        # No need to include non-audio types in the visible tree.
+        if doc.mtype not in audiomtypes or doc.mtype == 'inode/directory':
             continue
 
+        # Create album record if needed.
+        # The albums table is special, can't use auxtableinsert()
+        folder = docfolder(doc).decode('utf-8', errors = 'replace')
         album = getattr(doc, 'album', None)
         if not album:
-            if doc.mtype != 'inode/directory':
-                pass
-                #uplog("No album: mtype %s title %s" % (doc.mtype, doc.url))
-            album = '[no album]'
-            continue
-
-        folder = docfolder(doc).decode('utf-8', errors = 'replace')
+            uplog("No album: mtype %s title %s" % (doc.mtype, doc.url))
+            album = os.path.basename(folder)
+        if doc.albumartist:
+            albartist_id = _auxtableinsert(sqconn, 'artist', doc.albumartist)
+        else:
+            albartist_id = None
+        c.execute('''SELECT album_id,artist_id FROM albums
+        WHERE albtitle = ? AND albfolder = ?''', (album, folder))
+        r = c.fetchone()
+        if r:
+            album_id = r[0]
+            albartist_id = r[1]
+        else:
+            c.execute('''INSERT INTO albums(albtitle, albfolder, artist_id)
+            VALUES (?,?,?)''', (album, folder, albartist_id))
+            album_id = c.lastrowid
 
         # tracknos like n/max are now supposedly processed by rclaudio
         # and should not arrive here
@@ -153,21 +163,8 @@ def recolltosql(docs):
             trackno = int(l[0])
         except:
             trackno = 0
-            
-        # Create album record if needed. There is probably a
-        # single-statement syntax for this. The albums table is
-        # special, can't use auxtableinsert()
-        c.execute('''SELECT album_id FROM albums
-        WHERE albtitle = ? AND albfolder = ?''', (album, folder))
-        r = c.fetchone()
-        if r:
-            album_id = r[0]
-        else:
-            c.execute('''INSERT INTO albums(albtitle, albfolder)
-            VALUES (?,?)''', (album, folder))
-            album_id = c.lastrowid
 
-        # set base values for column names, values list, placeholders,
+        # Set base values for column names, values list, placeholders,
         # then append data from auxiliary tables array
         columns = 'docidx,album_id,trackno,title'
         values = [docidx, album_id, trackno, doc.title]
@@ -181,10 +178,22 @@ def recolltosql(docs):
             values.append(rowid)
             placehold += ',?'
 
+        # Finally create the main record in the tracks table with
+        # references to the aux tables
         stmt = 'INSERT INTO tracks(' + columns + ') VALUES(' + placehold + ')'
         c.execute(stmt, values)
         #uplog(doc.title)
 
+        if not albartist_id:
+            lcols = columns.split(',')
+            try:
+                i = lcols.index('artist_id')
+                artist_id = values[i]
+                stmt = 'UPDATE albums SET artist_id = ? WHERE album_id = ?'
+                c.execute(stmt, (artist_id, album_id))
+            except:
+                pass
+                      
     sqconn.commit()
     uplog("recolltosql: processed %d docs" % totcnt)
 
@@ -247,7 +256,24 @@ def _docidsforsel(selwhere, values):
 def _trackentriesforalbum(albid, pid, httphp, pathprefix):
     stmt = 'SELECT docidx FROM tracks WHERE album_id = ? ORDER BY trackno'
     return _trackentriesforstmt(stmt, (albid,), pid, httphp, pathprefix)
-    
+
+def _direntriesforalbums(pid, where):
+    entries = []
+    c = sqconn.cursor()
+    if not where:
+        where = 'WHERE artist.artist_id = albums.artist_id'
+    else:
+        where += ' AND artist.artist_id = albums.artist_id'
+
+    stmt = 'SELECT album_id, albtitle, artist.value FROM albums,artist ' + \
+              where + ' ORDER BY albtitle'
+    uplog('direntriesforalbums: %s' % stmt)
+    c.execute(stmt)
+    for r in c:
+        id = pid + '$' + str(r[0])
+        entries.append(rcldirentry(id, pid, r[1], artist=r[2]))
+    return entries
+
 # This is called when an 'albums' element is encountered in the
 # selection path.
 def _tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp, pathprefix):
@@ -257,11 +283,8 @@ def _tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp, pathprefix):
     if i == len(qpath)-1:
         albidsl = _subtreealbums(docidsl)
         albids = ','.join([str(a) for a in albidsl])
-        c.execute('SELECT album_id, albtitle FROM albums WHERE album_id in (' +
-                  albids + ') ORDER BY albtitle')
-        for r in c:
-            id = pid + '$' + str(r[0])
-            entries.append(rcldirentry(id, pid, r[1]))
+        where = ' WHERE album_id in (' + albids + ') '
+        entries = _direntriesforalbums(pid, where)
     elif i == len(qpath)-2:
         albid = int(qpath[-1])
         docids = ','.join([str(i) for i in docidsl])
@@ -393,7 +416,7 @@ def _tagsbrowse(pid, qpath, flag, httphp, pathprefix):
                selwhere + \
                " GROUP BY tracks." + _clid(col) + \
                " ORDER BY value"
-        uplog("tagsbrowse: executing <%s> values %s" % (stmt, values))
+        uplog("tagsbrowse: executing <%s> values %s" % (stmt,values))
         c = sqconn.cursor()
         c.execute(stmt, values)
         for r in c:
@@ -409,18 +432,13 @@ def _albumsbrowse(pid, qpath, flag, httphp, pathprefix):
     c = sqconn.cursor()
     entries = []
     if len(qpath) == 1:
-        c.execute('SELECT album_id, albtitle FROM albums ORDER BY albtitle')
-        for r in c:
-            id = pid + '$*' + str(r[0])
-            entries.append(rcldirentry(id, pid, r[1]))
+        entries = _direntriesforalbums(pid, '')
     elif len(qpath) == 2:
         e1 = qpath[1]
-        if not e1.startswith("*"):
-            raise Exception("Bad album id in albums tree. Pth: %s" %idpath)
-        album_id = int(e1[1:])
+        album_id = int(e1)
         entries = _trackentriesforalbum(album_id, pid, httphp, pathprefix)
     else:
-        raise Exception("Bad path in album tree (too deep): <%s>"%idpath)
+        raise Exception("Bad path in album tree (too deep): <%s>" % qpath)
 
     return entries
 

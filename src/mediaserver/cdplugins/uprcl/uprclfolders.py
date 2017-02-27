@@ -27,7 +27,7 @@ from recoll import rclconfig
 g_foldersIdPrefix = '0$uprcl$folders'
 
 # Debug : limit processed recoll entries for speed
-g_maxrecollcnt = 1000
+g_maxrecollcnt = 0
 
 # Internal init: create the directory tree (folders view) from the doc
 # array by splitting the url in each doc.
