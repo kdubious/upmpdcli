@@ -416,6 +416,12 @@ int main(int argc, char *argv[])
         }
     }
 
+    // If neither OH nor AV are enable, run as pure media server. This
+    // is another way to do it besides the -m option
+    if (!enableOH && !enableAV) {
+        msonly = true;
+    }
+    
     if (msmode == MSOnly && !enableMediaServer) {
         cerr << "Pure Media Server mode requested, but this is "
             "disabled by the configuration or by absent Media Server "
