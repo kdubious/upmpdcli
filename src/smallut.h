@@ -19,6 +19,7 @@
 #define _SMALLUT_H_INCLUDED_
 
 #include <sys/types.h>
+#include <stdint.h>
 
 #include <string>
 #include <vector>
@@ -141,6 +142,8 @@ extern bool stringToBool(const std::string& s);
 /** Remove instances of characters belonging to set (default {space,
     tab}) at beginning and end of input string */
 extern void trimstring(std::string& s, const char *ws = " \t");
+extern void rtrimstring(std::string& s, const char *ws = " \t");
+extern void ltrimstring(std::string& s, const char *ws = " \t");
 
 /** Escape things like < or & by turning them into entities */
 extern std::string escapeHtml(const std::string& in);
@@ -162,13 +165,13 @@ extern std::string escapeShell(const std::string& str);
 extern std::string truncate_to_word(const std::string& input,
                                     std::string::size_type maxlen);
 
-void ulltodecstr(unsigned long long val, std::string& buf);
-void lltodecstr(long long val, std::string& buf);
-std::string lltodecstr(long long val);
-std::string ulltodecstr(unsigned long long val);
+void ulltodecstr(uint64_t val, std::string& buf);
+void lltodecstr(int64_t val, std::string& buf);
+std::string lltodecstr(int64_t val);
+std::string ulltodecstr(uint64_t val);
 
 /** Convert byte count into unit (KB/MB...) appropriate for display */
-std::string displayableBytes(off_t size);
+std::string displayableBytes(int64_t size);
 
 /** Break big string into lines */
 std::string breakIntoLines(const std::string& in, unsigned int ll = 100,
