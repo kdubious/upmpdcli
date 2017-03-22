@@ -1,0 +1,425 @@
+= Upmpdcli
+
+== Introduction
+
+Upmpdcli is primarily an UPnP Renderer front-end to the MPD music player,
+and has a number of additional or alternative functions.
+
+The xref:UPNP[next section] explains the network audio terms (UPnP, Media
+Renderer, etc.) if your knowledge needs a little brushing up. Else, you can
+jump to the xref:UPMPDCLI-OVERVIEW[upmpdcli overview] section.
+
+Do not scrap your old amp yet, a Raspberry Pi and DAC (~100 $) will
+transform it into a state of the art network streamer (mine is 25 years
+old).
+
+
+[[UPNP]]
+== UPnP and all that
+
+=== UPnP AV
+
+UPnP is a family of network protocols, designed for easily connecting
+_stuff_ in home networks (mostly). Its name ("Universal Plug and Play") was
+chosen because little or no configuration is needed for the different
+elements to discover each other and play together.
+
+The UPnP audio/video section (UPnP AV) implements a way for data stored on
+a network host (PC, NAS, etc.) to be displayed on another one (TV, audio
+streamer, etc.).
+
+Generally, there are four building blocks in a network audio solution:
+
+- An audio File/Data server stores the (bulky) audio data and makes it
+  available to clients using an appropriate protocol (NFS, SMB, HTTP,
+  etc. depending on client).
+- The directory/tags manager extracts audio tags from the files (usually
+  accessing them directly or through a network file sharing protocol), and
+  builds a database used for searching or browsing the collection.
+- Audio players (renderers) take encoded audio data and actually make
+  sound, using some kind of DAC (Digital Analog Conversion) device, such as
+  an internal or USB sound card.
+- The user interface is a remote control which sits in your hand (or it's
+  the PC in front of you). You use the application which runs on it to
+  choose songs from the database and control the playback. It interacts
+  both with the tags database and player parts (usually not with the file
+  server, except maybe to fetch cover art).
+
+.Network Audio
+image::pics/netaudio.png["Network Audio Elements"]
+
+In the UPnP world:
+
+ - The tags manager is named Media Server (more precisely, the Content
+   Directory service inside the Media Server device). Data is usually
+   stored on the Media Server, but it could also live elsewhere. Data
+   access is almost always performed through HTTP.
+ - The player is named Media Renderer. It usually does not implement much
+   user interface.
+ - The remote control is named Control Point
+  
+The good people who specified UPnP AV got something wrong: the playlist
+is owned by the Control Point, not by the Renderer. This means that the
+Renderer will not play the next track if the Control Point goes to sleep,
+and that havoc is almost guaranteed if several Control Points try to share
+a Renderer.
+
+
+=== OpenHome
+
+The OpenHome family of protocols implement extended services over the base
+UPnP mechanisms. They were designed by the Linn company to correct the
+weaknesses in UPnP AV.
+
+Principally, the OpenHome playlist lives on the Renderer. It will continue
+playing if the Control Points goes to sleep, and it can be shared. This is
+a compelling advantage and most well-known Control Points (e.g. BubbleUPnP,
+Kazoo, PlugPlayer...) support OpenHome.
+
+Beyond this, OpenHome also defines additional services, for example for
+acessing Internet radios. Upmpdcli also supports these.
+
+=== Songcast 
+
+Songcast is a protocol family designed by the
+link:http://oss.linn.co.uk/trac/wiki/Songcast[LinnLinn company] for
+real-time network audio. Its only relationship with UPnP is that UPnP
+services are used to control the connectins. Songcast allows playing
+the same audio on multiple players, with almost perfect synchronization, or
+capturing audio on a computer to play it on another system.
+
+The protocols links two types of entities:
+
+ - A Songcast Sender generates an audio stream.
+ - One or several Songcast Receivers receive and play the stream.
+
+Linn also supplies free audio capture drivers for MS-Windows and Mac OS X.
+This enables playing the audio of *any* application (Windows Media
+Player, Spotify, Tidal, etc.) onto one or several Songcast Receivers,
+without any need for the applications to know about Songcast.
+
+=== Gapless ?
+ 	
+This is a relatively small issue, but people are very sensitive to it, it
+is important from some music pieces (Goldberg variations with gaps: not
+nice) and you will hear about it all the time if you read forums, so, a
+quick explanation follows: 
+
+Some music tracks need to flow into each other when played consecutively,
+for example tracks on some live albums (the background noise from the
+audience never stops), or some classical music pieces. 
+
+When playing from separate audio files, it is not trivial for a renderer to
+ensure a seamless flow: the audio hardware has an input pipe which must be
+kept full at all times, else it will stop, and a period of silence will
+ensue: not gapless ! 
+
+To avoid this, the renderer has to know in advance which file it will
+process after the current one, to be able to begin filling the audio pipe
+with data from the next track before it empties at the end of the current
+one.
+
+There are two ways that this can be achieved: either the renderer is also
+in charge of the play queue, so it knows the whole sequence all the time
+(e.g. MPD, OpenHome, …), or the controller indicates the next track to the
+renderer before the current track finishes (e.g. UPnP SetNextTransportURI). 
+
+[[UPMPDCLI-OVERVIEW]]
+== Upmpdcli overview
+
+
+Upmpdcli is primarily a UPnP Media Renderer frontend, using a slave MPD to
+actually process the audio data. It supports UPnP gapless track transitions
+and the OpenHome ohMedia services (including a Radio service to listen to
+Internet streams). 
+
+.The Grand Upmpdcli Scheme of Things
+image::pics/upmpdcli.png["The Grand Scheme of Things"]
+
+Upmpdcli implements control functions for the Linn Songcast protocol,
+allowing the local machine to behave as a Songcast Receiver or Sender (with
+help from the closely related sc2mpd package, which processes the actual
+Songcast audio streams).
+
+Upmpdcli provides a Media Server interface, currently used for accessing
+external streaming services (Qobuz, Tidal, Google Music). A local media
+server is in the early planning phase, the motivation being that I find
+none which is both open-source and really satisfying (MinimServer is great
+but not open-source).
+
+Upmpdcli can be installed on most Linux systems. It is frequently used on
+small single board computers like the Raspberry Pi. As far as I know, all
+audio-oriented distributions currently use it as their UPnP Media Renderer
+interface, and it is also present in a number of commercial devices.
+
+Upmpdcli is mostly configured through values set in a configuration file
+but, for basic operation without a configuration file, a few of the main
+parameters can be set on the
+xref:COMMAND-ENVIRON[command line or in the environment].
+
+However, a majority of parameters can only be set in the configuration
+file. This this is set set through the +-c+ command line option. The usual
+path is +/etc/upmpdcli.conf+
+
+The configuration file has a simple `name = value` format.
+
+=== Security
+
+The UPnP protocols have no security provisions. Upmpdcli is not audited
+for security issues, and, as far as I know, may be full of exploitable
+bugs. Do not run it on an Internet-facing host.
+
+[[UPMPDCLI-RENDERER]]
+== Upmpdcli as a Media Renderer
+
+This section goes in a little more detail about miscellaneous aspects of
+the Media Renderer, and describe a few of the most used configuration
+parameters. See the xref:UPMPDCLI-CONFIG[configuration reference section]
+for more details (I would very much like to link each parameter to its
+definition but Asciidoc won't let me do it...).
+
+If several instances of *upmpdcli* run on the same network, you will want
+to give them distinct names. The name which is displayed by most Control
+Points can be set with the +friendlyname+ configuration parameter. Some
+Linn Control Points (e.g. Kazoo) use another value, set with
++ohproductroom+.
+
+Upmpdcli usually controls the MPD instance running on the same
+host. However, there may be reasons to do otherwise, and the host name and
+port where mpd should be reached can be set with +mpdhost+ and +mpdport+.
+
+The Upmpdcli Media Renderer has two active interfaces by default: UPnP AV
+and OpenHome. Only OpenHome control points can share the renderer, control
+through UPnP AV must only use a single control point. This is not enforced,
+and misuse will result in miscellaneous weirdnesses. In some special
+situations, it may be useful to limit the interface to UPnP AV or OpenHome
+only (or disable both), which can be done with +openhome+ and +upnpav+.
+
+[[UPMPDCLI-RENDERER-FORMATS]]
+=== Audio formats
+
+Upmpdcli can accept most audio formats supported by MPD, meaning about
+anything, including DSD.
+
+You should know that MPD has difficulties with some formats _when accessed
+through HTTP_ which is how the Media Server transfers the data.
+
+Specifically, WAV and AIFF files, especially with samples wider than 16
+bits are a frequent source of trouble (because they are little used and
+little tested with streaming). Support will vary depending on the MPD
+versions and exactly what input plugins are configured (among *ffmpeg*,
+*libaudiofile* and *libsndfile*). Often, the same files play just fine
+locally, it's the configuration of HTTP access and file format which causes
+problems.
+
+Raw PCM streams are another special case. The reason is that these streams
+do not, by definition, carry metadata to define the exact format (sample
+rate, bits per sample, number of channels, byte order). *upmpdcli* has no
+way to transfer these parameters to *MPD* (this is a limitation of the
+client protocol). The parameters can be transferred from the Media Server
+with the MIME type though.
+
+Recent versions of upmpdcli and MPD (0.20) do support audio/L16,
+but only with the development version of MPD (0.20) and there are
+conditions on the Media Server (it must output the audio formats parameters
+with the MIME type). See this Github issue for more details:
+https://github.com/medoc92/upmpdcli/issues/36#issuecomment-227761220
+
+In general, there are few reasons to use these linear formats, when FLAC
+will produce exactly the same bits, with less network load (which largely
+compensates the small additional CPU load).
+
+There are situations where the linear formats are needed though, and where
+it may be necessary to use the right MPD and plugins versions.
+
+[[UPMPDCLI-SONGCAST]]
+== Upmpdcli and Songcast
+
+Upmpdcli implements the Receiver UPnP service, and uses an auxiliary
+process (*sc2mpd*) for transporting the audio data. *sc2mpd* is a slight
+modification of the sample program which comes with the Linn Songcast
+OpenHome open source implementation
+
+*upmpdcli* can also manage a Sender subsystem, which is implemented by
+using a separate *mpd* instance sending audio to an *mpd2sc* command (part
+of the *sc2mpd* package). The latter is a modified version of the OpenHome
+WavSender sample program. This allows playing the usual upmpdcli playlist
+or radio on several synchronized players, but also doing the same thing
+with a captured analog source (*arecord* output).
+
+[[UPMPDCLI-RECEIVER]]
+=== Upmpdcli Receiver
+
+*sc2mpd* can play the *Songcast* audio stream in two modes:
+
+ - By offering a local HTTP interface (based on _libmicrohttpd_) from which
+   *mpd* will play the stream.
+ - By directly using the *alsa* audio driver.
+
+.Upmpdcli Receiver in `alsa` and `mpd` modes
+[options="header"]
+|=============
+|`alsa`|`mpd`
+|image:pics/upmpdcli-receiver-alsa.png[Upmpdcli Receiver, alsa mode]|image:pics/upmpdcli-receiver-mpd.png[Upmpdcli Receiver, mpd mode]
+|=============
+
+What approach is used is decided by the +scplaymethod+ configuration file
+parameter, which can be set to _mpd_ or _alsa_  (more detail in the
+<<UPMPDCLI-CONFIG,configuration section>>).
+
+There are *multiple* problems with the _mpd_ approach, and its only
+advantage is that it needs no configuration. If you go the _alsa_ route,
+you will need to set the name of the Alsa device in the configuration, but
+you probably had to set it in the MPD configuration too, so this may not be
+too much of an issue.
+ 
+When using _mpd_ more bufferisation occurs and there may be a significant
+delay (up to around 10&nbsp;S) between the time when Songcast is activated
+and the time sound appears.
+
+NOTE: When using _mpd_, from a Mac (24 bits audio) you need an
+appropriately configured and recent MPD version (usually configured with
+`--disable-audiofile`), else you risk producing high volume noise.  As
+Debian and Ubuntu tend to lag quite bit on MPD progresses, I have set up
+link:downloads.html#mpd[backport repositories] for appropriately configured
+recent mpd versions, for Ubuntu, Debian i386/amd64 and
+Raspbian. Unfortunately, not only the MPD version is significant, there are
+sometimes also problems in the input plugins libraries.
+
+Given the bufferisation and delay control issues when going through MPD,
+only the _alsa_ method is usable in multi-room configurations. Even with a
+single player, the _mpd_ method will experience skips from time to
+time. The reasons are explained in the link:scmulti.html[multi-room]
+page.
+
+The following steps are taken for establishing a Songcast connection:
+
+- If *upmpdcli* finds an executable *sc2mpd* command in the PATH when
+  starting up, it advertises a Receiver service.
+
+- The *Songcast* application on the desktop finds out about the
+  Receiver through the normal UPnP mechanisms and can be instructed to
+  use it. It then tells the Receiver in *upmpdcli* to start playing.
+
+- *upmdpcli* starts the *sc2mpd* process, which gets ready to receive data
+  through Songcast, and either play it directly or make it available
+  through HTTP.
+
+- If the _`mpd`_ method is in use, *upmpdcli* instructs *mpd* to play the
+  URL for the *sc2mpd* output.
+
+WARNING: There is *no software volume control* for the *upmpdcli* Songcast
+Receivers for now: use either a local mixer or the little round things on
+the pre-amps. Set the volume low when experimenting !
+
+
+[[UPMPDCLI-SENDER]]
+=== Upmpdcli Sender
+
+Upmpdcli Sender mode allows you to broadcast the Playlist or Radio source
+(or even *arecord* output) to other Songcast Receivers. The local host
+plays through its local Receiver too, in order to achieve
+synchronisation. Unlike on Windows, the audio is not captured from the
+driver, so that you won't be able to cast other applications.
+
+You can set *umpdcli* in Sender mode from an OpenHome-capable Control
+Point, by selecting the Source of type `Playlist`, name `PL-to-Songcast` or
+type `Radio`, name `RD-to-Songcast`.
+
+The *sc2mpd* configuration must be set to play directly to Alsa for the
+`XX-to-Songcast` sources to appear. See the
+link:sc2mpd.html#Configuration[configuration section], and
+link:scmulti.html[the page about synchronisation].
+
+Selecting the source can be done, for example, from the
+link:http://www.lesbonscomptes.com/upplay/index.html[upplay]
+`File`->`Select Source` menu entry.
+
+When entering this mode, *upmpdcli* will start an auxiliary MPD process
+(after stopping the main one), configured to send audio to the *mpd2sc*
+OpenHome Sender process. It will then also start its own Songcast
+_Receiver_ mode, transfer the playlist, stop the main MPD and start the
+auxiliary one...
+
+The resulting state is that the *upmpdcli* instance can be managed in
+Playlist mode from the Control Point. The audio is played locally through
+the Songcast _Receiver_. Other _Receivers_ can be connected and will play
+in good synchronization.
+
+image::upmpdcli-sender-receiver.png["Sender/Receiver mode"]
+
+This looks complicated, but in practise, starting the mode and connecting
+other Receivers from the `upplay` control panel is quite easy.
+
+[[UPMPDCLI-SENDER-EXTSOURCES]]
+==== Managing external sources
+
+In the `Sender` modes described above, `upmpdcli` (or rather its slave
+MPD process) is the source of the audio stream.
+
+It is also possible to set things up so that an external source (e.g. a
+line in) can be connected to the Songcast Sender, allowing multiroom
+playing of any external source. See the comments in the
+link:https://github.com/medoc92/upmpdcli/blob/master/samplescripts/Analog-Input[sample script in the
+upmpdcli source tree] for instructions about configuring this. The general
+idea is that an external script, executed by *upmpdcli*, is responsible for
+executing the piped source reader and Songcast Sender.
+
+
+
+
+[[UPMPDCLI-MS]]
+== Upmpdcli as UPnP Media Server
+
+
+[[UPMPDCLI-CONFIG]]
+== Upmpdcli configuration file reference
+include::upmpdcli-config.txt[]
+
+
+== Installation from packages
+
+
+== Building from source
+
+bla
+
+=== upmpdcli
+
+bla bla
+
+=== sc2mpd
+bla bla
+
+== Annex: Songcast in more detail
+
+[[COMMAND-ENVIRON]]
+== Annex: command line and environment
+
+In most situations, *upmpdcli* will be run as follows:
+
+    upmpdcli -D -c /etc/upmpdcli.conf
+
+The `-D` option tells *upmpdcli* to fork and run in background. The `-c`
+option specifies a configuration file.
+
+Some of the essential configuration parameters can be set from the command
+line, a configuration file, or the environment in this order of
+priority. It would be rather confusing to use a mix of methods, so you
+should probably chose one.
+
+All parameters have defaults, and a minimal installation will need no
+customisation at all. 
+
+|========================
+|What|Command line|Environment|Config variable
+|Configuration file name|-c config|$UPMPD_CONFIG|
+|Host name or IP address where *MPD* runs|-h mpdhost|$UPMPD_HOST|mpdhost
+|TCP port for *MPD*|-p mpdport|$UPMPD_PORT|mpdport
+|UPnP "friendly name" for the device. This gets displayed in network search
+  results.|-f friendlyname|$UPMPD_FRIENDLYNAME|friendlyname 
+|Log file name. Leave empty for stderr|-d logfilename||logfilename
+|Verbosity level (0-4)|-l loglevel||loglevel
+|UPnP network interface|-i iface|$UPMPD_UPNPIFACE|upnpiface
+|UPnP port|-P port|$UPMPD_UPNPPORT|upnpport
+|===========================    

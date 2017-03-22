@@ -180,7 +180,7 @@ which can only be set in the configuration file are described further down.
 |Log file name. Leave empty for stderr|-d logfilename||logfilename
 |Verbosity level (0-4)|-l loglevel||loglevel
 |UPnP network interface|-i iface|$UPMPD_UPNPIFACE|upnpiface
-|UPnP port|-p port|$UPMPD_UPNPPORT|upnpport
+|UPnP port|-P port|$UPMPD_UPNPPORT|upnpport
 |===========================    
 
 

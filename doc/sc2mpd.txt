@@ -182,7 +182,7 @@ WavSender sample program.
 [options="header"]
 |=============
 |`alsa`|`mpd`
-|image:upmpdcli-receiver-alsa.png[Upmpdcli Receiver, alsa mode]|image:upmpdcli-receiver-mpd.png[Upmpdcli Receiver, mpd mode]
+|image:pics/upmpdcli-receiver-alsa.png[Upmpdcli Receiver, alsa mode]|image:pics/upmpdcli-receiver-mpd.png[Upmpdcli Receiver, mpd mode]
 |=============
 
 What approach is used is decided by a parameter in the upmpdcli
@@ -387,8 +387,9 @@ normal build, the procedure would be as follows:
   named _libmicrohttpd-dev_ and _libmicrohttpd10_ on Debian-derived systems
   (use _libmicrohttpd_ and _libmicrohttpd-devel_ for Fedora).
 - The link:http://www.mega-nerd.com/SRC/[libsamplerate]
-  library. _libsamplerate0_ on debian-derived systems.
-- The *libasound* Alsa interface library (_libasound2_).
+  library (_libsamplerate0_ on Debian, _libsamplerate-devel_ for Fedora).
+- The *libasound* Alsa interface library (_libasound2-dev_ on Debian,
+  _alsa-lib-devel_ for Fedora).
 
 Once OpenHome is built and the auxiliary library development packages are
 installed, build *sc2mpd*, using the following commands inside the
