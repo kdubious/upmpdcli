@@ -1,5 +1,10 @@
 = Upmpdcli release notes
 
+== sc2mpd 1.1.2
+
+- Updates to the build system. Small code reorganization and fixes. No
+  external changes.
+  
 == Upmpdcli 1.2.12
 
 - Fixes the 1.2.11 Content Directory bug.

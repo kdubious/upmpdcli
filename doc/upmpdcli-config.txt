@@ -194,6 +194,15 @@ the first argument, e.g. /some/script 85.
 
 === OpenHome parameters 
 
+[[ohproductroom]]
+ohproductroom:: The name of the room where
+the Product is located. Set to “Main Room” by default,
+displayed in place of the "friendly name" by some control points.
+ProductRoom is used to group the Product with other related Products in
+the same physical room (e.g. a source with a pre-amp). Products which are
+physically linked must always share the same ProductRoom
+name.
+
 [[radiolist]]
 radiolist:: Path to an external file with radio
 definitions. Radio stations can be defined at the end of
@@ -209,19 +218,6 @@ artUrl = http://some.host/icon/path.png
 artScript = /path/to/script/dynamic-art-getter
 ----
 
-
-[[ohmetapersist]]
-ohmetapersist:: Save queue
-metadata to disk (0/1). This allows persistence of the
-metadata information across restarts, the default is 1, and there is no
-reason to turn it off.
-
-[[ohmetasleep]]
-ohmetasleep:: Mimimum
-interval (Seconds) between two cache saves. Increasing this
-may improve playlist load speed on a slow device. The default is to start
-a new save as soon as the previous one is done (if the list changed again
-inbetween).
 
 [[ohmanufacturername]]
 ohmanufacturername:: Manufacturer
@@ -257,16 +253,6 @@ icon.
 ohproductname:: User-visible product
 name. By default this is set to ModelName. 
 
-ohproductroom::
-[[ohproductroom]]
-The name of the room where
-the Product is located. Set to “Main Room” by default,
-displayed in place of the "friendly name" by some control points.
-ProductRoom is used to group the Product with other related Products in
-the same physical room (e.g. a source with a pre-amp). Products which are
-physically linked must always share the same ProductRoom
-name.
-
 [[ohproductinfo]]
 ohproductinfo:: Product information.
  
@@ -278,6 +264,19 @@ site. This may be the UPnP presentation page.
 [[ohproductimageuri]]
 ohproductimageuri:: Uri for product
 image.  
+
+[[ohmetapersist]]
+ohmetapersist:: Save queue
+metadata to disk (0/1). This allows persistence of the
+metadata information across restarts, the default is 1, and there is no
+reason to turn it off.
+
+[[ohmetasleep]]
+ohmetasleep:: Mimimum
+interval (Seconds) between two cache saves. Increasing this
+may improve playlist load speed on a slow device. The default is to start
+a new save as soon as the previous one is done (if the list changed again
+inbetween).
 
 === Songcast Receiver parameters 
 
