@@ -253,7 +253,17 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 class ThreadingSimpleServer(SocketServer.ThreadingMixIn,
                             BaseHTTPServer.HTTPServer):
-    pass
+    # Override handle_error as the default version writes to stdout !
+    def handle_error(self, request, client_address):
+        # Actually, we generally don't care about errors...
+        return
+    
+        uplog('-'*40)
+        uplog('Exception happened during processing of request from %s' %
+              str(client_address))
+        import traceback
+        traceback.print_exc() # XXX But this goes to stderr! (jf: yep :)
+        uplog('-'*40)
 
 
 def runHttp(host='', port=8080, pthstr='', pathprefix=''):

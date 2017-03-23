@@ -154,13 +154,19 @@ class CmdTalk:
 
     # Call processor with input params, send result
     def processmessage(self, processor, params):
-        try:
+        # In normal usage we try to recover from processor errors, but
+        # we sometimes want to see the real stack trace when testing
+        safeexec = True
+        if safeexec:
+            try:
+                outfields = processor.process(params)
+            except Exception as err:
+                self.log("processmessage: processor raised: [%s]" % err)
+                outfields = {}
+                outfields["cmdtalkstatus"] = "1"
+                outfields["cmdtalkerrstr"] = str(err)
+        else:
             outfields = processor.process(params)
-        except Exception as err:
-            self.log("processmessage: processor raised: [%s]" % err)
-            outfields = {}
-            outfields["cmdtalkstatus"] = "1"
-            outfields["cmdtalkerrstr"] = str(err)
 
         self.answer(outfields)
 

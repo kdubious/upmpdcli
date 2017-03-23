@@ -83,6 +83,8 @@ def uprcl_init():
         #   [...]
         # error: [Errno 32] Broken pipe
         # ----------------------------------------
+        # Finally: the handle_error SocketServer method was writing to stdout.
+        # Overriding it should have fixed the issue.
         httpthread = threading.Thread(target=uprclhttp.runHttp,
                                       kwargs = {'host':host ,
                                                 'port':int(port),

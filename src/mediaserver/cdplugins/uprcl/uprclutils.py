@@ -73,15 +73,8 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     Returns:
         A dict representing an UPnP item, with the
         keys as expected in the plgwithslave.cxx resultToEntries() function. 
-
-        The permanent URIs, are of the following form, based on the
-        configured host:port and pathprefix arguments and track Id:
-        TBD
-            http://host:port/pathprefix/track?version=1&trackId=<trackid>
-    
     """
-    uplog("rcldoctoentry:  pid %s id %s mtype %s" %
-          (pid, id, doc.mtype))
+    #uplog("rcldoctoentry:  pid %s id %s mtype %s" % (pid, id, doc.mtype))
     
     li = {}
     if doc.mtype not in audiomtypes:
@@ -105,10 +98,7 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     if 'upnp:artist' not in li and doc.albumartist:
         li['upnp:artist'] = doc.albumartist
 
-
     # TBD Date format ?
-        
-    ### li['discnumber'] = str(track.disc_num)
     #comment=
     #composer=
     #conductor=
@@ -116,7 +106,6 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     #genre=
     #lyricist=
     #lyrics=
-
 
     try:
         val = li['upnp:originalTrackNumber']
@@ -140,7 +129,7 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
         li['upnp:albumArtURI'] = doc.albumarturi
         #uplog("Set upnp:albumArtURI to %s" % li['upnp:albumArtURI'])
 
-    uplog("rcldoctoentry: uri: %s" % li['uri'])
+    #uplog("rcldoctoentry: uri: %s" % li['uri'])
     return li
 
 def docfolder(doc):
@@ -189,9 +178,12 @@ def docarturi(doc, httphp, pathprefix):
     if folder not in _foldercache:
         _foldercache = {}
         _foldercache[folder] = None
-        candidates =  [f for f in os.listdir(folder) if
-                       f.lower().startswith('folder.')
-                       or f.lower().startswith('cover.')]
+        try:
+            candidates =  [f for f in os.listdir(folder) if
+                           f.lower().startswith('folder.')
+                           or f.lower().startswith('cover.')]
+        except:
+            candidates = []
         artnm = None
         for targ in _artnames:
             for nm in candidates:
