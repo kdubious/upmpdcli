@@ -175,7 +175,7 @@ parameters can be set on the
 xref:COMMAND-ENVIRON[command line or in the environment].
 
 However, a majority of parameters can only be set in the configuration
-file. This this is set set through the +-c+ command line option. The usual
+file, which is designated with the +-c+ command line option. The usual
 path is +/etc/upmpdcli.conf+
 
 The configuration file has a simple `name = value` format.
@@ -196,7 +196,8 @@ This section goes in a little more detail about miscellaneous aspects of
 the Media Renderer, and describe a few of the most used configuration
 parameters. See the <<UPMPDCLI-CONFIG,configuration reference section>>
 for more details (I would very much like to link each parameter to its
-definition but Asciidoc won't let me do it...).
+definition but Asciidoc won't let me do it, so they link to the top of the
+appropriate section.).
 
 If several instances of *upmpdcli* run on the same network, you will want
 to give them distinct names. The name which is displayed by most Control
@@ -210,18 +211,23 @@ port where mpd should be reached can be set with <<mpdhost,+mpdhost+>>,
 and <<mpdhost,+mpdport+>>.
 
 The Upmpdcli Media Renderer has two active interfaces by default: UPnP AV
-and OpenHome. Only OpenHome control points can share the renderer, there
-can be at most a single UPnP AV Control Point (and no OpenHome ones in this
-case). This is not enforced, and misuse will result in miscellaneous
-weirdnesses. In some special situations, it may be useful to limit the
-interface to UPnP AV or OpenHome only (or disable both), which can be done
-with the <<friendlyname,+openhome+>> and <<friendlyname,+upnpav+>> parameters.
+and OpenHome. Only OpenHome Control Points can share the renderer. If you
+use an UPnP AV Control Point, it must be the only one. This is not
+enforced, and misuse will result in miscellaneous weirdnesses. In some
+special situations, it may be useful to limit the interface to UPnP AV or
+OpenHome only (or disable both), which can be done with the
+<<friendlyname,+openhome+>> and <<friendlyname,+upnpav+>> parameters.
 
 [[UPMPDCLI-RENDERER-FORMATS]]
 === Audio formats
 
 Upmpdcli can accept most audio formats supported by MPD, meaning about
 anything, including DSD.
+
+Upmpdcli normally checks that the format of a resource to be played is
+compatible with what it thinks MPD can do. This check is sometimes
+pessimistic and can be disabled by setting
+<<friendlyname,+checkcontentformat+>> to 0.
 
 You should know that MPD has difficulties with some formats _when accessed
 through HTTP_ which is how the Media Server transfers the data.
@@ -231,7 +237,7 @@ bits are a frequent source of trouble (because they are little used and
 little tested for streaming). Support will vary depending on the MPD
 versions and exactly what input plugins are configured (among *ffmpeg*,
 *libaudiofile* and *libsndfile*). Often, the same files play just fine
-locally, it's the configuration of HTTP access and file format which causes
+locally, it's the combination of HTTP access and file format which causes
 problems.
 
 Raw PCM streams are another special case. The reason is that these streams
@@ -239,12 +245,10 @@ do not, by definition, carry metadata to define the exact format (sample
 rate, bits per sample, number of channels, byte order). *upmpdcli* has no
 way to transfer these parameters to *MPD* (this is a limitation of the
 client protocol). The parameters can be transferred from the Media Server
-with the MIME type though.
-
-Recent versions of upmpdcli and MPD (0.20 and later) do support audio/L16,
-but there are conditions on the Media Server (it must output the audio
-formats parameters with the MIME type). See this Github issue for more
-details:
+to the player along with the MIME type though. In consequence, only recent
+versions of Upmpdcli and MPD (0.20 and later) do support audio/L16, but
+not with any Media Server (it must output the audio formats
+parameters with the MIME type). See this Github issue for more details:
 https://github.com/medoc92/upmpdcli/issues/36#issuecomment-227761220
 
 In general, there are few reasons to use these linear formats, when FLAC
@@ -265,7 +269,7 @@ the radio links to work.
 
 Radio stations can be defined in the configuration (at the end because of
 the use of section indicators), or in in a separate file by setting the
-+radiolist+ parameter in the main configuration.
+<<ohproductroom,+radiolist+>> parameter in the main configuration.
 Example entry:
 
 ----
@@ -282,15 +286,16 @@ icon. +artUrl+ is optional.
 Radio channels can be accessed by selecting the _Radio_ Source from an
 OpenHome Control Point.
 
-Some radios (e.g. _radioparadise_) publish the album art for the currently
-playing title. The details vary. The +artScript+ parameter, if set, should
-point to an executable script which prints this dynamic art Uri to
-stdout. The image will supercede the radio logo, to be displayed by control
-points. Beware that the path to the script must be accessible by the
-_upmpdcli_ user, which may not be the case for your home. +/usr/local/bin+
-is your friend. As a very rough example here follows a command which would
-retrieve the radioparadise uri (as long as they don't change their format,
-a proper approach would use an xml parser of course):
+Some radios (e.g.  link:https://www.radioparadise.com/rp_2.php?#[Radio
+Paradise]) publish the album art for the currently playing title. The
+details vary. The +artScript+ parameter, if set, should point to an
+executable script which prints this dynamic art Uri to stdout. The image
+will supercede the radio logo, to be displayed by control points. Beware
+that the path to the script must be accessible by the _upmpdcli_ user,
+which may not be the case for your home. +/usr/local/bin+ is your
+friend. As a very rough example here follows a command which would retrieve
+the Radio Paradise URI (as long as they don't change their format, a proper
+approach would use an XML parser of course):
 
     curl -s http://radioparadise.com/xml/now.xml | \
          grep '<coverart>' | sed -e 's/<coverart>//' -e 's!</coverart>!!'
@@ -300,16 +305,16 @@ a proper approach would use an xml parser of course):
 == Upmpdcli and Songcast
 
 Upmpdcli implements the Receiver UPnP service, and uses an auxiliary
-process (*sc2mpd*) for transporting the audio data. *sc2mpd* is a slight
-modification of the sample program which comes with the Linn Songcast
+process (*sc2mpd*) for transporting the audio data. *sc2mpd* is based
+on the sample program which comes with the Linn Songcast
 OpenHome open source implementation
 
-*upmpdcli* can also manage a Sender subsystem, which is implemented by
-using a separate *mpd* instance sending audio to an *mpd2sc* command (part
-of the *sc2mpd* package). The latter is a modified version of the OpenHome
-WavSender sample program. This allows playing the usual upmpdcli playlist
-or radio on several synchronized players, but also doing the same thing
-with a captured analog source (e.g. *arecord* output).
+Upmpdcli can also manage a Sender subsystem, which is implemented by using
+a separate *mpd* instance sending audio to an *mpd2sc* command (part of the
+*sc2mpd* package). The latter is a modified version of the OpenHome
+WavSender sample program. This allows playing the usual Upmpdcli playlist
+or a a radio channel on several synchronized players, but also doing the
+same thing with a captured analog source (e.g. *arecord* output).
 
 NOTE: You should know that it is possible to control the Songcast Sender
 from another local network PC to snoop on what you are listening (Radio or
@@ -320,7 +325,7 @@ not capture anything besides what *mpd*, or an explicitely setup additional
 source are playing (e.g. Skype phone conversations are out of reach).
 
 [[UPMPDCLI-RECEIVER]]
-=== Upmpdcli Receiver
+=== Upmpdcli Songcast Receiver
 
 *sc2mpd* can play the *Songcast* audio stream in two modes:
 
@@ -344,7 +349,7 @@ you will need to set <<sclogfilename, +scalsadevice+>> in the
 configuration, but you probably had to set it in the MPD configuration too,
 so this may not be too much of an issue.
  
-When using _mpd_ more bufferisation occurs and there may be a significant
+When using *mpd*, more bufferisation occurs and there may be a significant
 delay (up to around 10&nbsp;S) between the time when Songcast is activated
 and the time sound appears.
 
@@ -383,14 +388,14 @@ WARNING: There is *no software volume control* for the *upmpdcli* Songcast
 Receivers for now: use either a local mixer or the little round things on
 the pre-amps. Set the volume low when experimenting !
 
-NOTE: Songcast can be use IP multicast for lower load on the network when
+NOTE: Songcast can use IP multicast for lower load on the network when
 playing on several hosts. Unfortunately, multicast WIFI don't mix well in
 many cases. If you have wireless Receivers experiencing sound drop issues,
 try selecting unicast in the Songcast advanced configuration panel on the
 desktop.
 
 [[UPMPDCLI-SENDER]]
-=== Upmpdcli Sender
+=== Upmpdcli Songcast Sender
 
 Upmpdcli Sender mode allows you to broadcast the Playlist or Radio source
 (or the output of any process which can write to a Fifo, e.g. *arecord*) to
@@ -778,12 +783,12 @@ files and the sc2mpd (git) source tree.
 If you want to play from a Mac or Windows machine, install the 
 link:http://www.linn.co.uk/software#songcast[Songcast application]
 
-NOTE: Not all Windows Songcast versions work well with upmpdcli. Lately
-I've had good luck with
-http://oss.linn.co.uk/Releases/Songcast/Davaar/Songcast_4.4.190_win.exe[4.4.190]
-but not with the 4.5 ones (it's possible to get them to work with
-*upmpdcli* from the *upplay* control panel, but the Windows app claims that
-the *upmpdcli* receiver is unavailable.).
+NOTE: Not all http://oss.linn.co.uk/Releases/Songcast/Davaar/[Songcast
+capture application versions] work well with upmpdcli. Lately (03-2017),
+the latest version (4.8.535) seems to work fine. In the past, I've had good
+luck with 4.4.190 but not with the 4.5 ones (it is possible to get them to
+work with *upmpdcli* from the *upplay* control panel, but the Windows app
+claims that the *upmpdcli* receiver is unavailable.).
 
 I could not get IP multicast to work with WIFI Receivers (the sound drops
 constantly).

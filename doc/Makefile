@@ -1,5 +1,6 @@
 .SUFFIXES: .txt .html
 
+# volnitsky or flask
 .txt.html:
 	asciidoc -b html5 -a toc2 -a theme=volnitsky $<
 
