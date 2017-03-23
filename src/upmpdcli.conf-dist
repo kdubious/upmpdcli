@@ -204,6 +204,15 @@
 
 # <grouptitle>OpenHome parameters</grouptitle>
 
+# <var name="ohproductroom" type="string"><brief>The name of the room where
+# the Product is located.</brief><descr>Set to “Main Room” by default,
+# displayed in place of the "friendly name" by some control points.
+# ProductRoom is used to group the Product with other related Products in
+# the same physical room (e.g. a source with a pre-amp). Products which are
+# physically linked must always share the same ProductRoom
+# name.</descr></var>
+#ohproductroom = Main Room
+
 # <var name="radiolist" type="fn"><brief>Path to an external file with radio
 # definitions.</brief><descr>Radio stations can be defined at the end of
 # the the main file, or in a separate one (or both). Using an external file
@@ -219,19 +228,6 @@
 # ----
 # </descr></var>
 #radiolist = /path/to/my/radio/list
-
-# <var name="ohmetapersist" type="bool" values="1"><brief>Save queue
-# metadata to disk (0/1).</brief><descr>This allows persistence of the
-# metadata information across restarts, the default is 1, and there is no
-# reason to turn it off.</descr></var>
-#ohmetapersist = 1
-
-# <var name="ohmetasleep" type="int" values="0 120 0"><brief>Mimimum
-# interval (Seconds) between two cache saves.</brief><descr>Increasing this
-# may improve playlist load speed on a slow device. The default is to start
-# a new save as soon as the previous one is done (if the list changed again
-# inbetween).</descr></var>
-#ohmetasleep = 0
 
 # <var name="ohmanufacturername" type="string"><brief>Manufacturer
 # name. </brief></var>
@@ -258,14 +254,6 @@
 # <var name="ohproductname" type="string"><brief>User-visible product
 # name. By default this is set to ModelName.</brief></var>
 #ohproductname = Upmpdcli
-# <var name="ohproductroom" type="string"><brief>The name of the room where
-# the Product is located.</brief><descr>Set to “Main Room” by default,
-# displayed in place of the "friendly name" by some control points.
-# ProductRoom is used to group the Product with other related Products in
-# the same physical room (e.g. a source with a pre-amp). Products which are
-# physically linked must always share the same ProductRoom
-# name.</descr></var>
-#ohproductroom = Main Room
 # <var name="ohproductinfo" type="string"><brief>Product information.
 # </brief></var>
 #ohproductinfo =
@@ -275,6 +263,17 @@
 # <var name="ohproductimageuri" type="string"><brief>Uri for product
 # image. </brief></var>
 #ohproductimageuri =
+# <var name="ohmetapersist" type="bool" values="1"><brief>Save queue
+# metadata to disk (0/1).</brief><descr>This allows persistence of the
+# metadata information across restarts, the default is 1, and there is no
+# reason to turn it off.</descr></var>
+#ohmetapersist = 1
+# <var name="ohmetasleep" type="int" values="0 120 0"><brief>Mimimum
+# interval (Seconds) between two cache saves.</brief><descr>Increasing this
+# may improve playlist load speed on a slow device. The default is to start
+# a new save as soon as the previous one is done (if the list changed again
+# inbetween).</descr></var>
+#ohmetasleep = 0
 
 # <grouptitle>Songcast Receiver parameters</grouptitle>
 
