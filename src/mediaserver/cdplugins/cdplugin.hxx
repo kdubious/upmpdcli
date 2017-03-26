@@ -139,6 +139,8 @@ public:
         return m_name;
     }
 
+    virtual bool startInit() = 0;
+
     std::string m_name;
     CDPluginServices *m_services;
 };

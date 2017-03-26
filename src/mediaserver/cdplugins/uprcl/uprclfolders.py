@@ -18,16 +18,20 @@ import os
 import shlex
 import urllib
 import sys
+import time
+from timeit import default_timer as timer
 
 from uprclutils import uplog, docarturi, audiomtypes, rcldirentry, \
      rcldoctoentry, cmpentries
 from recoll import recoll
 from recoll import rclconfig
 
-g_foldersIdPrefix = '0$uprcl$folders'
+_foldersIdPfx = '0$uprcl$folders'
 
 # Debug : limit processed recoll entries for speed
-g_maxrecollcnt = 0
+_maxrclcnt = 0
+
+_dirvec = []
 
 # Internal init: create the directory tree (folders view) from the doc
 # array by splitting the url in each doc.
@@ -54,6 +58,7 @@ def _createdir(dirvec, fathidx, docidx, nm):
 def _rcl2folders(docs, confdir, httphp, pathprefix):
     global dirvec
     dirvec = []
+    start = timer()
 
     rclconf = rclconfig.RclConfig(confdir)
     topdirs = [os.path.expanduser(d) for d in
@@ -149,6 +154,8 @@ def _rcl2folders(docs, confdir, httphp, pathprefix):
         for ent in dirvec:
             uplog("%s" % ent)
 
+    end = timer()
+    uplog("_rcl2folders took %.2f Seconds" % (end - start))
     return dirvec
 
 # Internal init: fetch all the docs by querying Recoll with [mime:*],
@@ -156,6 +163,7 @@ def _rcl2folders(docs, confdir, httphp, pathprefix):
 # size (because the number of mime types is limited). Something like
 # title:* would overflow.
 def _fetchalldocs(confdir):
+    start = timer()
     allthedocs = []
 
     rcldb = recoll.connect(confdir=confdir)
@@ -169,19 +177,22 @@ def _fetchalldocs(confdir):
         for doc in docs:
             allthedocs.append(doc)
             totcnt += 1
-        if (g_maxrecollcnt > 0 and totcnt >= g_maxrecollcnt) or \
+        if (_maxrclcnt > 0 and totcnt >= _maxrclcnt) or \
                len(docs) != rclq.arraysize:
             break
-    uplog("Retrieved %d docs" % (totcnt,))
+        time.sleep(0)
+    end = timer()
+    uplog("Retrieved %d docs in %.2f Seconds" % (totcnt,end - start))
     return allthedocs
 
 
-# Initialize (read recoll data and build tree)
+# Initialize (read recoll data and build tree). This is called by
+# uprcl-app init
 def inittree(confdir, httphp, pathprefix):
-    global g_alldocs, g_dirvec
+    global g_alldocs, _dirvec
     
     g_alldocs = _fetchalldocs(confdir)
-    g_dirvec = _rcl2folders(g_alldocs, confdir, httphp, pathprefix)
+    _dirvec = _rcl2folders(g_alldocs, confdir, httphp, pathprefix)
     return g_alldocs
 
 
@@ -192,13 +203,13 @@ def inittree(confdir, httphp, pathprefix):
 
 # Extract dirvec index from objid, according to the way we generate them.
 def _objidtodiridx(pid):
-    if not pid.startswith(g_foldersIdPrefix):
+    if not pid.startswith(_foldersIdPfx):
         raise Exception("folders.browse: bad pid %s" % pid)
 
     if len(g_alldocs) == 0:
         raise Exception("folders:browse: no docs")
 
-    diridx = pid[len(g_foldersIdPrefix):]
+    diridx = pid[len(_foldersIdPfx):]
     if not diridx:
         diridx = 0
     else:
@@ -206,7 +217,7 @@ def _objidtodiridx(pid):
             raise Exception("folders:browse: called on non dir objid %s" % pid)
         diridx = int(diridx[2:])
     
-    if diridx >= len(g_dirvec):
+    if diridx >= len(_dirvec):
         raise Exception("folders:browse: bad pid %s" % pid)
 
     return diridx
@@ -220,7 +231,7 @@ def rootentries(pid):
 # Look all non-directory docs inside directory, and return the cover
 # art we find.
 def _arturifordir(diridx):
-    for nm,ids in g_dirvec[diridx].iteritems():
+    for nm,ids in _dirvec[diridx].iteritems():
         if ids[1] >= 0:
             doc = g_alldocs[ids[1]]
             if doc.mtype != 'inode/directory' and doc.albumarturi:
@@ -245,7 +256,7 @@ def browse(pid, flag, httphp, pathprefix):
 
     # The basename call is just for diridx==0 (topdirs). Remove it if
     # this proves a performance issue
-    for nm,ids in g_dirvec[diridx].iteritems():
+    for nm,ids in _dirvec[diridx].iteritems():
         if nm == "..":
             continue
         thisdiridx = ids[0]
@@ -260,7 +271,7 @@ def browse(pid, flag, httphp, pathprefix):
             # Skip empty directories
             if len(dirvec[thisdiridx]) == 1:
                 continue
-            id = g_foldersIdPrefix + '$' + 'd' + str(thisdiridx)
+            id = _foldersIdPfx + '$' + 'd' + str(thisdiridx)
             if doc and doc.albumarturi:
                 arturi = doc.albumarturi
             else:
@@ -273,7 +284,7 @@ def browse(pid, flag, httphp, pathprefix):
                 uplog("folders:docidx -1 for non-dir entry %s"%nm)
                 continue
             doc = g_alldocs[thisdocidx]
-            id = g_foldersIdPrefix + '$i' + str(thisdocidx)
+            id = _foldersIdPfx + '$i' + str(thisdocidx)
             e = rcldoctoentry(id, pid, httphp, pathprefix, doc)
             if e:
                 entries.append(e)
@@ -296,8 +307,8 @@ def dirpath(objid):
     
     lpath = []
     while True:
-        fathidx = g_dirvec[diridx][".."][0]
-        for nm, ids in g_dirvec[fathidx].iteritems():
+        fathidx = _dirvec[diridx][".."][0]
+        for nm, ids in _dirvec[fathidx].iteritems():
             if ids[0] == diridx:
                 lpath.append(nm)
                 break

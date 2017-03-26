@@ -46,6 +46,9 @@ public:
     // make things quite more complicated for a number of reasons.
     virtual std::string get_media_url(const std::string& path);
 
+    // used for plugins which should start initialization asap
+    bool startInit();
+    
     class Internal;
 private:
     Internal *m;

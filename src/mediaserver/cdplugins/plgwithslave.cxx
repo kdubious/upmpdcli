@@ -232,6 +232,11 @@ bool PlgWithSlave::Internal::maybeStartCmd()
     return true;
 }
 
+bool PlgWithSlave::startInit()
+{
+    return m && m->maybeStartCmd();
+}
+
 // Translate the slave-generated HTTP URL (based on the trackid), to
 // an actual temporary service (e.g. tidal one), which will be an HTTP
 // URL pointing to either an AAC or a FLAC stream.
@@ -520,19 +525,26 @@ int PlgWithSlave::browse(const string& objid, int stidx, int cnt,
         return errorEntries(objid, entries);
     }
 
-    auto it = res.find("entries");
-    if (it == res.end()) {
+    auto ite = res.find("entries");
+    if (ite == res.end()) {
         LOGERR("PlgWithSlave::browse: no entries returned\n");
         return errorEntries(objid, entries);
+    }
+    bool nocache = false;
+    auto itc = res.find("nocache");
+    if (itc != res.end()) {
+        nocache = stringToBool(itc->second);
     }
 
     if (flg == CDPlugin::BFChildren) {
         ContentCacheEntry e;
-        resultToEntries(it->second, 0, 0, e.m_results);
-        o_bcache.set(cachekey, e);
+        resultToEntries(ite->second, 0, 0, e.m_results);
+        if (!nocache) {
+            o_bcache.set(cachekey, e);
+        }
         return e.toResult("", stidx, cnt, entries);
     } else {
-        return resultToEntries(it->second, stidx, cnt, entries);
+        return resultToEntries(ite->second, stidx, cnt, entries);
     }
 }
 
@@ -639,14 +651,21 @@ int PlgWithSlave::search(const string& ctid, int stidx, int cnt,
         return errorEntries(ctid, entries);
     }
 
-    auto it = res.find("entries");
-    if (it == res.end()) {
+    auto ite = res.find("entries");
+    if (ite == res.end()) {
         LOGERR("PlgWithSlave::search: no entries returned\n");
         return errorEntries(ctid, entries);
     }
+    bool nocache = false;
+    auto itc = res.find("nocache");
+    if (itc != res.end()) {
+        nocache = stringToBool(itc->second);
+    }
     // Convert the whole set and store in cache
     ContentCacheEntry e;
-    resultToEntries(it->second, 0, 0, e.m_results);
-    o_scache.set(cachekey, e);
+    resultToEntries(ite->second, 0, 0, e.m_results);
+    if (!nocache) {
+        o_scache.set(cachekey, e);
+    }
     return e.toResult(classfilter, stidx, cnt, entries);
 }

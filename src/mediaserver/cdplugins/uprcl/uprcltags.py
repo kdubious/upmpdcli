@@ -17,6 +17,8 @@
 import sys
 import os
 import sqlite3
+import time
+import tempfile
 from timeit import default_timer as timer
 
 from uprclutils import g_myprefix, audiomtypes, docfolder, uplog, \
@@ -25,9 +27,23 @@ from uprclutils import g_myprefix, audiomtypes, docfolder, uplog, \
 # After initialization, this holds the list of all records out of
 # recoll (it's a reference to the original in uprclfolders)
 g_alldocs = []
+sqconn = None
 
-sqconn = sqlite3.connect(':memory:')
-#sqconn = sqlite3.connect('/tmp/tracks.sqlite')
+def _sqconn():
+    # We use a separate thread for building the db to ensure
+    # responsiveness during this phase.  :memory: handles normally
+    # can't be shared between threads, and different :memory: handles
+    # access different dbs. The following would work, but it needs
+    # python 3.4
+    #sqconn = sqlite3.connect('file:uprcl_db?mode=memory&cache=shared')
+    # As we can guarantee that 2 threads will never access the db at
+    # the same time (the init thread just goes away when it's done),
+    # we just disable the same_thread checking on :memory:
+    global sqconn
+    if sqconn is None:
+        sqconn = sqlite3.connect(':memory:', check_same_thread=False)
+        #sqconn = sqlite3.connect('/tmp/tracks.sqlite')
+    return sqconn
 
 # Tags for which we create auxiliary tables for facet descent.
 #
@@ -110,7 +126,9 @@ def _auxtableinsert(sqconn, tb, value):
 def recolltosql(docs):
     global g_alldocs
     g_alldocs = docs
-    
+    start = timer()
+
+    sqconn = _sqconn()
     _createsqdb(sqconn)
 
     # Compute a list of table names and corresponding recoll
@@ -130,6 +148,9 @@ def recolltosql(docs):
         doc = docs[docidx]
         totcnt += 1
 
+        if totcnt % 1000 == 0:
+            time.sleep(0)
+            
         # No need to include non-audio types in the visible tree.
         if doc.mtype not in audiomtypes or doc.mtype == 'inode/directory':
             continue
@@ -195,13 +216,15 @@ def recolltosql(docs):
                 pass
                       
     sqconn.commit()
-    uplog("recolltosql: processed %d docs" % totcnt)
+    end = timer()
+    uplog("recolltosql: processed %d docs in %.2f Seconds" %
+          (totcnt, end-start))
 
 
 # Create our top-level directories, with fixed entries, and stuff from
 # the tags tables
 def rootentries(pid):
-    c = sqconn.cursor()
+    c = _sqconn().cursor()
     c.execute("SELECT COUNT(*) from albums")
     nalbs = str(c.fetchone()[0])
     c.execute("SELECT COUNT(*) from tracks")
@@ -217,7 +240,7 @@ def rootentries(pid):
 def _subtreetags(docidsl):
     docids = ','.join([str(i) for i in docidsl])
     uplog("subtreetags, docids %s" % docids)
-    c = sqconn.cursor()
+    c = _sqconn().cursor()
     tags = []
     for tt,tb in tagtables.iteritems():
         stmt = 'SELECT COUNT(DISTINCT ' + _clid(tb) + \
@@ -232,7 +255,7 @@ def _subtreetags(docidsl):
     return tags
 
 def _trackentriesforstmt(stmt, values, pid, httphp, pathprefix):
-    c = sqconn.cursor()
+    c = _sqconn().cursor()
     c.execute(stmt, values)
     entries = []
     for r in c:
@@ -247,7 +270,7 @@ def _trackentriesforstmt(stmt, values, pid, httphp, pathprefix):
 # path <selwhere> is like: WHERE col1_id = ? AND col2_id = ? [...], and
 # <values> holds the corresponding values
 def _docidsforsel(selwhere, values):
-    c = sqconn.cursor()
+    c = _sqconn().cursor()
     stmt = 'SELECT docidx FROM tracks ' + selwhere + ' ORDER BY trackno'
     uplog("docidsforsel: executing <%s> values %s" % (stmt, values))
     c.execute(stmt, values)
@@ -259,7 +282,7 @@ def _trackentriesforalbum(albid, pid, httphp, pathprefix):
 
 def _direntriesforalbums(pid, where):
     entries = []
-    c = sqconn.cursor()
+    c = _sqconn().cursor()
     if not where:
         where = 'WHERE artist.artist_id = albums.artist_id'
     else:
@@ -277,7 +300,7 @@ def _direntriesforalbums(pid, where):
 # This is called when an 'albums' element is encountered in the
 # selection path.
 def _tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp, pathprefix):
-    c = sqconn.cursor()
+    c = _sqconn().cursor()
     docidsl = _docidsforsel(selwhere, values)
     entries = []
     if i == len(qpath)-1:
@@ -325,7 +348,7 @@ def _subtreealbums(docidsl):
     albids = []
     stmt = 'SELECT album_id from tracks where docidx IN (' + docids + ') ' + \
            'GROUP BY album_id'
-    c = sqconn.cursor()
+    c = _sqconn().cursor()
     uplog('subtreealbums: executing %s' % stmt)
     c.execute(stmt)
     for r in c:
@@ -417,7 +440,7 @@ def _tagsbrowse(pid, qpath, flag, httphp, pathprefix):
                " GROUP BY tracks." + _clid(col) + \
                " ORDER BY value"
         uplog("tagsbrowse: executing <%s> values %s" % (stmt,values))
-        c = sqconn.cursor()
+        c = _sqconn().cursor()
         c.execute(stmt, values)
         for r in c:
             id = pid + '$' + str(r[0])
@@ -429,7 +452,7 @@ def _tagsbrowse(pid, qpath, flag, httphp, pathprefix):
 # levels: the whole albums list, then for each entry the specified
 # albums track list
 def _albumsbrowse(pid, qpath, flag, httphp, pathprefix):
-    c = sqconn.cursor()
+    c = _sqconn().cursor()
     entries = []
     if len(qpath) == 1:
         entries = _direntriesforalbums(pid, '')
@@ -472,7 +495,7 @@ def browse(pid, flag, httphp, pathprefix):
 ############ Misc test/trial code, not used by uprcl ########################
 
 def misctries():
-    c = sqconn.cursor()
+    c = _sqconn().cursor()
     c.execute('''SELECT COUNT(*) FROM tracks''')
     uplog("Count(*) %d" % (c.fetchone()[0],))
     

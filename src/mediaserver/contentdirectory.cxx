@@ -51,6 +51,9 @@ public:
 	    delete it.second;
 	}
     }
+    // Start plugins which have long init so that the user has less to
+    // wait on first access
+    void maybeStartSomePlugins();
     CDPlugin *pluginFactory(const string& appname) {
 	LOGDEB("ContentDirectory::pluginFactory: for " << appname << endl);
 
@@ -113,6 +116,7 @@ ContentDirectory::ContentDirectory(UPnPProvider::UpnpDevice *dev)
     dev->addActionMapping(
         this, "Search",
         bind(&ContentDirectory::actSearch, this, _1, _2));
+    m->maybeStartSomePlugins();
 }
 
 ContentDirectory::~ContentDirectory()
@@ -232,6 +236,23 @@ static string appForId(const string& id)
 	return string();
     } 
     return id.substr(dol0 + 1, dol1 - dol0 -1);
+}
+
+
+void ContentDirectory::Internal::maybeStartSomePlugins()
+{
+    for (auto& entry : rootdir) {
+        string app = appForId(entry.id);
+        string sas;
+        if (g_config->get(app + "autostart", sas) && stringToBool(sas)) {
+            LOGDEB0("ContentDirectory::Internal::maybeStartSomePlugins: "
+                    "starting " << app << endl);
+            CDPlugin *p = pluginForApp(app);
+            if (p) {
+                p->startInit();
+            }
+        }
+    }
 }
 
 // Really preposterous: bubble (and maybe others) searches in root,
