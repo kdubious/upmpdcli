@@ -294,7 +294,8 @@ scplaymethod:: sc2mpd
 play method (mpd/alsa). With this set as 'alsa', sc2mpd
 will send the audio directly to the sound driver, which is the only way
 to really avoid skips and control the synchronization in multi-room
-setups.
+setups. *For 'alsa', make sure that user upmpdcli has permission to
+access the audio devices !*
 
 [[schttpport]]
 schttpport:: Port

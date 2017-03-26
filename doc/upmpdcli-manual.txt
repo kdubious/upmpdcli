@@ -349,6 +349,14 @@ you will need to set <<sclogfilename, +scalsadevice+>> in the
 configuration, but you probably had to set it in the MPD configuration too,
 so this may not be too much of an issue.
  
+NOTE: when using the _alsa_ approach, *sc2mpd* will open the audio driver
+directly. The *sc2mpd* process is started by *upmpdcli*, which normally
+runs with user id _upmpdcli_. A frequent cause preventing the Receiver from
+working is that the driver open fails because _upmpdcli_ user has no
+permission to access it. One solution is to create an _audio_ group (if it
+does not exist), make the devices writable by _audio_, and add _upmpdcli_
+(and others) to the _audio_ group.
+
 When using *mpd*, more bufferisation occurs and there may be a significant
 delay (up to around 10&nbsp;S) between the time when Songcast is activated
 and the time sound appears.
