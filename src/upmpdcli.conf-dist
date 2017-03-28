@@ -124,6 +124,44 @@
 # phone or tablet on which you also use Google Play Music.</descr></var>
 #gmusicdeviceid =
 
+# <grouptitle>Local Media Server parameters</grouptitle>
+
+# <var name="uprcluser" type="string"><brief>Bogus user name variable.</brief>
+# <descr>Used for consistency with other Media Server plugins to decide if
+# the service should be started.</descr></var>
+#uprcluser = bugsbunny
+
+# <var name="uprclmediadirs" type="string"> <brief>Media
+# directories</brief><descr>This is a space-separated list of directories
+# to explore for music files. This is used directly as the recoll "topdirs"
+# value, so you can use double-quote quoting for paths with embedded
+# spaces.</descr></var>
+#uprclmediadirs = /tmp
+
+# <var name="uprclhostport" type="string"><brief>HTTP host and ports for
+# serving media files</brief><descr>The Media Server HTTP server will run
+# on this address and port, which will also be inserted on the URLs we
+# produce.</descr></var>
+#uprclhostport = 192.168.4.4:9090
+
+# <var name="uprclpaths" type="string"><brief></brief><descr>This is used
+# to translate real path to ones relative to the HTTP server doc
+# tree. </descr></var>
+# uprclpaths = /y/av/mp3:/av/mp3,/y/av/flacsources:/av/flacsources
+
+# <var name="uprclconfdir" type="dfn"><brief>Recoll index
+# directory</brief><descr>This is usually not defined and defaults to
+# /var/cache/upmpdcli/uprcl</descr></var>
+#uprclconfdir = /var/cache/upmpdcli/uprcl
+
+# <var name="uprclautostart" type="bool"><brief>Initialize uprcl as soon as
+# upmpdcli starts</brief><descr>This is useful because uprcl initialization
+# can take quite some time so it is better not to wait for the first
+# access. The general default is false for the autostart variables, so this
+# is normally defined to true.</descr></var>
+uprclautostart = 1
+
+
 # <grouptitle>MPD parameters</grouptitle>
 
 # <var name="mpdhost" type="string"><brief>Host MPD runs on.</brief>
@@ -293,7 +331,8 @@
 # play method (mpd/alsa).</brief><descr>With this set as 'alsa', sc2mpd
 # will send the audio directly to the sound driver, which is the only way
 # to really avoid skips and control the synchronization in multi-room
-# setups.</descr></var>
+# setups. *For 'alsa', make sure that user upmpdcli has permission to
+# access the audio devices !*</descr></var>
 #scplaymethod = mpd
 
 # <var name="schttpport" type="int" values="0 65635 8768"><brief>Port

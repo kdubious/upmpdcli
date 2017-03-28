@@ -123,13 +123,13 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
         li['tt'] = os.path.basename(path.decode('UTF-8', errors = 'replace'))
     path = os.path.join(pathprefix, path)
     li['uri'] = "http://%s%s" % (httphp, urllib.quote(path))
+    #uplog("rcldoctoentry: uri: %s" % li['uri'])
 
     # The album art uri is precooked with httphp and prefix
     if doc.albumarturi:
         li['upnp:albumArtURI'] = doc.albumarturi
         #uplog("Set upnp:albumArtURI to %s" % li['upnp:albumArtURI'])
 
-    #uplog("rcldoctoentry: uri: %s" % li['uri'])
     return li
 
 def docfolder(doc):
@@ -206,8 +206,17 @@ def docarturi(doc, httphp, pathprefix):
             pass
     return arturi
 
+def _keyvalornull(a, k):
+    return a[k] if k in a else "NULL"
+def _logentry(nm, e1):
+    tp = _keyvalornull(e1,'tp')
+    al = _keyvalornull(e1, 'upnp:album')
+    dr = os.path.dirname(_keyvalornull(e1, 'uri'))
+    tn = _keyvalornull(e1, 'upnp:originalTrackNumber')
+    uplog("%s tp %s alb %s dir %s tno %s" % (nm, tp,al,dr,tn))
 
 def cmpentries(e1, e2):
+    #uplog("cmpentries");_logentry("e1", e1);_logentry("e2", e2)
     tp1 = e1['tp']
     tp2 = e2['tp']
     isct1 = tp1 == 'ct'

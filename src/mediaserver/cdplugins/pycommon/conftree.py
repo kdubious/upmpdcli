@@ -1,4 +1,21 @@
 #!/usr/bin/env python
+# Copyright (C) 2016 J.F.Dockes
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the
+#   Free Software Foundation, Inc.,
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+
 from __future__ import print_function
 
 import locale
@@ -13,9 +30,12 @@ class ConfSimple:
     ini file (see the Recoll manual). It's a dictionary of dictionaries which
     lets you retrieve named values from the top level or a subsection"""
 
-    def __init__(self, confname, tildexp = False):
+    def __init__(self, confname, tildexp = False, readonly = True):
         self.submaps = {}
         self.dotildexpand = tildexp
+        self.readonly = readonly
+        self.confname = confname
+        
         try:
             f = open(confname, 'r')
         except Exception as exc:
@@ -71,6 +91,32 @@ class ConfSimple:
         if not nm in self.submaps[sk]:
             return None
         return self.submaps[sk][nm]
+
+    def _rewrite(self):
+        if self.readonly:
+            raise Exception("ConfSimple is readonly")
+
+        tname = self.confname + "-"
+        f = open(tname, 'w')
+        # First output null subkey submap
+        if '' in self.submaps:
+            for nm,value in self.submaps[''].iteritems():
+                f.write(nm + " = " + value + "\n")
+        for sk,mp in self.submaps.iteritems():
+            if sk == '':
+                continue
+            f.write("[" + sk + "]\n")
+            for nm,value in mp.iteritems():
+                f.write(nm + " = " + value + "\n")
+        f.close()
+        os.rename(tname, self.confname)
+
+    def set(self, nm, value, sk = ''):
+        if self.readonly:
+            raise Exception("ConfSimple is readonly")
+        self.submaps[sk][nm] = value
+        self._rewrite()
+        return True
 
     def getNames(self, sk = ''):
         if not sk in self.submaps:

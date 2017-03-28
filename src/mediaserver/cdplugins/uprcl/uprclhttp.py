@@ -155,6 +155,7 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def translate_path(self, opath):
         path = urllib.unquote(opath)
+        # pathprefix is something like /uprcl
         path = path.replace(self.uprclpathprefix, '', 1)
 
         q = urlparse.urlparse(path)

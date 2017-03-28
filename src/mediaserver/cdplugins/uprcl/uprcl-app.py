@@ -23,12 +23,16 @@ import conftree
 import cmdtalkplugin
 import threading
 import subprocess
+import time
+from timeit import default_timer as timer
 
 import uprclfolders
 import uprcltags
 import uprcluntagged
 import uprclsearch
 import uprclhttp
+import uprclindex
+
 from uprclutils import uplog, g_myprefix,rcldirentry
 
 # The recoll documents
@@ -41,7 +45,10 @@ msgproc = cmdtalkplugin.Processor(dispatcher)
 
 def _uprcl_init_worker():
     global httphp, pathprefix, rclconfdir, g_rcldocs
-    
+
+    # pathprefix would typically be something like "/uprcl". It's used
+    # for dispatching URLs to the right plugin for processing. We
+    # strip it whenever we need a real file path
     if "UPMPD_PATHPREFIX" not in os.environ:
         raise Exception("No UPMPD_PATHPREFIX in environment")
     pathprefix = os.environ["UPMPD_PATHPREFIX"]
@@ -64,7 +71,21 @@ def _uprcl_init_worker():
 
     rclconfdir = upconfig.get("uprclconfdir")
     if rclconfdir is None:
-        raise Exception("uprclconfdir not in config")
+        uplog("uprclconfdir not in config, using /var/cache/upmpdcli/uprcl")
+        rclconfdir = "/var/cache/upmpdcli/uprcl"
+    rcltopdirs = upconfig.get("uprclmediadirs")
+    if rcltopdirs is None:
+        raise Exception("uprclmediadirs not in config")
+
+    # Update or create index.
+    uplog("Creating updating index in %s for %s"%(rclconfdir, rcltopdirs))
+    start = timer()
+    uprclindex.runindexer(rclconfdir, rcltopdirs)
+    # Wait for indexer
+    while not uprclindex.indexerdone():
+        time.sleep(.5)
+    fin = timer()
+    uplog("Indexing took %.2f Seconds" % (fin - start))
 
     g_rcldocs = uprclfolders.inittree(rclconfdir, httphp, pathprefix)
     uprcltags.recolltosql(g_rcldocs)

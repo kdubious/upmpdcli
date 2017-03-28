@@ -130,10 +130,14 @@ the directory resource records point directly to the HTTP server host/port,
 there is no redirection through the microhttpd server (this is the big
 difference with the streaming service plugins.
 
-The paths still need translation (they include the plugin name as prefix
-for diag purposes, and there is a map between recoll and http paths). The
-translation routine is now part of the Python request handler, but would
-need to be restored if we went back to using an external server.
+The paths are in three parts:
+ - The plugin name as prefix
+ - A mapping between Recoll (actual) paths and paths as seen by the http
+   server (document_root equivalent)
+ - The real tail
+
+The translation routine is now part of the Python request handler, but
+would need to be restored if we went back to using an external server.
 
 The following configuration data is used:
    The host and port for the HTTP server. This is used in generated URLs
