@@ -141,13 +141,17 @@
 # <var name="uprclhostport" type="string"><brief>HTTP host and ports for
 # serving media files</brief><descr>The Media Server HTTP server will run
 # on this address and port, which will also be inserted on the URLs we
-# produce.</descr></var>
+# produce. If the variable is not set, we will use port 9090 and the first
+# non-loopback ipv4 address in "ip addr" output, which may be right or
+# not.</descr></var>
 #uprclhostport = 192.168.4.4:9090
 
 # <var name="uprclpaths" type="string"><brief></brief><descr>This is used
-# to translate real path to ones relative to the HTTP server doc
-# tree. </descr></var>
-# uprclpaths = /y/av/mp3:/av/mp3,/y/av/flacsources:/av/flacsources
+# to translate real path to ones relative to the HTTP server doc tree. It
+# also performs a form of access control. If this is not set, uprcl will
+# use a null translation for each of the uprclmediadirs
+# numbers.</descr></var>
+#uprclpaths =
 
 # <var name="uprclconfdir" type="dfn"><brief>Recoll index
 # directory</brief><descr>This is usually not defined and defaults to

@@ -18,6 +18,7 @@ from __future__ import print_function
 import sys
 import urllib
 import os
+import subprocess
 
 # This must be consistent with what contentdirectory.cxx does
 g_myprefix = '0$uprcl$'
@@ -342,3 +343,21 @@ def stringToStrings(str):
         raise Exception("Bad string: <" + str + ">")
 
     return tokens
+
+
+# Find first non loopback ip. This is surprisingly
+# difficult. Executing "ip addr" actually seems to be the simplest
+# approach, only works on Linux though (maybe bsd too ?)
+def findmyip():
+    data = subprocess.check_output(["ip", "addr"])
+    l = data.split()
+    ips = []
+    chosenip = ""
+    for i in range(len(l)):
+        k = l[i]
+        if k == 'inet':
+            ipmask = l[i+1]
+            if ipmask.find('127.') == 0:
+                continue
+            return ipmask.split('/')[0]
+            

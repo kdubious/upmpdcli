@@ -33,7 +33,7 @@ import uprclsearch
 import uprclhttp
 import uprclindex
 
-from uprclutils import uplog, g_myprefix,rcldirentry
+from uprclutils import uplog,g_myprefix,rcldirentry,stringToStrings,findmyip
 
 # The recoll documents
 g_rcldocs = []
@@ -58,16 +58,9 @@ def _uprcl_init_worker():
 
     httphp = upconfig.get("uprclhostport")
     if httphp is None:
-        raise Exception("uprclhostport not in config")
-
-    pthstr = upconfig.get("uprclpaths")
-    if pthstr is None:
-        raise Exception("uprclpaths not in config")
-    lpth = pthstr.split(',')
-    pathmap = {}
-    for ptt in lpth:
-        l = ptt.split(':')
-        pathmap[l[0]] = l[1]
+        ip = findmyip()
+        httphp = ip + ":" + "9090"
+        uplog("uprclhostport not in config, using %s" % httphp)
 
     rclconfdir = upconfig.get("uprclconfdir")
     if rclconfdir is None:
@@ -76,6 +69,22 @@ def _uprcl_init_worker():
     rcltopdirs = upconfig.get("uprclmediadirs")
     if rcltopdirs is None:
         raise Exception("uprclmediadirs not in config")
+
+    pthstr = upconfig.get("uprclpaths")
+    if pthstr is None:
+        uplog("uprclpaths not in config")
+        pthlist = stringToStrings(rcltopdirs)
+        pthstr = ""
+        for p in pthlist:
+            pthstr += p + ":" + p + ","
+        pthstr = pthstr.rstrip(",")
+    uplog("Path translation: pthstr: %s" % pthstr)
+    lpth = pthstr.split(',')
+    pathmap = {}
+    for ptt in lpth:
+        l = ptt.split(':')
+        pathmap[l[0]] = l[1]
+
 
     # Update or create index.
     uplog("Creating updating index in %s for %s"%(rclconfdir, rcltopdirs))
