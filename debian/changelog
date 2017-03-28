@@ -1,6 +1,7 @@
 upmpdcli (1.2.13-1) unstable; urgency=low
 
-  * Experimental version: do not use if not talking with me.
+  * Experimental version: do not use if not talking with me-> We will be
+    skipping this as a release and go to 1.2.14 when ready.
   
  -- Jean-Francois Dockes <jf@dockes.org>  Mon, 13 Feb 2017 17:59:00 +0100
 
