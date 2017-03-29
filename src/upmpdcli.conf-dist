@@ -363,7 +363,7 @@ uprclautostart = 1
 # 100% of 1 cpu).  MEDIUM_QUALITY is around 10% on the same machine,
 # FASTEST is 4-5%. Given that this is measured for the full process, probably
 # a couple % for the conversion in fact.</descr></var>
-#sccvttype = SRC_SINC_FASTEST.
+#sccvttype = SRC_SINC_FASTEST
 
 # <var name="sc2mpd" type="string"><brief>Path to
 # sc2mpd.</brief><descr>Only useful if it is not in /usr/bin and the
