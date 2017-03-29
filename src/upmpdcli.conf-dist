@@ -217,7 +217,8 @@ uprclautostart = 1
 
 # <var name="onplay" type="fn"><brief>Command to run when MPD state
 # switches to "PLAY".  </brief><descr>Specify the full path to the program,
-# e.g. /usr/bin/logger.</descr></var> onplay =
+# e.g. /usr/bin/logger.</descr></var>
+#onplay =
 
 # <var name="onstop" type="fn"><brief>Command to run when MPD state switches to
 # "STOP".</brief><descr>Specify the full path to the program,
