@@ -31,9 +31,9 @@ def _initconfdir(confdir, topdirs):
     if os.path.exists(confdir):
         raise Exception("_initconfdir: exists already: %s" % confdir)
     os.mkdir(confdir)
-    datadir = os.path.join(os.path.dirname(__file__), "rclconfig")
+    datadir = os.path.dirname(__file__)
     uplog("datadir: %s" % datadir)
-    shutil.copyfile(os.path.join(datadir, "fields"),
+    shutil.copyfile(os.path.join(datadir, "rclconfig-fields"),
                     os.path.join(confdir, "fields"))
     f = open(os.path.join(confdir, "recoll.conf"), "w")
     f.write("topdirs=%s\n" % topdirs)

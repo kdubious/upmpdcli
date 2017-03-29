@@ -146,6 +146,18 @@ dist_cdpluginsgmusic_DATA = \
                   src/mediaserver/cdplugins/gmusic/gmusic-app.py \
                   src/mediaserver/cdplugins/gmusic/session.py 
 
+cdpluginsuprcldir = $(pkgdatadir)/cdplugins/uprcl
+dist_cdpluginsuprcl_DATA = \
+                 src/mediaserver/cdplugins/uprcl/uprclfolders.py \
+                 src/mediaserver/cdplugins/uprcl/uprclhttp.py \
+                 src/mediaserver/cdplugins/uprcl/uprcl-app.py \
+                 src/mediaserver/cdplugins/uprcl/uprclsearch.py \
+                 src/mediaserver/cdplugins/uprcl/uprclutils.py \
+                 src/mediaserver/cdplugins/uprcl/uprcluntagged.py \
+                 src/mediaserver/cdplugins/uprcl/uprclindex.py \
+                 src/mediaserver/cdplugins/uprcl/uprcltags.py \
+                 src/mediaserver/cdplugins/uprcl/rclconfig-fields
+
 EXTRA_DIST = web.tar.gz rdpl2stream.tar.gz systemd/upmpdcli.service \
     src/conftree.cpp src/execmd.cpp src/mediaserver/cdplugins/cmdtalk.cpp \
     src/netcon.cpp
@@ -170,6 +182,7 @@ install-data-hook: web.tar.gz rdpl2stream.tar.gz
 	(cd $(DESTDIR)/$(cdpluginstidaldir); chmod a+x tidal-app.py) 
 	(cd $(DESTDIR)/$(cdpluginsqobuzdir); chmod a+x qobuz-app.py) 
 	(cd $(DESTDIR)/$(cdpluginsgmusicdir); chmod a+x gmusic-app.py) 
+	(cd $(DESTDIR)/$(cdpluginsuprcldir); chmod a+x uprcl-app.py) 
 
 dist_pkgdata_SCRIPTS = samplescripts/Analog-Input
 
@@ -179,5 +192,6 @@ dist_man1_MANS = man/upmpdcli.1
 
 dist-hook:
 	rm -rf rdpl2stream/__pycache__/
-	test -z "`git status -s | grep -v '??' | grep -v Makefile.am`" 
-	git tag -f -a upmpdcli-v$(VERSION) -m 'version $(VERSION)'
+
+#	test -z "`git status -s | grep -v '??' | grep -v Makefile.am`" 
+#	git tag -f -a upmpdcli-v$(VERSION) -m 'version $(VERSION)'
