@@ -512,8 +512,8 @@ impossible to achieve when going through *mpd*, and the second reason why
 the Receivers can be out of sync by several seconds.
 
 
-[[UPMPDCLI-MS]]
-== Upmpdcli Media Server
+[[UPMPDCLI-MS-STR]]
+== Upmpdcli Media Server: streaming services
 
 The Media Server function in Upmpdcli (1.2.0 and later) gives access to
 external streaming services: Qobuz, Tidal, and Google Music at the moment.
@@ -613,6 +613,87 @@ You will need a valid subscription for most functions.
 
 The configuration parameters are described in the
 <<gmusicuser,configuration section>>
+
+
+[[UPRCL]]
+== Upmpdcli local Media Server: uprcl
+
+The current (2017-04) upmpdcli code base includes a Media Server function
+for local music files, analog to MinimServer or ReadyMedia/MiniDLNA. The
+plugin module is named uprcl.
+
+Why yet another Media Server ? MinimServer is great, and free, but not
+open-source. ReadyMedia is nice too, but audio file format support is
+incomplete (there was a patch for DSD but it was never merged apparently),
+I've always found it a bit clunky (for example: no incremental updates),
+and development does not seem very active.
+
+The new upmpdcli Media Server is at most beta quality. It probably has even
+less format support than MiniDLNA... But it's written in Python, and I have
+good hope that it can evolve faster.
+
+Some features:
+
+- Mostly written in Python, except for the pieces shared with the streaming
+  plugins: UPnP interface proper, and plugin management, which are C++, but
+  should not need a lot of changes.
+- Tries to mimick the MinimServer tree view, which I find quite nice. We're
+  not quite there yet, many functions and niceties, and the customization
+  capability are missing.
+- Uses Recoll and python-recoll (hence the uprcl name) for harvesting the
+  metadata and searching. Recoll already had almost everything needed in
+  this area, no development needed. It can perform incremental updates and
+  file system monitoring.
+- Uses Python sqlite3 (on a memory DB) for the tags tree. 
+
+Installation and configuration: have a look at the
+xref:uprcluser[configuration variables]
+
+[[UPRCL-SEARCH]]
+=== Upmpdcli/Uprcl searches
+
+The UPnP Media Server search function is based on a specific query
+language. This language is quite verbose, and most control points will not
+let you access it directly. Instead, they will usually provide a generic
+entry field in which you enter search terms.  Behind the scenes, they
+generate an UPnP search language string. This could be for example
+something like: `upnp:class = "object.item.audioItem" and dc:title
+contains "heaven"`
+
+If it supports search at all, the Media Server will then interpret the
+query string and return the results.
+
+If the Media Server is Upmpdcli/Uprcl, there is another step: the UPnP
+query string is translated into a Recoll one and Recoll is called to
+perform the actual search. There is no way to directly enter a Recoll
+search through the control point. However, two important Recoll
+capabilities should still be visible through the layers:
+
+.Stemming
+
+Stemming is the capability to expand a search to the common derivatives of
+a word. For example, a search for `floor` would be expanded to also look
+for `floors`, `flooring`, `floored`, etc. By default, stemming is enabled
+for Uprcl search. It can be turned off for any term by capitalizing the
+term (Entering `Stones` will only search for `stones`, not `stone` or
+`stoned`). Uprcl/Recoll searches are case-insensitive apart from this usage
+of capitalization.
+
+.Phrase searches
+
+By default, Uprcl/Recoll searches do not observe the order
+of terms: `red house` will be matched by a search for `house red` (or
+`houses red`). You can change this behaviour by quoting a sequence of
+words. A search for `"red house"` will only look for a text containing the
+words in order. This supposes that the Control Point does not change the
+user entry, but this is the case for at least some of them. Stemming
+expansion does not occur within phrase searches.
+
+Other Recoll capabilities, such as proximity searches should also be
+accessible, but probably less useful when searching music titles or artist
+names.
+
+
 
 
 [[UPMPDCLI-CONFIG]]

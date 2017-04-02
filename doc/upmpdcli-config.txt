@@ -114,6 +114,46 @@ this will count against the maximum count of registered devices for this
 account.  You can set the gmusicdeviceid value to the device ID from a
 phone or tablet on which you also use Google Play Music.
 
+=== Local Media Server parameters 
+
+[[uprcluser]]
+uprcluser:: Bogus user name variable. Used for consistency with other Media Server plugins to decide if
+the service should be started.
+
+[[uprclmediadirs]]
+uprclmediadirs:: Media
+directories This is a space-separated list of directories
+to explore for music files. This is used directly as the recoll "topdirs"
+value, so you can use double-quote quoting for paths with embedded
+spaces.
+
+[[uprclhostport]]
+uprclhostport:: HTTP host and ports for
+serving media files The Media Server HTTP server will run
+on this address and port, which will also be inserted on the URLs we
+produce. If the variable is not set, we will use port 9090 and the first
+non-loopback ipv4 address in "ip addr" output, which may be right or
+not.
+
+[[uprclpaths]]
+uprclpaths::  This is used
+to translate real path to ones relative to the HTTP server doc tree. It
+also performs a form of access control. If this is not set, uprcl will
+use a null translation for each of the uprclmediadirs
+numbers.
+
+[[uprclconfdir]]
+uprclconfdir:: Recoll index
+directory This is usually not defined and defaults to
+/var/cache/upmpdcli/uprcl
+
+[[uprclautostart]]
+uprclautostart:: Initialize uprcl as soon as
+upmpdcli starts This is useful because uprcl initialization
+can take quite some time so it is better not to wait for the first
+access. The general default is false for the autostart variables, so this
+is normally defined to true.
+
 === MPD parameters 
 
 [[mpdhost]]
