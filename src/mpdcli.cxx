@@ -449,6 +449,8 @@ UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
     return upsong;
 }
 
+// All the nutty stuff about mute is due to the fact that MPD does not
+// have such a function (they say that pause is good enough).
 bool MPDCli::setVolume(int volume, bool isMute)
 {
     LOGDEB("MPDCli::setVolume. extvc " << m_externalvolumecontrol << endl);
@@ -467,20 +469,28 @@ bool MPDCli::setVolume(int volume, bool isMute)
 
     if (isMute) {
         if (volume) {
-            // If we're already not muted, do nothing
-            if (m_premutevolume == 0)
-                return true;
-            // Restore premute volume
-            LOGDEB("MPDCli::setVolume: restoring premute " << m_premutevolume 
-                   << endl);
-            volume = m_stat.volume = m_premutevolume;
+            // volume 1, isMute true means that unmute is required
+            // Restore premute volume if it is set, else volume will
+            // be restored to 1 (ensuring that the user can increase
+            // it because we are out of the mute state).
+            if (m_premutevolume != 0) {
+                LOGDEB("MPDCli::setVolume: restoring premute " <<
+                       m_premutevolume << endl);
+                volume = m_stat.volume = m_premutevolume;
+            }
             m_premutevolume = 0;
         } else {
+            // volume 0, isMute true: mute request
             // If we're already muted, do nothing
-            if (m_premutevolume > 0)
+            if (m_premutevolume > 0) {
                 return true;
+            }
             if (m_cachedvolume > 0) {
                 m_premutevolume = m_cachedvolume;
+            } else {
+                // Never mute with a saved volume of 0, we get into
+                // trouble with some CPs
+                m_premutevolume = 1;
             }
         }
     }
@@ -491,6 +501,7 @@ bool MPDCli::setVolume(int volume, bool isMute)
         volume = 100;
     
     if (!(m_externalvolumecontrol)) {
+        LOGDEB2("MPDCli::setVolume: setting mpd volume " << volume << endl);
     	RETRY_CMD(mpd_run_set_volume(M_CONN, volume));
     }
     if (!m_onvolumechange.empty()) {

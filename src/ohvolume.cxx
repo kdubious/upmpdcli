@@ -124,11 +124,12 @@ int OHVolume::setVolume(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHVolume::setMute(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    LOGDEB("OHVolume::setMute" << endl);
     bool mute;
     if (!sc.get("Value", &mute)) {
+        LOGERR("OHVolume::setMute: no mute value\n");
         return UPNP_E_INVALID_PARAM;
     }
+    LOGDEB("OHVolume::setMute: " << mute << endl);
     m_dev->m_rdctl->setmute_i(mute);
     return UPNP_E_SUCCESS;
 }
