@@ -297,9 +297,11 @@ friend. As a very rough example here follows a command which would retrieve
 the Radio Paradise URI (as long as they don't change their format, a proper
 approach would use an XML parser of course):
 
-    curl -s http://radioparadise.com/xml/now.xml | \
+    curl --max-time 5 -s http://radioparadise.com/xml/now.xml | \
          grep '<coverart>' | sed -e 's/<coverart>//' -e 's!</coverart>!!'
 
+Also note that upmpdcli does not set a timeout for executing the
++artScript+. A reasonable value should be used inside the script.
 
 [[UPMPDCLI-SONGCAST]]
 == Upmpdcli and Songcast
@@ -329,9 +331,9 @@ source are playing (e.g. Skype phone conversations are out of reach).
 
 *sc2mpd* can play the *Songcast* audio stream in two modes:
 
- - By offering a local HTTP interface (based on _libmicrohttpd_) from which
-   *mpd* will play the stream.
  - By directly using the *alsa* audio driver.
+ - By using *mpd* to play the stream offered from a local HTTP interface
+   (hence the *sc2mpd* name)
 
 .Upmpdcli Receiver in `alsa` and `mpd` modes
 [options="header"]
@@ -343,8 +345,8 @@ source are playing (e.g. Skype phone conversations are out of reach).
 What approach is used is decided by the <<sclogfilename,+scplaymethod+>>
 configuration parameter, which can be set to _mpd_ or _alsa_. 
 
-There are *multiple* problems with the _mpd_ approach, and its only
-advantage is that it needs no configuration. If you go the _alsa_ route,
+The _mpd_ mode is the default, because it needs no configuration, but there
+are *multiple* problems with it. If you go the _alsa_ route,
 you will need to set <<sclogfilename, +scalsadevice+>> in the
 configuration, but you probably had to set it in the MPD configuration too,
 so this may not be too much of an issue.
@@ -397,10 +399,10 @@ Receivers for now: use either a local mixer or the little round things on
 the pre-amps. Set the volume low when experimenting !
 
 NOTE: Songcast can use IP multicast for lower load on the network when
-playing on several hosts. Unfortunately, multicast WIFI don't mix well in
-many cases. If you have wireless Receivers experiencing sound drop issues,
-try selecting unicast in the Songcast advanced configuration panel on the
-desktop.
+playing on several hosts. Unfortunately, multicast and WIFI don't mix well
+in many cases. If you have wireless Receivers experiencing sound drop
+issues, try selecting unicast in the Songcast advanced configuration panel
+on the desktop.
 
 [[UPMPDCLI-SENDER]]
 === Upmpdcli Songcast Sender
@@ -410,7 +412,8 @@ Upmpdcli Sender mode allows you to broadcast the Playlist or Radio source
 other Songcast Receivers. The local *upmpdcli* plays through its Receiver
 too, in order to achieve good synchronisation. Unlike the Songcast
 applications on Windows or Mac, the audio is not captured from the driver,
-so that you won't be able to cast other applications.
+so that you won't be able to cast other applications transparently (but
+there are specific workarounds).
 
 You can set *umpdcli* in Sender mode from an OpenHome Control Point, by
 selecting the Source of type `Playlist`, name `PL-to-Songcast` or type
@@ -419,7 +422,7 @@ mechanism).  With
 link:http://www.lesbonscomptes.com/upplay/index.html[upplay], for example,
 you can select the source from the `File`->`Select Source` menu entry.
 
-The *sc2mpd* configuration must be set with +scplaymethod = alsa+ for the
+The *sc2mpd* configuration *must* be set with +scplaymethod = alsa+ for the
 `XX-to-Songcast` sources to appear. See the
 xref:sclogfilename[configuration section], and the
 xref:UPMPDCLI-MULTIROOM-SYNC[section about synchronisation].
@@ -438,22 +441,29 @@ good synchronization.
 image::pics/upmpdcli-sender-receiver.png["Sender/Receiver mode"]
 
 This looks complicated, but in practise, starting the mode and connecting
-other Receivers from the *upplay* control panel is straightforward.
+other Receivers from the *upplay* control panel is quite straightforward.
 
 [[UPMPDCLI-SENDER-EXTSOURCES]]
 ==== Managing external sources
 
 In the Sender modes described above, *upmpdcli* (or rather its slave *mpd*
-process) is the source of the audio stream.
+process) is the source of the audio stream. The *mpd2sc* program (which is
+just a slight modification of a Linn sample) reads the *mpd* output from 
+a FIFO and sends it to Songcast Receivers (including the local one).
 
-It is also possible to set things up so that an external source (e.g. a
-line-in) can be connected to the Songcast Sender, allowing multiroom
-playing of any external source. See the comments in the
-link:https://github.com/medoc92/upmpdcli/blob/master/samplescripts/Analog-Input[sample script in the
-upmpdcli source tree] for instructions about configuring this. The general
-idea is that an external script, executed by *upmpdcli*, is responsible for
-executing the piped source reader and Songcast Sender.
+There is nothing special with the *mpd* output (it is just PCM audio), and
+it is also possible to set things up for *mpd2sc* to read from another
+source.
 
+This is made reasonably easy because the pipe is actually built by
+a script (the default one is named 'scmakempdsender'), and *upmpdcli* has
+built-in functionality for choosing different ones (creating OpenHome
+sources for each script it finds in a specific directory). There is a
+sample script in the distribution, which itself is flexible enough to allow
+connecting several inputs without programming (anything *arecord* can read).
+
+Still the details are a bit too much involved for the main body of the
+manual, so I have moved them to an xref:SENDER-EXTSOURCES[annex].
 
 [[UPMPDCLI-MULTIROOM]]
 === Songcast multiroom configurations and synchronization issues
@@ -648,6 +658,10 @@ Some features:
 
 Installation and configuration: have a look at the
 xref:uprcluser[configuration variables]
+
+NOTE: 'python-mutagen' which is optional for default Recoll installations is
+required for uprcl (this is for the case where you install by hand, the
+package takes care of it).
 
 [[UPRCL-SEARCH]]
 === Upmpdcli/Uprcl searches
@@ -936,6 +950,62 @@ need to take a look at a bit more documentation:
  - xref:friendlyname[+friendlyname+]
  - xref:UPMPDCLI-MULTIROOM-SYNC[audio synchronization issues and *sc2mpd*
    configuration].
+
+
+[[SENDER-EXTSOURCES]]
+== Annex: Setting up external audio sources for the Songcast Sender
+
+The *upmpdcli* Sender modes are controlled by switching OpenHome
+Sources. By default, and if the *sc2mpd* package is installed, *upmpdcli*
+will create 'PL-to-Songcast' and 'RD-to-Songcast' sources for broadcasting
+its playlist or radio streams to Songcast.
+
+As explained in the main body, there is nothing magical with this: *mpd*
+just streams to a FIFO which is read by the *mpd2sc* command, which then
+broadcasts it. This pipe is set up by a script (_scmakempdsender_).
+
+Under certain conditions, if *upmpdcli* finds other scripts in a designated
+directory, it will create more sources, and start them when the
+corresponding source is selected (of course, it expects the script to
+create a Songcast Sender pipe).
+
+The *upmpdcli* distribution comes with a
+link:https://github.com/medoc92/upmpdcli/blob/master/samplescripts/Analog-Input[sample
+script] which sets things up for *mpd2sc* to read *arecord* output,
+allowing multiroom playing of an external analog source (line-in). The
+sample script is flexible enough to manage different inputs without code
+changes, and there are comments at the top which give
+detailed explanations. The parts of more general interest will be a bit
+expanded here (see below). If you want to use the script itself, you need
+to look at the comments.
+
+Based on the same mechanism (but quite different code inside the script)
+there is also a nice
+link:https://github.com/medoc92/upmpdcli/issues/71#issuecomment-292785458[HOWTO]
+explaining how to link a Bluetooth device to Songcast.
+
+The general idea is that upmpdcli will create an Openhome Source for each
+script it finds inside a designated directory. By default, the directory is
++/usr/share/upmpdcli/src_scripts+, but it can be changed by setting the
++ohsrc_scripts_dir+ configuration variable inside +/etc/upmpdcli.conf+
+
+For managing analog sources, entries inside the directory will typically
+be created as symbolic links to the sample script, which is installed as
++/usr/share/upmpdcli/Analog-Input+. For doing other things, the scripts
+will not be links, but they must still be named a bit specially.
+
+The scripts (or links) must be named like _SourceType_-_SourceName_, where
+_SourceType_ MUST BE one of +Analog+, +Digital+, or +Hdmi+, (which are all
+the same, and for display purpose only), and you can choose _SourceName_ as
+you wish, but it should contain no space characters.
+
+The Source will appear with type +Analog+, +Digital+ or +Hdmi+ and name
+_SourceName_ in an OpenHome Source select dialog (e.g from *upplay*).
+
+The +Analog-Input+ sample script has provisions for reading the device name
+and setup/teardown instructions from external files, so that it does not
+need to be modified. This is only relevant for the sample, please have a
+look at the comments for details.
 
 
 [[COMMAND-ENVIRON]]
