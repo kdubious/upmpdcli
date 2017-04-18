@@ -39,6 +39,7 @@ def _initconfdir(confdir, topdirs):
     f.write("topdirs=%s\n" % topdirs)
     f.write("idxabsmlen=0\n")
     f.write("loglevel=2\n")
+    f.write("noaspell=1\n")
     f.close()
 
 _idxproc = None
