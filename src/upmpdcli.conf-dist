@@ -128,7 +128,8 @@
 
 # <var name="uprcluser" type="string"><brief>Bogus user name variable.</brief>
 # <descr>Used for consistency with other Media Server plugins to decide if
-# the service should be started.</descr></var>
+# the service should be started (so, do set it if you want a Media Server).
+# </descr></var>
 #uprcluser = bugsbunny
 
 # <var name="uprclmediadirs" type="string"> <brief>Media
@@ -143,14 +144,14 @@
 # on this address and port, which will also be inserted on the URLs we
 # produce. If the variable is not set, we will use port 9090 and the first
 # non-loopback ipv4 address in "ip addr" output, which may be right or
-# not.</descr></var>
+# not. Example: 192.168.1.1:9090</descr></var>
 #uprclhostport = 192.168.4.4:9090
 
 # <var name="uprclpaths" type="string"><brief></brief><descr>This is used
 # to translate real path to ones relative to the HTTP server doc tree. It
 # also performs a form of access control. If this is not set, uprcl will
 # use a null translation for each of the uprclmediadirs
-# numbers.</descr></var>
+# entries.</descr></var> 
 #uprclpaths =
 
 # <var name="uprclconfdir" type="dfn"><brief>Recoll index
@@ -162,7 +163,7 @@
 # upmpdcli starts</brief><descr>This is useful because uprcl initialization
 # can take quite some time so it is better not to wait for the first
 # access. The general default is false for the autostart variables, so this
-# is normally defined to true.</descr></var>
+# is normally explicitely set to true.</descr></var>
 uprclautostart = 1
 
 
