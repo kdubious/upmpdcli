@@ -26,6 +26,8 @@ g_myprefix = '0$uprcl$'
 audiomtypes = frozenset([
     'audio/mpeg',
     'audio/flac',
+    'application/flac',
+    'audio/x-flac',
     'application/x-flac',
     'application/ogg',
     'audio/aac',
@@ -261,18 +263,21 @@ def cmpentries(e1, e2):
 
 
 def rcldirentry(id, pid, title, arturi=None, artist=None, upnpclass=None,
-                searchable='1'):
+                searchable='1', date=None):
     """ Create container entry in format expected by parent """
     ret = {'id':id, 'pid':pid, 'tt':title, 'tp':'ct', 'searchable':searchable}
     if arturi:
         ret['upnp:albumArtURI'] = arturi
     if artist:
         ret['upnp:artist'] = artist
+    if date:
+        ret['dc:date'] = date
     if upnpclass:
         ret['upnp:class'] = upnpclass
     else:
         ret['upnp:class'] = 'object.container'
     return ret
+
 
 def uplog(s):
     print(("%s: %s" % ('uprcl', s)).encode('utf-8'), file=sys.stderr)

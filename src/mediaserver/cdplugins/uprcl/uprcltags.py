@@ -87,7 +87,7 @@ def _createsqdb(conn):
         pass
     c.execute(
         '''CREATE TABLE albums (album_id INTEGER PRIMARY KEY, artist_id INT,
-           albtitle TEXT, albfolder TEXT)''')
+           albtitle TEXT, albfolder TEXT, albdate TEXT, albarturi TEXT)''')
 
     tracksstmt = '''CREATE TABLE tracks
     (docidx INT, album_id INT, trackno INT, title TEXT'''
@@ -173,8 +173,10 @@ def recolltosql(docs):
             album_id = r[0]
             albartist_id = r[1]
         else:
-            c.execute('''INSERT INTO albums(albtitle, albfolder, artist_id)
-            VALUES (?,?,?)''', (album, folder, albartist_id))
+            c.execute('''INSERT INTO albums(albtitle, albfolder, artist_id,
+            albdate, albarturi)
+            VALUES (?,?,?,?,?)''', (album, folder, albartist_id, doc.date,
+                                    doc.albumarturi))
             album_id = c.lastrowid
 
         # tracknos like n/max are now supposedly processed by rclaudio
@@ -288,13 +290,16 @@ def _direntriesforalbums(pid, where):
     else:
         where += ' AND artist.artist_id = albums.artist_id'
 
-    stmt = 'SELECT album_id, albtitle, artist.value FROM albums,artist ' + \
+    stmt = '''SELECT album_id, albtitle, albarturi, albdate, artist.value
+              FROM albums,artist ''' + \
               where + ' ORDER BY albtitle'
     uplog('direntriesforalbums: %s' % stmt)
     c.execute(stmt)
     for r in c:
         id = pid + '$' + str(r[0])
-        entries.append(rcldirentry(id, pid, r[1], artist=r[2]))
+        entries.append(
+            rcldirentry(id, pid, r[1], arturi=r[2], date=r[3],artist=r[4], 
+                        upnpclass='object.container.album.musicAlbum'))
     return entries
 
 # This is called when an 'albums' element is encountered in the
