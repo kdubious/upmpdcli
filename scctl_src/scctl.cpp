@@ -70,6 +70,8 @@ using namespace Songcast;
 #define OPT_r 0x80
 #define OPT_s 0x100
 #define OPT_x 0x200
+#define OPT_i 0x400
+#define OPT_I 0x800
 
 static const string sep("||");
 
@@ -124,6 +126,8 @@ static char usage [] =
 "   -m : for above modes: use parseable format\n"
 "For the following options the renderers can be designated by their \n"
 "uid (safer) or friendly name\n"
+" -i <renderer> i : set source index\n"
+" -I <renderer> name : set source index by name\n"
 " -s <master> <slave> [slave ...] : Set up the slaves renderers as Songcast\n"
 "    Receivers and make them play from the same uri as the master receiver\n"
 " -x <renderer> [renderer ...] Reset renderers from Songcast to Playlist\n"
@@ -157,7 +161,7 @@ int main(int argc, char *argv[])
     thisprog = argv[0];
 
     int ret;
-    while ((ret = getopt(argc, argv, "fhmLlrsSx")) != -1) {
+    while ((ret = getopt(argc, argv, "fhmLlrsSxiI")) != -1) {
         switch (ret) {
         case 'f': op_flags |= OPT_f; break;
         case 'h': Usage(stdout); break;
@@ -181,6 +185,12 @@ int main(int argc, char *argv[])
             break;
         case 'x':
             op_flags |= OPT_x;
+            break;
+        case 'i':
+            op_flags |= OPT_i;
+            break;
+        case 'I':
+            op_flags |= OPT_I;
             break;
         default: Usage();
         }
@@ -239,6 +249,14 @@ int main(int argc, char *argv[])
         if (args.size() < 1)
             Usage();
         stopReceivers(args);
+    } else if ((op_flags & OPT_i)) {
+        if (args.size() < 2)
+            Usage();
+        setSourceIndex(args[0], std::stoi(args[1]));
+    } else if ((op_flags & OPT_I)) {
+        if (args.size() < 2)
+            Usage();
+        setSourceIndexByName(args[0], args[1]);
     } else if ((op_flags & OPT_S)) {
         exit(runserver());
     } else {
