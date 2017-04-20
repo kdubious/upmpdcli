@@ -34,13 +34,16 @@ from uprclcontrol import runbottle
 
 from uprclutils import uplog, findmyip, stringToStrings
 
-# The recoll documents
-g_rcldocs = []
-g_pathprefix = ""
-g_httphp = ""
-g_dblock = ReadWriteLock()
-g_rclconfdir = ""
-g_friendlyname = "UpMpd-mediaserver"
+try:
+    _s = g_httphp
+except:
+    # The recoll documents
+    g_rcldocs = []
+    g_pathprefix = ""
+    g_httphp = ""
+    g_dblock = ReadWriteLock()
+    g_rclconfdir = ""
+    g_friendlyname = "UpMpd-mediaserver"
 
 # Create or update Recoll index, then read and process the data.
 def _update_index():

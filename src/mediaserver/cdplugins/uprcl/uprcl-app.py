@@ -29,7 +29,6 @@ import uprclhttp
 import uprclindex
 
 from uprclutils import uplog, g_myprefix, rcldirentry
-from uprclinit import g_pathprefix, g_httphp, g_dblock, g_rclconfdir
 import uprclinit
 
 #####
@@ -94,7 +93,7 @@ def _browsedispatch(objid, bflg, httphp, pathprefix):
 
 @dispatcher.record('browse')
 def browse(a):
-    msgproc.log("browse: %s" % a)
+    msgproc.log("browse: %s. g_httphp [%s]" % (a, uprclinit.g_httphp))
     if 'objid' not in a:
         raise Exception("No objid in args")
 
@@ -121,9 +120,10 @@ def browse(a):
             elif not idpath:
                 entries = _rootentries()
             else:
-                entries = _browsedispatch(objid, bflg, g_httphp, g_pathprefix)
+                entries = _browsedispatch(objid, bflg, uprclinit.g_httphp,
+                                          uprclinit.g_pathprefix)
         finally:
-            g_dblock.release_read()
+            uprclinit.g_dblock.release_read()
 
     #msgproc.log("%s" % entries)
     encoded = json.dumps(entries)
@@ -146,10 +146,11 @@ def search(a):
                                    'Initializing...'),]
             nocache = "1"
         else:
-            entries = uprclsearch.search(g_rclconfdir, objid, upnps, g_myprefix,
-                                         g_httphp, g_pathprefix)
+            entries = uprclsearch.search(uprclinit.g_rclconfdir, objid, upnps,
+                                         g_myprefix, uprclinit.g_httphp,
+                                         uprclinit.g_pathprefix)
     finally:
-        g_dblock.release_read()
+        uprclinit.g_dblock.release_read()
 
     encoded = json.dumps(entries)
     return {"entries" : encoded, "nocache":nocache}
