@@ -40,6 +40,7 @@ g_pathprefix = ""
 g_httphp = ""
 g_dblock = ReadWriteLock()
 g_rclconfdir = ""
+g_friendlyname = "UpMpd-mediaserver"
 
 # Create or update Recoll index, then read and process the data.
 def _update_index():
@@ -54,23 +55,25 @@ def _update_index():
     g_dblock.acquire_write()
     g_initrunning = True
     g_dblock.release_write()
-    
-    start = timer()
-    uprclindex.runindexer(g_rclconfdir, g_rcltopdirs)
-    # Wait for indexer
-    while not uprclindex.indexerdone():
-        time.sleep(.5)
-    fin = timer()
-    uplog("Indexing took %.2f Seconds" % (fin - start))
+    uplog("_update_index: initrunning set")
 
-    global g_rcldocs
-    g_rcldocs = uprclfolders.inittree(g_rclconfdir, g_httphp, g_pathprefix)
-    uprcltags.recolltosql(g_rcldocs)
-    uprcluntagged.recoll2untagged(g_rcldocs)
+    try:
+        start = timer()
+        uprclindex.runindexer(g_rclconfdir, g_rcltopdirs)
+        # Wait for indexer
+        while not uprclindex.indexerdone():
+            time.sleep(.5)
+            fin = timer()
+        uplog("Indexing took %.2f Seconds" % (fin - start))
 
-    g_dblock.acquire_write()
-    g_initrunning = False
-    g_dblock.release_write()
+        global g_rcldocs
+        g_rcldocs = uprclfolders.inittree(g_rclconfdir, g_httphp, g_pathprefix)
+        uprcltags.recolltosql(g_rcldocs)
+        uprcluntagged.recoll2untagged(g_rcldocs)
+    finally:
+        g_dblock.acquire_write()
+        g_initrunning = False
+        g_dblock.release_write()
 
 
 # This runs in a thread because of the possibly long index initialization.
@@ -89,6 +92,11 @@ def _uprcl_init_worker():
     if "UPMPD_CONFIG" not in os.environ:
         raise Exception("No UPMPD_CONFIG in environment")
     upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
+
+    global g_friendlyname
+    tmp = upconfig.get("friendlyname")
+    if tmp:
+        g_friendlyname = tmp + "-mediaserver"
 
     global g_httphp
     g_httphp = upconfig.get("uprclhostport")
@@ -182,16 +190,21 @@ def ready():
     else:
         return True
 
+def updaterunning():
+    return g_initrunning
+
 def start_update():
-    if not ready():
+    try:
+        if not ready():
+            return
+        idxthread = threading.Thread(target=_update_index)
+        idxthread.daemon = True
+    finally:
+        # We need to release the reader lock before starting the index
+        # update operation (which needs a writer lock), so there is a
+        # small window for mischief. I would be concerned if this was
+        # a highly concurrent or critical app, but here, not so
+        # much...
         g_dblock.release_read()
-        return
-    idxthread = threading.Thread(target=_update_index)
-    idxthread.daemon = True 
-    # We need to release the reader lock before starting the index
-    # update operation, so that there is a small window for
-    # mischief. I would be concerned if this was a highly concurrent
-    # or critical app, but here, not so much...
-    g_dblock.release_read()
     idxthread.start()
  

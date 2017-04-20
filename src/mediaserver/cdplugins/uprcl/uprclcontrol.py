@@ -19,8 +19,7 @@ from __future__ import print_function
 
 import os
 
-from bottle import route, run, template
-from bottle import static_file
+import bottle
 
 from uprclutils import uplog
 import uprclinit
@@ -31,27 +30,33 @@ def runbottle(host='0.0.0.0', port=9278):
     global datadir
     datadir = os.path.dirname(__file__)
     datadir = os.path.join(datadir, 'bottle')
-    run(host=host, port=port)
+    bottle.TEMPLATE_PATH = (os.path.join(datadir, 'views'),)
+    bottle.run(host=host, port=port)
 
 
-@route('/')
-def main(name='namesample'):
-    return template('<b>MAIN PAGE for {{name}}</b>!', name=name)
+@bottle.route('/')
+@bottle.post('/')
+@bottle.view('main')
+def main():
+    sub =  bottle.request.forms.get('sub')
+    #uplog("Main: sub value is %s" % sub)
+    if uprclinit.updaterunning():
+        status = 'Updating'
+    else:
+        status = 'Ready'
 
-@route('/update')
-def main(name='namesample'):
-    # Can't use import directly because of the minus sign.
-    uplog("Calling start_update")
-    uprclinit.start_update()
-    uplog("start_update returned")
-    return template('<b>Index update started {{name}}</b>!', name='')
+    if sub == 'Update Index':
+        uprclinit.start_update()
 
-@route('/static/<filepath:path>')
-def server_static(filepath):
-    uplog("control: server_static: filepath %s datadir %s" % (filepath,datadir))
-    return static_file(filepath, root=os.path.join(datadir, 'static'))
+    if sub:
+        headers = dict()
+        headers["Location"] = '/'
+        return bottle.HTTPResponse(status=302, **headers)
+    else:
+        return {'title':status, 'status':status,
+                'friendlyname':uprclinit.g_friendlyname}
 
-@route('/hello/<name>')
-def index(name):
-    return template('<b>Hello {{name}}</b>!', name=name)
-
+@bottle.route('/static/<filepath:path>')
+def static(filepath):
+    #uplog("control: static: filepath %s datadir %s" % (filepath, datadir))
+    return bottle.static_file(filepath, root=os.path.join(datadir, 'static'))

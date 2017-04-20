@@ -113,15 +113,17 @@ def browse(a):
     if bflg == 'meta':
         raise Exception("uprcl-app: browse: can't browse meta for now")
     else:
-        if not uprclinit.ready():
-            entries = [rcldirentry(objid + 'notready', objid,
-                                   'Initializing...'),]
-            nocache = "1"
-        elif not idpath:
-            entries = _rootentries()
-        else:
-            entries = _browsedispatch(objid, bflg, g_httphp, g_pathprefix)
-        g_dblock.release_read()
+        try:
+            if not uprclinit.ready():
+                entries = [rcldirentry(objid + 'notready', objid,
+                                       'Initializing...'),]
+                nocache = "1"
+            elif not idpath:
+                entries = _rootentries()
+            else:
+                entries = _browsedispatch(objid, bflg, g_httphp, g_pathprefix)
+        finally:
+            g_dblock.release_read()
 
     #msgproc.log("%s" % entries)
     encoded = json.dumps(entries)
@@ -138,13 +140,16 @@ def search(a):
     upnps = a['origsearch']
     nocache = "0"
 
-    if not uprclinit.ready():
-        entries = [rcldirentry(objid + 'notready', objid, 'Initializing...'),]
-        nocache = "1"
-    else:
-        entries = uprclsearch.search(g_rclconfdir, objid, upnps, g_myprefix,
-                                     g_httphp, g_pathprefix)
-    g_dblock.release_read()
+    try:
+        if not uprclinit.ready():
+            entries = [rcldirentry(objid + 'notready', objid,
+                                   'Initializing...'),]
+            nocache = "1"
+        else:
+            entries = uprclsearch.search(g_rclconfdir, objid, upnps, g_myprefix,
+                                         g_httphp, g_pathprefix)
+    finally:
+        g_dblock.release_read()
 
     encoded = json.dumps(entries)
     return {"entries" : encoded, "nocache":nocache}
