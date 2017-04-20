@@ -221,6 +221,11 @@ uprclautostart = 1
 # e.g. /usr/bin/logger.</descr></var>
 #onplay =
 
+# <var name="onpause" type="fn"><brief>Command to run when MPD state
+# switches to "PAUSE".  </brief><descr>Specify the full path to the program,
+# e.g. /usr/bin/logger.</descr></var>
+#onpause =
+
 # <var name="onstop" type="fn"><brief>Command to run when MPD state switches to
 # "STOP".</brief><descr>Specify the full path to the program,
 # e.g. /usr/bin/logger.</descr></var>

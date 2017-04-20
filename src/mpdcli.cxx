@@ -56,6 +56,7 @@ MPDCli::MPDCli(const string& host, int port, const string& pass)
     std::unique_lock<std::mutex>(g_configlock);
     g_config->get("onstart", m_onstart);
     g_config->get("onplay", m_onplay);
+    g_config->get("onpause", m_onpause);
     g_config->get("onstop", m_onstop);
     string scratch;
     g_config->get("onvolumechange", scratch);
@@ -230,16 +231,25 @@ bool MPDCli::updStatus()
         m_stat.state = MpdStatus::MPDS_STOP;
         break;
     case MPD_STATE_PLAY:
-        // Only execute onplay command if mpd was stopped
+        // Only execute onplay command if mpd was stopped or paused
         if (!m_onplay.empty() && (m_stat.state == MpdStatus::MPDS_UNK ||
-                                  m_stat.state == MpdStatus::MPDS_STOP)) {
+                                  m_stat.state == MpdStatus::MPDS_STOP ||
+                                  m_stat.state == MpdStatus::MPDS_PAUSE)) {
             if (system(m_onplay.c_str())) {
                 LOGERR("MPDCli::updStatus: " << m_onplay << " failed "<< endl);
             }
         }
         m_stat.state = MpdStatus::MPDS_PLAY;
         break;
-    case MPD_STATE_PAUSE: m_stat.state = MpdStatus::MPDS_PAUSE;break;
+    case MPD_STATE_PAUSE:
+        // Only execute onpause command if mpd was playing
+        if (!m_onpause.empty() && (m_stat.state == MpdStatus::MPDS_PLAY)) {
+            if (system(m_onpause.c_str())) {
+                LOGERR("MPDCli::updStatus: " << m_onpause << " failed "<< endl);
+            }
+        } 
+        m_stat.state = MpdStatus::MPDS_PAUSE;
+        break;
     case MPD_STATE_UNKNOWN: 
     default:
         m_stat.state = MpdStatus::MPDS_UNK;
