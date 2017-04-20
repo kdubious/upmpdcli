@@ -148,15 +148,18 @@ dist_cdpluginsgmusic_DATA = \
 
 cdpluginsuprcldir = $(pkgdatadir)/cdplugins/uprcl
 dist_cdpluginsuprcl_DATA = \
+                 src/mediaserver/cdplugins/uprcl/rclconfig-fields \
+                 src/mediaserver/cdplugins/uprcl/rwlock.py \
+                 src/mediaserver/cdplugins/uprcl/uprcl-app.py \
+                 src/mediaserver/cdplugins/uprcl/uprclcontrol.py \
                  src/mediaserver/cdplugins/uprcl/uprclfolders.py \
                  src/mediaserver/cdplugins/uprcl/uprclhttp.py \
-                 src/mediaserver/cdplugins/uprcl/uprcl-app.py \
-                 src/mediaserver/cdplugins/uprcl/uprclsearch.py \
-                 src/mediaserver/cdplugins/uprcl/uprclutils.py \
-                 src/mediaserver/cdplugins/uprcl/uprcluntagged.py \
                  src/mediaserver/cdplugins/uprcl/uprclindex.py \
+                 src/mediaserver/cdplugins/uprcl/uprclinit.py \
+                 src/mediaserver/cdplugins/uprcl/uprclsearch.py \
                  src/mediaserver/cdplugins/uprcl/uprcltags.py \
-                 src/mediaserver/cdplugins/uprcl/rclconfig-fields
+                 src/mediaserver/cdplugins/uprcl/uprcluntagged.py \
+                 src/mediaserver/cdplugins/uprcl/uprclutils.py
 
 EXTRA_DIST = web.tar.gz rdpl2stream.tar.gz systemd/upmpdcli.service \
     src/conftree.cpp src/execmd.cpp src/mediaserver/cdplugins/cmdtalk.cpp \

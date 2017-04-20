@@ -19,12 +19,7 @@ import sys
 import os
 import json
 import re
-import conftree
 import cmdtalkplugin
-import threading
-import subprocess
-import time
-from timeit import default_timer as timer
 
 import uprclfolders
 import uprcltags
@@ -33,125 +28,18 @@ import uprclsearch
 import uprclhttp
 import uprclindex
 
-from uprclutils import uplog,g_myprefix,rcldirentry,stringToStrings,findmyip
+from uprclutils import uplog, g_myprefix, rcldirentry
+from uprclinit import g_pathprefix, g_httphp, g_dblock, g_rclconfdir
+import uprclinit
 
-# The recoll documents
-g_rcldocs = []
-
+#####
+# Initialize communication with our parent process: pipe and method
+# call dispatch
 # Func name to method mapper
 dispatcher = cmdtalkplugin.Dispatch()
 # Pipe message handler
 msgproc = cmdtalkplugin.Processor(dispatcher)
 
-def _uprcl_init_worker():
-    global httphp, pathprefix, rclconfdir, g_rcldocs
-
-    # pathprefix would typically be something like "/uprcl". It's used
-    # for dispatching URLs to the right plugin for processing. We
-    # strip it whenever we need a real file path
-    if "UPMPD_PATHPREFIX" not in os.environ:
-        raise Exception("No UPMPD_PATHPREFIX in environment")
-    pathprefix = os.environ["UPMPD_PATHPREFIX"]
-    if "UPMPD_CONFIG" not in os.environ:
-        raise Exception("No UPMPD_CONFIG in environment")
-    upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
-
-    httphp = upconfig.get("uprclhostport")
-    if httphp is None:
-        ip = findmyip()
-        httphp = ip + ":" + "9090"
-        uplog("uprclhostport not in config, using %s" % httphp)
-
-    rclconfdir = upconfig.get("uprclconfdir")
-    if rclconfdir is None:
-        uplog("uprclconfdir not in config, using /var/cache/upmpdcli/uprcl")
-        rclconfdir = "/var/cache/upmpdcli/uprcl"
-    rcltopdirs = upconfig.get("uprclmediadirs")
-    if rcltopdirs is None:
-        raise Exception("uprclmediadirs not in config")
-
-    pthstr = upconfig.get("uprclpaths")
-    if pthstr is None:
-        uplog("uprclpaths not in config")
-        pthlist = stringToStrings(rcltopdirs)
-        pthstr = ""
-        for p in pthlist:
-            pthstr += p + ":" + p + ","
-        pthstr = pthstr.rstrip(",")
-    uplog("Path translation: pthstr: %s" % pthstr)
-    lpth = pthstr.split(',')
-    pathmap = {}
-    for ptt in lpth:
-        l = ptt.split(':')
-        pathmap[l[0]] = l[1]
-
-
-    # Update or create index.
-    uplog("Creating updating index in %s for %s"%(rclconfdir, rcltopdirs))
-    start = timer()
-    uprclindex.runindexer(rclconfdir, rcltopdirs)
-    # Wait for indexer
-    while not uprclindex.indexerdone():
-        time.sleep(.5)
-    fin = timer()
-    uplog("Indexing took %.2f Seconds" % (fin - start))
-
-    g_rcldocs = uprclfolders.inittree(rclconfdir, httphp, pathprefix)
-    uprcltags.recolltosql(g_rcldocs)
-    uprcluntagged.recoll2untagged(g_rcldocs)
-
-    host,port = httphp.split(':')
-    if True:
-        # Running the server as a thread. We get into trouble because
-        # something somewhere writes to stdout a bunch of --------.
-        # Could not find where they come from, happens after a sigpipe
-        # when a client closes a stream. The --- seem to happen before
-        # and after the exception strack trace, e.g:
-        # ----------------------------------------
-        #   Exception happened during processing of request from ('192...
-        #   Traceback...
-        #   [...]
-        # error: [Errno 32] Broken pipe
-        # ----------------------------------------
-        # 
-        # **Finally**: found it: the handle_error SocketServer method
-        # was writing to stdout.  Overriding it should have fixed the
-        # issue. Otoh the separate process approach works, so we kept
-        # it for now
-        httpthread = threading.Thread(target=uprclhttp.runHttp,
-                                      kwargs = {'host':host ,
-                                                'port':int(port),
-                                                'pthstr':pthstr,
-                                                'pathprefix':pathprefix})
-        httpthread.daemon = True 
-        httpthread.start()
-    else:
-        # Running the HTTP server as a separate process
-        cmdpath = os.path.join(os.path.dirname(sys.argv[0]), 'uprclhttp.py')
-        cmd = subprocess.Popen((cmdpath, host, port, pthstr, pathprefix),
-                               stdin = open('/dev/null'),
-                               stdout = sys.stderr,
-                               stderr = sys.stderr,
-                               close_fds = True)
-    global _initrunning
-    _initrunning = False
-    msgproc.log("Init done")
-
-_initrunning = True
-def _uprcl_init():
-    global _initrunning
-    _initrunning = True
-    initthread = threading.Thread(target=_uprcl_init_worker)
-    initthread.daemon = True 
-    initthread.start()
-
-def _ready():
-    global _initrunning
-    if _initrunning:
-        return False
-    else:
-        return True
-    
 @dispatcher.record('trackuri')
 def trackuri(a):
     # This is used for plugins which generate temporary local urls
@@ -225,14 +113,15 @@ def browse(a):
     if bflg == 'meta':
         raise Exception("uprcl-app: browse: can't browse meta for now")
     else:
-        if not _ready():
+        if not uprclinit.ready():
             entries = [rcldirentry(objid + 'notready', objid,
                                    'Initializing...'),]
             nocache = "1"
         elif not idpath:
             entries = _rootentries()
         else:
-            entries = _browsedispatch(objid, bflg, httphp, pathprefix)
+            entries = _browsedispatch(objid, bflg, g_httphp, g_pathprefix)
+        g_dblock.release_read()
 
     #msgproc.log("%s" % entries)
     encoded = json.dumps(entries)
@@ -249,18 +138,18 @@ def search(a):
     upnps = a['origsearch']
     nocache = "0"
 
-    if not _ready():
+    if not uprclinit.ready():
         entries = [rcldirentry(objid + 'notready', objid, 'Initializing...'),]
         nocache = "1"
     else:
-        entries = uprclsearch.search(rclconfdir, objid, upnps, g_myprefix,
-                                     httphp, pathprefix)
+        entries = uprclsearch.search(g_rclconfdir, objid, upnps, g_myprefix,
+                                     g_httphp, g_pathprefix)
+    g_dblock.release_read()
 
     encoded = json.dumps(entries)
     return {"entries" : encoded, "nocache":nocache}
 
 
-_uprcl_init()
-
+uprclinit.uprcl_init()
 msgproc.log("Uprcl running")
 msgproc.mainloop()

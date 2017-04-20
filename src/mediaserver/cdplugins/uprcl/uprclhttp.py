@@ -47,9 +47,7 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     """Simple HTTP request handler with GET and HEAD commands.
 
-    This serves files from the current directory and any of its
-    subdirectories.  The MIME type for files is determined by
-    calling the .guess_type() method.
+    The MIME type for files is determined by calling the .guess_type() method.
 
     The GET and HEAD requests are identical except that the HEAD
     request omits the actual contents of the file.
