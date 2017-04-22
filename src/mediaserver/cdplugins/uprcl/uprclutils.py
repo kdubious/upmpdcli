@@ -265,6 +265,8 @@ def cmpentries(e1, e2):
 def rcldirentry(id, pid, title, arturi=None, artist=None, upnpclass=None,
                 searchable='1', date=None):
     """ Create container entry in format expected by parent """
+    #uplog("rcldirentry: id %s pid %s tt %s dte %s clss %s artist %s arturi %s" %
+    #      (id,pid,title,date,upnpclass,artist,arturi))
     ret = {'id':id, 'pid':pid, 'tt':title, 'tp':'ct', 'searchable':searchable}
     if arturi:
         ret['upnp:albumArtURI'] = arturi

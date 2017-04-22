@@ -326,6 +326,7 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
         JSONTOUPS(artUri, upnp:albumArtURI);
         JSONTOUPS(artist, upnp:artist);
         JSONTOUPS(upnpClass, upnp:class);
+        JSONTOUPS(date, dc:date)
         // tp is container ("ct") or item ("it")
         string stp = decoded[i].get("tp", "").asString();
         if (!stp.compare("ct")) {

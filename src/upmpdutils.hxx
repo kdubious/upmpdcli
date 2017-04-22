@@ -47,6 +47,7 @@ public:
     std::string artUri;
     std::string upnpClass;
     std::string mime;
+    std::string date;
     
     int duration_secs{0};
     int64_t size{0};
