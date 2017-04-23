@@ -128,6 +128,7 @@ private:
     std::string m_password;
     std::string m_onstart;
     std::string m_onplay;
+    std::string m_onpause;
     std::string m_onstop;
     bool m_externalvolumecontrol;
     std::vector<std::string> m_onvolumechange;

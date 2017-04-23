@@ -207,6 +207,11 @@ onplay:: Command to run when MPD state
 switches to "PLAY".   Specify the full path to the program,
 e.g. /usr/bin/logger.
 
+[[onpause]]
+onpause:: Command to run when MPD state
+switches to "PAUSE".   Specify the full path to the program,
+e.g. /usr/bin/logger.
+
 [[onstop]]
 onstop:: Command to run when MPD state switches to
 "STOP". Specify the full path to the program,
