@@ -14,28 +14,52 @@ performer    =  XYTPP
 tracknumber  =  XYTRK
 
 [stored]
+# Vorbis tags, output by rclaudio. Note that
 album=
 albumartist=
+albumartistsort=
+albumsort=
 artist=
-bitrate=
-bits_per_sample=
-channels=
+artistsort=
+bpm=
 comment=
+compilation=
 composer=
+composersort=
 conductor=
 contentgroup=
+copyright=
 date=
 discnumber=
-duration=
-embdimg=
+discsubtitle=
+encodedby=
 genre=
+isrc=
+label=
+language=
 lyricist=
 lyrics=
+mood=
 orchestra=
-sample_rate=
+originalartist=
+originaldate=
+performer=
+releasedate=
+remixer=
+subtitle=
+title=
+titlesort=
 totaldiscs=
 totaltracks=
 tracknumber=
+
+## Resource pseudo-tags
+bitrate=
+bits_per_sample=
+channels=
+duration=
+embdimg=
+sample_rate=
 
 [queryaliases]
 filename = fn

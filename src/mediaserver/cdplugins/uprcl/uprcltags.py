@@ -303,7 +303,11 @@ def _direntriesforalbums(pid, where):
     return entries
 
 # This is called when an 'albums' element is encountered in the
-# selection path.
+# selection path. i is the index of the albums element. The tree under
+# albums has a well defined structure: ql=len(qpath), we have an
+# albums list if i is the last element (i == ql-1), an album track
+# list for i == ql-2 (we then have an albid at ql-1), and a 'Complete
+# album' query if i == ql-3 (...$albums$xxx$showca)
 def _tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp, pathprefix):
     c = _sqconn().cursor()
     docidsl = _docidsforsel(selwhere, values)
@@ -341,6 +345,7 @@ def _tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp, pathprefix):
 
 # This is called when an 'items' element is encountered in the
 # selection path. We just list the selected tracks
+# TBD: need Complete Album here too ?
 def _tagsbrowseitems(pid, qpath, i, selwhere, values, httphp, pathprefix):
     stmt = 'SELECT docidx FROM tracks ' + selwhere
     return _trackentriesforstmt(stmt, values, pid, httphp, pathprefix)
@@ -380,8 +385,7 @@ def _tagsbrowse(pid, qpath, flag, httphp, pathprefix):
         if elt.startswith('='):
             col = tagtables[elt[1:]] 
 
-        
-        # detect the special values albums items etc. here. Their
+        # Detect the special values: albums items etc. here. Their
         # presence changes how we process the rest (showing tracks and
         # albums and not dealing with other tags any more)
         if elt == 'albums':
