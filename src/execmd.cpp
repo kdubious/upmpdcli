@@ -21,6 +21,8 @@
 #include "config.h"
 #endif
 
+#include <map>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -490,27 +492,47 @@ int ExecCmd::startExec(const string& cmd, const vector<string>& args,
     }
     argv[i] = 0;
 
+    // Environment. We first merge our environment and the specified
+    // variables in a map<string,string>, overriding existing values,
+    // then generate an appropriate char*[]
     Ccharp *envv;
-    int envsize;
-    for (envsize = 0; ; envsize++)
-        if (environ[envsize] == 0) {
-            break;
+    map<string, string> envmap;
+    for (int i = 0; environ[i] != 0; i++) {
+        string entry(environ[i]);
+        string::size_type eqpos = entry.find_first_of("=");
+        if (eqpos == string::npos) {
+            continue;
         }
-    envv = (Ccharp *)malloc((envsize + m->m_env.size() + 2) * sizeof(char *));
+        envmap[entry.substr(0, eqpos)] = entry.substr(eqpos+1);
+    }
+    for (const auto& entry : m->m_env) {
+        string::size_type eqpos = entry.find_first_of("=");
+        if (eqpos == string::npos) {
+            continue;
+        }
+        envmap[entry.substr(0, eqpos)] = entry.substr(eqpos+1);
+    }        
+
+    // Allocate space for the array + string storage in one block.
+    unsigned int allocsize = (envmap.size() + 2) * sizeof(char *);
+    for (const auto& it : envmap) {
+        allocsize += it.first.size() + 1 + it.second.size() + 1;
+    }
+    envv = (Ccharp *)malloc(allocsize);
     if (envv == 0) {
         LOGERR("ExecCmd::doexec: malloc() failed. errno " << errno << "\n");
         free(argv);
         return -1;
     }
-    int eidx;
-    for (eidx = 0; eidx < envsize; eidx++) {
-        envv[eidx] = environ[eidx];
+    // Copy to new env array
+    i = 0;
+    char *cp = ((char *)envv) + (envmap.size() + 2) * sizeof(char *);
+    for (const auto& it : envmap) {
+        strcpy(cp, (it.first + "=" + it.second).c_str());
+        envv[i++] = cp;
+        cp += it.first.size() + 1 + it.second.size() + 1;
     }
-    for (vector<string>::const_iterator it = m->m_env.begin();
-            it != m->m_env.end(); it++) {
-        envv[eidx++] = it->c_str();
-    }
-    envv[eidx] = 0;
+    envv[i++] = 0;
 
     // As we are going to use execve, not execvp, do the PATH thing.
     string exe;
