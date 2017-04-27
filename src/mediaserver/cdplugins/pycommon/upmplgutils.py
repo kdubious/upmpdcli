@@ -111,7 +111,7 @@ def trackentries(httphp, pathprefix, objid, tracks):
         li['upnp:artist'] = track.artist.name
         li['dc:title'] = track.name
         li['discnumber'] = str(track.disc_num)
-        li['duration'] = track.duration
+        li['duration'] = str(track.duration)
         li['upnp:class'] = track.upnpclass
         li['res:mime'] = default_mime
         li['res:samplefreq'] = default_samplerate
