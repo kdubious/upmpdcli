@@ -23,6 +23,7 @@ import time
 from upmplgmodels import Artist, Album, Track, Playlist, SearchResult, \
      Category, Genre
 from gmusicapi import Mobileclient
+from upmplgutils import uplog
 
 class Session(object):
     def __init__(self):
@@ -37,7 +38,7 @@ class Session(object):
         self.sitdataupdtime = 0
         
     def dmpdata(self, who, data):
-        print("%s: %s" % (who, json.dumps(data, indent=4)), file=sys.stderr)
+        uplog("%s: %s" % (who, json.dumps(data, indent=4)))
         
     def login(self, username, password, deviceid=None):
         self.api = Mobileclient(debug_logging=False)
@@ -239,17 +240,13 @@ class Session(object):
         #self.dmpdata("Search", data)
 
         tr = [_parse_track(i['track']) for i in data['song_hits']]
-        print("track ok", file=sys.stderr)
         ar = [_parse_artist(i['artist']) for i in data['artist_hits']]
-        print("artist ok", file=sys.stderr)
         al = [_parse_album(i['album']) for i in data['album_hits']]
-        print("album ok", file=sys.stderr)
         #self.dmpdata("Search playlists", data['playlist_hits'])
         try:
             pl = [_parse_splaylist(i) for i in data['playlist_hits']]
         except:
             pl = []
-        print("playlist ok", file=sys.stderr)
         return SearchResult(artists=ar, albums=al, playlists=pl, tracks=tr)
 
 
@@ -277,8 +274,8 @@ def _parse_situation_station(data):
 
 def _parse_track(data, album=None):
     artist_name = entryOrUnknown(data, 'artist')
-    albartist_name = entryOrUnknown(data, 'albartistAlbum', None)
-
+    albartist_name = entryOrUnknown(data, 'albumArtist', None)
+    #uplog("_parse_track: artist %s albartist %s"%(artist_name,albartist_name))
     artistid = data["artistId"][0] if "artistId" in data else None
     artist = Artist(id=artistid, name = artist_name)
     albartist = Artist(id=artistid, name=albartist_name) if \
@@ -303,7 +300,6 @@ def _parse_track(data, album=None):
     }
     if 'genre' in data:
         kwargs['genre'] = data['genre'] 
-    
     return Track(**kwargs)
 
 
