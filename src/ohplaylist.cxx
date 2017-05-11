@@ -38,6 +38,7 @@
 #include "upmpdutils.hxx"
 #include "smallut.h"
 #include "ohproduct.hxx"
+#include "protocolinfo.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -251,7 +252,7 @@ bool OHPlaylist::makestate(unordered_map<string, string> &st)
     st["Shuffle"] = SoapHelp::i2s(mpds.random);
     st["Id"] = mpds.songid == -1 ? "0" : SoapHelp::i2s(mpds.songid);
     st["TracksMax"] = SoapHelp::i2s(tracksmax);
-    st["ProtocolInfo"] = g_protocolInfo;
+    st["ProtocolInfo"] = Protocolinfo::the()->gettext();
     makeIdArray(st["IdArray"]);
 
     return true;
@@ -792,6 +793,6 @@ int OHPlaylist::idArrayChanged(const SoapIncoming& sc, SoapOutgoing& data)
 int OHPlaylist::protocolInfo(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::protocolInfo" << endl);
-    data.addarg("Value", g_protocolInfo);
+    data.addarg("Value", Protocolinfo::the()->gettext());
     return UPNP_E_SUCCESS;
 }

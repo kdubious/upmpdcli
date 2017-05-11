@@ -38,6 +38,7 @@
 #include "execmd.h"
 #include "httpfs.hxx"
 #include "ohsndrcv.hxx"
+#include "protocolinfo.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -63,7 +64,7 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
     m_services.push_back(m_avt);
     m_rdctl = new UpMpdRenderCtl(this, avtnoev);
     m_services.push_back(m_rdctl);
-    m_services.push_back(new UpMpdConMan(this, g_protocolInfo));
+    m_services.push_back(new UpMpdConMan(this));
 
     if (m_options & upmpdDoOH) {
         m_ohif = new OHInfo(this);
@@ -139,6 +140,9 @@ bool UpMpd::checkContentFormat(const string& uri, const string& didl,
         return dirObjToUpSong(dobj, ups);
     }
     
+    const std::unordered_set<std::string>& supportedformats =
+        Protocolinfo::the()->getsupportedformats();
+
     for (vector<UPnPClient::UPnPResource>::const_iterator it =
              dobj.m_resources.begin(); it != dobj.m_resources.end(); it++) {
         if (!it->m_uri.compare(uri)) {
@@ -148,7 +152,7 @@ bool UpMpd::checkContentFormat(const string& uri, const string& didl,
                 return false;
             }
             string cf = e.contentFormat;
-            if (g_supportedFormats.find(cf) == g_supportedFormats.end()) {
+            if (supportedformats.find(cf) == supportedformats.end()) { // 
                 LOGERR("checkContentFormat: unsupported:: " << cf << endl);
                 return false;
             } else {

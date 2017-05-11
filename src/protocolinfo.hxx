@@ -1,4 +1,4 @@
-/* Copyright (C) 2016 J.F.Dockes
+/* Copyright (C) 2017 J.F.Dockes
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -14,33 +14,29 @@
  *   Free Software Foundation, Inc.,
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#ifndef _MAIN_H_X_INCLUDED_
-#define _MAIN_H_X_INCLUDED_
+#ifndef _PROTOCOLINFO_HX_INCLUDED_
+#define _PROTOCOLINFO_HX_INCLUDED_
 
 #include <string>
 #include <unordered_set>
-#include <mutex>
 
-extern std::string g_configfilename;
-extern std::string g_datadir;
-extern bool g_enableL16;
-class ConfSimple;
-extern std::mutex g_configlock;
-extern ConfSimple *g_config;
+/**
+ * A small class to handle reading/storing/updating the protocolinfo
+ * data, which is used by a number of services 
+ */
+class Protocolinfo {
+public:
+    static Protocolinfo *the();
+    const std::string& gettext();
+    const std::unordered_set<std::string>& getsupportedformats();
+    bool ok();
+private:
+    class Internal;
+    Internal *m{nullptr};
 
-typedef struct ohInfoDesc {
-    std::string name;
-    std::string info;
-    std::string url;
-    std::string imageUri;
-} ohInfoDesc_t;
+    Protocolinfo();
+    Protocolinfo(const Protocolinfo &);
+    Protocolinfo& operator=(const Protocolinfo &);
+};
 
-typedef struct ohProductDesc {
-    ohInfoDesc_t manufacturer;
-    ohInfoDesc_t model;
-    ohInfoDesc_t product;
-    std::string room;
-} ohProductDesc_t;
-
-
-#endif /* _MAIN_H_X_INCLUDED_ */
+#endif /* _PROTOCOLINFO_HX_INCLUDED_ */

@@ -22,14 +22,12 @@
 
 using namespace std;
 
-extern string g_protocolInfo;
-
 MediaServer::MediaServer(const string& deviceid, const string& friendlyname,
     const std::unordered_map<std::string, VDirContent>& files)
     : UpnpDevice(deviceid, files)
 {
     m_cd = new ContentDirectory(this);
-    m_cm = new UpMpdConMan(this, g_protocolInfo);
+    m_cm = new UpMpdConMan(this);
 }
 
 

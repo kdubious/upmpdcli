@@ -70,7 +70,7 @@ public:
         upmpdNoAV = 16,
         // mpd2sc et al were found: advertise songcast sender/receiver mode
         upmpdOhSenderReceiver = 32,
-        // Do not check content format from input metadata against our protocolinfo
+        // Do not check content format from input metadata against protocol info
         upmpdNoContentFormatCheck = 64,
     };
     struct Options {

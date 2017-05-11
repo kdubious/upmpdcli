@@ -27,7 +27,7 @@ using namespace UPnPP;
 
 class UpMpdConMan : public UPnPProvider::UpnpService {
 public:
-    UpMpdConMan(UPnPProvider::UpnpDevice *dev, const std::string& protoinfo);
+    UpMpdConMan(UPnPProvider::UpnpDevice *dev);
 
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
@@ -35,7 +35,6 @@ private:
     int getCurrentConnectionIDs(const SoapIncoming& sc, SoapOutgoing& data);
     int getCurrentConnectionInfo(const SoapIncoming& sc, SoapOutgoing& data);
     int getProtocolInfo(const SoapIncoming& sc, SoapOutgoing& data);
-    std::string m_protoinfo;
 };
 
 #endif /* _CONMAN_H_X_INCLUDED_ */

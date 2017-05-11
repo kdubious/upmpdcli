@@ -41,6 +41,7 @@
 #include "execmd.h"
 #include "ohproduct.hxx"
 #include "ohinfo.hxx"
+#include "protocolinfo.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -234,7 +235,7 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
         st["Metadata"] =  "";
         m_dev->m_ohif->setMetatext("");
     }
-    st["ProtocolInfo"] = g_protocolInfo;
+    st["ProtocolInfo"] = Protocolinfo::the()->gettext();
     st["TransportState"] =  mpdstatusToTransportState(mpds.state);
     st["Uri"] = mpds.currentsong.uri;
     return true;
@@ -588,6 +589,6 @@ int OHRadio::channelsMax(const SoapIncoming& sc, SoapOutgoing& data)
 int OHRadio::protocolInfo(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHRadio::protocolInfo" << endl);
-    data.addarg("Value", g_protocolInfo);
+    data.addarg("Value", Protocolinfo::the()->gettext());
     return UPNP_E_SUCCESS;
 }

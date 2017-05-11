@@ -6,7 +6,7 @@
 # @xx@ tag with whatever you want (e.g. # or empty), or delete the lines.
 
 #http-get:*:audio/mpeg:DLNA.ORG_PN=MP3,
-#http-get:*:audio/x-flac:DLNA.ORG_PN=FLAC
+#http-get:*:audio/x-flac:DLNA.ORG_PN=FLAC,
 
 @ENABLEL16@http-get:*:audio/L16:DLNA.ORG_PN=LPCM,
 

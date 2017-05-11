@@ -149,12 +149,6 @@ ohProductDesc_t ohProductDesc = {
     }
 };
 
-// The following protocolinfo data is read from a configuration file
-// (in httpfs.cxx with the rest of the xml data), global and logically
-// const:
-string g_protocolInfo;
-unordered_set<string> g_supportedFormats;
-
 // Static for cleanup in sig handler.
 static UpnpDevice *dev;
 
@@ -164,6 +158,7 @@ string g_datadir(DATADIR "/");
 string g_configfilename;
 std::mutex g_configlock;
 ConfSimple *g_config;
+bool g_enableL16 = false;
 
 static void onsig(int)
 {
@@ -568,7 +563,6 @@ int main(int argc, char *argv[])
 
     // Initialize MPD client object. Retry until it works or power fail.
     MPDCli *mpdclip = 0;
-    bool enableL16 = false;
     if (!msonly) {
         int mpdretrysecs = 2;
         for (;;) {
@@ -589,7 +583,7 @@ int main(int argc, char *argv[])
         }
         const MpdStatus& mpdstat = mpdclip->getStatus();
         // Only the "special" upmpdcli 0.19.16 version has patch != 0
-        enableL16 = mpdstat.versmajor >= 1 || mpdstat.versminor >= 20 ||
+        g_enableL16 = mpdstat.versmajor >= 1 || mpdstat.versminor >= 20 ||
             mpdstat.verspatch >= 16; 
     }
     
@@ -643,7 +637,7 @@ int main(int argc, char *argv[])
     // descriptions, icons, presentation page, etc.)
     unordered_map<string, VDirContent> files;
     if (!initHttpFs(files, g_datadir, UUID, friendlyname, enableAV, enableOH,
-                    !senderpath.empty(), enableL16, inprocessms,
+                    !senderpath.empty(), inprocessms,
                     msonly, iconpath, presentationhtml)) {
         exit(1);
     }

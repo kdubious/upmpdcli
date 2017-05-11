@@ -28,6 +28,8 @@
 #include "libupnpp/log.hxx"
 #include "libupnpp/soaphelp.hxx"
 
+#include "protocolinfo.hxx"
+
 using namespace std;
 using namespace std::placeholders;
 using namespace UPnPP;
@@ -36,8 +38,8 @@ using namespace UPnPProvider;
 static const string sTpCM("urn:schemas-upnp-org:service:ConnectionManager:1");
 static const string sIdCM("urn:upnp-org:serviceId:ConnectionManager");
 
-UpMpdConMan::UpMpdConMan(UpnpDevice *dev, const string& protoinfo)
-    : UpnpService(sTpCM, sIdCM, dev), m_protoinfo(protoinfo)
+UpMpdConMan::UpMpdConMan(UpnpDevice *dev)
+    : UpnpService(sTpCM, sIdCM, dev)
 {
     dev->addActionMapping(this,"GetCurrentConnectionIDs", 
                           bind(&UpMpdConMan::getCurrentConnectionIDs, 
@@ -58,7 +60,7 @@ bool UpMpdConMan::getEventData(bool all, std::vector<std::string>& names,
     // we return nothing.
     if (all) {
         names.push_back("SinkProtocolInfo");
-        values.push_back(m_protoinfo);
+        values.push_back(Protocolinfo::the()->gettext());
     }
     return true;
 }
@@ -94,7 +96,7 @@ int UpMpdConMan::getProtocolInfo(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("UpMpdConMan::getProtocolInfo" << endl);
     data.addarg("Source", "");
-    data.addarg("Sink", m_protoinfo);
+    data.addarg("Sink", Protocolinfo::the()->gettext());
 
     return UPNP_E_SUCCESS;
 }

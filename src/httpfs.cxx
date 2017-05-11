@@ -198,55 +198,6 @@ static vector<const char *> ohxmlfilenames =
     "OHPlaylist.xml", "OHRadio.xml"
 };
 
-/** Read protocol info file. This contains the connection manager
- * protocol info data
- *
- * We strip white-space from beginning/ends of lines, and allow
- * #-started comments (on a line alone only, comments after data not allowed).
- */
-static bool read_protocolinfo(const string& fn, bool enableL16, string& out)
-{
-    LOGDEB1("read_protocolinfo: fn " << fn << "\n");
-    ifstream input;
-    input.open(fn, ios::in);
-    if (!input.is_open()) {
-        LOGERR("read_protocolinfo: open failed: " << fn << "\n");
-	return false;
-    }	    
-    bool eof = false;
-    for (;;) {
-        string line;
-	getline(input, line);
-	if (!input.good()) {
-	    if (input.bad()) {
-                LOGERR("read_protocolinfo: read error: " << fn << "\n");
-		return false;
-	    }
-	    // Must be eof ? But maybe we have a partial line which
-	    // must be processed. This happens if the last line before
-	    // eof ends with a backslash, or there is no final \n
-            eof = true;
-	}
-        trimstring(line, " \t\n\r,");
-        if (!line.empty()) {
-            if (enableL16 && line[0] == '@') {
-                line = regsub1("@ENABLEL16@", line, "");
-            } else {
-                line = regsub1("@ENABLEL16@", line, "#");
-            }
-            if (line[0] == '#')
-                continue;
-
-            out += line + ',';
-        }
-        if (eof) 
-            break;
-    }
-    trimstring(out, ",");
-    LOGDEB0("read_protocolinfo data: [" << out << "]\n");
-    return true;
-}
-
 
 // Read and setup our (mostly XML) data to make it available from the
 // virtual directory
@@ -254,11 +205,11 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
                 const string& datadir,
                 const string& UUID, const string& friendlyname, 
                 bool enableAV, bool enableOH, bool enableReceiver,
-                bool enableL16, bool enableMediaServer, bool msonly,
+                bool enableMediaServer, bool msonly,
                 const string& iconpath, const string& presentationhtml)
 {
     if (msonly) {
-        enableAV=enableOH=enableReceiver=enableL16=false;
+        enableAV=enableOH=enableReceiver=false;
         enableMediaServer = true;
     }
 
@@ -270,18 +221,6 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
                             ohxmlfilenames.end());
     }
     
-    string protofile(path_cat(datadir, "protocolinfo.txt"));
-    if (!read_protocolinfo(protofile, enableL16, g_protocolInfo)) {
-        LOGFAT("Failed reading protocol info from " << protofile << endl);
-        return false;
-    }
-
-    vector<ProtocolinfoEntry> vpe;
-    parseProtocolInfo(g_protocolInfo, vpe);
-    for (const auto& it : vpe) {
-        g_supportedFormats.insert(it.contentFormat);
-    }
-
     string reason;
     string icondata;
     if (!iconpath.empty()) {

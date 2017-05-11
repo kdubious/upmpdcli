@@ -81,6 +81,8 @@ upmpdcli_SOURCES = \
      src/ohtime.hxx \
      src/ohvolume.cxx \
      src/ohvolume.hxx \
+     src/protocolinfo.cxx \
+     src/protocolinfo.hxx \
      src/pathut.cpp \
      src/pathut.h \
      src/readfile.cpp \
