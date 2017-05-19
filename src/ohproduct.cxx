@@ -92,7 +92,12 @@ OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc)
 
 
     for (auto it = o_sources.begin(); it != o_sources.end(); it++) {
-        string visible = it->first.compare("Receiver") ? "1" : "0";
+        // Receiver needs to be visible for Kazoo to use it. As a
+        // consequence, Receiver appears in older upplay versions
+        // source lists. Newer versions filters it out because you
+        // can't do anything useful by selecting the receiver source
+        // (no way to specify the sender), so it is confusing
+        string visible = "1";//it->first.compare("Receiver") ? "1" : "0";
         csxml += string(" <Source>\n") +
             "  <Name>" + it->second + "</Name>\n" +
             "  <Type>" + it->first + "</Type>\n" +
