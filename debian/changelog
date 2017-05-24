@@ -1,9 +1,8 @@
-upmpdcli (1.2.13-1) unstable; urgency=low
+upmpdcli (1.2.14-1) unstable; urgency=low
 
-  * Experimental version: do not use if not talking with me-> We will be
-    skipping this as a release and go to 1.2.14 when ready.
+  * Make the Receiver source visible, allowing grouping from Kazoo
   
- -- Jean-Francois Dockes <jf@dockes.org>  Mon, 13 Feb 2017 17:59:00 +0100
+ -- Jean-Francois Dockes <jf@dockes.org>  Fri, 19 May 2017 10:29:00 +0100
 
 upmpdcli (1.2.12-1) unstable; urgency=low
 

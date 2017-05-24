@@ -326,6 +326,19 @@ UPnP), so this is probably not a major additional issue. The system will
 not capture anything besides what *mpd*, or an explicitely setup additional
 source are playing (e.g. Skype phone conversations are out of reach).
 
+[[UPMPDCLI-SONGCAST-COMPAT]]
+=== Upmpdcli Songcast Control Point compatibility
+
+Upmpdcli Senders and Receivers can be mixed with Linn ones and controlled
+from Upplay or Bubble DS (an maybe other control points).
+
+Upmpdcli Senders can't be controlled by Linn Kazoo (tested with release
+4.11.226), reason unknown.
+
+Upmpdcli Receivers before release 1.2.14 are not visible in Linn Kazoo.
+
+
+
 [[UPMPDCLI-RECEIVER]]
 === Upmpdcli Songcast Receiver
 

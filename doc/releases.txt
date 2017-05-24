@@ -1,6 +1,19 @@
 = Upmpdcli release notes
 
-== sc2mpd 1.1.2
+== upplay 1.2.9
+
+- Do not list Receiver sources in source list, nothing useful can be done
+  by selecting them.
+
+== upmpdcli 1.2.13
+
+- Make Receiver OpenHome source visible to allow control by Linn Kazoo
+
+== libupnpp 0.15.2
+
+- Handle "Waiting" state to allow control of Linn Songcast Receivers
+
+== sc2mpd 1.1.3
 
 - Updates to the build system. Small code reorganization and fixes. No
   external changes.
