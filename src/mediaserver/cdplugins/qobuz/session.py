@@ -263,16 +263,17 @@ class Favorites(object):
     def artists(self):
         offset = 0
         artists = []
+        slice = 45
         while True:
             r = self.session.api.favorite_getUserFavorites(
                 user_id = self.session.user.id,
-                type = 'artists', offset=offset, limit=45)
+                type = 'artists', offset=offset, limit=slice)
             #uplog("%s" % r)
             arts = [_parse_artist(item) for item in r['artists']['items']]
             artists += arts
             uplog("Favourite artists: got %d at offs %d"% (len(arts), offset))
             offset += len(arts)
-            if len(arts) != 45:
+            if len(arts) != slice:
                 break
 
         return artists
@@ -280,16 +281,17 @@ class Favorites(object):
     def albums(self):
         offset = 0
         albums = []
+        slice = 45
         while True:
             r = self.session.api.favorite_getUserFavorites(
                 user_id = self.session.user.id,
-                type = 'albums', offset = offset, limit=45)
+                type = 'albums', offset = offset, limit=slice)
             #uplog("%s" % r)
             albs = [_parse_album(item) for item in r['albums']['items']]
             albums += albs
             uplog("Favourite albums: got %d at offset %d"% (len(albs), offset))
             offset += len(albs)
-            if len(albs) != 45:
+            if len(albs) != slice:
                 break
 
         return [alb for alb in albums if alb.available]
@@ -301,16 +303,17 @@ class Favorites(object):
     def tracks(self):
         offset = 0
         result = []
+        slice = 45
         while True:
             r = self.session.api.favorite_getUserFavorites(
                 user_id = self.session.user.id,
-                type = 'tracks', offset=offset, limit=45)
+                type = 'tracks', offset=offset, limit=slice)
             #uplog("%s" % r)
             res = [_parse_track(item) for item in r['tracks']['items']]
             result += res
             uplog("Favourite tracks: got %d at offs %d"% (len(res), offset))
             offset += len(res)
-            if len(res) != 45:
+            if len(res) != slice:
                 break
 
         return [trk for trk in result if trk.available]
