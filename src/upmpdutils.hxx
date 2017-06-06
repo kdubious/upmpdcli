@@ -114,6 +114,8 @@ extern std::string wrapDIDL(const std::string& data);
 extern bool uMetaToUpSong(const std::string&, UpSong *ups);
 // Convert UPnP content directory entry object to UpSong
 bool dirObjToUpSong(const UPnPClient::UPnPDirObject& dobj, UpSong *ups);
+// upsong with "Unknown" or such everywhere for when we get no metadata
+void noMetaUpSong(UpSong *ups);
 
 // Replace the first occurrence of regexp. cxx11 regex does not work
 // that well yet...

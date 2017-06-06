@@ -301,6 +301,16 @@ bool dirObjToUpSong(const UPnPDirObject& dobj, UpSong *ups)
     return true;
 }
 
+void noMetaUpSong(UpSong *ups)
+{
+    ups->artist = "Unknown";
+    ups->album = "Unknown";
+    ups->title = "Unknown (streaming?)";
+    ups->duration_secs = 0;
+    ups->tracknum = "0";
+    return;
+}
+
 bool uMetaToUpSong(const string& metadata, UpSong *ups)
 {
     if (ups == 0) {

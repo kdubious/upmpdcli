@@ -390,7 +390,7 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
     UpSong metaformpd;
     if (!m_dev->checkContentFormat(uri, metadata, &metaformpd)) {
         LOGERR("set(Next)AVTransportURI: unsupported format: uri " << uri <<
-               " metadata " << metadata);
+               " metadata [" << metadata << "]\n");
         return UPNP_E_INVALID_PARAM;
     }
 
