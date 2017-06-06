@@ -130,7 +130,9 @@ bool UpMpd::checkContentFormat(const string& uri, const string& didl,
 {
     UPnPClient::UPnPDirContent dirc;
     if (!dirc.parse(didl) || dirc.m_items.size() == 0) {
-        LOGERR("checkContentFormat: didl parse failed\n");
+        if (!didl.empty()) {
+            LOGERR("checkContentFormat: didl parse failed\n");
+        }
         if ((m_options & upmpdNoContentFormatCheck)) {
             noMetaUpSong(ups);
             return true;
