@@ -5,7 +5,7 @@
 - Do not list Receiver sources in source list, nothing useful can be done
   by selecting them.
 
-== upmpdcli 1.2.13
+== upmpdcli 1.2.14
 
 - Make Receiver OpenHome source visible to allow control by Linn Kazoo
 
