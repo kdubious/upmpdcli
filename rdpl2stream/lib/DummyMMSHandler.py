@@ -19,8 +19,13 @@
 ##########################################################################
 import urllib2
 
-class DummyMMSHandler(urllib2.BaseHandler):
-        
-    def mms_open(self, request):
-        print request.get_full_url()
-        raise urllib2.URLError("MMS REDIRECT:"+request.get_full_url())
+class DummyMMSHandler(urllib2.HTTPRedirectHandler):
+
+    # Handle mms redirection, or let the standard code deal with it.
+    def http_error_302(self, req, fp, code, msg, headers):
+        if 'location' in headers:
+            newurl = headers.getheaders('location')[0]
+            if newurl.startswith('mms:'):
+                raise urllib2.URLError("MMS REDIRECT:"+headers["Location"])
+        return urllib2.HTTPRedirectHandler.http_error_302(self, req, fp, code,
+                                                          msg, headers)
