@@ -327,9 +327,9 @@ The script should output the metadata in JSON format. Example output
 }
 ----
 
-The +reload+ value gives the time after which the script should be
-re-executed (the clever radio sets this to the remaining song time). By
-default, the script is executed every 10 S.
+The +reload+ value gives the number of seconds after which the script
+should be re-executed (the clever radio sets this to the remaining song
+time). By default, the script is executed every 10 S.
 
 Complete exemple with metadata script:
 
@@ -352,16 +352,17 @@ uri = URI('http://www.fipradio.fr/livemeta/7')
 response = Net::HTTP.get(uri)
 songs = JSON.parse(response)['steps'].values
 now = Time.now
-metadata = {}
 songs.each do |song|
   song_end = Time.at(song['end'])
-  if (song_end >= now && Time.at(song['start']) <= now)
-    metadata = {'title' => song['title'], 'artist' => song['performers'],
-       'artUrl' => song['visual'], 'reload' => (song_end - now + 1).to_i}
+  if (song['embedType'] == 'song' && song_end >= now && Time.at(song['start']) <= now)
+    metadata = {'title' => song['title'].split.collect{|s| s.capitalize}.join(' '),
+               'artist' => song['performers'].split.collect{|s| s.capitalize}.join(' '),
+               'artUrl' => song['visual'],
+               'reload' => (song_end - now + 1).to_i}
+    puts JSON.generate(metadata)
     break
   end
 end
-puts JSON.generate(metadata)
 ----
 
 
