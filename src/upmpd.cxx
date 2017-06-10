@@ -143,7 +143,7 @@ bool UpMpd::checkContentFormat(const string& uri, const string& didl,
     UPnPClient::UPnPDirObject& dobj = *dirc.m_items.begin();
 
     if ((m_options & upmpdNoContentFormatCheck)) {
-        LOGERR("checkContentFormat: format check disabled\n");
+        LOGINFO("checkContentFormat: format check disabled\n");
         return dirObjToUpSong(dobj, ups);
     }
     

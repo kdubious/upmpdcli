@@ -270,6 +270,10 @@ the radio links to work.
 Radio stations can be defined in the configuration (at the end because of
 the use of section indicators), or in in a separate file by setting the
 <<ohproductroom,+radiolist+>> parameter in the main configuration.
+
+Radio channels can be accessed by selecting the _Radio_ Source from an
+OpenHome Control Point.
+
 Example entry:
 
 ----
@@ -277,14 +281,18 @@ Example entry:
 url = http://opml.radiotime.com/Tune.ashx?id=s80044
 artUrl = http://cdn-radiotime-logos.tunein.com/s80044q.png
 artScript = /path/to/some/script
+metaScript = /path/to/some/other/script
 ----
 
 The section name must begin with +radio+, the rest will be displayed as the
-station name. +url+ and +artUrl+ designate the playlist or stream, and an
-icon. +artUrl+ is optional.
+station name. The section has several possible entries. Only +url+ is
+mandatory, it points to the playlist or stream.
 
-Radio channels can be accessed by selecting the _Radio_ Source from an
-OpenHome Control Point.
+If set, +artUrl+ is a link to a static icon for the radio (displayed as
+album art).
+
+If set, +artScript+ is the path to an executable script which can retrieve
+the image for the currently playing title.
 
 Some radios (e.g.  link:https://www.radioparadise.com/rp_2.php?#[Radio
 Paradise]) publish the album art for the currently playing title. The
@@ -300,8 +308,62 @@ approach would use an XML parser of course):
     curl --max-time 5 -s http://radioparadise.com/xml/now.xml | \
          grep '<coverart>' | sed -e 's/<coverart>//' -e 's!</coverart>!!'
 
-Also note that upmpdcli does not set a timeout for executing the
-+artScript+. A reasonable value should be used inside the script.
+Also note that upmpdcli does not set a timeout for the +artScript+
+execution. A reasonable value should be used inside the script, to avoid
+freezing upmpdcli forever.
+
+If set, +metaScript+ is the path to an executable script which can retrieve
+the metadata (possibly including art Url) for the currently playing title.
+
+The script should output the metadata in JSON format. Example output
+(the newlines and blank space are just here for readability):
+
+----
+{
+    "title":"The title of the current track",
+    "artist":"The artist playing",
+    "artUrl":"https://www.somesite.com/path/to/image.jpg",
+    "reload":103
+}
+----
+
+The +reload+ value gives the time after which the script should be
+re-executed (the clever radio sets this to the remaining song time). By
+default, the script is executed every 10 S.
+
+Complete exemple with metadata script:
+
+----
+[radio FIP (Paris)]
+url = http://direct.fipradio.fr/live/fip-midfi.mp3
+artUrl = http://www.fipradio.fr/sites/default/files/fip-quadri-filet.png
+metaScript = /usr/local/bin/fip-paris-meta.rb
+----
+
+And the script (this one in Ruby, thanks to
+link:https://github.com/distler[Jacques Distler]): 
+
+----
+#!/usr/bin/ruby
+require 'net/http'
+require 'json'
+
+uri = URI('http://www.fipradio.fr/livemeta/7')
+response = Net::HTTP.get(uri)
+songs = JSON.parse(response)['steps'].values
+now = Time.now
+metadata = {}
+songs.each do |song|
+  song_end = Time.at(song['end'])
+  if (song_end >= now && Time.at(song['start']) <= now)
+    metadata = {'title' => song['title'], 'artist' => song['performers'],
+       'artUrl' => song['visual'], 'reload' => (song_end - now + 1).to_i}
+    break
+  end
+end
+puts JSON.generate(metadata)
+----
+
 
 [[UPMPDCLI-SONGCAST]]
 == Upmpdcli and Songcast
@@ -332,10 +394,12 @@ source are playing (e.g. Skype phone conversations are out of reach).
 Upmpdcli Senders and Receivers can be mixed with Linn ones and controlled
 from Upplay or Bubble DS (an maybe other control points).
 
-Upmpdcli Senders can't be controlled by Linn Kazoo (tested with release
-4.11.226), reason unknown.
+Upmpdcli Senders can't be used by Linn Kazoo (tested with release
+4.11.226), the reason unknown, but neither Linn nor upmpdcli receivers can
+be linked to an upmpdcli Sender using Kazoo.
 
-Upmpdcli Receivers before release 1.2.14 are not visible in Linn Kazoo.
+Upmpdcli Receivers before release 1.2.14 are not visible in Linn
+Kazoo. Later versions can be linked, and stream, from a Linn Sender.
 
 
 

@@ -23,9 +23,11 @@
 
 #include <functional>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
+#include <json/json.h>
 
 #include "libupnpp/base64.hxx"
 #include "libupnpp/log.hxx"
@@ -50,18 +52,28 @@ static const string sTpProduct("urn:av-openhome-org:service:Radio:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Radio");
 
 struct RadioMeta {
-    RadioMeta(const string& t, const string& u, const string& au = string(),
-              const string& as = string())
+    RadioMeta(const string& t, const string& u, const string& au,
+              const string& as, const string& ms)
         : title(t), uri(u), artUri(au), dynArtUri(au) {
         if (!as.empty()) {
             stringToStrings(as, artScript);
+        }
+        if (!ms.empty()) {
+            stringToStrings(ms, metaScript);
         }
     }
     string title;
     string uri;
     string artUri;
-    vector<string> artScript;
+    // Script to retrieve current art
+    vector<string> artScript; 
+    // Script to retrieve all metadata
+    vector<string> metaScript; 
+    // Time after which we should re-fire the metadata script
+    time_t nextMetaScriptExecTime{0}; 
     string dynArtUri;
+    string dynTitle;
+    string dynArtist;
 };
 
 static vector<RadioMeta> o_radios;
@@ -121,15 +133,18 @@ static void getRadiosFromConf(ConfSimple* conf)
     vector<string> allsubk = conf->getSubKeys_unsorted();
     for (auto it = allsubk.begin(); it != allsubk.end(); it++) {
         if (it->find("radio ") == 0) {
-            string uri, artUri, artScript;
+            string uri, artUri, artScript, metaScript;
             string title = it->substr(6);
             bool ok = conf->get("url", uri, *it);
             conf->get("artUrl", artUri, *it);
             conf->get("artScript", artScript, *it);
             trimstring(artScript, " \t\n\r");
+            conf->get("metaScript", metaScript, *it);
+            trimstring(metaScript, " \t\n\r");
             if (ok && !uri.empty()) {
-                o_radios.push_back(RadioMeta(title, uri, artUri, artScript));
-                LOGDEB1("OHRadio::readRadios:RADIO: [" << title << "] uri ["
+                o_radios.push_back(RadioMeta(title, uri, artUri, artScript,
+                                             metaScript));
+                LOGDEB0("OHRadio::readRadios:RADIO: [" << title << "] uri ["
                         << uri << "] artUri [" << artUri << "]\n");
             }
         }
@@ -139,7 +154,7 @@ static void getRadiosFromConf(ConfSimple* conf)
 bool OHRadio::readRadios()
 {
     // Id 0 means no selection
-    o_radios.push_back(RadioMeta("Unknown radio", "", ""));
+    o_radios.push_back(RadioMeta("Unknown radio", "", "", "", ""));
     
     std::unique_lock<std::mutex>(g_configlock);
     getRadiosFromConf(g_config);
@@ -200,15 +215,46 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
     st["ChannelsMax"] = SoapHelp::i2s(o_radios.size());
     st["Id"] = SoapHelp::i2s(m_id);
     makeIdArray(st["IdArray"]);
+
     if (m_active && m_id >= 0 && m_id < o_radios.size()) {
         if (mpds.currentsong.album.empty()) {
             mpds.currentsong.album = o_radios[m_id].title;
         }
 
-        // Some radios provide a url to the art for the current song. Possibly
-        // execute script to retrieve it
         RadioMeta& radio = o_radios[m_id];
-        LOGDEB2("OHRadio::makestate: artScript: " << radio.artScript << endl);
+
+        // Some radios do not insert icy metadata in the stream, but rather
+        // provide a script to retrieve it.
+        if (mpds.currentsong.title.empty() && mpds.currentsong.artist.empty()
+            && radio.metaScript.size()) {
+            if (time(0) > radio.nextMetaScriptExecTime) {
+                string data;
+                if (ExecCmd::backtick(radio.metaScript, data)) {
+                    LOGDEB0("OHRadio::makestate: metaScript got: [" << data <<
+                            "]\n");
+                    // The data is in JSON format
+                    try {
+                        Json::Value decoded;
+                        istringstream input(data);
+                        input >> decoded;
+                        radio.dynTitle = decoded.get("title", "").asString();
+                        radio.dynArtist = decoded.get("artist", "").asString();
+                        radio.dynArtUri = decoded.get("artUrl", "").asString();
+                        radio.nextMetaScriptExecTime = time(0) +
+                            decoded.get("reload", "10").asInt();
+                    } catch (...) {
+                        LOGERR("OHRadio::makestate: Json decode failed for [" <<
+                               data << "]");
+                        radio.nextMetaScriptExecTime = time(0) + 10;
+                    }
+                }
+            }
+            mpds.currentsong.title = radio.dynTitle;
+            mpds.currentsong.artist = radio.dynArtist;
+        }
+
+        // Some radios provide a url to the art for the current song. 
+        // Execute script to retrieve it if the current title+artist changed
         if (radio.artScript.size()) {
             string nsong(mpds.currentsong.title + mpds.currentsong.artist);
             if (nsong.compare(m_currentsong)) {
@@ -217,8 +263,8 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
                 radio.dynArtUri.clear();
                 if (ExecCmd::backtick(radio.artScript, uri)) {
                     trimstring(uri, " \t\r\n");
-                    LOGDEB("OHRadio::makestate: artScript got: [" << uri <<
-                           "]\n");
+                    LOGDEB0("OHRadio::makestate: artScript got: [" << uri <<
+                            "]\n");
                     radio.dynArtUri = uri;
                 }
             }
@@ -255,6 +301,9 @@ int OHRadio::setPlaying()
                ") or empty preset uri [" << o_radios[m_id].uri << "]\n");
         return UPNP_E_INTERNAL_ERROR;
     }
+
+    RadioMeta& radio = o_radios[m_id];
+    radio.nextMetaScriptExecTime = 0;
     
     string cmdpath = path_cat(g_datadir, "rdpl2stream");
     cmdpath = path_cat(cmdpath, "fetchStream.py");
@@ -262,7 +311,7 @@ int OHRadio::setPlaying()
     // Execute the playlist parser
     ExecCmd cmd;
     vector<string> args;
-    args.push_back(o_radios[m_id].uri);
+    args.push_back(radio.uri);
     LOGDEB("OHRadio::setPlaying: exec: " << cmdpath << " " << args[0] << endl);
     if (cmd.startExec(cmdpath, args, false, true) < 0) {
         LOGDEB("OHRadio::setPlaying: startExec failed for " <<
@@ -285,8 +334,8 @@ int OHRadio::setPlaying()
     // Send url to mpd
     m_dev->m_mpdcli->clearQueue();
     UpSong song;
-    song.album = o_radios[m_id].title;
-    song.uri = o_radios[m_id].uri;
+    song.album = radio.title;
+    song.uri = radio.uri;
     if (m_dev->m_mpdcli->insert(audiourl, 0, song) < 0) {
         LOGDEB("OHRadio::setPlaying: mpd insert failed\n");
         return UPNP_E_INTERNAL_ERROR;
