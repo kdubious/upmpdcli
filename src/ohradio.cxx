@@ -240,8 +240,11 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
                         radio.dynTitle = decoded.get("title", "").asString();
                         radio.dynArtist = decoded.get("artist", "").asString();
                         radio.dynArtUri = decoded.get("artUrl", "").asString();
-                        radio.nextMetaScriptExecTime = time(0) +
-                            decoded.get("reload", 10).asInt();
+                        int reload = decoded.get("reload", 10).asInt();
+                        if (reload <= 3) {
+                            reload = 3;
+                        }
+                        radio.nextMetaScriptExecTime = time(0) + reload;
                     } catch (std::exception e) {
                         LOGERR("OHRadio::makestate: Json decode failed for [" <<
                                data << "]");
