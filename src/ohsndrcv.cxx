@@ -44,11 +44,9 @@ public:
     // driver input and managing a sender. Our local source or mpd are
     // uninvolved
     Internal(UpMpd *dv, const string& starterpath, int port)
-        : dev(dv), mpd(0), origmpd(0), isender(0), ssender(0),
-          makeisendercmd(starterpath), mpdport(port) {
-        // Stream volume control ? This decides if the aux mpd has mixer
-        // "software" or "none"
-        scalestream = true;
+        : dev(dv), makeisendercmd(starterpath), mpdport(port) {
+        // Stream volume control ? This decides if the aux mpd has
+        // mixer "software" or "none"
         std::unique_lock<std::mutex>(g_configlock);
         string value;
         if (g_config->get("scstreamscaled", value)) {
@@ -71,15 +69,15 @@ public:
         deleteZ(ssender);
     }
     UpMpd *dev;
-    MPDCli *mpd;
-    MPDCli *origmpd;
-    ExecCmd *isender;
-    ExecCmd *ssender;
+    MPDCli *mpd{nullptr};
+    MPDCli *origmpd{nullptr};
+    ExecCmd *isender{nullptr};
+    ExecCmd *ssender{nullptr};
     string iuri;
     string imeta;
     string makeisendercmd;
     int mpdport;
-    bool scalestream;
+    bool scalestream{true};
 };
 
 
@@ -123,7 +121,7 @@ bool SenderReceiver::start(const string& script, int seekms)
 
     // sndcmd will non empty if we actually started a script instead
     // of reusing an old one (then need to read the initial data).
-    ExecCmd *sndcmd = 0;
+    ExecCmd *sndcmd = nullptr;
 
     if (script.empty() && !m->isender) {
         // Internal source, first time: Start fifo MPD and Sender
@@ -186,6 +184,7 @@ bool SenderReceiver::start(const string& script, int seekms)
     
     if (sndcmd && script.empty()) {
         // Just started the internal source script, connect to the new MPD
+        deleteZ(m->mpd);
         m->mpd = new MPDCli("localhost", m->mpdport);
         if (!m->mpd || !m->mpd->ok()) {
             LOGERR("SenderReceiver::start: can't connect to new MPD\n");
@@ -239,5 +238,8 @@ bool SenderReceiver::stop()
 
     // We don't reuse external source processes
     deleteZ(m->ssender);
+    // Neither internal ones any more actually (used to).
+    deleteZ(m->isender);
+    deleteZ(m->mpd);
     return true;
 }
