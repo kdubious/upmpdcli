@@ -26,7 +26,9 @@
  * 
  * To avoid encurring a discovery timeout for each op, there is a
  * server mode, in which a permanent process executes the above
- * commands, received on Unix socket, and returns the results.
+ * commands, received on Unix socket, and returns the results. The
+ * Unix socket name is based on the uid, so there is one per active
+ * user.
  *
  * When executing any of the ops from the command line, the program
  * first tries to contact the server, and does things itself if no
@@ -59,6 +61,12 @@ using namespace UPnPClient;
 using namespace UPnPP;
 using namespace std;
 using namespace Songcast;
+
+#ifdef LIBUPNPP_VERSION_MAJOR
+#if LIBUPNPP_AT_LEAST(0,16,0)
+#define HAVE_SETSOURCEINDEX_IN_LINN
+#endif
+#endif
 
 #define OPT_L 0x1
 #define OPT_S 0x2
@@ -119,6 +127,40 @@ string showSenders(int ops)
     return out.str();
 }
 
+int dosomething(int opflags, const vector<string>& args, string& out)
+{
+    if (opflags & OPT_l) {
+        out = showReceivers(opflags);
+    } else if (opflags & OPT_L) {
+        out = showSenders(opflags);
+    } else if (opflags & OPT_r) {
+        if (args.size() < 2)
+            return 1;
+        setReceiversFromSender(args[0], vector<string>(args.begin() + 1,
+                                                       args.end()));
+    } else if (opflags & OPT_s) {
+        if (args.size() < 2)
+            return 1;
+        setReceiversFromSender(args[0], vector<string>(args.begin() + 1,
+                                                       args.end()));
+    } else if (opflags & OPT_x) {
+        if (args.size() < 1)
+            return 1;
+        stopReceivers(args);
+#ifdef HAVE_SETSOURCEINDEX_IN_LINN
+    } else if ((opflags & OPT_i)) {
+        if (args.size() < 2)
+            return 1;
+        setSourceIndex(args[0], std::stoi(args[1]));
+    } else if ((opflags & OPT_I)) {
+        if (args.size() < 2)
+            return 1;
+        setSourceIndexByName(args[0], args[1]);
+#endif
+    }
+    return 0;
+}
+
 static char *thisprog;
 static char usage [] =
 " -l List renderers with Songcast Receiver capability\n"
@@ -126,8 +168,10 @@ static char usage [] =
 "   -m : for above modes: use parseable format\n"
 "For the following options the renderers can be designated by their \n"
 "uid (safer) or friendly name\n"
+#ifdef HAVE_SETSOURCEINDEX_IN_LINN
 " -i <renderer> i : set source index\n"
 " -I <renderer> name : set source index by name\n"
+#endif
 " -s <master> <slave> [slave ...] : Set up the slaves renderers as Songcast\n"
 "    Receivers and make them play from the same uri as the master receiver\n"
 " -x <renderer> [renderer ...] Reset renderers from Songcast to Playlist\n"
@@ -165,41 +209,22 @@ int main(int argc, char *argv[])
         switch (ret) {
         case 'f': op_flags |= OPT_f; break;
         case 'h': Usage(stdout); break;
-        case 'l':
-            op_flags |= OPT_l;
-            break;
-        case 'L':
-            op_flags |= OPT_L;
-            break;
-        case 'm':
-            op_flags |= OPT_m;
-            break;
-        case 'r':
-            op_flags |= OPT_r;
-            break;
-        case 's':
-            op_flags |= OPT_s;
-            break;
-        case 'S':
-            op_flags |= OPT_S;
-            break;
-        case 'x':
-            op_flags |= OPT_x;
-            break;
-        case 'i':
-            op_flags |= OPT_i;
-            break;
-        case 'I':
-            op_flags |= OPT_I;
-            break;
+        case 'l': op_flags |= OPT_l; break;
+        case 'L': op_flags |= OPT_L; break;
+        case 'm': op_flags |= OPT_m; break;
+        case 'r': op_flags |= OPT_r; break;
+        case 's': op_flags |= OPT_s; break;
+        case 'S': op_flags |= OPT_S; break;
+        case 'x': op_flags |= OPT_x; break;
+        case 'i': op_flags |= OPT_i; break;
+        case 'I': op_flags |= OPT_I; break;
         default: Usage();
         }
     }
-    //fprintf(stderr, "argc %d optind %d flgs: 0x%x\n", argc, optind, op_flags);
 
-    // If we're not a server, try to contact one to avoid the
-    // discovery timeout
-    if (!(op_flags & OPT_S) && tryserver(op_flags, argc -optind, 
+    // If we're not to become a server, try to contact one to avoid
+    // the discovery timeout
+    if (!(op_flags & OPT_S) && tryserver(op_flags, argc - optind, 
                                          &argv[optind])) {
         exit(0);
     }
@@ -207,6 +232,8 @@ int main(int argc, char *argv[])
     // At least one action needed. 
     if ((op_flags & ~(OPT_f|OPT_m)) == 0)
         Usage();
+
+    // Logger::getTheLog("stderr")->setLogLevel(Logger::LLDEB0);
 
     LibUPnP *mylib = LibUPnP::getLibUPnP();
     if (!mylib) {
@@ -224,43 +251,15 @@ int main(int argc, char *argv[])
     while (optind < argc) {
         args.push_back(argv[optind++]);
     }
-    
-    if ((op_flags & OPT_l)) {
-        if (args.size())
-            Usage();
-        string out = showReceivers(op_flags);
-        cout << out;
-    } else if ((op_flags & OPT_L)) {
-        if (args.size())
-            Usage();
-        string out = showSenders(op_flags);
-        cout << out;
-    } else if ((op_flags & OPT_r)) {
-        if (args.size() < 2)
-            Usage();
-        setReceiversFromSender(args[0], vector<string>(args.begin() + 1,
-                                                       args.end()));
-    } else if ((op_flags & OPT_s)) {
-        if (args.size() < 2)
-            Usage();
-        setReceiversFromReceiver(args[0], vector<string>(args.begin()+1,
-                                                         args.end()));
-    } else if ((op_flags & OPT_x)) {
-        if (args.size() < 1)
-            Usage();
-        stopReceivers(args);
-    } else if ((op_flags & OPT_i)) {
-        if (args.size() < 2)
-            Usage();
-        setSourceIndex(args[0], std::stoi(args[1]));
-    } else if ((op_flags & OPT_I)) {
-        if (args.size() < 2)
-            Usage();
-        setSourceIndexByName(args[0], args[1]);
-    } else if ((op_flags & OPT_S)) {
+
+    if ((op_flags & OPT_S)) {
         exit(runserver());
     } else {
-        Usage();
+        string out;
+        if (dosomething(op_flags, args, out)) {
+            Usage();
+        }
+        cout << out;
     }
 
     // If we get here, we have executed a local command. If -f is set,
@@ -273,6 +272,7 @@ int main(int argc, char *argv[])
     } 
     return 0;
 }
+
 
 // The Unix socket path which we use for client-server operation
 bool sockname(string& nm)
@@ -335,18 +335,23 @@ bool tryserver(const string& cmd)
     return true;
 }
 
-bool tryserver(int opflags, int argc, char **argv)
+static vector<string> argvtov(char *argv[])
+{
+    vector<string> out;
+    while (argv && *argv) {
+        out.push_back(*argv++);
+    }
+    return out;
+}
+
+bool tryserver(int opflags, int argc, char *argv[])
 {
     char opts[30];
     sprintf(opts, "0x%x", opflags);
     string cmd(opts);
     cmd += " ";
-        
-    for (int i = 0; i < argc; i++) {
-        // May need quoting here ? 
-        cmd  += argv[i]; 
-        cmd += " ";
-    }
+    vector<string> va = argvtov(argv);
+    cmd += stringsToString(va);
     cmd += "\n";
     return tryserver(cmd);
 }
@@ -374,68 +379,31 @@ int MyNetconServLis::cando(Netcon::Event reason)
     // Get command
     string line;
     {
-        char buf[2048];
-        if  (con->getline(buf, 2048, 2) <= 0) {
+        const int LL(10240);
+        char buf[LL];
+        if  (con->getline(buf, LL, 2) <= 0) {
             LOGERR("scctl: server: getline() failed\n");
             return 1;
         }
         line = buf;
     }
-
     trimstring(line, " \n");
-
     LOGDEB1("scctl: server: got cmd: " << line << endl);
 
-    vector<string> toks;
-    stringToTokens(line, toks);
-    if (toks.empty()) {
+    vector<string> args;
+    stringToStrings(line, args);
+    if (args.empty()) {
         return 1;
     }
 
-    int opflags = strtoul(toks[0].c_str(), 0, 0);
-
+    int opflags = strtoul(args[0].c_str(), 0, 0);
+    args.erase(args.begin());
     string out;
     if (opflags & OPT_p) {
         // ping
         out = "Ok\n";
-    } else if (opflags & OPT_l) {
-        out = showReceivers(opflags);
-    } else if (opflags & OPT_L) {
-        out = showSenders(opflags);
-    } else if (opflags & OPT_s) {
-        if (toks.size() < 3)
-            return 1;
-        vector<string>::iterator beg = toks.begin();
-        beg++;
-        string master = *beg;
-        beg++;
-        vector<string> slaves(beg, toks.end());
-        ReceiverState mst;
-        getReceiverState(master, mst);
-        for (auto it = slaves.begin(); it != slaves.end(); it++) {
-            ReceiverState st;
-            getReceiverState(*it, st);
-            setReceiverPlaying(st, mst.uri, mst.meta);
-        }
-    } else if (opflags & OPT_x) {
-        if (toks.size() < 2)
-            return 1;
-        vector<string>::iterator beg = toks.begin();
-        beg++;
-        vector<string> slaves(beg, toks.end());
-        stopReceivers(slaves);
-    } else if (opflags & OPT_r) {
-        if (toks.size() < 3)
-            return 1;
-        vector<string>::iterator beg = toks.begin();
-        beg++;
-        string sender = *beg;
-        beg++;
-        vector<string> receivers(beg, toks.end());
-        setReceiversFromSender(sender, receivers);
     } else {
-        LOGERR("scctl: server: bad cmd:" << toks[0] << endl);
-        return 1;
+        dosomething(opflags, args, out);
     }
 
     if (con->send(out.c_str(), out.size(), 0) < 0) {
