@@ -699,6 +699,11 @@ version on Ubuntu Trusty is too old). Older Python versions *will* crash.
 
 You will need a valid subscription for most functions.
 
+I'm a little lost in the different google authentication/sign-in methods,
+but if you are using two way authentication, there is apparently
+link:https://github.com/medoc92/upmpdcli/issues/87[a way to make things
+work, using an app password].
+
 The configuration parameters are described in the
 <<gmusicuser,configuration section>>
 
