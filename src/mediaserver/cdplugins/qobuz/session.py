@@ -115,50 +115,56 @@ class Session(object):
                [_parse_genre(g) for g in data['genres']['items']]
 
     def _search1(self, query, tp):
+        uplog("_search1: query [%s] tp [%s]" % (query, tp))
+
         limit = 200
-        slice = 100
+        slice = 200
         if tp == 'artists':
             limit = 20
             slice = 20
         elif tp == 'albums' or tp == 'playlists':
-            # I think that qobuz actually imposes a limit of
-            # 20 for album searches.
             limit = 50
-            slice = 20
+            slice = 50
         offset = 0
-        ar = []
-        al = []
-        pl = []
-        tr = []
+        all = []
         while offset < limit:
+            uplog("_search1: call catalog_search, offset %d" % offset)
             data = self.api.catalog_search(query=query, type=tp,
                                            offset=offset, limit=slice)
+            ncnt = 0
+            ndata = []
             try:
-                ar_ = [_parse_artist(i) for i in data['artists']['items']]
-            except:
-                ar_ = []
-            try:
-                al_ = [_parse_album(i) for i in data['albums']['items']]
-                al_ = [alb for alb in al_ if alb.available]
-            except:
-                al_ = []
-            try:
-                pl_ = [_parse_playlist(i) for i in data['playlists']['items']]
-            except:
-                pl_ = []
-            try:
-                tr_ = [_parse_track(i) for i in data['tracks']['items']]
-            except:
-                tr_ = []
-            ar.extend(ar_)
-            al.extend(al_)
-            pl.extend(pl_)
-            tr.extend(tr_)
+                if tp == 'artists':
+                    ncnt = len(data['artists']['items'])
+                    ndata = [_parse_artist(i) for i in data['artists']['items']]
+                elif tp == 'albums':
+                    ncnt = len(data['albums']['items'])
+                    ndata = [_parse_album(i) for i in data['albums']['items']]
+                    ndata = [alb for alb in ndata if alb.available]
+                elif tp == 'playlists':
+                    ncnt = len(data['playlists']['items'])
+                    ndata = [_parse_playlist(i) for i in \
+                             data['playlists']['items']]
+                elif tp == 'tracks':
+                    ncnt = len(data['tracks']['items'])
+                    ndata = [_parse_track(i) for i in data['tracks']['items']]
+            except Exception as err:
+                uplog("_search1: exception while parsing result: %s" % err)
+                break
+            all.extend(ndata)
+            #uplog("Got %d more (slice %d)" % (ncnt, slice))
+            if ncnt < slice:
+                break
             offset += slice
-        
-        uplog("_search1: got %d artists %d albs %d tracks %d pl" %
-              (len(ar), len(al), len(tr), len(pl)))
-        return SearchResult(artists=ar, albums=al, playlists=pl, tracks=tr)
+
+        if tp == 'artists':
+            return SearchResult(artists=all)
+        elif tp == 'albums':
+            return SearchResult(albums=all)
+        elif tp == 'playlists':
+            return SearchResult(playlists=all)
+        elif tp == 'tracks':
+            return SearchResult(tracks=all)
 
     def search(self, query, tp):
         if tp:
