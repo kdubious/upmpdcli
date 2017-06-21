@@ -676,6 +676,11 @@ Basmaison and Cyril Leclerc, with the upper-level code adapted from the
 Tidal add-on. The WEB API is not officially supported by Qobuz, and may
 just stop to work one day.
 
+NOTE: the Qobuz search does not allow searching a specific field (like the
+artist name or song title). All objects matching a query in any field are
+returned. This means that, e.g., the field choice of upplay search is
+ignored.
+
 You need a valid Qobuz subscription.
 
 The configuration parameters are described in the

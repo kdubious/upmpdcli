@@ -1,3 +1,15 @@
+upmpdcli (1.2.15-1) unstable; urgency=low
+
+  * Faster Qobuz searches (less requests to the service)
+  * Songcast: stop the inactive sender so that it does not show up in
+    lists.
+  * Radio dynamic metadata scripts for radio which provide metadata from
+    the web site, instead of icy metadata.
+  * Properly handle radios which redirect straight from http to mms.
+  * AVTransport: accept metadata-less streams.
+
+ -- Jean-Francois Dockes <jf@dockes.org>  Wed, 21 Jun 2017 08:20:00 +0200
+
 upmpdcli (1.2.14-1) unstable; urgency=low
 
   * Make the Receiver source visible, allowing grouping from Kazoo

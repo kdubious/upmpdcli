@@ -1,5 +1,13 @@
 = Upmpdcli release notes
 
+== libupnpp 0.15.3
+
+* Volume control fix (events carried wrong value if device range
+  was not 0-100).
+* Fix crash on service object delete (callback table not cleared).
+* Improved reliability of discovery.
+
+
 == upplay 1.2.9
 
 - Do not list Receiver sources in source list, nothing useful can be done
