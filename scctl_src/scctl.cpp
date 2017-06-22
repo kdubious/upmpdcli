@@ -52,6 +52,7 @@
 #include "libupnpp/upnpplib.hxx"
 #include "libupnpp/log.hxx"
 #include "libupnpp/control/linnsongcast.hxx"
+#include "libupnpp/control/discovery.hxx"
 
 #include "../src/netcon.h"
 #include "../src/smallut.h"
@@ -252,8 +253,10 @@ int main(int argc, char *argv[])
         args.push_back(argv[optind++]);
     }
 
+    ret = 0;
     if ((op_flags & OPT_S)) {
-        exit(runserver());
+        ret = runserver();
+        goto exitprog;
     } else {
         string out;
         if (dosomething(op_flags, args, out)) {
@@ -269,8 +272,13 @@ int main(int argc, char *argv[])
         // Father exits, son process becomes server
         if (daemon(0, 0) == 0)
             runserver();
-    } 
-    return 0;
+    }
+exitprog:
+    UPnPDeviceDirectory *dir = UPnPDeviceDirectory::getTheDir();
+    if (dir) {
+        dir->terminate();
+    }
+    return ret;
 }
 
 
