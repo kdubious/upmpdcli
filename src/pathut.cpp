@@ -15,7 +15,6 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef TEST_PATHUT
 #ifdef BUILDING_RECOLL
 #include "autoconfig.h"
 #else
@@ -612,6 +611,45 @@ string url_encode(const string& url, string::size_type offs)
     return out;
 }
 
+static inline int h2d(int c) {
+    if ('0' <= c && c <= '9')
+        return c - '0';
+    else if ('A' <= c && c <= 'F')
+        return 10 + c - 'A';
+    else 
+        return -1;
+}
+
+string url_decode(const string &in)
+{
+    if (in.size() <= 2)
+        return in;
+    string out;
+    out.reserve(in.size());
+    const char *cp = in.c_str();
+    string::size_type i = 0;
+    for (; i < in.size() - 2; i++) {
+	if (cp[i] == '%') {
+            int d1 = h2d(cp[i+1]);
+            int d2 = h2d(cp[i+2]);
+            if (d1 != -1 && d2 != -1) {
+                out += (d1 << 4) + d2;
+            } else {
+                out += '%';
+                out += cp[i+1];
+                out += cp[i+2];
+            }
+            i += 2;
+	} else {
+            out += cp[i];
+        }
+    }
+    while (i < in.size()) {
+        out += cp[i++];
+    }
+    return out;
+}
+
 string url_gpath(const string& url)
 {
     // Remove the access schema part (or whatever it's called)
@@ -867,198 +905,3 @@ void pathut_init_mt()
 {
     path_home();
 }
-
-
-#else // TEST_PATHUT
-#include <stdlib.h>
-#include <iostream>
-using namespace std;
-
-#include "pathut.h"
-
-void path_to_thumb(const string& _input)
-{
-    string input(_input);
-    // Make absolute path if needed
-    if (input[0] != '/') {
-        input = path_absolute(input);
-    }
-
-    input = string("file://") + path_canon(input);
-
-    string path;
-    //path = url_encode(input, 7);
-    thumbPathForUrl(input, 7, path);
-    cout << path << endl;
-}
-
-const char *tstvec[] = {"", "/", "/dir", "/dir/", "/dir1/dir2",
-                        "/dir1/dir2",
-                        "./dir", "./dir1/", "dir", "../dir", "/dir/toto.c",
-                        "/dir/.c", "/dir/toto.txt", "toto.txt1"
-                       };
-
-const string ttvec[] = {"/dir", "", "~", "~/sub", "~root", "~root/sub",
-                        "~nosuch", "~nosuch/sub"
-                       };
-int nttvec = sizeof(ttvec) / sizeof(string);
-
-const char *thisprog;
-
-int main(int argc, const char **argv)
-{
-    thisprog = *argv++;
-    argc--;
-
-    string s;
-    vector<string>::const_iterator it;
-#if 0
-    for (unsigned int i = 0; i < sizeof(tstvec) / sizeof(char *); i++) {
-        cout << tstvec[i] << " Father " << path_getfather(tstvec[i]) << endl;
-    }
-    for (unsigned int i = 0; i < sizeof(tstvec) / sizeof(char *); i++) {
-        cout << tstvec[i] << " Simple " << path_getsimple(tstvec[i]) << endl;
-    }
-    for (unsigned int i = 0; i < sizeof(tstvec) / sizeof(char *); i++) {
-        cout << tstvec[i] << " Basename " <<
-             path_basename(tstvec[i], ".txt") << endl;
-    }
-#endif
-
-#if 0
-    for (int i = 0; i < nttvec; i++) {
-        cout << "tildexp: '" << ttvec[i] << "' -> '" <<
-             path_tildexpand(ttvec[i]) << "'" << endl;
-    }
-#endif
-
-#if 0
-    const string canontst[] = {"/dir1/../../..", "/////", "",
-                               "/dir1/../../.././/////dir2///////",
-                               "../../",
-                               "../../../../../../../../../../"
-                              };
-    unsigned int nttvec = sizeof(canontst) / sizeof(string);
-    for (unsigned int i = 0; i < nttvec; i++) {
-        cout << "canon: '" << canontst[i] << "' -> '" <<
-             path_canon(canontst[i]) << "'" << endl;
-    }
-#endif
-#if 0
-    if (argc != 2) {
-        cerr << "Usage: trpathut <dir> <pattern>" << endl;
-        exit(1);
-    }
-    string dir = *argv++;
-    argc--;
-    string pattern =  *argv++;
-    argc--;
-    vector<string> matched = path_dirglob(dir, pattern);
-    for (it = matched.begin(); it != matched.end(); it++) {
-        cout << *it << endl;
-    }
-#endif
-
-#if 0
-    if (argc != 1) {
-        fprintf(stderr, "Usage: fsocc: trpathut <path>\n");
-        exit(1);
-    }
-    string path = *argv++;
-    argc--;
-
-    int pc;
-    long long blocks;
-    if (!fsocc(path, &pc, &blocks)) {
-        fprintf(stderr, "fsocc failed\n");
-        return 1;
-    }
-    printf("pc %d, megabytes %ld\n", pc, blocks);
-#endif
-
-#if 0
-    Pidfile pidfile("/tmp/pathutpidfile");
-    pid_t pid;
-    if ((pid = pidfile.open()) != 0) {
-        cerr << "open failed. reason: " << pidfile.getreason() <<
-             " return " << pid << endl;
-        exit(1);
-    }
-    pidfile.write_pid();
-    sleep(10);
-    pidfile.close();
-    pidfile.remove();
-#endif
-
-#if 0
-    if (argc > 1) {
-        cerr <<  "Usage: thumbpath <filepath>" << endl;
-        exit(1);
-    }
-    string input;
-    if (argc == 1) {
-        input = *argv++;
-        if (input.empty())  {
-            cerr << "Usage: thumbpath <filepath>" << endl;
-            exit(1);
-        }
-        path_to_thumb(input);
-    } else {
-        while (getline(cin, input)) {
-            path_to_thumb(input);
-        }
-    }
-
-
-    exit(0);
-#endif
-
-#if 0
-    if (argc != 1) {
-        cerr << "Usage: trpathut <filename>" << endl;
-        exit(1);
-    }
-    string fn = *argv++;
-    argc--;
-    string ext = path_suffix(fn);
-    cout << "Suffix: [" << ext << "]" << endl;
-    return 0;
-#endif
-
-#if 0
-    if (argc != 1) {
-        cerr << "Usage: trpathut url" << endl;
-        exit(1);
-    }
-    string url = *argv++;
-    argc--;
-
-    cout << "File: [" << fileurltolocalpath(url) << "]\n";
-    return 0;
-#endif
-
-#if 1
-    if (argc != 1) {
-        cerr << "Usage: trpathut path" << endl;
-        exit(1);
-    }
-    string path = *argv++;
-    argc--;
-
-    int pc;
-    long long avmbs;
-    if (fsocc(path, &pc, &avmbs)) {
-        cout << "Percent occup " << pc << " avmbs " << avmbs << endl;
-        return 0;
-    } else {
-        cerr << "fsocc failed\n";
-        return 1;
-    }
-#endif
-
-
-
-}
-
-#endif // TEST_PATHUT
-

@@ -65,7 +65,7 @@ bool file_to_string(const string& fn, string& data, string *reason)
 {
     return file_to_string(fn, data, 0, size_t(-1), reason);
 }
-bool file_to_string(const string& fn, string& data, off_t offs, size_t cnt,
+bool file_to_string(const string& fn, string& data, int64_t offs, size_t cnt,
                     string *reason)
 {
     FileToString accum(data);
@@ -82,7 +82,7 @@ const int RDBUFSZ = 8192;
 // on both linux i586 and macosx (compared to just append())
 // Also tried a version with mmap, but it's actually slower on the mac and not
 // faster on linux.
-bool file_scan(const string& fn, FileScanDo* doer, off_t startoffs,
+bool file_scan(const string& fn, FileScanDo* doer, int64_t startoffs,
                size_t cnttoread, string *reason)
 {
     if (startoffs < 0) {
@@ -121,7 +121,7 @@ bool file_scan(const string& fn, FileScanDo* doer, off_t startoffs,
         doer->init(0, reason);
     }
 
-    off_t curoffs = 0;
+    int64_t curoffs = 0;
     if (startoffs > 0 && !fn.empty()) {
         if (lseek(fd, startoffs, SEEK_SET) != startoffs) {
             catstrerror(reason, "lseek", errno);
@@ -233,7 +233,7 @@ Usage(void)
 
 int main(int argc, const char **argv)
 {
-    off_t offs = 0;
+    int64_t offs = 0;
     size_t cnt = size_t(-1);
     thisprog = argv[0];
     argc--;

@@ -34,7 +34,7 @@ public:
 bool file_scan(const std::string& filename, FileScanDo* doer, std::string *reason = 0);
 /* Same but only process count cnt from offset offs. Set cnt to size_t(-1)
  * for no limit */
-bool file_scan(const std::string& fn, FileScanDo* doer, off_t offs, size_t cnt,
+bool file_scan(const std::string& fn, FileScanDo* doer, int64_t offs, size_t cnt,
                std::string *reason = 0);
 
 /**
@@ -45,6 +45,6 @@ bool file_to_string(const std::string& filename, std::string& data, std::string 
 
 /** Read file chunk into string. Set cnt to size_t(-1) for whole file */
 bool file_to_string(const std::string& filename, std::string& data,
-                    off_t offs, size_t cnt, std::string *reason = 0);
+                    int64_t offs, size_t cnt, std::string *reason = 0);
 
 #endif /* _READFILE_H_INCLUDED_ */

@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include <stack>
+#include <sys/types.h>
 
 /**
  * Callback function object to advise of new data arrival, or just periodic

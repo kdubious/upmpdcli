@@ -121,7 +121,8 @@ public:
      * @param readonly if true open readonly, else rw
      * @param tildexp  try tilde (home dir) expansion for subkey values
      */
-    ConfSimple(const char *fname, int readonly = 0, bool tildexp = false);
+    ConfSimple(const char *fname, int readonly = 0, bool tildexp = false,
+               bool trimvalues = true);
 
     /**
      * Build the object by reading content from a string
@@ -129,14 +130,16 @@ public:
      * @param readonly if true open readonly, else rw
      * @param tildexp  try tilde (home dir) expansion for subsection names
      */
-    ConfSimple(const string& data, int readonly = 0, bool tildexp = false);
+    ConfSimple(const string& data, int readonly = 0, bool tildexp = false,
+               bool trimvalues = true);
 
     /**
      * Build an empty object. This will be memory only, with no backing store.
      * @param readonly if true open read only, else rw
      * @param tildexp  try tilde (home dir) expansion for subsection names
      */
-    ConfSimple(int readonly = 0, bool tildexp = false);
+    ConfSimple(int readonly = 0, bool tildexp = false,
+               bool trimvalues = true);
 
     virtual ~ConfSimple() {};
 
@@ -281,6 +284,8 @@ public:
      */
     ConfSimple& operator=(const ConfSimple& rhs) {
         if (this != &rhs && (status = rhs.status) != STATUS_ERROR) {
+            dotildexpand = rhs.dotildexpand;
+            trimvalues = rhs.trimvalues;
             m_filename = rhs.m_filename;
             m_submaps = rhs.m_submaps;
         }
@@ -299,6 +304,7 @@ public:
     
 protected:
     bool dotildexpand;
+    bool trimvalues;
     StatusCode status;
 private:
     // Set if we're working with a file
@@ -345,12 +351,12 @@ class ConfTree : public ConfSimple {
 public:
     /* The constructors just call ConfSimple's, asking for key tilde
      * expansion */
-    ConfTree(const char *fname, int readonly = 0)
-        : ConfSimple(fname, readonly, true) {}
-    ConfTree(const string& data, int readonly = 0)
-        : ConfSimple(data, readonly, true) {}
-    ConfTree(int readonly = 0)
-        : ConfSimple(readonly, true) {}
+    ConfTree(const char *fname, int readonly = 0, bool trimvalues=true)
+        : ConfSimple(fname, readonly, true, trimvalues) {}
+    ConfTree(const string& data, int readonly = 0, bool trimvalues=true)
+        : ConfSimple(data, readonly, true, trimvalues) {}
+    ConfTree(int readonly = 0, bool trimvalues=true)
+        : ConfSimple(readonly, true, trimvalues) {}
     virtual ~ConfTree() {};
     ConfTree(const ConfTree& r) : ConfSimple(r) {};
     ConfTree& operator=(const ConfTree& r) {

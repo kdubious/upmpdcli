@@ -52,6 +52,7 @@ extern std::vector<std::string> path_dirglob(const std::string& dir,
 /// Encode according to rfc 1738
 extern std::string url_encode(const std::string& url,
                               std::string::size_type offs = 0);
+extern std::string url_decode(const std::string& encoded);
 //// Convert to file path if url is like file://. This modifies the
 //// input (and returns a copy for convenience)
 extern std::string fileurltolocalpath(std::string url);

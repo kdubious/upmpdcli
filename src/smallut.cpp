@@ -772,7 +772,7 @@ string displayableBytes(int64_t size)
         unit = " GB ";
         roundable = double(size) / 1E9;
     }
-    size = off_t(round(roundable));
+    size = int64_t(round(roundable));
     return lltodecstr(size).append(unit);
 }
 
@@ -1170,7 +1170,7 @@ void catstrerror(string *reason, const char *what, int _errno)
     // At worse we get no message at all here.
     errbuf[0] = 0;
     // We don't use ret, it's there to silence a cc warning
-    char *ret = (char *)strerror_r(_errno, errbuf, ERRBUFSZ);
+    auto ret = strerror_r(_errno, errbuf, ERRBUFSZ);
     (void)ret;
     reason->append(errbuf);
 #endif

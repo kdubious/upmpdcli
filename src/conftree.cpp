@@ -98,7 +98,11 @@ void ConfSimple::parseinput(istream& input)
 
         // Note that we trim whitespace before checking for backslash-eol
         // This avoids invisible whitespace problems.
-        trimstring(line);
+        if (trimvalues) {
+            trimstring(line);
+        } else {
+            ltrimstring(line);
+        }
         if (line.empty() || line.at(0) == '#') {
             if (eof) {
                 break;
@@ -119,7 +123,7 @@ void ConfSimple::parseinput(istream& input)
         appending = false;
 
         if (line[0] == '[') {
-            trimstring(line, "[]");
+            trimstring(line, "[] \t");
             if (dotildexpand) {
                 submapkey = path_tildexpand(line);
             } else {
@@ -142,7 +146,9 @@ void ConfSimple::parseinput(istream& input)
         nm = line.substr(0, eqpos);
         trimstring(nm);
         val = line.substr(eqpos + 1, string::npos);
-        trimstring(val);
+        if (trimvalues) {
+            trimstring(val);
+        }
 
         if (nm.length() == 0) {
             m_order.push_back(ConfLine(ConfLine::CFL_COMMENT, line));
@@ -156,8 +162,8 @@ void ConfSimple::parseinput(istream& input)
 }
 
 
-ConfSimple::ConfSimple(int readonly, bool tildexp)
-    : dotildexpand(tildexp), m_fmtime(0), m_holdWrites(false)
+ConfSimple::ConfSimple(int readonly, bool tildexp, bool trimv)
+    : dotildexpand(tildexp), trimvalues(trimv), m_fmtime(0), m_holdWrites(false)
 {
     status = readonly ? STATUS_RO : STATUS_RW;
 }
@@ -169,8 +175,8 @@ void ConfSimple::reparse(const string& d)
     parseinput(input);
 }
 
-ConfSimple::ConfSimple(const string& d, int readonly, bool tildexp)
-    : dotildexpand(tildexp), m_fmtime(0), m_holdWrites(false)
+ConfSimple::ConfSimple(const string& d, int readonly, bool tildexp, bool trimv)
+    : dotildexpand(tildexp), trimvalues(trimv), m_fmtime(0), m_holdWrites(false)
 {
     status = readonly ? STATUS_RO : STATUS_RW;
 
@@ -178,8 +184,10 @@ ConfSimple::ConfSimple(const string& d, int readonly, bool tildexp)
     parseinput(input);
 }
 
-ConfSimple::ConfSimple(const char *fname, int readonly, bool tildexp)
-    : dotildexpand(tildexp), m_filename(fname), m_fmtime(0), m_holdWrites(false)
+ConfSimple::ConfSimple(const char *fname, int readonly, bool tildexp,
+                       bool trimv)
+    : dotildexpand(tildexp), trimvalues(trimv), m_filename(fname),
+      m_fmtime(0), m_holdWrites(false)
 {
     status = readonly ? STATUS_RO : STATUS_RW;
 
