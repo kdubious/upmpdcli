@@ -53,7 +53,7 @@ static const string sIdProduct("urn:av-openhome-org:serviceId:Radio");
 
 struct RadioMeta {
     RadioMeta(const string& t, const string& u, const string& au,
-              const string& as, const string& ms)
+              const string& as, const string& ms, const string& ps)
         : title(t), uri(u), artUri(au), dynArtUri(au) {
         if (!as.empty()) {
             stringToStrings(as, artScript);
@@ -61,6 +61,7 @@ struct RadioMeta {
         if (!ms.empty()) {
             stringToStrings(ms, metaScript);
         }
+        preferScript = stringToBool(ps);
     }
     string title;
     string uri;
@@ -68,7 +69,9 @@ struct RadioMeta {
     // Script to retrieve current art
     vector<string> artScript; 
     // Script to retrieve all metadata
-    vector<string> metaScript; 
+    vector<string> metaScript;
+    // Keep values from script over mpd's (from icy)
+    bool preferScript;
     // Time after which we should re-fire the metadata script
     time_t nextMetaScriptExecTime{0}; 
     string dynArtUri;
@@ -133,7 +136,7 @@ static void getRadiosFromConf(ConfSimple* conf)
     vector<string> allsubk = conf->getSubKeys_unsorted();
     for (auto it = allsubk.begin(); it != allsubk.end(); it++) {
         if (it->find("radio ") == 0) {
-            string uri, artUri, artScript, metaScript;
+            string uri, artUri, artScript, metaScript, preferScript;
             string title = it->substr(6);
             bool ok = conf->get("url", uri, *it);
             conf->get("artUrl", artUri, *it);
@@ -141,9 +144,11 @@ static void getRadiosFromConf(ConfSimple* conf)
             trimstring(artScript, " \t\n\r");
             conf->get("metaScript", metaScript, *it);
             trimstring(metaScript, " \t\n\r");
+            conf->get("preferScript", preferScript, *it);
+            trimstring(preferScript, " \t\n\r");
             if (ok && !uri.empty()) {
                 o_radios.push_back(RadioMeta(title, uri, artUri, artScript,
-                                             metaScript));
+                                             metaScript, preferScript));
                 LOGDEB0("OHRadio::readRadios:RADIO: [" << title << "] uri ["
                         << uri << "] artUri [" << artUri << "]\n");
             }
@@ -154,7 +159,7 @@ static void getRadiosFromConf(ConfSimple* conf)
 bool OHRadio::readRadios()
 {
     // Id 0 means no selection
-    o_radios.push_back(RadioMeta("Unknown radio", "", "", "", ""));
+    o_radios.push_back(RadioMeta("Unknown radio", "", "", "", "", ""));
     
     std::unique_lock<std::mutex>(g_configlock);
     getRadiosFromConf(g_config);
@@ -225,8 +230,9 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
 
         // Some radios do not insert icy metadata in the stream, but rather
         // provide a script to retrieve it.
-        if (mpds.currentsong.title.empty() && mpds.currentsong.artist.empty()
-            && radio.metaScript.size()) {
+        bool nompddata = mpds.currentsong.title.empty() &&
+            mpds.currentsong.artist.empty();
+        if ((radio.preferScript || nompddata) && radio.metaScript.size()) {
             if (time(0) > radio.nextMetaScriptExecTime) {
                 string data;
                 if (ExecCmd::backtick(radio.metaScript, data)) {

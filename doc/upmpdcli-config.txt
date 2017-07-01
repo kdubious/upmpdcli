@@ -261,6 +261,7 @@ the name after 'radio' will be the displayed radio name (as album title).
 - artScript: an optional script to retrieve an image for the current title
 - metaScript: an optional script to retrieve metadata for the current
 title.
+- preferScript: decide if values from script should override icy metadata
 See the xref:radio-definitions[section about radio station definitions]
 for details about the scripts.
 Example:
@@ -270,6 +271,7 @@ url = http://some.host/some/path.pls
 artUrl = http://some.host/icon/path.png
 artScript = /path/to/script/dynamic-art-getter
 metaScript = /path/to/script/metadata-getter
+preferScript = 1
 ----
 
 
