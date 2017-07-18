@@ -1,4 +1,4 @@
-upmpdcli (1.2.15-1) unstable; urgency=low
+upmpdcli (1.2.15-1~ppaPPAVERS~SERIES1) SERIES; urgency=low
 
   * Faster Qobuz searches (less requests to the service)
   * Songcast: stop the inactive sender so that it does not show up in
