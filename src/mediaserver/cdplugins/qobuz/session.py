@@ -10,6 +10,11 @@ from upmplgmodels import Artist, Album, Track, Playlist, SearchResult, \
 from upmplgutils import *
 from qobuz.api import raw
 
+# General limit for fetching stuff, in places where we do it in one chunk.
+# The high limit set by Qobuz depends a bit on the nature of the request, but
+# 100 works everywhere (some requests could use a bigger value).
+general_slice = 100
+
 class Session(object):
     def __init__(self):
         self.api = None
@@ -62,9 +67,10 @@ class Session(object):
         #uplog("get_featured_albums, genre_id %s type %s " % (genre_id, type))
         if genre_id != 'None':
             data = self.api.album_getFeatured(type=type,
-                                              genre_id=genre_id, limit=100)
+                                              genre_id=genre_id,
+                                              limit=general_slice)
         else:
-            data = self.api.album_getFeatured(type=type, limit=100)
+            data = self.api.album_getFeatured(type=type, limit=general_slice)
             
         try:
             albums = [_parse_album(alb) for alb in data['albums']['items']]
@@ -77,10 +83,11 @@ class Session(object):
     def get_featured_playlists(self, genre_id='None'):
         if genre_id != 'None':
             data = self.api.playlist_getFeatured(type='editor-picks',
-                                                 genre_id=genre_id, limit=100)
+                                                 genre_id=genre_id,
+                                                 limit=general_slice)
         else:
             data = self.api.playlist_getFeatured(type='editor-picks',
-                                                 limit=100)
+                                                 limit=general_slice)
         if data and 'playlists' in data:
             return [_parse_playlist(pl) for pl in data['playlists']['items']]
         return []
@@ -95,8 +102,7 @@ class Session(object):
     # error). album_getFeatured() and playlist_getFeatured() do accept type.
     def get_featured_items(self, content_type, type=''):
         #uplog("FEATURED TYPES: %s" % self.api.catalog_getFeaturedTypes())
-        limit = '40'
-        data = self.api.catalog_getFeatured(limit=limit)
+        data = self.api.catalog_getFeatured(limit=general_slice)
         #uplog("Featured: %s" % json.dumps(data,indent=4)))
         if content_type == 'artists':
             if 'artists' in data:
@@ -142,6 +148,7 @@ class Session(object):
                     ndata = [_parse_album(i) for i in data['albums']['items']]
                     ndata = [alb for alb in ndata if alb.available]
                 elif tp == 'playlists':
+                    #uplog("PLAYLISTS: %s" % json.dumps(data, indent=4))
                     ncnt = len(data['playlists']['items'])
                     ndata = [_parse_playlist(i) for i in \
                              data['playlists']['items']]

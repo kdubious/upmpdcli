@@ -330,6 +330,13 @@ def search(a):
     if objkind is None or objkind == 'album':
         view(searchresults.albums,
              urls_from_id(album_view, searchresults.albums), end=False)
+        # Kazoo and bubble only search for object.container.album, not
+        # playlists. So if we want these to be findable, need to send
+        # them with the albums
+        if objkind == 'album':
+            searchresults = session.search(value, 'playlists')
+            objkind = 'playlist'
+            # Fallthrough to view playlists
     if objkind is None or objkind == 'playlist':
         view(searchresults.playlists,
              urls_from_id(playlist_view, searchresults.playlists), end=False)

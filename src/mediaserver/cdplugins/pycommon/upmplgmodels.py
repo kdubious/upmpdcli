@@ -45,6 +45,8 @@ class Artist(Model):
 
 class Playlist(Model):
     upnpclass = "object.container.album"
+    # Using the proper playlistContainer type this confuses e.g. Kazoo
+    #upnpclass = "object.container.playlistContainer"
     name = None
     description = None
     num_tracks = -1
