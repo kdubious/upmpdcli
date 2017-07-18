@@ -248,8 +248,8 @@ client protocol). The parameters can be transferred from the Media Server
 to the player along with the MIME type though. In consequence, only recent
 versions of Upmpdcli and MPD (0.20 and later) do support audio/L16, but
 not with any Media Server (it must output the audio formats
-parameters with the MIME type). See this Github issue for more details:
-https://github.com/medoc92/upmpdcli/issues/36#issuecomment-227761220
+parameters with the MIME type). See this issue for more details:
+https://www.lesbonscomptes.com/upmpdcli/github-issues/upmpdcli-html/issue-36.html
 
 In general, there are few reasons to use these linear formats, when FLAC
 will produce exactly the same bits, with less network load (which largely
@@ -706,8 +706,8 @@ You will need a valid subscription for most functions.
 
 I'm a little lost in the different google authentication/sign-in methods,
 but if you are using two way authentication, there is apparently
-link:https://github.com/medoc92/upmpdcli/issues/87[a way to make things
-work, using an app password].
+link:https://www.lesbonscomptes.com/upmpdcli/github-issues/upmpdcli-html/issue-87.html[a
+way to make things work, using an app password].
 
 The configuration parameters are described in the
 <<gmusicuser,configuration section>>
@@ -827,15 +827,16 @@ Also the Python modules for streaming service support use the
 *python-requests* package, so you may need to install it (it is only needed
 at run time). Also *gmusicapi* for Google Music.
 
-If you are using the source from Github, you will also need the *autoconf*,
-*automake*, *libtool* trio. Use the +autogen.sh+ script to set things up.
+If you are using the source from the git repository, you will also need the
+*autoconf*, *automake*, *libtool* trio. Use the +autogen.sh+ script to set
+things up.
 
 The *libupnpp* library, which used to be part of *upmpdcli*, has been
 separated, and you need to build it first.
 
-So you need to either clone two github repositories:
-https://github.com/medoc92/libupnpp and
-https://github.com/medoc92/upmpdcli,
+So you need to either clone two git repositories:
+https://opensourceprojects.eu/p/libupnpp/code and
+https://opensourceprojects.eu/p/upmpdcli/code
 or download the release tar files from the the
 link:https://www.lesbonscomptes.com/upmpdcli/downloads.html[upmpdcli
 download page]
@@ -883,7 +884,7 @@ There are two parts in building *sc2mpd*:
 First download a
 link:http://www.lesbonscomptes.com/upmpdcli/downloads.html[*sc2mpd*
 release] or clone the *sc2mpd*
-link:http://www.github.com/medoc92/sc2mpd[Github repository]. 
+https://opensourceprojects.eu/p/sc2mpd/[Git repository]. 
 
 
 ==== Building the OpenHome libraries
@@ -1057,19 +1058,18 @@ directory, it will create more sources, and start them when the
 corresponding source is selected (of course, it expects the script to
 create a Songcast Sender pipe).
 
-The *upmpdcli* distribution comes with a
-link:https://github.com/medoc92/upmpdcli/blob/master/samplescripts/Analog-Input[sample
-script] which sets things up for *mpd2sc* to read *arecord* output,
-allowing multiroom playing of an external analog source (line-in). The
-sample script is flexible enough to manage different inputs without code
-changes, and there are comments at the top which give
-detailed explanations. The parts of more general interest will be a bit
-expanded here (see below). If you want to use the script itself, you need
-to look at the comments.
+The *upmpdcli* source comes with a sample script which sets things up for
+*mpd2sc* to read *arecord* output, allowing multiroom playing of an
+external analog source (line-in). The sample script is flexible enough to
+manage different inputs without code changes, and there are comments at the
+top which give detailed explanations. The parts of more general interest
+will be a bit expanded here (see below). If you want to use the script
+itself, you need to look at the comments. You will find the script under
+'samplescripts/Analog-Input' in the source tree.
 
 Based on the same mechanism (but quite different code inside the script)
 there is also a nice
-link:https://github.com/medoc92/upmpdcli/issues/71#issuecomment-292785458[HOWTO]
+link:https://www.lesbonscomptes.com/upmpdcli/github-issues/upmpdcli-html/issue-71.html[HOWTO]
 explaining how to link a Bluetooth device to Songcast.
 
 The general idea is that upmpdcli will create an Openhome Source for each

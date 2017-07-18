@@ -1,5 +1,16 @@
 = Upmpdcli release notes
 
+== upmpdcli 1.2.15
+
+* Faster Qobuz searches (less requests to the service)
+* Songcast: stop the inactive sender so that it does not show up in
+  lists.
+* Radio dynamic metadata scripts for radio which provide metadata from
+  the web site, instead of icy metadata.
+* Properly handle radios which redirect straight from http to mms.
+* AVTransport: accept metadata-less streams.
+ 
+
 == libupnpp 0.15.3
 
 * Volume control fix (events carried wrong value if device range
