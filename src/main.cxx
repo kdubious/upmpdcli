@@ -28,6 +28,7 @@
 #include <sys/param.h>         
 #include <unistd.h>            
 #include <grp.h>
+#include <assert.h>
 
 #include <iostream>            
 #include <string>              
@@ -281,7 +282,7 @@ int main(int argc, char *argv[])
     if (argc != 0 || msm < 0 || msm > 3) {
         Usage();
     }
-    MSMode msmode = MSMode(msm);
+    MSMode arg_msmode = MSMode(msm);
     
     UpMpd::Options opts;
 
@@ -385,7 +386,7 @@ int main(int argc, char *argv[])
         // line option (see the enum comments near the top of the file):
         enableMediaServer = ContentDirectory::mediaServerNeeded();
         if (enableMediaServer) {
-            switch (msmode) {
+            switch (arg_msmode) {
             case MSOnly:
                 inprocessms = true;
                 msonly = true;
@@ -417,7 +418,7 @@ int main(int argc, char *argv[])
         msonly = true;
     }
     
-    if (msmode == MSOnly && !enableMediaServer) {
+    if (msonly && !enableMediaServer) {
         cerr << "Pure Media Server mode requested, but this is "
             "disabled by the configuration or by absent Media Server "
             "modules.\n";
@@ -661,7 +662,6 @@ int main(int argc, char *argv[])
     if (!enableAV)
         opts.options |= UpMpd::upmpdNoAV;
 
-    // Initialize the UPnP root device object. 
     UpMpd *mediarenderer = nullptr;
     if (!msonly) {
         mediarenderer = new UpMpd(string("uuid:") + UUID, friendlyname,
@@ -706,17 +706,18 @@ int main(int argc, char *argv[])
         }
         cmd.startExec(cmdpath, args, false, false);
     }
-    UPMPD_UNUSED(mediaserver);
     
     // And forever generate state change events.
     LOGDEB("Entering event loop" << endl);
     setupsigs();
     if (msonly) {
+        assert(nullptr != mediaserver);
         dev = mediaserver;
         LOGDEB("Media server event loop" << endl);
         mediaserver->eventloop();
     } else {
         LOGDEB("Renderer event loop" << endl);
+        assert(nullptr != mediarenderer);
         dev = mediarenderer;
         mediarenderer->eventloop();
     }
