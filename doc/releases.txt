@@ -1,5 +1,10 @@
 = Upmpdcli release notes
 
+== libupnpp 0.16.0
+
+* Interfaces used by the Python binding merged into the main branch.
+* New interface for dumping a device description files (used from upplay).
+
 == upmpdcli 1.2.15
 
 * Faster Qobuz searches (less requests to the service)
