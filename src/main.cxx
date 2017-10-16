@@ -416,6 +416,8 @@ int main(int argc, char *argv[])
     // is another way to do it besides the -m option
     if (!enableOH && !enableAV) {
         msonly = true;
+        // Set inprocessms in this case ! No need to fork
+        inprocessms = true;
     }
     
     if (msonly && !enableMediaServer) {
@@ -679,7 +681,7 @@ int main(int argc, char *argv[])
     ExecCmd cmd;
     
     if (inprocessms) {
-        if (op_flags & OPT_m) {
+        if (msonly) {
             msfiles = &files;
         }
 	// Create the Media Server embedded device object. There needs
