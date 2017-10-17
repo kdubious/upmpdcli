@@ -134,7 +134,7 @@ diffmaps(const unordered_map<string, string>& old,
         ss << "<" #TAG ">" << SoapHelp::xmlQuote(DEF) << "</" #TAG ">"; \
     }
 
-string UpSong::didl()
+string UpSong::didl() const
 {
     ostringstream ss;
     string typetag;
@@ -143,10 +143,20 @@ string UpSong::didl()
     } else {
 	typetag = "item";
     }
-    ss << "<" << typetag << " id=\"" << id << "\" parentID=\"" <<
-	parentid << "\" restricted=\"1\" searchable=\"" <<
+    ss << "<" << typetag;
+    if (!id.empty()) {
+        ss << " id=\"" << id;
+    }
+    if (!parentid.empty()) {
+        ss << "\" parentID=\"" << parentid;
+    }
+    ss << "\" restricted=\"1\" searchable=\"" <<
 	(searchable ? string("1") : string("0")) << "\">" <<
 	"<dc:title>" << SoapHelp::xmlQuote(title) << "</dc:title>";
+
+    if (id.empty()) {
+        ss << "<orig>mpd</orig>";
+    }
 
     if (iscontainer) {
         UPNPXMLD(upnpClass, upnp:class, "object.container");
@@ -161,15 +171,26 @@ string UpSong::didl()
 	UPNPXML(album, upnp:album);
 	UPNPXML(tracknum, upnp:originalTrackNumber);
 
-	ss << "<res " <<
-            "duration=\"" << upnpduration(duration_secs * 1000)  << "\" " <<
-            "size=\"" << lltodecstr(size)                        << "\" " <<
-            "bitrate=\"" << SoapHelp::i2s(bitrate)               << "\" " <<
-	    "sampleFrequency=\"" << SoapHelp::i2s(samplefreq)    << "\" " <<
-            "nrAudioChannels=\"" << SoapHelp::i2s(channels)      << "\" " <<
-	    "protocolInfo=\"http-get:*:" << mime << ":* "        << "\" >"<<
-            SoapHelp::xmlQuote(uri) <<
-            "</res>";
+	ss << "<res";
+        if (duration_secs) {
+            ss << " duration=\"" << upnpduration(duration_secs * 1000)  << "\"";
+        }
+        if (size) {
+            ss << " size=\"" << lltodecstr(size)                        << "\"";
+        }
+        if (bitrate) {
+            ss << " bitrate=\"" << SoapHelp::i2s(bitrate)               << "\"";
+        }
+        if (samplefreq) {
+	    ss << " sampleFrequency=\"" << SoapHelp::i2s(samplefreq)    << "\"";
+        }
+        if (channels) {
+            ss << " nrAudioChannels=\"" << SoapHelp::i2s(channels)      << "\"";
+        }
+        if (!mime.empty()) {
+	    ss << " protocolInfo=\"http-get:*:" << mime << ":* "        << "\"";
+        }
+        ss << ">" << SoapHelp::xmlQuote(uri) << "</res>";
     }
     UPNPXML(artist, dc:creator);
     UPNPXML(artist, upnp:artist);
@@ -206,83 +227,7 @@ string wrapDIDL(const std::string& data)
 // helper here
 string didlmake(const UpSong& song)
 {
-    ostringstream ss;
-    ss << "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-       "<DIDL-Lite xmlns:dc=\"http://purl.org/dc/elements/1.1/\" "
-       "xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\" "
-       "xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" "
-       "xmlns:dlna=\"urn:schemas-dlna-org:metadata-1-0/\">"
-       << "<item restricted=\"1\">";
-    ss << "<orig>mpd</orig>";
-    {
-        const string& val = song.title;
-        ss << "<dc:title>" << SoapHelp::xmlQuote(val) << "</dc:title>";
-    }
-
-    // TBD Playlists etc?
-    ss << "<upnp:class>object.item.audioItem.musicTrack</upnp:class>";
-
-    {
-        const string& val = song.artist;
-        if (!val.empty()) {
-            string a = SoapHelp::xmlQuote(val);
-            ss << "<dc:creator>" << a << "</dc:creator>" <<
-               "<upnp:artist>" << a << "</upnp:artist>";
-        }
-    }
-
-    {
-        const string& val = song.album;
-        if (!val.empty()) {
-            ss << "<upnp:album>" << SoapHelp::xmlQuote(val) << "</upnp:album>";
-        }
-    }
-
-    {
-        const string& val = song.genre;
-        if (!val.empty()) {
-            ss << "<upnp:genre>" << SoapHelp::xmlQuote(val) << "</upnp:genre>";
-        }
-    }
-
-    {
-        string val = song.tracknum;
-        // MPD may return something like xx/yy
-        string::size_type spos = val.find("/");
-        if (spos != string::npos) {
-            val = val.substr(0, spos);
-        }
-        if (!val.empty()) {
-            ss << "<upnp:originalTrackNumber>" << val <<
-               "</upnp:originalTrackNumber>";
-        }
-    }
-
-    {
-        const string& val = song.artUri;
-        if (!val.empty()) {
-            ss << "<upnp:albumArtURI>" << SoapHelp::xmlQuote(val) <<
-               "</upnp:albumArtURI>";
-        }
-    }
-
-    // TBD: the res element normally has size, sampleFrequency,
-    // nrAudioChannels and protocolInfo attributes, which are bogus
-    // for the moment. partly because MPD does not supply them.  And
-    // mostly everything is bogus if next is set...
-
-    ss << "<res " << "duration=\"" << upnpduration(song.duration_secs * 1000)
-       << "\" "
-       // Bitrate keeps changing for VBRs and forces events. Keeping
-       // it out for now.
-       //       << "bitrate=\"" << mpds.kbrate << "\" "
-       << "sampleFrequency=\"44100\" nrAudioChannels=\"2\" "
-       << "protocolInfo=\"http-get:*:audio/mpeg:DLNA.ORG_PN=MP3;DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000\""
-       << ">"
-       << SoapHelp::xmlQuote(song.uri)
-       << "</res>"
-       << "</item></DIDL-Lite>";
-    return ss.str();
+    return wrapDIDL(song.didl());
 }
 
 bool dirObjToUpSong(const UPnPDirObject& dobj, UpSong *ups)

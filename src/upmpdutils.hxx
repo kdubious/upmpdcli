@@ -51,9 +51,9 @@ public:
     
     int duration_secs{0};
     int64_t size{0};
-    int bitrate{192000};
-    int samplefreq{44100};
-    int channels{2};
+    int bitrate{0};
+    int samplefreq{0};
+    int channels{0};
     
     int mpdid{0};
     bool iscontainer{false};
@@ -65,7 +65,7 @@ public:
                            "] Tno [" + tracknum + "] Uri [" + uri + "]");
     }
     // Format to DIDL fragment 
-    std::string didl();
+    std::string didl() const;
 
     static UpSong container(const std::string& id, const std::string& pid,
 			    const std::string& title, bool sable = true,
