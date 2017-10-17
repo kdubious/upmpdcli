@@ -445,6 +445,11 @@ UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
         upsong.tracknum = cp;
     else 
         upsong.tracknum.clear();
+    // MPD may return something like xx/yy
+    string::size_type spos = upsong.tracknum.find("/");
+    if (spos != string::npos) {
+        upsong.tracknum = upsong.tracknum.substr(0, spos);
+    }
     cp = mpd_song_get_tag(song, MPD_TAG_GENRE, 0);
     if (cp != 0)
         upsong.genre = cp;
