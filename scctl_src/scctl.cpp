@@ -142,8 +142,8 @@ int dosomething(int opflags, const vector<string>& args, string& out)
     } else if (opflags & OPT_s) {
         if (args.size() < 2)
             return 1;
-        setReceiversFromSender(args[0], vector<string>(args.begin() + 1,
-                                                       args.end()));
+        setReceiversFromReceiver(args[0], vector<string>(args.begin() + 1,
+                                                         args.end()));
     } else if (opflags & OPT_x) {
         if (args.size() < 1)
             return 1;
