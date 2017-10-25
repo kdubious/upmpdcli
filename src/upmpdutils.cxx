@@ -148,9 +148,9 @@ string UpSong::didl() const
         ss << " id=\"" << id;
     }
     if (!parentid.empty()) {
-        ss << "\" parentID=\"" << parentid;
+        ss << "\" parentID=\"" << parentid << "\"";
     }
-    ss << "\" restricted=\"1\" searchable=\"" <<
+    ss << " restricted=\"1\" searchable=\"" <<
 	(searchable ? string("1") : string("0")) << "\">" <<
 	"<dc:title>" << SoapHelp::xmlQuote(title) << "</dc:title>";
 
