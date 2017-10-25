@@ -21,6 +21,8 @@ from __future__ import print_function
 
 import urllib2
 import sys
+import ssl
+
 from lib.common import USER_AGENT
 from lib.DummyMMSHandler import DummyMMSHandler
 from PlsPlaylistDecoder import PlsPlaylistDecoder
@@ -85,7 +87,10 @@ class StreamDecoder:
         req.add_header('User-Agent', USER_AGENT)
 
         try:
-            opener = urllib2.build_opener(DummyMMSHandler())
+            opener = urllib2.build_opener(
+                DummyMMSHandler(),
+                urllib2.HTTPSHandler(context =
+                                     ssl._create_unverified_context()))
             f = opener.open(req, timeout=float(self.url_timeout))
 
         except urllib2.HTTPError, e:
