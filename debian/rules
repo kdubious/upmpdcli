@@ -12,5 +12,8 @@
 # Use the following to use the needed non-default gcc-4.7 for wheezy raspbian
 # export CXX=g++-4.7
 
+override_dh_autoreconf:
+	dh_autoreconf ./autogen.sh
+
 %:
-	dh $@  --with autotools-dev,python2,systemd --parallel
+	dh $@  --with autoreconf,autotools-dev,python2,systemd --parallel
