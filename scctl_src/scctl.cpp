@@ -123,6 +123,31 @@ string showSenders(int ops)
     return out.str();
 }
 
+#ifdef HAVE_WITHSTATUS_IN_LINN
+void parseToOutput(bool ok, const vector<string>& reasons, string& out)
+{
+    ostringstream oss;
+    vector<string> error_reasons;
+    if (!reasons.empty()) {
+        for (string reason : reasons) {
+            if (!reason.empty()) {
+                ok = false;
+                error_reasons.push_back(reason);
+            }
+        }
+    }
+    if (ok) {
+        oss << "Ok\n";
+    } else {
+        for (string error_reason : error_reasons) {
+            oss << "Error: " << error_reason << "\n";
+        }
+    }
+    out = oss.str();
+    LOGDEB("out: " << out << endl);
+}
+#endif
+
 int dosomething(int opflags, const vector<string>& args, string& out)
 {
     if (opflags & OPT_l) {
@@ -132,33 +157,65 @@ int dosomething(int opflags, const vector<string>& args, string& out)
     } else if (opflags & OPT_r) {
         if (args.size() < 2)
             return 1;
+#ifdef HAVE_WITHSTATUS_IN_LINN
+        vector<string> reasons;
+        bool ok = setReceiversFromSenderWithStatus(args[0],
+                                vector<string>(args.begin() + 1, args.end()),
+                                reasons);
+        parseToOutput(ok, reasons, out);
+#else
         setReceiversFromSender(args[0], vector<string>(args.begin() + 1,
                                                        args.end()));
+#endif
     } else if (opflags & OPT_s) {
         if (args.size() < 2)
             return 1;
+#ifdef HAVE_WITHSTATUS_IN_LINN
+        vector<string> reasons;
+        bool ok = setReceiversFromReceiverWithStatus(args[0],
+                                vector<string>(args.begin() + 1, args.end()),
+                                reasons);
+        parseToOutput(ok, reasons, out);
+#else
         setReceiversFromReceiver(args[0], vector<string>(args.begin() + 1,
                                                          args.end()));
+#endif
     } else if (opflags & OPT_x) {
         if (args.size() < 1)
             return 1;
+#ifdef HAVE_WITHSTATUS_IN_LINN
+        vector<string> reasons;
+        bool ok = stopReceiversWithStatus(args, reasons);
+        parseToOutput(ok, reasons, out);
+#else
         stopReceivers(args);
+#endif
 #ifdef HAVE_SETSOURCEINDEX_IN_LINN
     } else if ((opflags & OPT_i)) {
         if (args.size() < 2)
             return 1;
-        setSourceIndex(args[0], std::stoi(args[1]));
+        bool ok = setSourceIndex(args[0], std::stoi(args[1]));
+        vector<string> reasons;
+        parseToOutput(ok, reasons, out);
     } else if ((opflags & OPT_I)) {
         if (args.size() < 2)
             return 1;
-        setSourceIndexByName(args[0], args[1]);
-#endif
+        bool ok = setSourceIndexByName(args[0], args[1]);
+        vector<string> reasons;
+        parseToOutput(ok, reasons, out);
+#endif /* HAVE_SETRECEIVERSPLAYING_IN_LINN */
 #ifdef HAVE_SETRECEIVERSPLAYING_IN_LINN
     } else if (opflags & OPT_R) {
         if (args.size() < 1)
             return 1;
+#ifdef HAVE_WITHSTATUS_IN_LINN
+        vector<string> reasons;
+        bool ok = setReceiversPlayingWithStatus(args, reasons);
+        parseToOutput(ok, reasons, out);
+#else
         setReceiversPlaying(args);
-#endif
+#endif /* HAVE_WITHSTATUS_IN_LINN */
+#endif /* HAVE_SETRECEIVERSPLAYING_IN_LINN */
     }
     return 0;
 }
