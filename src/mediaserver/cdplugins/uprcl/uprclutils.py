@@ -34,6 +34,7 @@ audiomtypes = frozenset([
     'audio/mp4',
     'video/mp4',
     'audio/x-aiff',
+    'audio/x-musepack',
     'audio/x-wav',
     'audio/x-wavpack',
     'inode/directory'
