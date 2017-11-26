@@ -171,18 +171,22 @@ web.tar.gz: bogus
 	if test -d $(srcdir)/web; then \
            (cd $(srcdir); tar cvzf - web) > web.tar.gz; fi
 
+uprclbottle.tar.gz: bogus
+	(cd $(srcdir)/src/mediaserver; tar cvzf - cdplugins/uprcl/bottle) > \
+            uprclbottle.tar.gz
+
 rdpl2stream.tar.gz: bogus
-	if test -d $(srcdir)/rdpl2stream; then \
-           (cd $(srcdir); rm -rf rdpl2stream/__pycache__/; tar cvzf - rdpl2stream) > \
-                        rdpl2stream.tar.gz; fi
+	(cd $(srcdir); rm -rf rdpl2stream/__pycache__/; \
+           tar cvzf - rdpl2stream) > rdpl2stream.tar.gz
 
 bogus:
 
-install-data-hook: web.tar.gz rdpl2stream.tar.gz
+install-data-hook: web.tar.gz rdpl2stream.tar.gz uprclbottle.tar.gz
 	(cd $(DESTDIR)$(sysconfdir); test -f upmpdcli.conf || \
 		mv upmpdcli.conf-dist upmpdcli.conf; chmod 600 upmpdcli.conf)
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < web.tar.gz 
 	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < rdpl2stream.tar.gz
+	(cd $(DESTDIR)$(pkgdatadir); tar xzf -) < uprclbottle.tar.gz
 	(cd $(DESTDIR)$(pkgdatadir); test -d src_scripts || mkdir src_scripts)
 	(cd $(DESTDIR)/$(cdpluginstidaldir); chmod a+x tidal-app.py) 
 	(cd $(DESTDIR)/$(cdpluginsqobuzdir); chmod a+x qobuz-app.py) 
