@@ -292,7 +292,7 @@ If set, +artUrl+ is a link to a static icon for the radio (displayed as
 album art).
 
 If set, +artScript+ is the path to an executable script which can retrieve
-the image for the currently playing title.
+the image URL for the currently playing title.
 
 Some radios (e.g.  link:https://www.radioparadise.com/rp_2.php?#[Radio
 Paradise]) publish the album art for the currently playing title. The
@@ -355,8 +355,10 @@ now = Time.now
 songs.each do |song|
   song_end = Time.at(song['end'])
   if (song['embedType'] == 'song' && song_end >= now && Time.at(song['start']) <= now)
-    metadata = {'title' => song['title'].split.collect{|s| s.capitalize}.join(' '),
-               'artist' => song['performers'].split.collect{|s| s.capitalize}.join(' '),
+    title = song['title'] ? song['title'] : ''
+    artist = song['performers'] ? song['performers'] : song['authors']
+    metadata = {'title' => title.split.collect{|s| s.capitalize}.join(' '),
+               'artist' => artist.split.collect{|s| s.capitalize}.join(' '),
                'artUrl' => song['visual'],
                'reload' => (song_end - now + 1).to_i}
     puts JSON.generate(metadata)
@@ -395,14 +397,16 @@ source are playing (e.g. Skype phone conversations are out of reach).
 Upmpdcli Senders and Receivers can be mixed with Linn ones and controlled
 from Upplay or Bubble DS (an maybe other control points).
 
-Upmpdcli Senders can't be used by Linn Kazoo (tested with release
-4.11.226), the reason unknown, but neither Linn nor upmpdcli receivers can
-be linked to an upmpdcli Sender using Kazoo.
+Neither Linn nor upmpdcli receivers can be linked to an upmpdcli Sender using 
+Linn Kazoo (tested with release 4.11.226), the reason is unknown.
 
 Upmpdcli Receivers before release 1.2.14 are not visible in Linn
 Kazoo. Later versions can be linked, and stream, from a Linn Sender.
 
-
+Linn Kazoo can control the playlist in an upmpdcli instance which has been
+put in Sender mode by another CP (i.e. currently using the PL-To-Sender
+source). The Lumin IOS app will reset the Source to Playlist when
+connecting, so it is unusable in this context.
 
 [[UPMPDCLI-RECEIVER]]
 === Upmpdcli Songcast Receiver
