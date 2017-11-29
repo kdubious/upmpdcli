@@ -46,11 +46,13 @@ def _initconfdir(confdir, topdirs):
     # config data is missing, rclaudio processes the files all
     # right). Make sure that we have what's needed.
     f = open(os.path.join(confdir, "mimemap"), "w")
-    f.write(".wv = audio/x-musepack\n")
+    f.write(".ape = audio/ape\n")
+    f.write(".mpc = audio/x-musepack\n")
     f.write(".wv = audio/x-wavpack\n")
     f.close()
     f = open(os.path.join(confdir, "mimeconf"), "w")
     f.write("[index]\n")
+    f.write("audio/ape = execm rclaudio\n")
     f.write("audio/x-musepack = execm rclaudio\n")
     f.write("audio/x-wavpack = execm rclaudio\n")
     f.close()
