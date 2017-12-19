@@ -392,19 +392,19 @@ def search(a):
     # If our caller does not set it, we run multiple searches
     if not objkind or objkind == 'artist':
         searchresults = session.search('artist', value)
-    view(searchresults.artists,
-         urls_from_id(artist_view, searchresults.artists), end=False)
+        view(searchresults.artists,
+             urls_from_id(artist_view, searchresults.artists), end=False)
     if not objkind or objkind == 'album':
         searchresults = session.search('album', value)
-    view(searchresults.albums,
-         urls_from_id(album_view, searchresults.albums), end=False)
+        view(searchresults.albums,
+             urls_from_id(album_view, searchresults.albums), end=False)
     if not objkind or objkind == 'playlist':
         searchresults = session.search('playlist', value)
-    view(searchresults.playlists,
-         urls_from_id(playlist_view, searchresults.playlists), end=False)
+        view(searchresults.playlists,
+             urls_from_id(playlist_view, searchresults.playlists), end=False)
     if not objkind or objkind == 'track':
         searchresults = session.search('track', value)
-    track_list(searchresults.tracks)
+        track_list(searchresults.tracks)
     #msgproc.log("%s" % xbmcplugin.entries)
     encoded = json.dumps(xbmcplugin.entries)
     return {"entries" : encoded}
