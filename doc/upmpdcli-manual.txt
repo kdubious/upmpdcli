@@ -821,7 +821,7 @@ common distributions (Debian, Raspbian, Ubuntu, Fedora) and architectures
 [[UPMPDCLI-BUILDING]]
 == Building from source
 
-=== Building libupnpp and upmpdcli
+=== Building libupnpp and upmpdcli on Linux
 
 For building from source, you will need a C\++ compiler with full
 C++11 support, and the development packages for *libupnp* version 1.6,
@@ -876,6 +876,32 @@ service file under `systemd/` (for Fedora et al.).
 The boot scripts are installed by the pre-built packages, so will just have
 to edit the configuration file after installing them, all the rest should
 just work.
+
+=== Building libupnpp and upmpdcli on Mac OS X
+
+I don't run Mac OS X and I can't support this directly. However a kind user
+has provided a
+link:https://opensourceprojects.eu/p/upmpdcli/tickets/3/[build recipe]
+based on homebrew.
+
+You will first need to apply the patches from
+link:https://www.lesbonscomptes.com/upmpdcli/files/2017-12-upmpdcli-macos-build-patches.tgz[this
+file].
+
+Then:
+
+----
+brew install mpd
+brew install autoconf
+brew install automake
+brew install libtool
+brew install libupnp libmpdclient expat jsoncpp libmicrohttpd expat curl
+brew install pkg-config
+brew install expat
+export PKG_CONFIG_PATH=/usr/local/opt/expat/lib/pkgconfig
+configure --prefix=/usr
+make
+----
 
 
 === Building OpenHome and sc2mpd
