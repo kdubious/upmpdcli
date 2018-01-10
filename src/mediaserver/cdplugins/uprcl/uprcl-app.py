@@ -28,7 +28,7 @@ import uprclsearch
 import uprclhttp
 import uprclindex
 
-from uprclutils import uplog, g_myprefix, rcldirentry
+from uprclutils import uplog, g_myprefix, rcldirentry, waitentry
 import uprclinit
 
 #####
@@ -114,8 +114,8 @@ def browse(a):
     else:
         try:
             if not uprclinit.ready():
-                entries = [rcldirentry(objid + 'notready', objid,
-                                       'Initializing...'),]
+                entries = [waitentry(objid + 'notready', objid,
+                                     uprclinit.g_httphp),]
                 nocache = "1"
             elif not idpath:
                 entries = _rootentries()
@@ -142,8 +142,8 @@ def search(a):
 
     try:
         if not uprclinit.ready():
-            entries = [rcldirentry(objid + 'notready', objid,
-                                   'Initializing...'),]
+            entries = [waitentry(objid + 'notready', objid,
+                                 uprclinit.g_httphp),]
             nocache = "1"
         else:
             entries = uprclsearch.search(uprclinit.g_rclconfdir, objid, upnps,

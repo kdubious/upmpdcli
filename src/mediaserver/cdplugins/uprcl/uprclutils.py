@@ -61,7 +61,7 @@ upnp2rclfields = {
     'tt' : 'title',
     'upnp:originalTrackNumber' : 'tracknumber',
     }
-    
+
 def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     """
     Transform a Doc objects into the format expected by the parent
@@ -138,6 +138,18 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
 
     return li
 
+# Bogus entry for the top directory while the index/db is updating
+def waitentry(id, pid, httphp):
+    li = {}
+    li['tp'] = 'it'
+    li['id'] = id
+    li['pid'] = pid
+    li['upnp:class'] = 'object.item.audioItem.musicTrack'
+    li['tt'] = "Initializing..."
+    li['uri'] = "http://%s%s" % (httphp, "/waiting")
+    li['res.mime'] = "audio/mpeg"
+    return li
+
 def docfolder(doc):
     path = doc.getbinurl()
     path = path[7:]
@@ -162,12 +174,12 @@ def embdimgurl(doc, httphp, pathprefix):
 def printable(s):
     return s.decode('utf-8', errors='replace') if s else ""
 
-# Find cover art for doc. We return both a value for the directory
-# cover art (if there is a cover.jpg or equiv, and a file own uri if
-# there is embedded img data.
+# Find cover art for doc.
 #
+# We return a special uri if the file has embedded image data, else an
+# uri for for the directory cover art (if any).
 # We are usually called repeatedly for the same directory, so we cache
-# one result
+# one result.
 _foldercache = {}
 _artnames = ('folder.jpg', 'folder.png', 'cover.jpg', 'cover.png')
 def docarturi(doc, httphp, pathprefix):
@@ -179,6 +191,7 @@ def docarturi(doc, httphp, pathprefix):
             #uplog("docarturi: embedded: %s"%printable(arturi))
             return arturi
     
+    # If doc is a directory, this returns itself, else the father dir.
     folder = docfolder(doc)
 
     if folder not in _foldercache:
