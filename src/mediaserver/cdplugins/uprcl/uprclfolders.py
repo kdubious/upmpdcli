@@ -14,6 +14,39 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# Manage the [folders] section of the tree.
+#
+# Object Id prefix: 0$uprcl$folders
+# 
+# Obect id inside the section.
+#    Container: $d<diridx> where <diridx> indexes into our directory vector.
+#    Item: $i<docidx> where <docidx> indexex into the docs vector.
+#
+# Data structure:
+#
+# The _dirvec vector has one entry for each directory. Each entry is a
+# dictionary, mapping the names inside the directory to a pair
+# (diridx,docidx), where:
+#  - diridx is an index into dirvec if the name is a directory, else -1
+#  - docidx is the index of the doc inside the doc array, or -1 if:
+#     - There is no doc entry, which could possibly happen if there is
+#       no result for an intermediary element in a path,
+#       because of some recoll issue, or because this is a synthetic
+#       'contentgroup' entry.
+#     - Or if the doc was not yet seen, the index will then be updated
+#       when we see it.
+#
+# Each directory has a special ".." entry with a diridx pointing to
+# the parent directory. This allows building a path from a container
+# id (aka pwd).
+#
+# No need has emerged for a "." entry.
+# 
+# Entry 0 in _dirvec is special: it holds the 'topdirs' from the recoll
+# configuration. The entries are paths instead of simple names, and
+# the docidx is 0. The diridx points to a dirvec entry.
+
+
 import os
 import shlex
 import urllib
@@ -33,19 +66,6 @@ _maxrclcnt = 0
 
 _dirvec = []
 
-# Internal init: create the directory tree (folders view) from the doc
-# array by splitting the url in each doc.
-#
-# The dirvec vector has one entry for each directory. Each entry is a
-# dictionary, mapping the names inside the directory to a pair (i,j),
-# where:
-#  - i is an index into dirvec if the name is a directory, else -1
-#  - j is the index of the doc inside the doc array (or -1 if there is no doc)
-#
-# Entry 0 in dirvec is special: it holds the 'topdirs' from the recoll
-# configuration. The entries are paths instead of simple names, and
-# the doc index (j) is 0. The dir index points normally to a dirvec
-# entry.
 
 # Create new directory entry: insert in father and append dirvec slot
 # (with ".." entry)
@@ -55,6 +75,9 @@ def _createdir(dirvec, fathidx, docidx, nm):
     dirvec[-1][".."] = (fathidx, -1)
     return len(dirvec) - 1
 
+
+# Walk the recoll docs array and split the URLs paths to build the
+# [folders] data structure
 def _rcl2folders(docs, confdir, httphp, pathprefix):
     global dirvec
     dirvec = []
@@ -65,6 +88,9 @@ def _rcl2folders(docs, confdir, httphp, pathprefix):
                shlex.split(rclconf.getConfParam('topdirs'))]
     topdirs = [d.rstrip('/') for d in topdirs]
 
+    # Create the 1st entry. This is special because it holds the
+    # recoll topdirs, which are paths instead of simple names. There
+    # does not seem any need to build the tree between a topdir and /
     dirvec.append({})
     dirvec[0][".."] = (0, -1)
     for d in topdirs:
@@ -73,11 +99,12 @@ def _rcl2folders(docs, confdir, httphp, pathprefix):
         dirvec[-1][".."] = (0, -1)
 
     # Walk the doc list and update the directory tree according to the
-    # url (create intermediary directories if needed, create leaf
-    # entry
+    # url: create intermediary directories if needed, create leaf
+    # entry.
     for docidx in range(len(docs)):
         doc = docs[docidx]
             
+        # Possibly enrich the doc entry with a cover art uri.
         arturi = docarturi(doc, httphp, pathprefix)
         if arturi:
             # The uri is quoted, so it's ascii and we can just store
@@ -96,7 +123,7 @@ def _rcl2folders(docs, confdir, httphp, pathprefix):
             decoded = urllib.quote(url).decode('utf-8')
 
         # Determine the root entry (topdirs element). Special because
-        # path not simple name
+        # its path is not a simple name.
         fathidx = -1
         for rtpath,idx in dirvec[0].iteritems():
             if url.startswith(rtpath):
@@ -158,10 +185,11 @@ def _rcl2folders(docs, confdir, httphp, pathprefix):
     uplog("_rcl2folders took %.2f Seconds" % (end - start))
     return dirvec
 
-# Internal init: fetch all the docs by querying Recoll with [mime:*],
-# which is guaranteed to match every doc without overflowing the query
-# size (because the number of mime types is limited). Something like
-# title:* would overflow.
+# Fetch all the docs by querying Recoll with [mime:*], which is
+# guaranteed to match every doc without overflowing the query size
+# (because the number of mime types is limited). Something like
+# title:* would overflow. This creates the main doc array, which is
+# then used by all modules.
 def _fetchalldocs(confdir):
     start = timer()
     allthedocs = []
@@ -292,7 +320,7 @@ def browse(pid, flag, httphp, pathprefix):
     return sorted(entries, cmp=cmpentries)
 
 # Return path for objid, which has to be a container.This is good old
-# pwd... It is called from the search module for generating a dir:
+# pwd... It is called from the search module for generating a 'dir:'
 # recoll filtering directive.
 def dirpath(objid):
     # We may get called from search, on the top dir (above [folders]). Return
