@@ -14,34 +14,46 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# Manage the 'untagged' section of the tree.  Our selection is made of
+# all tracks without a 'title' field. This is different from what
+# Minimserver does (I think that more or less any field present makes
+# a track not untagged for minim).
+#
+# Initialization filters the untagged tracks and creates a vector of
+# indexes into the global doc vector.
+#
+# Object Id prefix: 0$uprcl$untagged
+# 
+# Obect id inside the section: $u<idx> where <idx> is the document index
+#  inside the global document vector.
+
 import os
 import shlex
 import urllib
 import sys
 
-from uprclutils import uplog, rcldoctoentry, rcldirentry, cmpentries
+from uprclutils import uplog, rcldoctoentry, rcldirentry
 
 untg_prefix = '0$uprcl$untagged'
 
+# Create the untagged entries static vector by filtering the global
+# doc vector, storing the indexes of all tracks without a title
+# field. We keep a reference to the doc vector.
 def recoll2untagged(docs):
     global g_utidx, g_rcldocs
     g_rcldocs = docs
+    # The -1 entry is because we use index 0 for our root.
     g_utidx = [-1]
     
     for docidx in range(len(docs)):
         doc = docs[docidx]
         if doc.mtype == 'inode/directory':
             continue
-        url = doc.getbinurl()
-        url = url[7:]
-        try:
-            decoded = url.decode('utf-8')
-        except:
-            decoded = urllib.quote(url).decode('utf-8')
-        tt = doc.title
-        if not tt:
+        if not doc.title:
             g_utidx.append(docidx)
 
+
+# Compute index into our entries vector by 'parsing' the objid.
 def _objidtoidx(pid):
     if not pid.startswith(untg_prefix):
         raise Exception("untagged.browse: bad pid %s" % pid)
@@ -51,6 +63,7 @@ def _objidtoidx(pid):
 
     idx = pid[len(untg_prefix):]
     if not idx:
+        # Browsing the root.
         idx = 0
     else:
         if idx[1] != 'u':
@@ -63,14 +76,15 @@ def _objidtoidx(pid):
     return idx
 
 
+# Return entry to be created in the top-level directory ([untagged]).
 def rootentries(pid):
     return [rcldirentry(pid + 'untagged', pid, '[untagged]'),]
 
-# Browse method
-# objid is like untagged$*u<index>
-# flag is meta or children. 
-def browse(pid, flag, httphp, pathprefix):
 
+# Browse method
+# objid is like untagged$u<index>
+# flag is meta or children.
+def browse(pid, flag, httphp, pathprefix):
     idx = _objidtoidx(pid)
 
     entries = []
@@ -90,5 +104,4 @@ def browse(pid, flag, httphp, pathprefix):
         if e:
             entries.append(e)
 
-    return sorted(entries, cmp=cmpentries)
-
+    return sorted(entries, key=lambda entry: entry['tt'].lower())
