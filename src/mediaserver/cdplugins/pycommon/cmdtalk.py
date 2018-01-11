@@ -50,18 +50,20 @@ else:
 # method to use the args and produce return data.
 class CmdTalk:
 
-    def __init__(self):
+    def __init__(self, outfile=sys.stdout, infile=sys.stdin):
         try:
             self.myname = os.path.basename(sys.argv[0])
         except:
             self.myname = "???"
 
+        self.outfile = outfile
+        self.infile = infile
         self.fields = {}
         
         if sys.platform == "win32":
             import msvcrt
-            msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-            msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+            msvcrt.setmode(self.outfile.fileno(), os.O_BINARY)
+            msvcrt.setmode(self.infile.fileno(), os.O_BINARY)
         self.debugfile = None
         if self.debugfile:
             self.errfout = open(self.debugfile, "a")
@@ -99,9 +101,9 @@ class CmdTalk:
     # as bytes
     def readparam(self):
         if PY3:
-            inf = sys.stdin.buffer
+            inf = self.infile.buffer
         else:
-            inf = sys.stdin
+            inf = self.infile
         s = inf.readline()
         if s == b'':
             sys.exit(0)
@@ -132,14 +134,14 @@ class CmdTalk:
         def senditem(self, nm, data):
             data = makebytes(data)
             l = len(data)
-            sys.stdout.buffer.write(makebytes("%s: %d\n" % (nm, l)))
-            self.breakwrite(sys.stdout.buffer, data)
+            self.outfile.buffer.write(makebytes("%s: %d\n" % (nm, l)))
+            self.breakwrite(self.outfile.buffer, data)
     else:
         def senditem(self, nm, data):
             data = makebytes(data)
             l = len(data)
-            sys.stdout.write(makebytes("%s: %d\n" % (nm, l)))
-            self.breakwrite(sys.stdout, data)
+            self.outfile.write(makebytes("%s: %d\n" % (nm, l)))
+            self.breakwrite(self.outfile, data)
         
     # Send answer: document, ipath, possible eof.
     def answer(self, outfields):
@@ -148,8 +150,8 @@ class CmdTalk:
             self.senditem(nm, value)
             
         # End of message
-        print()
-        sys.stdout.flush()
+        print(file=self.outfile)
+        self.outfile.flush()
         #self.log("done writing data")
 
     # Call processor with input params, send result

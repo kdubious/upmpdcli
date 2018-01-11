@@ -17,6 +17,7 @@
 
 from __future__ import print_function
 
+import sys
 import cmdtalk
 
 prcnmkey = "cmdtalk:proc"
@@ -36,8 +37,8 @@ class Dispatch:
         return func(params)
     
 class Processor:
-    def __init__(self, dispatcher):
-        self.em = cmdtalk.CmdTalk()
+    def __init__(self, dispatcher, outfile=sys.stdout, infile=sys.stdin):
+        self.em = cmdtalk.CmdTalk(outfile=outfile, infile=infile)
         self.dispatcher = dispatcher
         
     def log(self, s, doexit = 0, exitvalue = 1):
