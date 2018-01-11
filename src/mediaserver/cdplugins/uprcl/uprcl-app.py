@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 import sys
 import os
 import json
@@ -34,10 +35,21 @@ import uprclinit
 #####
 # Initialize communication with our parent process: pipe and method
 # call dispatch
+
+# Some of the modules we use write garbage to stdout, which messes the
+# communication with our parent. Why can't people understand that this
+# is verboten ? Get off my lawn ! So we dup stdout and close it, then
+# pass the right file to cmdtalk.  (hoping that none of the imports
+# above print anything, else we'll have to move this code up)
+_outfile = os.fdopen(os.dup(1), "w")
+os.close(1)
+fd = os.open("/dev/null", os.O_WRONLY)
+# print("UPRCL-APP: got fd %d for /dev/null" % fd, file=sys.stderr)
+
 # Func name to method mapper
 dispatcher = cmdtalkplugin.Dispatch()
 # Pipe message handler
-msgproc = cmdtalkplugin.Processor(dispatcher)
+msgproc = cmdtalkplugin.Processor(dispatcher, outfile=_outfile)
 
 @dispatcher.record('trackuri')
 def trackuri(a):
