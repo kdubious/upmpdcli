@@ -153,7 +153,6 @@ dist_cdpluginsuprcl_DATA = \
                  src/mediaserver/cdplugins/uprcl/rclconfig-fields \
                  src/mediaserver/cdplugins/uprcl/rwlock.py \
                  src/mediaserver/cdplugins/uprcl/uprcl-app.py \
-                 src/mediaserver/cdplugins/uprcl/uprclcontrol.py \
                  src/mediaserver/cdplugins/uprcl/uprclfolders.py \
                  src/mediaserver/cdplugins/uprcl/uprclhttp.py \
                  src/mediaserver/cdplugins/uprcl/uprclindex.py \
@@ -163,7 +162,7 @@ dist_cdpluginsuprcl_DATA = \
                  src/mediaserver/cdplugins/uprcl/uprcluntagged.py \
                  src/mediaserver/cdplugins/uprcl/uprclutils.py
 
-EXTRA_DIST = web.tar.gz rdpl2stream.tar.gz uprclbottle.tar.gz \
+EXTRA_DIST = autogen.sh web.tar.gz rdpl2stream.tar.gz uprclbottle.tar.gz \
     systemd/upmpdcli.service \
     src/conftree.cpp src/execmd.cpp src/mediaserver/cdplugins/cmdtalk.cpp \
     src/netcon.cpp autogen.sh

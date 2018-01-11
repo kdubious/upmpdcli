@@ -28,9 +28,8 @@ import uprclfolders
 import uprcltags
 import uprcluntagged
 import uprclsearch
-import uprclhttp
 import uprclindex
-from uprclcontrol import runbottle
+from uprclhttp import runbottle
 
 from uprclutils import uplog, findmyip, stringToStrings
 
@@ -136,39 +135,17 @@ def _uprcl_init_worker():
 
 
     host,port = g_httphp.split(':')
-    if True:
-        # Running the server as a thread. We get into trouble because
-        # something somewhere writes to stdout a bunch of --------.
-        # Could not find where they come from, happens after a sigpipe
-        # when a client closes a stream. The --- seem to happen before
-        # and after the exception strack trace, e.g:
-        # ----------------------------------------
-        #   Exception happened during processing of request from ('192...
-        #   Traceback...
-        #   [...]
-        # error: [Errno 32] Broken pipe
-        # ----------------------------------------
-        # 
-        # **Finally**: found it: the handle_error SocketServer method
-        # was writing to stdout.  Overriding it should have fixed the
-        # issue. Otoh the separate process approach works, so we kept
-        # it for now
-        httpthread = threading.Thread(target=uprclhttp.runHttp,
-                                      kwargs = {'host':host ,
-                                                'port':int(port),
-                                                'pthstr':pthstr,
-                                                'pathprefix':g_pathprefix})
-        httpthread.daemon = True 
-        httpthread.start()
-    else:
-        # Running the HTTP server as a separate process
-        cmdpath = os.path.join(os.path.dirname(sys.argv[0]), 'uprclhttp.py')
-        cmd = subprocess.Popen((cmdpath, host, port, pthstr,g_pathprefix),
-                               stdin = open('/dev/null'),
-                               stdout = sys.stderr,
-                               stderr = sys.stderr,
-                               close_fds = True)
 
+    # Start the bottle app. Its' both the control/config interface and
+    # the file streamer
+    httpthread = threading.Thread(target=runbottle,
+                                 kwargs = {'host':host ,
+                                           'port':int(port),
+                                           'pthstr':pthstr,
+                                           'pathprefix':g_pathprefix})
+    httpthread.daemon = True 
+    httpthread.start()
+    
     _update_index()
 
     uplog("Uprcl: init done")
@@ -180,11 +157,6 @@ def uprcl_init():
     initthread = threading.Thread(target=_uprcl_init_worker)
     initthread.daemon = True 
     initthread.start()
-    # Start the control/config interface
-    ctlthread = threading.Thread(target=runbottle)
-    ctlthread.daemon = True 
-    ctlthread.start()
-
 
 def ready():
     g_dblock.acquire_read()
@@ -210,4 +182,3 @@ def start_update():
         # much...
         g_dblock.release_read()
     idxthread.start()
- 

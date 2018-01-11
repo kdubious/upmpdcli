@@ -26,7 +26,6 @@ import uprclfolders
 import uprcltags
 import uprcluntagged
 import uprclsearch
-import uprclhttp
 import uprclindex
 
 from uprclutils import uplog, g_myprefix, rcldirentry, waitentry

@@ -19,6 +19,11 @@ import sys
 import urllib
 import os
 import subprocess
+import mutagen
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 # This must be consistent with what contentdirectory.cxx does
 g_myprefix = '0$uprcl$'
@@ -384,3 +389,40 @@ def findmyip():
                 continue
             return ipmask.split('/')[0]
             
+
+# Open embedded image. Returns mtype, size, f
+def embedded_open(path):
+    try:
+        mutf = mutagen.File(path)
+    except Exception as err:
+        raise err
+        
+    f = None
+    size = 0
+    if 'audio/mp3' in mutf.mime:
+        for tagname in mutf.iterkeys():
+            if tagname.startswith('APIC:'):
+                #self.em.rclog("mp3 img: %s" % mutf[tagname].mime)
+                mtype = mutf[tagname].mime
+                s = mutf[tagname].data
+                size = len(s)
+                f = StringIO(s)
+    elif 'audio/x-flac' in mutf.mime:
+        if mutf.pictures:
+            mtype = mutf.pictures[0].mime
+            size = len(mutf.pictures[0].data)
+            f = StringIO(mutf.pictures[0].data)
+    elif 'audio/mp4' in mutf.mime:
+        if 'covr' in mutf.iterkeys():
+            format = mutf['covr'][0].imageformat 
+            if format == mutagen.mp4.AtomDataType.JPEG:
+                mtype = 'image/jpeg'
+            else:
+                mtype = 'image/png'
+            size = len(mutf['covr'][0])
+            f = StringIO(mutf['covr'][0])
+
+    if f is None:
+        raise Exception("can't open embedded image")
+    else:
+        return mtype, size, f
