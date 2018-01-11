@@ -38,7 +38,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from uprclutils import uplog,printable
+from uprclutils import uplog,printable,embedded_open
 
 
 __version__ = "0.1"
@@ -108,7 +108,7 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         f = None
         try:
             if embedded:
-                ctype, size, f = self.embedded_open(path)
+                ctype, size, f = embedded_open(path)
                 fs = os.stat(path)
                 #uplog("embedded, got ctype %s size %s" %(ctype, size))
             else:
@@ -179,42 +179,6 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         uplog("HTTP: translate_path: %s not found in path map" % opath)
         return None, None
 
-
-    # Open embedded image. Returns mtype, size, f
-    def embedded_open(self, path):
-        try:
-            mutf = mutagen.File(path)
-        except Exception as err:
-            raise err
-        
-        f = None
-        size = 0
-        if 'audio/mp3' in mutf.mime:
-            for tagname in mutf.iterkeys():
-                if tagname.startswith('APIC:'):
-                    #self.em.rclog("mp3 img: %s" % mutf[tagname].mime)
-                    mtype = mutf[tagname].mime
-                    s = mutf[tagname].data
-                    size = len(s)
-                    f = StringIO(s)
-        elif 'audio/x-flac' in mutf.mime:
-            if mutf.pictures:
-                mtype = mutf.pictures[0].mime
-                size = len(mutf.pictures[0].data)
-                f = StringIO(mutf.pictures[0].data)
-        elif 'audio/mp4' in mutf.mime:
-            if 'covr' in mutf.iterkeys():
-                format = mutf['covr'][0].imageformat 
-                if format == mutagen.mp4.AtomDataType.JPEG:
-                    mtype = 'image/jpeg'
-                else:
-                    mtype = 'image/png'
-                size = len(mutf['covr'][0])
-                f = StringIO(mutf['covr'][0])
-        if f is None:
-            raise Exception("can't open embedded image")
-        else:
-            return mtype, size, f
 
     def guess_type(self, path):
         """Guess the type of a file.
