@@ -42,7 +42,7 @@ def _sqconn():
     global sqconn
     if sqconn is None:
         sqconn = sqlite3.connect(':memory:', check_same_thread=False)
-        #sqconn = sqlite3.connect('/tmp/tracks.sqlite')
+        #sqconn = sqlite3.connect('/tmp/tracks.sqlite', check_same_thread=False)
     return sqconn
 
 # Tags for which we create auxiliary tables for facet descent.
@@ -160,8 +160,9 @@ def recolltosql(docs):
         folder = docfolder(doc).decode('utf-8', errors = 'replace')
         album = getattr(doc, 'album', None)
         if not album:
-            uplog("No album: mtype %s title %s" % (doc.mtype, doc.url))
             album = os.path.basename(folder)
+            #uplog("Using %s for alb: mime %s title %s" %
+                  #(album,doc.mtype, doc.url))
         if doc.albumartist:
             albartist_id = _auxtableinsert(sqconn, 'artist', doc.albumartist)
         else:
@@ -286,13 +287,14 @@ def _direntriesforalbums(pid, where):
     entries = []
     c = _sqconn().cursor()
     if not where:
-        where = 'WHERE artist.artist_id = albums.artist_id'
+        where = ' LEFT JOIN artist ON artist.artist_id = albums.artist_id '
+        frm = ' FROM albums '
     else:
-        where += ' AND artist.artist_id = albums.artist_id'
+        where += ' AND artist.artist_id = albums.artist_id '
+        frm = ' FROM albums,artist '
 
-    stmt = '''SELECT album_id, albtitle, albarturi, albdate, artist.value
-              FROM albums,artist ''' + \
-              where + ' ORDER BY albtitle'
+    stmt = 'SELECT album_id, albtitle, albarturi, albdate, artist.value' + \
+           frm + where + ' ORDER BY albtitle'
     uplog('direntriesforalbums: %s' % stmt)
     c.execute(stmt)
     for r in c:
@@ -309,6 +311,8 @@ def _direntriesforalbums(pid, where):
 # list for i == ql-2 (we then have an albid at ql-1), and a 'Complete
 # album' query if i == ql-3 (...$albums$xxx$showca)
 def _tagsbrowsealbums(pid, qpath, i, selwhere, values, httphp, pathprefix):
+    uplog("_tagsbrowsealbums: pid %s qpath %s i %s selwhere %s values %s" %
+          (pid, qpath, i, selwhere, values))
     c = _sqconn().cursor()
     docidsl = _docidsforsel(selwhere, values)
     entries = []
