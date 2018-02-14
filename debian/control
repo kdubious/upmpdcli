@@ -61,7 +61,8 @@ Description: upmpdcli Google Play Music plugin
 Package: upmpdcli-uprcl
 Architecture: all
 Section: contrib/sound
-Depends: python, python-requests, python-recoll, python-mutagen, upmpdcli, ${python:Depends}, ${misc:Depends}
+Depends: python, python-requests, python-recoll, python-bottle,
+ python-paste, python-mutagen, upmpdcli, ${python:Depends}, ${misc:Depends}
 Description: upmpdcli local Media Server plugin
  upmpdcli-uprcl enables a Recoll-based local media server.
 
