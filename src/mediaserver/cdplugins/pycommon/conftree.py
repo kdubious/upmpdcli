@@ -39,7 +39,7 @@ class ConfSimple:
         try:
             f = open(confname, 'r')
         except Exception as exc:
-            #print("Open Exception: %s" % exc, sys.stderr)
+            #print("Open Exception: %s" % exc, file=sys.stderr)
             # File does not exist -> empty config, not an error.
             return
 

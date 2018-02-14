@@ -24,13 +24,14 @@
 #include "libupnpp/soaphelp.hxx"
 
 #include "cdplugins/cdplugin.hxx"
+#include "mediaserver.hxx"
 
 using namespace UPnPP;
 
 class ContentDirectory : public UPnPProvider::UpnpService,
                          public CDPluginServices {
 public:
-    ContentDirectory(UPnPProvider::UpnpDevice *dev);
+    ContentDirectory(MediaServer *dev);
     ~ContentDirectory();
 
     /// Returns something like "/tidal" (no end slash)
@@ -50,11 +51,14 @@ public:
                             UPnPProvider::VirtualDir::FileOps ops);
 
     /// Access the main configuration file.
-    virtual ConfSimple *getconfig(CDPlugin *);
-    virtual std::string getexecpath(CDPlugin *);
+    virtual bool config_get(const std::string& nm, std::string& val);
 
-    /// Check if the configuration indicates that the media server needs to be started.
+    virtual std::string getfname();
+
+    /// Check if the configuration indicates that the media server
+    /// needs to be started.
     static bool mediaServerNeeded();
+
     
 private:
     int actGetSearchCapabilities(const SoapIncoming& sc, SoapOutgoing& data);

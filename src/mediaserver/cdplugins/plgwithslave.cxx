@@ -75,7 +75,7 @@ public:
     PlgWithSlave *plg;
     CmdTalk cmd;
     string exepath;
-    // Upnp Host and port. This would only be used to generate URLsif
+    // Upnp Host and port. This would only be used to generate URLs *if*
     // we were using the libupnp miniserver. We currently use
     // microhttp because it can do redirects
     string upnphost;
@@ -186,10 +186,9 @@ bool PlgWithSlave::Internal::maybeStartCmd()
         return true;
     }
 
-    ConfSimple *conf = plg->m_services->getconfig(plg);
     int port = 49149;
     string sport;
-    if (conf->get("plgmicrohttpport", sport)) {
+    if (plg->m_services->config_get("plgmicrohttpport", sport)) {
         port = atoi(sport.c_str());
     }
     if (nullptr == mhd) {
@@ -224,6 +223,7 @@ bool PlgWithSlave::Internal::maybeStartCmd()
     ss << upnphost << ":" << port;
     string hostport = string("UPMPD_HTTPHOSTPORT=") + ss.str();
     string pp = string("UPMPD_PATHPREFIX=") + pathprefix;
+    string fn = string("UPMPD_FNAME=") + plg->m_services->getfname();
     if (!cmd.startCmd(exepath, {/*args*/},
                       /* env */ {pythonpath, configname, hostport, pp})) {
         LOGERR("PlgWithSlave::maybeStartCmd: startCmd failed\n");
@@ -280,7 +280,11 @@ string PlgWithSlave::get_media_url(const string& path)
 PlgWithSlave::PlgWithSlave(const string& name, CDPluginServices *services)
     : CDPlugin(name, services)
 {
-    m = new Internal(this, services->getexecpath(this),
+    string exepath = path_cat(g_datadir, "cdplugins");
+    exepath = path_cat(exepath, name);
+    exepath = path_cat(exepath, name + "-app" + ".py");
+
+    m = new Internal(this, exepath,
                      services->getupnpaddr(this),
                      services->getupnpport(this),
                      services->getpathprefix(this));

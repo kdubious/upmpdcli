@@ -43,14 +43,15 @@ using namespace UPnPProvider;
 
 class ContentDirectory::Internal {
 public:
-    Internal (ContentDirectory *sv)
-	: service(sv), updateID("1") {
-    }
+    Internal (ContentDirectory *sv, MediaServer *dv)
+	: service(sv), msdev(dv), updateID("1") { }
+
     ~Internal() {
 	for (auto& it : plugins) {
 	    delete it.second;
 	}
     }
+
     // Start plugins which have long init so that the user has less to
     // wait on first access
     void maybeStartSomePlugins();
@@ -85,8 +86,10 @@ public:
 	    return plug;
 	}
     }
-    unordered_map<string, CDPlugin *> plugins;
+
     ContentDirectory *service;
+    MediaServer *msdev;
+    unordered_map<string, CDPlugin *> plugins;
     string host;
     int port;
     string updateID;
@@ -97,9 +100,9 @@ sTpContentDirectory("urn:schemas-upnp-org:service:ContentDirectory:1");
 static const string
 sIdContentDirectory("urn:upnp-org:serviceId:ContentDirectory");
 
-ContentDirectory::ContentDirectory(UPnPProvider::UpnpDevice *dev)
+ContentDirectory::ContentDirectory(MediaServer *dev)
     : UpnpService(sTpContentDirectory, sIdContentDirectory, dev),
-      m(new Internal(this))
+      m(new Internal(this, dev))
 {
     dev->addActionMapping(
         this, "GetSearchCapabilities",
@@ -523,16 +526,17 @@ bool ContentDirectory::setfileops(CDPlugin *plg, const std::string& path,
     return true;
 }
 
-
-ConfSimple *ContentDirectory::getconfig(CDPlugin *)
+bool ContentDirectory::config_get(const string& nm, string& val)
 {
-    return g_config;
+    if (nullptr == g_config) {
+        return false;
+    }
+    std::unique_lock<std::mutex>(g_configlock);
+    return g_config->get(nm, val);
 }
 
-
-std::string ContentDirectory::getexecpath(CDPlugin *plg)
+std::string ContentDirectory::getfname()
 {
-    string pth = path_cat(g_datadir, "cdplugins");
-    pth = path_cat(pth, plg->getname());
-    return path_cat(pth, plg->getname() + "-app" + ".py");
+    return m->msdev->getfname();
 }
+

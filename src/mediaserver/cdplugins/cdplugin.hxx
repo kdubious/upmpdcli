@@ -27,31 +27,48 @@ class ConfSimple;
 /// Service/Environment interface for media server modules
 class CDPluginServices {
 public:
-    /// Returns something like "/tidal" (no end slash)
+    /// For modules which use the common microhttpd server
+    /// (tidal/qobuz/gmusic). Returns something like "/tidal" (no end
+    /// slash), which must be inserted at the top of the track URLs
+    /// paths so that an HTTP request can be processed-for /
+    /// dispatched-to the right plugin.
     virtual std::string getpathprefix(CDPlugin *) = 0;
-
     /// Returns the plugin to which belongs the parameter path, based
-    /// on the path prefix above
+    /// on the path prefix above.
     virtual CDPlugin *getpluginforpath(const std::string& path) = 0;
+
+    /// Retrieve the "friendly name" for the media server, for display purposes
+    virtual std::string getfname() = 0;
     
-    /// Retrieve the IP address and port for the libupnp server. URLs
-    /// intended to be served this way (by adding a vdir) should use
-    /// these as host/port
+    /// IP address for the server.
+    ///
+    /// This is the host address / network interface used by libupnp,
+    /// which can only support one. All generated URLs should be for
+    /// this address as this is the only one guaranteed to be
+    /// accessible from clients (in case this server has several
+    /// interfaces). 
     virtual std::string getupnpaddr(CDPlugin *) = 0;
+    
+    /// IP port used by the libupnp HTTP server.
+    ///
+    /// URLs intended to be served this way (by adding a vdir) should
+    /// use this for the port value. No module does this at present so
+    /// that this call is not used. The microhttpd instance (serves
+    /// for the tidal/qobuz/gmusic plugins) uses port 49149 by
+    /// default. The value can be changed with the "plgmicrohttpport"
+    /// configuration variable. The local mediaserver (uprcl) uses
+    /// neither the libupnp HTTP server nor microhttpd, but an internal
+    /// Python server instance, on port 9090 by default (can be
+    /// changed with the "uprclhostport" configuration variable).
     virtual int getupnpport(CDPlugin *) = 0;
 
     /// Add a virtual directory and set file operation interface. path
-    /// must be equal or begin with the pathprefix.
+    /// must be equal or begin with the pathprefix. Not used at all at present.
     virtual bool setfileops(CDPlugin *, const std::string& path,
                             UPnPProvider::VirtualDir::FileOps ops)= 0;
 
     /// Get a pointer to the the main configuration file contents.
-    virtual ConfSimple *getconfig(CDPlugin *)= 0;
-
-    /// This calls plg->getname() and returns something like
-    /// datadir/nm/nm-app.py. Can't see why this is in contentdirectory
-    /// since it seems very specific to plgwithslave...
-    virtual std::string getexecpath(CDPlugin *)= 0;
+    virtual bool config_get(const std::string& nm, std::string& val) = 0;
 };
 
 /// Interface to media server modules

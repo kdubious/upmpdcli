@@ -34,9 +34,14 @@ public:
 
     ~MediaServer();
 
+    const std::string& getUDN() {return m_UDN;}
+    const std::string& getfname() {return m_fname;}
+    
 private:
     ContentDirectory *m_cd;
     UpMpdConMan *m_cm;
+    std::string m_UDN;
+    std::string m_fname;
 };
 
 

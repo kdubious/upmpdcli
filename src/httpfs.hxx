@@ -20,23 +20,35 @@
 #include <string>
 #include <unordered_map>
 
-#include "libupnpp/device/device.hxx"   // for VDirContent
+#include "libupnpp/device/device.hxx"
 
-extern bool initHttpFs(std::unordered_map<std::string, 
-                                          UPnPProvider::VDirContent>& files,
-                       const std::string& datadir,
-                       const std::string& UUID, 
-                       const std::string& friendlyname,
-                       bool enableAV, bool enableOH, bool enableReceiver,
-                       bool enableMediaServer, bool msonly,
-                       const std::string& iconpath,
-                       const std::string& presentationhtml
+// Ad-hoc struct to hold the input identification parameters for the device(s)
+struct UDevIds {
+    std::string fname;
+    std::string uuid;
+    std::string fnameMS;
+    std::string uuidMS;
+};
+
+/** 
+ * Initialize the files which will be served by libupnp HTTP server.
+ *
+ * The output files are the device and service description xml
+ * files. Some of the content is constant, some depends on data
+ * elements and what services are actually enabled. The source XML files which 
+ * we include or modify are found in @param datadir.
+ * @param[output] files "file system" content as required by a
+ *    UPnPProvider::UpnpDevice constructor.
+ * @param datadir The location for the source files.
+ * @param ids the friendly names and uuids for the devices, for embedding 
+ *    in desc files
+ */
+extern bool initHttpFs(
+    std::unordered_map<std::string, UPnPProvider::VDirContent>& files,
+    const std::string& datadir, const UDevIds& ids,
+    bool enableAV, bool enableOH, bool enableReceiver,
+    bool enableMediaServer, bool msonly,
+    const std::string& iconpath, const std::string& presentationhtml
     );
 
-inline std::string uuidMediaServer(const std::string& uuid) {
-    return uuid + "-mediaserver";
-}
-inline std::string friendlyNameMediaServer(const std::string& f) {
-    return f + "-mediaserver";
-}
 #endif /* _HTTPFS_H_X_INCLUDED_ */

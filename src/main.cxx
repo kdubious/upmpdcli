@@ -627,8 +627,15 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Create unique ID
-    string UUID = LibUPnP::makeDevUUID(friendlyname, hwaddr);
+    // Create unique IDs for renderer and possible media server
+    UDevIds ids;
+    ids.fname = friendlyname;
+    ids.uuid =  LibUPnP::makeDevUUID(ids.fname, hwaddr);
+    if (!g_config || !g_config->get("msfriendlyname", ids.fnameMS)) {
+        ids.fnameMS = ids.fname + "-mediaserver";
+    }
+    ids.uuidMS = LibUPnP::makeDevUUID(ids.fnameMS, hwaddr);
+
 
     // If running as mediaserver only, make sure we don't conflict
     // with a possible renderer
@@ -639,9 +646,9 @@ int main(int argc, char *argv[])
     // Initialize the data we serve through HTTP (device and service
     // descriptions, icons, presentation page, etc.)
     unordered_map<string, VDirContent> files;
-    if (!initHttpFs(files, g_datadir, UUID, friendlyname, enableAV, enableOH,
-                    !senderpath.empty(), inprocessms,
-                    msonly, iconpath, presentationhtml)) {
+    if (!initHttpFs(files, g_datadir, ids, enableAV, enableOH,
+                    !senderpath.empty(), inprocessms, msonly,
+                    iconpath, presentationhtml)) {
         exit(1);
     }
 
@@ -664,9 +671,9 @@ int main(int argc, char *argv[])
     if (!enableAV)
         opts.options |= UpMpd::upmpdNoAV;
 
-    UpMpd *mediarenderer = nullptr;
+    UpMpd *mediarenderer{nullptr};
     if (!msonly) {
-        mediarenderer = new UpMpd(string("uuid:") + UUID, friendlyname,
+        mediarenderer = new UpMpd(string("uuid:") + ids.uuid, ids.fname,
                                   ohProductDesc, files, mpdclip, opts);
     }
 
@@ -687,8 +694,7 @@ int main(int argc, char *argv[])
 	// Create the Media Server embedded device object. There needs
 	// be no reference to the root object because there can be
 	// only one (libupnp restriction)
-	mediaserver = new MediaServer(string("uuid:") + uuidMediaServer(UUID),
-                                      friendlyNameMediaServer(friendlyname),
+	mediaserver = new MediaServer(string("uuid:") + ids.uuidMS, ids.fnameMS,
                                       *msfiles);
     } else if (enableMediaServer) {
         // Fork process for media server, replacing whatever -m option

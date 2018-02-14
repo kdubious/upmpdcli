@@ -19,6 +19,7 @@
 #include <string>
 
 #include "libupnpp/log.hxx"
+#include "libupnpp/upnpplib.hxx"
 #include "libupnpp/upnpavutils.hxx"
 #include "libupnpp/device/device.hxx"
 
@@ -28,6 +29,7 @@
 #include "pathut.h"
 #include "readfile.h"
 #include "httpfs.hxx"
+#include "conftree.h"
 
 using namespace std;
 using namespace UPnPP;
@@ -56,8 +58,11 @@ static string upnpAVDesc(
 // The description XML document is the first thing downloaded by
 // clients and tells them what services we export, and where to find
 // them. The base data is in /usr/shared/upmpdcli/description.xml, it
-// has a number of substitutable fields for optional data, like the
-// description of OpenHome services
+// has a number of substitutable fields for optional data, which we
+// conditionally substitute into the file data (e.g. description of
+// OpenHome or other optional services)
+
+// Description of OpenHome services
 static string ohDesc(
     "<service>"
     "  <serviceType>urn:av-openhome-org:service:Product:1</serviceType>"
@@ -198,12 +203,11 @@ static vector<const char *> ohxmlfilenames =
     "OHPlaylist.xml", "OHRadio.xml"
 };
 
-
 // Read and setup our (mostly XML) data to make it available from the
 // virtual directory
 bool initHttpFs(unordered_map<string, VDirContent>& files,
                 const string& datadir,
-                const string& UUID, const string& friendlyname, 
+                const UDevIds& ids,
                 bool enableAV, bool enableOH, bool enableReceiver,
                 bool enableMediaServer, bool msonly,
                 const string& iconpath, const string& presentationhtml)
@@ -235,7 +239,8 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
     string presentationdata;
     if (!presentationhtml.empty()) {
         if (!file_to_string(presentationhtml, presentationdata, &reason)) {
-            LOGERR("Failed reading " << presentationhtml << " : " << reason << endl);
+            LOGERR("Failed reading " << presentationhtml << " : " << reason <<
+                   endl);
         }
     }
 
@@ -251,28 +256,24 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
             // Description
             if (!msonly) {
                 // Set UUID and friendlyname for renderer
-                data = regsub1("@UUID@", data, UUID);
-                data = regsub1("@FRIENDLYNAME@", data, friendlyname);
+                data = regsub1("@UUID@", data, ids.uuid);
+                data = regsub1("@FRIENDLYNAME@", data, ids.fname);
             }
 
-	    if (enableMediaServer && !msonly) {
+            if (enableMediaServer && !msonly) {
                 // Edit embedded media server description and
                 // subsitute it in main description
-		string msdesc = regsub1("@UUIDMEDIA@", embedms_desc,
-					uuidMediaServer(UUID));
-		msdesc = regsub1("@FRIENDLYNAMEMEDIA@", msdesc,
-				 friendlyNameMediaServer(friendlyname));
+                string msdesc = regsub1("@UUIDMEDIA@", embedms_desc, ids.uuidMS);
+                msdesc = regsub1("@FRIENDLYNAMEMEDIA@", msdesc, ids.fnameMS);
                 data = regsub1("@MEDIASERVER@", data, msdesc);
-	    } else if (msonly) {
+            } else if (msonly) {
                 // Substitute values in msonly description
-		data = regsub1("@UUIDMEDIA@", msonly_desc,
-                               uuidMediaServer(UUID));
-		data = regsub1("@FRIENDLYNAMEMEDIA@", data,
-                               friendlyNameMediaServer(friendlyname));
+                data = regsub1("@UUIDMEDIA@", msonly_desc, ids.uuidMS);
+                data = regsub1("@FRIENDLYNAMEMEDIA@", data, ids.fnameMS);
             } else {
                 // No media server: erase the section
                 data = regsub1("@MEDIASERVER@", data, "");
-	    }
+            }
 
             if (enableAV) {
                 data = regsub1("@UPNPAV@", data, upnpAVDesc);
