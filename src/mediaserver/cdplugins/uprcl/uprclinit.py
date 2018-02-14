@@ -78,7 +78,9 @@ def _update_index():
         g_dblock.release_write()
 
 
-# This runs in a thread because of the possibly long index initialization.
+# Initialisation runs in a thread because of the possibly long index
+# initialization, during which the main thread can answer
+# "initializing..." to the clients.
 def _uprcl_init_worker():
 
     #######
@@ -96,9 +98,8 @@ def _uprcl_init_worker():
     upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
 
     global g_friendlyname
-    tmp = upconfig.get("friendlyname")
-    if tmp:
-        g_friendlyname = tmp + "-mediaserver"
+    if "UPMPD_FNAME" in os.environ:
+        g_friendlyname = os.environ["UPMPD_FNAME"]
 
     global g_httphp
     g_httphp = upconfig.get("uprclhostport")
@@ -151,7 +152,6 @@ def _uprcl_init_worker():
     uplog("Uprcl: init done")
 
 def uprcl_init():
-    # This lock and counter are used as a read/write lock 
     global g_initrunning
     g_initrunning = True
     initthread = threading.Thread(target=_uprcl_init_worker)
