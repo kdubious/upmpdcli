@@ -303,7 +303,9 @@ def rcldirentry(id, pid, title, arturi=None, artist=None, upnpclass=None,
 
 
 def uplog(s):
-    print(("%s: %s" % ('uprcl', s)).encode('utf-8'), file=sys.stderr)
+    if not isinstance(s, unicode):
+        s = s.decode('utf-8', errors='replace')
+    print("%s: %s" % ('uprcl', s), file=sys.stderr)
 
 
 # Parse string into (possibly multiword) tokens
