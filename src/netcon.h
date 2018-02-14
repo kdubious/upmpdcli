@@ -23,9 +23,8 @@
 #endif
 
 #include <sys/time.h>
-#include <map>
-#include <string>
 
+#include <string>
 #include <memory>
 
 /// A set of classes to manage client-server communication over a
@@ -85,20 +84,10 @@ public:
 
     /// Decide what events the connection will be looking for
     /// (NETCONPOLL_READ, NETCONPOLL_WRITE)
-    int setselevents(int evs) {
-        return m_wantedEvents = evs;
-    }
+    int setselevents(int evs);
     /// Retrieve the connection's currently monitored set of events
     int getselevents() {
         return m_wantedEvents;
-    }
-    /// Add events to current set
-    int addselevents(int evs) {
-        return m_wantedEvents |= evs;
-    }
-    /// Clear events from current set
-    int clearselevents(int evs) {
-        return m_wantedEvents &= ~evs;
     }
 
     friend class SelectLoop;
@@ -115,7 +104,7 @@ protected:
     int   m_fd;
     bool  m_ownfd;
     int   m_didtimo;
-    // Used when part of the selectloop map.
+    // Used when part of the selectloop.
     short m_wantedEvents;
     SelectLoop *m_loop;
     // Method called by the selectloop when something can be done with a netcon
@@ -130,16 +119,34 @@ protected:
 /// The selectloop interface is used to implement parallel servers.
 // The select loop mechanism allows several netcons to be used for io
 // in a program without blocking as long as there is data to be read
-// or written. In a multithread program which is also using select, it
-// would typically make sense to have one SelectLoop active per
+// or written. In a multithread program, if each thread needs
+// non-blocking IO it may make sense to have one SelectLoop active per
 // thread.
 class SelectLoop {
 public:
-    SelectLoop()
-        : m_selectloopDoReturn(false), m_selectloopReturnValue(0),
-          m_placetostart(0),
-          m_periodichandler(0), m_periodicparam(0), m_periodicmillis(0) {
-    }
+    SelectLoop();
+    SelectLoop(const SelectLoop&) = delete;
+    SelectLoop& operator=(const SelectLoop&) = delete;
+    ~SelectLoop();
+    
+    /// Add a connection to be monitored (this will usually be called
+    /// from the server's listen connection's accept callback)
+    int addselcon(NetconP con, int events);
+
+    /// Remove a connection from the monitored set. This is
+    /// automatically called when EOF is detected on a connection.
+    int remselcon(NetconP con);
+
+    /// Set a function to be called periodically, or a time before return.
+    /// @param handler the function to be called.
+    ///  - if it is 0, doLoop() will return after ms mS (and can be called
+    ///    again)
+    ///  - if it is not 0, it will be called at ms mS intervals. If its return
+    ///    value is <= 0, selectloop will return.
+    /// @param clp client data to be passed to handler at every call.
+    /// @param ms milliseconds interval between handler calls or
+    ///   before return. Set to 0 for no periodic handler.
+    void setperiodichandler(int (*handler)(void *), void *clp, int ms);
 
     /// Loop waiting for events on the connections and call the
     /// cando() method on the object when something happens (this will in
@@ -149,47 +156,13 @@ public:
     ///  timeout (should call back in after processing)
     int doLoop();
 
-    /// Call from data handler: make selectloop return the param value
-    void loopReturn(int value) {
-        m_selectloopDoReturn = true;
-        m_selectloopReturnValue = value;
-    }
-    /// Add a connection to be monitored (this will usually be called
-    /// from the server's listen connection's accept callback)
-    int addselcon(NetconP con, int events);
-    /// Remove a connection from the monitored set. This is
-    /// automatically called when EOF is detected on a connection.
-    int remselcon(NetconP con);
+    /// Call from data handler: make doLoop() return @param value
+    void loopReturn(int value);
 
-    /// Set a function to be called periodically, or a time before return.
-    /// @param handler the function to be called.
-    ///  - if it is 0, selectloop() will return after ms mS (and can be called
-    ///    again
-    ///  - if it is not 0, it will be called at ms mS intervals. If its return
-    ///    value is <= 0, selectloop will return.
-    /// @param clp client data to be passed to handler at every call.
-    /// @param ms milliseconds interval between handler calls or
-    ///   before return. Set to 0 for no periodic handler.
-    void setperiodichandler(int (*handler)(void *), void *clp, int ms);
-
+    friend class Netcon;
 private:
-    // Set by client callback to tell selectloop to return.
-    bool m_selectloopDoReturn;
-    int  m_selectloopReturnValue;
-    int  m_placetostart;
-
-    // Map of NetconP indexed by fd
-    std::map<int, NetconP> m_polldata;
-
-    // The last time we did the periodic thing. Initialized by setperiodic()
-    struct timeval m_lasthdlcall;
-    // The call back function and its parameter
-    int (*m_periodichandler)(void *);
-    void *m_periodicparam;
-    // The periodic interval
-    int m_periodicmillis;
-    void periodictimeout(struct timeval *tv);
-    int maybecallperiodic();
+    class Internal;
+    Internal *m;
 };
 
 ///////////////////////

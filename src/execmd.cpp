@@ -63,28 +63,27 @@ extern char **environ;
 
 class ExecCmd::Internal {
 public:
-    Internal()
-        : m_advise(0), m_provide(0), m_timeoutMs(1000),
-          m_rlimit_as_mbytes(0) {
+    Internal() {
+        sigemptyset(&m_blkcld);
     }
 
     static bool      o_useVfork;
 
-    std::vector<std::string>   m_env;
-    ExecCmdAdvise   *m_advise;
-    ExecCmdProvide  *m_provide;
-    bool             m_killRequest;
-    int              m_timeoutMs;
-    int              m_rlimit_as_mbytes;
+    vector<string>   m_env;
+    ExecCmdAdvise   *m_advise{0};
+    ExecCmdProvide  *m_provide{0};
+    bool             m_killRequest{false};
+    int              m_timeoutMs{1000};
+    int              m_rlimit_as_mbytes{0};
     string           m_stderrFile;
     // Pipe for data going to the command
-    int              m_pipein[2];
+    int              m_pipein[2]{-1,-1};
     std::shared_ptr<NetconCli> m_tocmd;
     // Pipe for data coming out
-    int              m_pipeout[2];
+    int              m_pipeout[2]{-1,-1};
     std::shared_ptr<NetconCli> m_fromcmd;
     // Subprocess id
-    pid_t            m_pid;
+    pid_t            m_pid{-1};
     // Saved sigmask
     sigset_t         m_blkcld;
 
@@ -100,7 +99,7 @@ public:
     inline void dochild(const std::string& cmd, const char **argv,
                         const char **envv, bool has_input, bool has_output);
 };
-bool ExecCmd::Internal::o_useVfork = false;
+bool ExecCmd::Internal::o_useVfork{false};
 
 ExecCmd::ExecCmd(int)
 {
@@ -273,7 +272,8 @@ public:
         // definitely tried to call killpg(-1,) from time to time.
         pid_t grp;
         if (m_parent->m_pid > 0 && (grp = getpgid(m_parent->m_pid)) > 0) {
-            LOGDEB("ExecCmd: killpg(" << (grp) << ", SIGTERM)\n");
+            LOGDEB("ExecCmd: pid " << m_parent->m_pid << " killpg(" << grp <<
+                   ", SIGTERM)\n");
             int ret = killpg(grp, SIGTERM);
             if (ret == 0) {
                 for (int i = 0; i < 3; i++) {
@@ -333,9 +333,9 @@ inline void ExecCmd::Internal::dochild(const string& cmd, const char **argv,
                                        bool has_input, bool has_output)
 {
     // Start our own process group
-    if (setpgid(0, getpid())) {
-        LOGINFO("ExecCmd::DOCHILD: setpgid(0, " << getpid() <<
-                ") failed: errno " << errno << "\n");
+    if (setpgid(0, 0)) {
+        LOGINFO("ExecCmd::DOCHILD: setpgid(0, 0) failed: errno " << errno <<
+                "\n");
     }
 
     // Restore SIGTERM to default. Really, signal handling should be
@@ -540,10 +540,10 @@ int ExecCmd::startExec(const string& cmd, const vector<string>& args,
     // As we are going to use execve, not execvp, do the PATH thing.
     string exe;
     if (!which(cmd, exe)) {
-        LOGERR("ExecCmd::startExec: " << (cmd) << " not found\n");
+        LOGERR("ExecCmd::startExec: " << cmd << " not found\n");
         free(argv);
         free(envv);
-        return -1;
+        return 127 << 8;
     }
 //////////////////////////////// End vfork child prepare section.
 
@@ -765,9 +765,9 @@ private:
 int ExecCmd::doexec(const string& cmd, const vector<string>& args,
                     const string *input, string *output)
 {
-
-    if (startExec(cmd, args, input != 0, output != 0) < 0) {
-        return -1;
+    int status = startExec(cmd, args, input != 0, output != 0);
+    if (status) {
+        return status;
     }
 
     // Cleanup in case we return early
