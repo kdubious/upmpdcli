@@ -5,6 +5,7 @@
 # The command line options have higher priorities than the values in
 # this file.
 
+# <filetitle>Upmpdcli configuration</filetitle>
 
 # <grouptitle>Upmpdcli general parameters</grouptitle>
 
@@ -264,13 +265,13 @@
 # <var name="msfriendlyname" type="string"><brief>Friendly name for the
 # Media Server (if enabled).</brief><descr>The default is to append
 # "-mediaserver" to the friendlyname value.</descr></var>
-#msfriendlyname = UpMpd-mediaserver
+#msfriendlyname = 
 
-# <var name="plgmicrohttpport" type="int"><brief>IP port for the
-# tidal/qobuz/gmusic local HTTP service.</brief> <descr>The URLs for tracks
-# streamed from these services point to a local microhttpd server running on
-# this port (it uses redirection to the actual service URL when
-# actually streaming). The default is 49149.</descr></var>
+# <var name="plgmicrohttpport" type="int" values="1 65535 49149"><brief>IP
+# port for the tidal/qobuz/gmusic local HTTP service.</brief> <descr>The
+# URLs for tracks streamed from these services point to a local microhttpd
+# server running on this port (it uses redirection to the actual service
+# URL when actually streaming). The default is 49149.</descr></var>
 #plgmicrohttpport = 49149
 
 # <grouptitle>Tidal streaming service parameters</grouptitle>
@@ -281,7 +282,7 @@
 # <var name="tidalpass" type="string"><brief>Tidal password.</brief>
 # <descr>The password for your Tidal account.</descr></var>
 #tidalpass = your Tidal password
-# <var name="tidalquality" type="cstr" "values="low high lossless">
+# <var name="tidalquality" type="cstr" values="low high lossless">
 # <brief>Tidal stream quality.</brief> <descr>'low' and 'high' are aac
 # streams. 'lossless' is FLAC and will only work if your subscription
 # allows it.</descr></var>
@@ -295,7 +296,7 @@
 # <var name="qobuzpass" type="string"><brief>Qobuz password.</brief>
 # <descr>The password for your Qobuz account.</descr></var>
 #qobuzpass = agoodpassword
-# <var name="qobuzformatid" type="cstr" "values="5 7">
+# <var name="qobuzformatid" type="cstr" values="5 7">
 # <brief>Qobuz stream quality.</brief> <descr>5 for mp3/320, 7 for FLAC if
 # your subscription allows it.</descr></var>
 #qobuzformatid = 5
@@ -308,7 +309,7 @@
 # <var name="gmusicpass" type="string"><brief>Google Music password.</brief>
 # <descr>The password for your Google Music account.</descr></var>
 #gmusicpass = agoodpassword
-# <var name="gmusicquality" type="cstr" "values="hi med low">
+# <var name="gmusicquality" type="cstr" values="hi med low">
 # <brief>Google Music stream quality.</brief> <descr>'hi' for mp3/320, 'med'
 # for mp3/160, 'low' for mp3/128.</descr></var>
 #gmusicquality = med
@@ -334,19 +335,23 @@
 # spaces.</descr></var>
 #uprclmediadirs = /tmp
 
-# <var name="uprclhostport" type="string"><brief>HTTP host and ports for
+# <var name="uprcltitle" type="string"> <brief>Plugin Title.</brief><descr>This
+# will be displayed as the plugin entry in the Media Server root
+# directory.</descr></var>
+#uprcltitle = Local Music
+
+# <var name="uprclhostport" type="string"><brief>HTTP host and port for
 # serving media files</brief><descr>The Media Server HTTP server will run
 # on this address and port, which will also be inserted on the URLs we
 # produce. If the variable is not set, we will use port 9090 and the first
 # non-loopback ipv4 address in "ip addr" output, which may be right or
 # not. Example: 192.168.1.1:9090</descr></var>
-#uprclhostport = 192.168.4.4:9090
+#uprclhostport = 
 
-# <var name="uprclpaths" type="string"><brief></brief><descr>This is used
-# to translate real path to ones relative to the HTTP server doc tree. It
-# also performs a form of access control. If this is not set, uprcl will
-# use a null translation for each of the uprclmediadirs
-# entries.</descr></var> 
+# <var name="uprclpaths" type="string"><brief>Path translations.</brief>
+# <descr>Translations from real paths to ones relative to the HTTP server
+# doc tree. If this is not set, uprcl will use a null translation for each
+# of the uprclmediadirs entries.</descr></var>
 #uprclpaths =
 
 # <var name="uprclconfdir" type="dfn"><brief>Recoll index
@@ -358,9 +363,9 @@
 # upmpdcli starts</brief><descr>This is useful because uprcl initialization
 # can take quite some time so it is better not to wait for the first
 # access. The general default is false for the autostart variables, so this
-# is normally explicitely set to true.</descr></var>
+# needs to be explicitely set to true.</descr></var>
+#uprclautostart = 1
 uprclautostart = 1
-
 
 
 # <grouptitle>Songcast Receiver parameters</grouptitle>
@@ -421,25 +426,27 @@ uprclautostart = 1
 # Parameters tor the Sender/Receiver mode. Only does anything if
 # scplaymethod is alsa
 
-# <var name="scsenderpath" type="string"><brief>Path to the script
-# (scmakempdsender) which starts the auxiliary mpd and the sender
-# process. Empty and searched in PATH by default.</brief></var>
+# <var name="scsenderpath" type="fn"><brief>Path to starter script</brief>
+# <descr>This is normally scmakempdsender which starts the auxiliary mpd
+# and the sender process. Empty and searched in the PATH by
+# default.</descr></var>
 #scsenderpath =
 
-# <var name="scstreamscaled" type="bool" values="1"><brief>Decide if we
-# scale the songcast stream.</brief><descr>If set, MPD software volume
-# control will be applied to the stream. True by default: using a Control
-# Point to set the volume on the upmpdcli instance which started the Sender
-# affects the volume for all Receivers.</descr></var>
+# <var name="scstreamscaled" type="bool" values="1"><brief>Scale the
+# Songcast stream.</brief><descr>If set, MPD software volume control will
+# be applied to the stream. True by default: using a Control Point to set
+# the volume on the upmpdcli instance which started the Sender affects the
+# volume for all Receivers.</descr></var>
 #scstreamscaled = 1
 
 # <var name="scsendermpdport" type="int" values="0 65635 6700">
 # <brief>localhost port to be used by the auxiliary mpd.</brief></var>
 #scsendermpdport = 6700
 
-# <var name="scripts_dir" type="dfn"><brief>Location for the scripts used
-# to set up additional external sources.</brief><descr>See the Songcast
-# Sender support documentation page.</descr></var>
+# <var name="scripts_dir" type="dfn"><brief>External sources script
+# directory.</brief><descr>Location for the scripts used to set up
+# additional external sources. See the Songcast Sender support
+# documentation page.</descr></var>
 #scripts_dir = /usr/share/upmpdcli/src_scripts
 
 # Initial / default List of radios borrowed from misc sources. Edit to taste

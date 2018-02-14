@@ -172,16 +172,23 @@ static bool makerootdir()
         if (!entry.compare("pycommon")) {
             continue;
         }
-        // We compute the title from the plugin name. Maybe it would
-        // be better to have it as a parameter either in the plugin
-        // directory (somehow), or in the global config
-        string title = stringtoupper((const string&)entry.substr(0,1)) +
-            entry.substr(1, entry.size()-1);
         string userparam = entry + "user";
-        if (g_config->hasNameAnywhere(userparam)) {
-            rootdir.push_back(UpSong::container("0$" + entry + "$",
-                                                "0", title));
+        if (!g_config->hasNameAnywhere(userparam)) {
+            LOGDEB("ContentDirectory: not creating entry for " << entry <<
+                   " because " << userparam <<
+                   " is not defined in configuration\n");
+            continue;
         }
+
+        // If the title parameter is not defined in the configuration,
+        // we compute a title (to be displayed in the root directory)
+        // from the plugin name.
+        string title;
+        if (!g_config->get(entry + "title", title)) {
+            title = stringtoupper((const string&)entry.substr(0,1)) +
+                entry.substr(1, entry.size()-1);
+        }
+        rootdir.push_back(UpSong::container("0$" + entry + "$", "0", title));
     }
 
     if (rootdir.empty()) {
