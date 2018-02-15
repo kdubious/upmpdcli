@@ -11,6 +11,23 @@ AM_CXXFLAGS = -std=c++11
 
 bin_PROGRAMS = upmpdcli scctl
 
+if MAKECONFGUI
+all-local: qtconfgui
+qtconfgui:
+	test -d cfgui || mkdir cfgui
+	(cd cfgui; ${QMAKE} PREFIX=${prefix} $(top_srcdir)/cfgui/upmpdcli-config.pro)
+	$(MAKE) -C cfgui LFLAGS="$(LDFLAGS)" prefix=$(prefix) \
+                exec_prefix=$(exec_prefix) libdir=$(libdir)
+clean-local: qtconfgui-clean
+qtconfgui-clean:
+	-$(MAKE) -C cfgui clean
+install-exec-local: qtconfgui-install
+qtconfgui-install:
+	$(MAKE) -C cfgui LFLAGS="$(LDFLAGS)" INSTALL_ROOT=$(DESTDIR) \
+                prefix=$(prefix) exec_prefix=$(exec_prefix) libdir=$(libdir) \
+                install
+endif
+
 # We import the log facility from libupnpp, which requires fixing
 # include directives for files which expect to live in the same
 # directory as log.h
@@ -111,7 +128,8 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/OHProduct.xml src/OHInfo.xml src/OHTime.xml \
                   src/OHVolume.xml src/OHPlaylist.xml src/OHReceiver.xml \
                   src/OHRadio.xml src/mediaserver/ContentDirectory.xml \
-                  src/protocolinfo.txt src/presentation.html
+                  src/protocolinfo.txt src/presentation.html \
+                  src/upmpdcli.conf-dist 
 
 cdpluginspycomdir = $(pkgdatadir)/cdplugins/pycommon
 dist_cdpluginspycom_DATA = \

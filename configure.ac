@@ -22,6 +22,27 @@ AC_DEFINE([_FILE_OFFSET_BITS], [64], [File Offset size])
 #### Libraries
 AC_CHECK_LIB([pthread], [pthread_create], [], [])
 
+AC_ARG_ENABLE(confgui, AC_HELP_STRING([--enable-confgui],
+              [Enable QT-based configuration editor GUI.]),
+              enableQT=$enableval, enableQT="yes")
+AM_CONDITIONAL(MAKECONFGUI, [test X$enableQT = Xyes])
+if test X$enableQT = Xyes ; then
+  if test X$QMAKE = X ; then
+     QMAKE=qmake
+  fi
+  case $QMAKE in
+    */*) QMAKEPATH=$QMAKE;;
+    *) AC_PATH_PROG([QMAKEPATH], $QMAKE, NOTFOUND);;
+  esac
+
+  if test X$QMAKEPATH = XNOTFOUND ; then 
+     AC_MSG_ERROR([Cannot find the qmake program. Maybe you need to install
+  qt development files and tools and/or set the QTDIR environment variable?])
+  fi
+  QMAKE=$QMAKEPATH
+  AC_SUBST(QMAKE)
+fi
+
 # The 3 following checks for libthreadutil libixml and libupnp are normally
 # unnecessary and even problematic. upmpdcli does not use them directly,
 # and they should be used automatically because libupnpp is linked with them.
