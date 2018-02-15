@@ -42,28 +42,32 @@ using namespace confgui;
 #endif
 string g_datadir(DATADIR "/");
 
+// g_csdef holds the defaults from the XML. g_csout values from a file
+// specified on the command line or opened through the menu. The
+// latter values override the defaults and will be output in addition
+// to user changes.
 static ConfSimple g_csdef, g_csout;
+// The file we write to. Not necessarily the same as the input one
+// (same if coming from the command line).
 static string g_outfile;
 
-void confPourInto(ConfSimple& dest, const ConfSimple& src)
+// Pour the values from src into dest
+void confMergeInto(ConfSimple& dest, const ConfSimple& src)
 {
     for (const auto& key : src.getSubKeys()) {
         for (const auto& nm : src.getNames(key)) {
             string val;
             src.get(nm, val, key);
             dest.set(nm, val, key);
-            //cerr << "confPourInto: set " << key << ":" << nm << endl;
+            //cerr << "confMergeInto: set " << key << ":" << nm << endl;
         }
     }
 }
 
-#if 0
 static string qs2utf8s(const QString& qs)
 {
     return string((const char *)qs.toUtf8());
 }
-#endif
-
 static string qs2locals(const QString& qs)
 {
     return string((const char *)qs.toLocal8Bit());
@@ -129,12 +133,9 @@ private:
 class MyConfLinkFactCS : public confgui::ConfLinkFact {
 public:
     MyConfLinkFactCS(ConfSimple *cs, ConfSimple *csdef) 
-        : m_cs(cs), m_csdef(csdef) {
-    }
+        : m_cs(cs), m_csdef(csdef) { }
     virtual ConfLink operator()(const QString& nm) {
-        ConfLinkRep *lnk = new ConfLinkCS(m_cs, m_csdef,
-                                          (const char *)nm.toUtf8());
-        return ConfLink(lnk);
+        return ConfLink(new ConfLinkCS(m_cs, m_csdef, qs2utf8s(nm)));
     }
     ConfSimple *m_cs;
     ConfSimple *m_csdef;
@@ -177,7 +178,8 @@ bool MainWindow::open()
     string f = qs2locals(dialog.selectedFiles().first());
     ConfSimple cs(f.c_str(), 1);
     if (cs.ok()) {
-        confPourInto(g_csout, cs);
+        g_csout.clear();
+        confMergeInto(g_csout, cs);
         m_tabs->reloadPanels();
         return true;
     } else {
@@ -195,28 +197,31 @@ bool MainWindow::saveAs()
     if (dialog.exec() != QDialog::Accepted)
         return false;
     g_outfile = qs2locals(dialog.selectedFiles().first());
-    m_tabs->acceptChanges();
     return saveToFile();
 }
 
 bool MainWindow::save()
 {
-    cerr << "MainWindow::save: outfile: " << g_outfile << endl;
-    
+    //cerr << "MainWindow::save: outfile: " << g_outfile << endl;
     if (g_outfile.empty()) {
         return saveAs();
     } else {
-        m_tabs->acceptChanges();
         return saveToFile();
     }
 }
 
 bool MainWindow::saveToFile()
 {
+    m_tabs->acceptChanges();
     ConfSimple fconf(g_outfile.c_str());
     fconf.holdWrites(true);
-    confPourInto(fconf, g_csout);
-    return fconf.holdWrites(false);
+    confMergeInto(fconf, g_csout);
+    bool ret = fconf.holdWrites(false);
+    if (!ret) { 
+        QMessageBox::warning(0, "upmpdcli-config",
+                             tr("Save to file failed: ") + u8s2qs(g_outfile));
+    }
+    return ret;
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -298,6 +303,17 @@ int main(int argc, char **argv)
     // but does the job.
     string data;
     g_csout = ConfSimple(data);
+    // If outfile was specd on the command line, it's both the input
+    // and the output. Get existing parameters.
+    if (!g_outfile.empty()) {
+        ConfSimple cs(g_outfile.c_str(), 1);
+        if (cs.ok()) {
+            confMergeInto(g_csout, cs);
+        } else {
+            QMessageBox::warning(0, "upmpdcli-config", "File parse failed");
+            return 1;
+        }
+    }
     MyConfLinkFactCS fact(&g_csout, &g_csdef);
 
     string toptext;
