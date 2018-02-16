@@ -1,3 +1,5 @@
+== Upmpdcli configuration 
+
 === Upmpdcli general parameters 
 
 [[logfilename]]
@@ -259,11 +261,11 @@ Media Server (if enabled). The default is to append
 "-mediaserver" to the friendlyname value.
 
 [[plgmicrohttpport]]
-plgmicrohttpport:: IP port for the
-tidal/qobuz/gmusic local HTTP service. The URLs for tracks
-streamed from these services point to a local microhttpd server running on
-this port (it uses redirection to the actual service URL when
-actually streaming). The default is 49149.
+plgmicrohttpport:: IP
+port for the tidal/qobuz/gmusic local HTTP service. The
+URLs for tracks streamed from these services point to a local microhttpd
+server running on this port (it uses redirection to the actual service
+URL when actually streaming). The default is 49149.
 
 === Tidal streaming service parameters 
 
@@ -323,8 +325,13 @@ to explore for music files. This is used directly as the recoll "topdirs"
 value, so you can use double-quote quoting for paths with embedded
 spaces.
 
+[[uprcltitle]]
+uprcltitle:: Plugin Title. This
+will be displayed as the plugin entry in the Media Server root
+directory.
+
 [[uprclhostport]]
-uprclhostport:: HTTP host and ports for
+uprclhostport:: HTTP host and port for
 serving media files The Media Server HTTP server will run
 on this address and port, which will also be inserted on the URLs we
 produce. If the variable is not set, we will use port 9090 and the first
@@ -332,11 +339,9 @@ non-loopback ipv4 address in "ip addr" output, which may be right or
 not. Example: 192.168.1.1:9090
 
 [[uprclpaths]]
-uprclpaths::  This is used
-to translate real path to ones relative to the HTTP server doc tree. It
-also performs a form of access control. If this is not set, uprcl will
-use a null translation for each of the uprclmediadirs
-entries.
+uprclpaths:: Path translations. Translations from real paths to ones relative to the HTTP server
+doc tree. If this is not set, uprcl will use a null translation for each
+of the uprclmediadirs entries.
 
 [[uprclconfdir]]
 uprclconfdir:: Recoll index
@@ -348,7 +353,7 @@ uprclautostart:: Initialize uprcl as soon as
 upmpdcli starts This is useful because uprcl initialization
 can take quite some time so it is better not to wait for the first
 access. The general default is false for the autostart variables, so this
-is normally explicitely set to true.
+needs to be explicitely set to true.
 
 === Songcast Receiver parameters 
 
@@ -401,23 +406,24 @@ location is not in the $PATH for the init scripts.
 === Songcast Sender parameters 
 
 [[scsenderpath]]
-scsenderpath:: Path to the script
-(scmakempdsender) which starts the auxiliary mpd and the sender
-process. Empty and searched in PATH by default. 
+scsenderpath:: Path to starter script This is normally scmakempdsender which starts the auxiliary mpd
+and the sender process. Empty and searched in the PATH by
+default.
 
 [[scstreamscaled]]
-scstreamscaled:: Decide if we
-scale the songcast stream. If set, MPD software volume
-control will be applied to the stream. True by default: using a Control
-Point to set the volume on the upmpdcli instance which started the Sender
-affects the volume for all Receivers.
+scstreamscaled:: Scale the
+Songcast stream. If set, MPD software volume control will
+be applied to the stream. True by default: using a Control Point to set
+the volume on the upmpdcli instance which started the Sender affects the
+volume for all Receivers.
 
 [[scsendermpdport]]
 scsendermpdport:: localhost port to be used by the auxiliary mpd. 
 
 [[scripts_dir]]
-scripts_dir:: Location for the scripts used
-to set up additional external sources. See the Songcast
-Sender support documentation page.
+scripts_dir:: External sources script
+directory. Location for the scripts used to set up
+additional external sources. See the Songcast Sender support
+documentation page.
 
 

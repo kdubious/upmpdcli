@@ -15,7 +15,7 @@ if MAKECONFGUI
 all-local: qtconfgui
 qtconfgui:
 	test -d cfgui || mkdir cfgui
-	(cd cfgui; ${QMAKE} PREFIX=${prefix} $(top_srcdir)/cfgui/upmpdcli-config.pro)
+	(cd cfgui; ${QMAKE} PREFIX=${prefix} upmpdcli-config.pro)
 	$(MAKE) -C cfgui LFLAGS="$(LDFLAGS)" prefix=$(prefix) \
                 exec_prefix=$(exec_prefix) libdir=$(libdir)
 clean-local: qtconfgui-clean
@@ -180,10 +180,24 @@ dist_cdpluginsuprcl_DATA = \
                  src/mediaserver/cdplugins/uprcl/uprcluntagged.py \
                  src/mediaserver/cdplugins/uprcl/uprclutils.py
 
-EXTRA_DIST = autogen.sh web.tar.gz rdpl2stream.tar.gz uprclbottle.tar.gz \
+EXTRA_DIST = \
+    autogen.sh \
+    cfgui/Makefile \
+    cfgui/confgui.cpp \
+    cfgui/confgui.h \
+    cfgui/confmain.cpp \
+    cfgui/mainwindow.h \
+    cfgui/picoxml.h \
+    cfgui/upmpdcli-config.pro \
+    rdpl2stream.tar.gz \
+    src/conftree.cpp \
+    src/execmd.cpp \
+    src/mediaserver/cdplugins/cmdtalk.cpp \
+    src/netcon.cpp autogen.sh \
     systemd/upmpdcli.service \
-    src/conftree.cpp src/execmd.cpp src/mediaserver/cdplugins/cmdtalk.cpp \
-    src/netcon.cpp autogen.sh
+    uprclbottle.tar.gz \
+    web.tar.gz
+
 
 web.tar.gz: bogus
 	if test -d $(srcdir)/web; then \
@@ -224,5 +238,5 @@ dist_man1_MANS = man/upmpdcli.1
 
 dist-hook:
 	rm -rf rdpl2stream/__pycache__/
-	test -z "`git status -s | grep -v '??' | grep -v Makefile.am`" 
-	git tag -a upmpdcli-v$(VERSION) -m 'version $(VERSION)'
+#test -z "`git status -s | grep -v '??' | grep -v Makefile.am`" 
+#git tag -a upmpdcli-v$(VERSION) -m 'version $(VERSION)'

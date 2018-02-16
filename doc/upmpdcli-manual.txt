@@ -159,10 +159,10 @@ help from the closely related *sc2mpd* package, for processing the audio
 streams).
 
 - Upmpdcli provides a Media Server interface, currently used for accessing
-external streaming services (Qobuz, Tidal, Google Music). A local media
-server is in the early planning phase, the motivation being that I find
-none which is both open-source and really satisfying (MinimServer is great
-but not open-source).
+external streaming services (Qobuz, Tidal, Google Music). A local Media
+Server is in development, the motivation being that I see none which is
+both open-source and really satisfying (MinimServer is great but not
+open-source).
 
 Upmpdcli can be installed on most Linux systems. It is frequently used on
 small single board computers like the Raspberry Pi. As far as I know, all
@@ -174,12 +174,23 @@ but, for basic operation without a configuration file, a few of the main
 parameters can be set on the
 xref:COMMAND-ENVIRON[command line or in the environment].
 
-However, a majority of parameters can only be set in the configuration
-file, which is designated with the +-c+ command line option. The usual
-path is +/etc/upmpdcli.conf+
+Most parameters can only be set in the configuration file, which is
+designated with the +-c+ command line option. The usual location is
++/etc/upmpdcli.conf+
 
-The configuration file has a simple `name = value` format.
+The configuration file has a simple `name = value` format, and is fully
+described in the <<UPMPDCLI-CONFIGURATION,configuration reference section>>.
 
+upmpdcli has many configuration parameters, which may make the
+configuration intimidating. However, most parameters only relate to one
+function of the program and they are grouped in sections, many of which
+are probably not relevant to you. In each section, the most important
+parameters are presented first, and you probably will never need to bother
+with the bottom of the list.
+
+The <<UPMPDCLI-CONFIG-GUI,upmpdcli-config graphical tool» can help you edit
+the configuration file, it can present the same information as this manual,
+directly linked with the controls used to modify the parameters.
 
 [[UPMPDCLI-RENDERER]]
 == Upmpdcli Media Renderer
@@ -194,7 +205,7 @@ The configuration file has a simple `name = value` format.
 
 This section goes in a little more detail about miscellaneous aspects of
 the Media Renderer, and describe a few of the most used configuration
-parameters. See the <<UPMPDCLI-CONFIG,configuration reference section>>
+parameters. See the <<UPMPDCLI-CONFIGURATION,configuration reference section>>
 for more details (I would very much like to link each parameter to its
 definition but Asciidoc won't let me do it, so they link to the top of the
 appropriate section.).
@@ -802,7 +813,7 @@ names.
 
 
 
-[[UPMPDCLI-CONFIG]]
+[[UPMPDCLI-CONFIGURATION]]
 == Upmpdcli configuration file reference
 
 include::upmpdcli-config.txt[]
@@ -1159,6 +1170,35 @@ customisation at all.
 |UPnP network interface|-i iface|$UPMPD_UPNPIFACE|upnpiface
 |UPnP port|-P port|$UPMPD_UPNPPORT|upnpport
 |===========================    
+
+[[UPMPDCLI-CONFIG-GUI]]
+== Annex: the upmpdcli-config GUI configuration editor.
+
+The upmdpcli-config tool presents a graphical interface for creating an
+upmpdcli configuration file. It presents different tabs with controls,
+directly matching the organisation of the parameters in the documentation.
+Both the tool and the manual are generated from data in the reference
+configuration distributed with the package (typically
+'/usr/share/upmpdcli/upmpdcli.conf-dist').
+
+You can use the tool to create a configuration from scratch (just tweak
+what you want, then save the file), or for editing an existing
+configuration. The latter can be done either by passing the configuration
+file name on the command line, or by using the 'Open' menu entry. If you
+use the command line, the parameter automatically becomes the target of a
+future 'Save' command (you can change it by using 'Save as'). When using
+'Open', you will be asked to choose an output destination when saving.
+
+Each control has a label, and an longer explanation in a tooltip, which you
+can see by leaving the cursor on the label. 
+
+Once you are satisfied with the changes, you can save the file, and move it
+to its normal location if needed (e.g. '/etc/upmpdcli.conf').
+
+Only the parameters which were changed in the configuration you edit (if
+not starting from scratched), and those which you change through the
+interface, will be saved to the output. Parameters unchanged from the
+defaults will not appear at all, allowing for a less cluttered file.
 
 [[SCWEB]]
 == Annex: the scweb Songcast control interface.

@@ -39,6 +39,7 @@ if test X$enableQT = Xyes ; then
      AC_MSG_ERROR([Cannot find the qmake program. Maybe you need to install
   qt development files and tools and/or set the QTDIR environment variable?])
   fi
+  AC_CONFIG_FILES(cfgui/upmpdcli-config.pro)
   QMAKE=$QMAKEPATH
   AC_SUBST(QMAKE)
 fi

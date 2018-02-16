@@ -1,5 +1,7 @@
 TEMPLATE	= app
 LANGUAGE	= C++
+
+VPATH = @srcdir@
 QMAKE_CXXFLAGS += -std=c++11 -I../ -DENABLE_XMLCONF
 
 CONFIG	+= qt warn_on thread release debug
@@ -7,9 +9,9 @@ QT += widgets
 
 LIBS += -lupnpp
 
-INCLUDEPATH += $$OUT_PWD/../src
 INCLUDEPATH += ../src
-INCLUDEPATH += ..
+INCLUDEPATH += @srcdir@/../src
+INCLUDEPATH += @srcdir@/..
 
 HEADERS	+= confgui.h mainwindow.h
 
@@ -19,3 +21,5 @@ SOURCES	+= confmain.cpp \
            ../src/smallut.cpp \
            ../src/pathut.cpp
 
+target.path = "$$PREFIX/bin"
+INSTALLS += target

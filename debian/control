@@ -8,7 +8,8 @@ Build-Depends: debhelper (>= 9.0.0), dh-python, dh-systemd,
                autotools-dev, python, pkg-config,
                libmpdclient-dev, libmicrohttpd-dev, 
                libupnpp4-dev, libupnp6-dev, libjsoncpp-dev,
-               libexpat1-dev, libcurl-dev
+               libexpat1-dev, libcurl-dev,
+               qt5-qmake, qtbase5-dev
 Standards-Version: 3.9.6
 Homepage: http://www.lesbonscomptes.com/upmpdcli
 
@@ -22,6 +23,13 @@ Description: UPnP Media Renderer front-end to MPD, the Music Player Daemon
  Android tablet. It uses an MPD instance to actually play the tracks. 
  A typical configuration might have for example, MPD running on a Raspberry
  PI, with upmpdcli on the same host or any other Linux PC on the network.
+
+
+Package: upmpdcli-config
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, 
+Section: contrib/sound
+Description: A GUI configuration editor for upmpdcli.
 
 
 Package: scweb

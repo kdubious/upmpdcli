@@ -1,6 +1,7 @@
 upmpdcli (1.2.16-1~ppaPPAVERS~SERIES1) SERIES; urgency=low
 
-  * Testing
+  * Testing packaging. NOT A STABLE RELEASE.
+  * Added the upmpdcli-config tool
 
  -- Jean-Francois Dockes <jf@dockes.org>  Wed, 29 Nov 2017 08:20:00 +0200
 

@@ -1,4 +1,5 @@
-usr/bin
+usr/bin/upmpdcli
+usr/bin/scctl
 usr/share/upmpdcli/OHInfo.xml
 usr/share/upmpdcli/protocolinfo.txt
 usr/share/upmpdcli/presentation.html
@@ -17,4 +18,5 @@ usr/share/upmpdcli/AVTransport.xml
 usr/share/upmpdcli/cdplugins/pycommon
 usr/share/upmpdcli/ConnectionManager.xml
 usr/share/upmpdcli/OHReceiver.xml
+usr/share/upmpdcli/upmpdcli.conf-dist
 etc

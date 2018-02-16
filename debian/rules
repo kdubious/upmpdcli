@@ -17,3 +17,7 @@ override_dh_autoreconf:
 
 %:
 	dh $@  --with autoreconf,autotools-dev,python2,systemd --parallel
+
+
+override_dh_auto_configure:
+	dh_auto_configure -- --enable-confgui
