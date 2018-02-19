@@ -191,6 +191,7 @@ int main(int argc, char *argv[])
     
     // Path for the sc2mpd command, or empty
     string sc2mpdpath;
+    string screceiverstatefile;
 
     // Sender mode: path for the command creating the mpd and mpd2sc
     // processes, and port for the auxiliary mpd.
@@ -352,6 +353,7 @@ int main(int argc, char *argv[])
             opts.schttpport = atoi(value.c_str());
         g_config->get("scplaymethod", opts.scplaymethod);
         g_config->get("sc2mpd", sc2mpdpath);
+        g_config->get("screceiverstatefile", screceiverstatefile);
         if (g_config->get("ohmetasleep", value))
             opts.ohmetasleep = atoi(value.c_str());
         g_config->get("ohmanufacturername", ohProductDesc.manufacturer.name);
@@ -661,6 +663,22 @@ int main(int argc, char *argv[])
     if (!sc2mpdpath.empty()) {
         opts.sc2mpdpath = sc2mpdpath;
         opts.options |= UpMpd::upmpdOhReceiver;
+    }
+    if (!screceiverstatefile.empty()) {
+        opts.screceiverstatefile = screceiverstatefile;
+        int fd;
+        if ((fd = open(opts.screceiverstatefile.c_str(),
+                       O_CREAT|O_RDWR, 0644)) < 0) {
+            LOGERR("creat(" << opts.screceiverstatefile << ") : errno : "
+                   << errno << endl);
+        } else {
+            close(fd);
+            if (geteuid() == 0 && chown(opts.screceiverstatefile.c_str(),
+                                        runas, -1) != 0) {
+                LOGERR("chown(" << opts.screceiverstatefile << ") : errno : "
+                       << errno << endl);
+            }
+        }
     }
     if (!senderpath.empty()) {
         opts.options |= UpMpd::upmpdOhSenderReceiver;

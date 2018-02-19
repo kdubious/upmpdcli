@@ -421,6 +421,13 @@ uprclautostart = 1
 # location is not in the $PATH for the init scripts.</descr></var>
 #sc2mpd = 
 
+# <var name="screceiverstatefile" type="string"><brief>Path to a screceiver
+# state file.</brief><descr>If set, the sender uri and metadata will be read
+# from the file when initializing the Songcast Receiver service and written to
+# the file when a Sender is set for the service. Useful for preserving the
+# sender information between restarts.</descr></var>
+#screceiverstatefile =
+
 # <grouptitle>Songcast Sender parameters</grouptitle>
 
 # Parameters tor the Sender/Receiver mode. Only does anything if

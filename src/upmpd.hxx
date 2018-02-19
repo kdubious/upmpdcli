@@ -83,6 +83,7 @@ public:
         int schttpport;
         std::string scplaymethod;
         std::string sc2mpdpath;
+        std::string screceiverstatefile;
         std::string senderpath;
         int sendermpdport;
     };
