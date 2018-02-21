@@ -89,6 +89,8 @@ UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev, bool noev)
                             bind(&UpMpdAVTransport::seqcontrol, 
                                  this, _1, _2, 1));
 
+    // This would make our life easier, but it's incompatible if
+    // ohplaylist is also in use, so refrain.
 //    dev->m_mpdcli->consume(true);
 #ifdef NO_SETNEXT
     // If no setnext, fake stopping at each track
@@ -361,11 +363,11 @@ bool UpMpdAVTransport::getEventData(bool all, std::vector<std::string>& names,
 }
 
 // http://192.168.4.4:8200/MediaItems/246.mp3
-int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& data, 
-                                        bool setnext)
+int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc,
+                                        SoapOutgoing& data, bool setnext)
 {
-    // pretend not to support setnext:
 #ifdef NO_SETNEXT
+    // pretend not to support setnext:
     if (setnext) {
         LOGERR("SetNextAVTransportURI: faking error\n");
         return UPNP_E_INVALID_PARAM;
@@ -394,8 +396,7 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
         return UPNP_E_INVALID_PARAM;
     }
 
-    bool is_song = (st == MpdStatus::MPDS_PLAY) ||
-	(st == MpdStatus::MPDS_PAUSE);
+    bool is_song = (st == MpdStatus::MPDS_PLAY) || (st == MpdStatus::MPDS_PAUSE);
     UPMPD_UNUSED(is_song);
     int curpos = mpds.songpos;
     LOGDEB1("UpMpdAVTransport::set" << (setnext?"Next":"") << 
@@ -412,6 +413,18 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
         curpos = -1;
     }
 
+    // If setAVTransport is called, the Control Point wants to control
+    // the playing, so we reset any special mpd playlist
+    // mode. Especially, repeat would prevent us from ever seeing the
+    // end of the track. Note that always setting repeat to false is
+    // one of the ways which we are incompatible with simultaneous
+    // mpc or ohplaylist use (there are many others of course).
+    m_dev->m_mpdcli->repeat(false);
+    m_dev->m_mpdcli->random(false);
+#ifdef NO_SETNEXT
+    m_dev->m_mpdcli->single(true);
+#endif
+    
     // curpos == -1 means that the playlist was cleared or we just started. A
     // play will use position 0, so it's actually equivalent to curpos == 0
     if (curpos == -1) {
@@ -474,13 +487,12 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& da
 #endif
         // Clean up old song ids
         if (!(m_dev->m_options & UpMpd::upmpdOwnQueue)) {
-            for (set<int>::iterator it = m_songids.begin();
-                 it != m_songids.end(); it++) {
+            for (auto id : m_songids) {
                 // Can't just delete here. If the id does not exist, MPD 
                 // gets into an apparently permanent error state, where even 
                 // get_status does not work
-                if (m_dev->m_mpdcli->statId(*it)) {
-                    m_dev->m_mpdcli->deleteId(*it);
+                if (m_dev->m_mpdcli->statId(id)) {
+                    m_dev->m_mpdcli->deleteId(id);
                 }
             }
             m_songids.clear();
@@ -682,7 +694,15 @@ int UpMpdAVTransport::seqcontrol(const SoapIncoming& sc, SoapOutgoing& data, int
     m_dev->loopWakeup();
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
-	
+
+/*
+ * For the AVTransport service, this only makes sense if we're playing a
+ * multi-track media, else we're only dealing with a single track (and
+ * possibly the next), and none of the repeat/shuffle modes make
+ * sense. If ownqueue is 0, it might still make sense for us to
+ * control the mpd play mode though, but any special mode will be reset if
+ * set(Next)AVTransport is called.
+*/
 int UpMpdAVTransport::setPlayMode(const SoapIncoming& sc, SoapOutgoing& data)
 {
     string playmode;
@@ -690,6 +710,14 @@ int UpMpdAVTransport::setPlayMode(const SoapIncoming& sc, SoapOutgoing& data)
         return UPNP_E_INVALID_PARAM;
     }
     LOGDEB("UpMpdAVTransport::setPlayMode: " << playmode << endl);
+
+    if ((m_dev->m_options & UpMpd::upmpdOwnQueue)) {
+        // If we own the queue then none of this makes sense, we're
+        // only keeping 1 or 2 entries on the queue and controlling
+        // everything.
+        LOGDEB("AVTRansport::setPlayMode: ownqueue is set, doing nothing\n");
+        return 0;
+    }
 
     bool ok;
     if (!playmode.compare("NORMAL")) {
@@ -717,7 +745,8 @@ int UpMpdAVTransport::setPlayMode(const SoapIncoming& sc, SoapOutgoing& data)
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
-int UpMpdAVTransport::getTransportSettings(const SoapIncoming& sc, SoapOutgoing& data)
+int UpMpdAVTransport::getTransportSettings(const SoapIncoming& sc,
+                                           SoapOutgoing& data)
 {
     const MpdStatus &mpds = m_dev->getMpdStatus();
     string playmode = mpdsToPlaymode(mpds);

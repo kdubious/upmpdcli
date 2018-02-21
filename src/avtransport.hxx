@@ -17,13 +17,13 @@
 #ifndef _AVTRANSPORT_H_X_INCLUDED_
 #define _AVTRANSPORT_H_X_INCLUDED_
 
-#include <set>                          // for set
-#include <string>                       // for string
-#include <unordered_map>                // for unordered_map
-#include <vector>                       // for vector
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-#include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
+#include "libupnpp/device/device.hxx"
+#include "libupnpp/soaphelp.hxx"
 
 class OHPlaylist;
 class UpMpd;
@@ -44,7 +44,8 @@ public:
     }
 
 private:
-    int setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& data, bool setnext);
+    int setAVTransportURI(const SoapIncoming& sc, SoapOutgoing& data,
+                          bool setnext);
     int getPositionInfo(const SoapIncoming& sc, SoapOutgoing& data);
     int getTransportInfo(const SoapIncoming& sc, SoapOutgoing& data);
     int getMediaInfo(const SoapIncoming& sc, SoapOutgoing& data);
