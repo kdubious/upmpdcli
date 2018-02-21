@@ -93,8 +93,8 @@ UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev, bool noev)
     // ohplaylist is also in use, so refrain.
 //    dev->m_mpdcli->consume(true);
 #ifdef NO_SETNEXT
-    // If no setnext, fake stopping at each track
-    m_dev->m_mpdcli->single(true);
+    // If no setnext, we'd like to fake stopping at each track but this does not work because mpd goes into PAUSED PLAY at the end of track, not STOP.
+//    m_dev->m_mpdcli->single(true);
 #endif
 }
 
@@ -421,9 +421,8 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc,
     // mpc or ohplaylist use (there are many others of course).
     m_dev->m_mpdcli->repeat(false);
     m_dev->m_mpdcli->random(false);
-#ifdef NO_SETNEXT
-    m_dev->m_mpdcli->single(true);
-#endif
+    // See comment about single in init
+    m_dev->m_mpdcli->single(false);
     
     // curpos == -1 means that the playlist was cleared or we just started. A
     // play will use position 0, so it's actually equivalent to curpos == 0
