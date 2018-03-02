@@ -30,6 +30,7 @@
 #include "libupnpp/log.hxx"             // for LOGDEB, LOGERR
 #include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing, i2s, etc
 
+#include "conftree.h"
 #include "mpdcli.hxx"                   // for MpdStatus, UpSong, MPDCli, etc
 #include "upmpd.hxx"                    // for UpMpd, etc
 #include "upmpdutils.hxx"               // for didlmake, diffmaps, etc
@@ -61,6 +62,35 @@ OHReceiver::OHReceiver(UpMpd *dev, const OHReceiverParams& parms)
 
     m_httpuri = "http://localhost:"+ SoapHelp::i2s(m_httpport) + 
         "/Songcast.wav";
+
+    if (!parms.screceiverstatefile.empty()) {
+        m_conf = new ConfSimple(parms.screceiverstatefile.c_str());
+        if (!m_conf->ok()) {
+            LOGERR("OHReceiver: failed initializing from " <<
+                   parms.screceiverstatefile << endl);
+        } else {
+            setSenderFromConf();
+        }
+    }
+}
+
+void OHReceiver::setSenderFromConf()
+{
+    m_conf->get("scsenderuri", m_uri);
+    m_conf->get("scsendermetadata", m_metadata);
+    LOGDEB("OHReceiver: scsenderuri: " << m_uri << endl);
+    LOGDEB("OHReceiver: scsendermetadata: " << m_metadata << endl);
+}
+
+void OHReceiver::writeSenderToConf()
+{
+    bool ok;
+    ok = m_conf->set("scsenderuri", m_uri);
+    if (!ok)
+        LOGERR("OHReceiver: failed writing uri to conf." << endl);
+    ok = m_conf->set("scsendermetadata", m_metadata);
+    if (!ok)
+        LOGERR("OHReceiver: failed writing metadata to conf." << endl);
 }
 
 static const string o_protocolinfo("ohz:*:*:*,ohm:*:*:*,ohu:*.*.*");
@@ -279,6 +309,8 @@ bool OHReceiver::iSetSender(const string& uri, const string& metadata)
             iStop();
         m_uri = uri;
         m_metadata = metadata;
+        if (m_conf->ok())
+            writeSenderToConf();
         LOGDEB("OHReceiver::setSender: uri [" << m_uri << "] meta [" << 
                m_metadata << "]" << endl);
     }

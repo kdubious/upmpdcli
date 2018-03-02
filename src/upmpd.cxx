@@ -96,6 +96,7 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
                 }
             }
             parms.sc2mpdpath = opts.sc2mpdpath;
+            parms.screceiverstatefile = opts.screceiverstatefile;
             m_ohrcv = new OHReceiver(this, parms);
             m_services.push_back(m_ohrcv);
         }

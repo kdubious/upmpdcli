@@ -29,6 +29,7 @@
 #include "execmd.h"
 
 using namespace UPnPP;
+class ConfSimple;
 class UpMpd;
 class OHPlaylist;
 class OHProduct;
@@ -38,6 +39,7 @@ struct OHReceiverParams {
     PlayMethod pm;
     int httpport;
     std::string sc2mpdpath;
+    std::string screceiverstatefile;
     OHReceiverParams() : pm(OHRP_MPD), httpport(8768) {}
 };
 
@@ -63,6 +65,8 @@ private:
     int transportState(const SoapIncoming& sc, SoapOutgoing& data);
 
     void maybeWakeUp(bool ok);
+    void setSenderFromConf();
+    void writeSenderToConf();
 
     // Current
     std::string m_uri;
@@ -74,6 +78,7 @@ private:
     std::string m_sc2mpdpath;
     std::string m_httpuri;
     OHReceiverParams::PlayMethod m_pm;
+    ConfSimple *m_conf;
 };
 
 #endif /* _OHRECEIVER_H_X_INCLUDED_ */
