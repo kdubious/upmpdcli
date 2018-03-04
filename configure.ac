@@ -24,7 +24,7 @@ AC_CHECK_LIB([pthread], [pthread_create], [], [])
 
 AC_ARG_ENABLE(confgui, AC_HELP_STRING([--enable-confgui],
               [Enable QT-based configuration editor GUI.]),
-              enableQT=$enableval, enableQT="yes")
+              enableQT=$enableval, enableQT="no")
 AM_CONDITIONAL(MAKECONFGUI, [test X$enableQT = Xyes])
 if test X$enableQT = Xyes ; then
   if test X$QMAKE = X ; then
