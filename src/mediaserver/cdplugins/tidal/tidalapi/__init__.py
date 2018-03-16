@@ -334,7 +334,9 @@ def _parse_album(json_obj, artist=None, artists=None):
     }
     if 'releaseDate' in json_obj:
         try:
-            kwargs['release_date'] = datetime.datetime(*map(int, json_obj['releaseDate'].split('-')))
+            # Keep this as a string else we fail to json-reserialize it later
+            #kwargs['release_date'] = datetime.datetime(*map(int, json_obj['releaseDate'].split('-')))
+            kwargs['release_date'] = json_obj['releaseDate']
         except ValueError:
             pass
     return Album(**kwargs)
