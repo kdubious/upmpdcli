@@ -62,13 +62,17 @@ public:
     time_t opentime;
 };
 
+// Timeout seconds for reading data from plugins. Be generous because
+// streaming services are sometimes slow, but we don't want to be
+// stuck forever.
+static const int read_timeout(60);
+
 class PlgWithSlave::Internal {
 public:
     Internal(PlgWithSlave *_plg, const string& exe, const string& hst,
              int prt, const string& pp)
-        : plg(_plg), exepath(exe), upnphost(hst), upnpport(prt), pathprefix(pp), 
-          laststream(this) {
-    }
+        : plg(_plg), cmd(read_timeout), exepath(exe), upnphost(hst),
+          upnpport(prt), pathprefix(pp), laststream(this) { }
 
     bool maybeStartCmd();
 
@@ -331,6 +335,7 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
         JSONTOUPS(artist, upnp:artist);
         JSONTOUPS(upnpClass, upnp:class);
         JSONTOUPS(date, dc:date)
+        JSONTOUPS(date, releasedate)
         // tp is container ("ct") or item ("it")
         string stp = decoded[i].get("tp", "").asString();
         if (!stp.compare("ct")) {

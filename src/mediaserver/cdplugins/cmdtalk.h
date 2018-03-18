@@ -68,7 +68,7 @@ text/plainData: 10
 
 class CmdTalk {
  public:
-    CmdTalk();
+    CmdTalk(int timeosecs);
     virtual ~CmdTalk();
 
     // @param env each entry should be of the form name=value. They

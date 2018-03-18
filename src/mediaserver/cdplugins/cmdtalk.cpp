@@ -28,26 +28,49 @@
 
 using namespace std;
 
+class TimeoutExcept {};
+
+class Canceler : public ExecCmdAdvise {
+public:
+    Canceler(int tmsecs) 
+        : m_timeosecs(tmsecs) {}
+
+    virtual void newData(int cnt) {
+        if (m_starttime && (time(0) - m_starttime) > m_timeosecs) {
+            throw TimeoutExcept();
+        }
+    }
+
+    void reset() {
+        m_starttime = time(0);
+    }
+    int m_timeosecs;
+    time_t m_starttime{0};
+};
+
 class CmdTalk::Internal {
 public:
-    Internal()
-	: cmd(0) {
-    }
+    Internal(int timeosecs)
+	: m_cancel(timeosecs) {}
+
     ~Internal() {
 	delete cmd;
     }
+
     bool readDataElement(string& name, string &data);
 
     bool talk(const pair<string, string>& arg0,
 	      const unordered_map<string, string>& args,
 	      unordered_map<string, string>& rep);
-    ExecCmd *cmd;
+
+    ExecCmd *cmd{0};
+    Canceler m_cancel;
     std::mutex mmutex;
 };
 
-CmdTalk::CmdTalk()
+CmdTalk::CmdTalk(int timeosecs)
 {
-    m = new Internal;
+    m = new Internal(timeosecs);
 }
 CmdTalk::~CmdTalk()
 {
@@ -63,7 +86,8 @@ bool CmdTalk::startCmd(const string& cmdname,
 
     delete m->cmd;
     m->cmd = new ExecCmd;
-    
+    m->cmd->setAdvise(&m->m_cancel);
+
     for (const auto& it : env) {
 	m->cmd->putenv(it);
     }
@@ -96,9 +120,16 @@ bool CmdTalk::Internal::readDataElement(string& name, string &data)
 {
     string ibuf;
 
-    // Read name and length
-    if (cmd->getline(ibuf) <= 0) {
-        LOGERR("CmdTalk: getline error\n" );
+    m_cancel.reset();
+    try {
+        // Read name and length
+        if (cmd->getline(ibuf) <= 0) {
+            LOGERR("CmdTalk: getline error\n" );
+            return false;
+        }
+    } catch (TimeoutExcept) {
+        LOGINF("CmdTalk:readDataElement: fatal timeout (" <<
+               m_cancel.m_timeosecs << " S)\n");
         return false;
     }
     
