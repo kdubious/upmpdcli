@@ -36,6 +36,8 @@ from routing import Plugin
 plugin = Plugin('') 
 from session import Session
 
+qobidprefix = '0$qobuz$'
+
 # Func name to method mapper
 dispatcher = cmdtalkplugin.Dispatch()
 # Pipe message handler
@@ -50,7 +52,10 @@ def maybelogin():
     global httphp
     global pathprefix
     global is_logged_in
-    
+
+    # Do this always
+    setidprefix(qobidprefix)
+
     if is_logged_in:
         return True
 
@@ -85,9 +90,12 @@ def maybelogin():
 @dispatcher.record('trackuri')
 def trackuri(a):
     global formatid, pathprefix
+
+    maybelogin()
+
     msgproc.log("trackuri: [%s]" % a)
     trackid = trackid_from_urlpath(pathprefix, a)
-    maybelogin()
+
     media_url = session.get_media_url(trackid, formatid)
     if not media_url:
         media_url = ""
@@ -105,7 +113,7 @@ def trackuri(a):
 def add_directory(title, endpoint):
     if callable(endpoint):
         endpoint = plugin.url_for(endpoint)
-    xbmcplugin.entries.append(direntry('0$qobuz$' + endpoint,
+    xbmcplugin.entries.append(direntry(qobidprefix + endpoint,
                                        xbmcplugin.objid, title))
 
 def urls_from_id(view_func, items):
@@ -129,7 +137,7 @@ def view(data_items, urls, end=True):
         except:
             artnm = None
         xbmcplugin.entries.append(
-            direntry('0$qobuz$' + url, xbmcplugin.objid, title, arturi=image,
+            direntry(qobidprefix + url, xbmcplugin.objid, title, arturi=image,
                      artist=artnm, upnpclass=upnpclass))
 
 def track_list(tracks):
@@ -139,7 +147,7 @@ def track_list(tracks):
 @dispatcher.record('browse')
 def browse(a):
     global xbmcplugin
-    xbmcplugin = XbmcPlugin('0$qobuz$')
+    xbmcplugin = XbmcPlugin(qobidprefix)
     msgproc.log("browse: [%s]" % a)
     if 'objid' not in a:
         raise Exception("No objid in args")
@@ -151,7 +159,7 @@ def browse(a):
     maybelogin()
 
     xbmcplugin.objid = objid
-    idpath = objid.replace('0$qobuz$', '', 1)
+    idpath = objid.replace(qobidprefix, '', 1)
     if bflg == 'meta':
         m = re.match('.*\$(.+)$', idpath)
         if m:
@@ -300,7 +308,7 @@ def favourite_playlists():
 @dispatcher.record('search')
 def search(a):
     global xbmcplugin
-    xbmcplugin = XbmcPlugin('0$qobuz$')
+    xbmcplugin = XbmcPlugin(qobidprefix)
     msgproc.log("search: [%s]" % a)
     objid = a['objid']
     field = a['field'] if 'field' in a else None

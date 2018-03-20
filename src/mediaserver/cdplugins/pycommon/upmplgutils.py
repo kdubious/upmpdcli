@@ -31,19 +31,30 @@ import posixpath
 import re
 import sys
 
+default_mime = "audio/mpeg"
+default_samplerate = "44100"
+
+# This is only used for log messages
+_idprefix = '0$UNKNOWN'
+
+def setidprefix(idprefix):
+    global _idprefix
+    _idprefix = idprefix
+
 # Bogus class instanciated as global object for helping with reusing
 # kodi addon code
 class XbmcPlugin:
     SORT_METHOD_TRACKNUM = 1
     def __init__(self, idprefix):
-        global g_idprefix
         self.entries = []
         self.objid = ''
         self.idprefix = idprefix
-        g_idprefix = idprefix
+        setidprefix(idprefix)
+
     def addDirectoryItem(self, hdl, endpoint, title, isend):
-        self.entries.append(direntry(self.idprefix + endpoint, self.objid, title))
-        return
+        self.entries.append(direntry(self.idprefix + endpoint, self.objid,
+                                     title))
+
     def endOfDirectory(self, h):
         return
     def setContent(self, a, b):
@@ -51,8 +62,6 @@ class XbmcPlugin:
     def addSortMethod(self, a, b):
         return
 
-default_mime = "audio/mpeg"
-default_samplerate = "44100"
 
 # For now, we pretend that all tracks have the same format (for the
 # resource record). For some services this may not be true, we'll see
@@ -159,6 +168,6 @@ def direntry(id, pid, title, arturi=None, artist=None, upnpclass=None):
 
 
 def uplog(s):
-    print(("%s: %s" % (g_idprefix, s)).encode('utf-8',errors='replace'),
+    print(("%s: %s" % (_idprefix, s)).encode('utf-8',errors='replace'),
           file=sys.stderr)
 

@@ -41,6 +41,8 @@ class ConfSimple:
         except Exception as exc:
             #print("Open Exception: %s" % exc, file=sys.stderr)
             # File does not exist -> empty config, not an error.
+            self.submaps = {}
+            self.submaps[''] = {}
             return
 
         self.parseinput(f)

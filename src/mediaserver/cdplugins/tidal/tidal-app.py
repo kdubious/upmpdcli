@@ -48,6 +48,8 @@ msgproc = cmdtalkplugin.Processor(dispatcher)
 
 is_logged_in = False
 
+tidalidprefix = '0$tidal$'
+
 def maybelogin():
     global session
     global quality
@@ -55,6 +57,9 @@ def maybelogin():
     global pathprefix
     global is_logged_in
     
+    # Do this always
+    setidprefix(tidalidprefix)
+
     if is_logged_in:
         return True
 
@@ -105,10 +110,10 @@ def get_mimeandkbs():
 
 @dispatcher.record('trackuri')
 def trackuri(a):
+    maybelogin()
     msgproc.log("trackuri: [%s]" % a)
     trackid = trackid_from_urlpath(pathprefix, a)
     
-    maybelogin()
     media_url = session.get_media_url(trackid)
     msgproc.log("%s" % media_url)
     if not media_url.startswith('http://') and not \
@@ -123,7 +128,7 @@ def trackuri(a):
 def add_directory(title, endpoint):
     if callable(endpoint):
         endpoint = plugin.url_for(endpoint)
-    xbmcplugin.entries.append(direntry('0$tidal$' + endpoint,
+    xbmcplugin.entries.append(direntry(tidalidprefix + endpoint,
                                        xbmcplugin.objid, title))
 
 def urls_from_id(view_func, items):
@@ -146,7 +151,7 @@ def view(data_items, urls, end=True):
         except:
             artnm = None
         xbmcplugin.entries.append(
-            direntry('0$tidal$' + url, xbmcplugin.objid, title, arturi=image,
+            direntry(tidalidprefix + url, xbmcplugin.objid, title, arturi=image,
                      artist=artnm, upnpclass=upnpclass))
 
 def track_list(tracks):
@@ -156,7 +161,7 @@ def track_list(tracks):
 @dispatcher.record('browse')
 def browse(a):
     global xbmcplugin
-    xbmcplugin = XbmcPlugin('0$tidal$')
+    xbmcplugin = XbmcPlugin(tidalidprefix)
     msgproc.log("browse: [%s]" % a)
     if 'objid' not in a:
         raise Exception("No objid in args")
@@ -168,7 +173,7 @@ def browse(a):
     maybelogin()
 
     xbmcplugin.objid = objid
-    idpath = objid.replace('0$tidal$', '', 1)
+    idpath = objid.replace(tidalidprefix, '', 1)
     if bflg == 'meta':
         m = re.match('.*\$(.+)$', idpath)
         if m:
@@ -376,7 +381,7 @@ def favourite_tracks():
 @dispatcher.record('search')
 def search(a):
     global xbmcplugin
-    xbmcplugin = XbmcPlugin('0$tidal$')
+    xbmcplugin = XbmcPlugin(tidalidprefix)
     msgproc.log("search: [%s]" % a)
     objid = a['objid']
     field = a['field'] if 'field' in a else None
