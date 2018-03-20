@@ -240,21 +240,25 @@ bool UpMpdAVTransport::tpstateMToU(unordered_map<string, string>& status)
 
     // MPD may have switched to the next track, or may be playing
     // something else altogether if some other client told it to
-    if (!uri.compare(m_nextUri)) {
-        m_uri = m_nextUri;
-        m_curMetadata = m_nextMetadata;
-        m_nextUri.clear();
-        m_nextMetadata.clear();
-    } else if (uri.compare(m_uri)) {
-        // Someone else is controlling mpd. Maybe our own ohplaylist.
-        m_nextMetadata.clear();
-        m_nextUri.clear();
-        m_uri = uri;
-        if (!m_ohp || !m_ohp->cacheFind(uri, m_curMetadata)) {
-            m_curMetadata = didlmake(mpds.currentsong);
+    if (m_dev->radioPlaying()) {
+        m_curMetadata = didlmake(mpds.currentsong);
+    } else {
+        if (!uri.compare(m_nextUri)) {
+            m_uri = m_nextUri;
+            m_curMetadata = m_nextMetadata;
+            m_nextUri.clear();
+            m_nextMetadata.clear();
+        } else if (uri.compare(m_uri)) {
+            // Someone else is controlling mpd. Maybe our own ohplaylist.
+            m_nextMetadata.clear();
+            m_nextUri.clear();
+            m_uri = uri;
+            if (!m_ohp || !m_ohp->cacheFind(uri, m_curMetadata)) {
+                m_curMetadata = didlmake(mpds.currentsong);
+            }
         }
     }
-
+    
     status["CurrentTrack"] = "1";
     status["CurrentTrackURI"] = uri;
 

@@ -267,6 +267,7 @@ int OHProduct::iSetSourceIndex(int sindex)
         m_dev->m_ohrcv->setActive(false);
     } else if (m_dev->m_ohrd && !curtp.compare("Radio") &&
                !curnm.compare("Radio")) {
+        m_dev->setRadio(false);
         m_dev->m_ohrd->setActive(false);
     } else if (m_dev->m_sndrcv && m_dev->m_ohpl &&
                !curtp.compare("Playlist") &&
@@ -276,6 +277,7 @@ int OHProduct::iSetSourceIndex(int sindex)
     } else if (m_dev->m_sndrcv && m_dev->m_ohrd &&
                !curtp.compare("Radio") &&
                !curnm.compare(SndRcvRDName)) {
+        m_dev->setRadio(false);
         m_dev->m_ohrd->setActive(false);
         m_dev->m_sndrcv->stop();
     } else {
@@ -290,6 +292,7 @@ int OHProduct::iSetSourceIndex(int sindex)
     } else if (m_dev->m_ohrcv && !newnm.compare("Receiver")) {
         m_dev->m_ohrcv->setActive(true);
     } else if (m_dev->m_ohrd && !newnm.compare("Radio")) {
+        m_dev->setRadio(true);
         m_dev->m_ohrd->setActive(true);
     } else if (m_dev->m_ohpl && m_dev->m_sndrcv &&
                !newnm.compare(SndRcvPLName)) {

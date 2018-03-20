@@ -223,8 +223,6 @@ string wrapDIDL(const std::string& data)
     return headDIDL() + data + tailDIDL();
 }
 
-// Bogus didl fragment maker. We probably don't need a full-blown XML
-// helper here
 string didlmake(const UpSong& song)
 {
     return wrapDIDL(song.didl());

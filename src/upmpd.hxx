@@ -111,7 +111,17 @@ public:
     // while we are at it.
     bool checkContentFormat(const std::string& uri, const std::string& didl,
                             UpSong *ups = 0);
-    
+
+    // Help avtransport report correct metadata for radios (for which
+    // the uri, normally used to detect track transitions, does not
+    // change). This is called by ohproduct when setting the source.
+    void setRadio(bool on) {
+        m_radio = on;
+    }
+    bool radioPlaying() {
+        return m_radio;
+    }
+
 private:
     MPDCli *m_mpdcli;
     const MpdStatus *m_mpds;
@@ -127,6 +137,7 @@ private:
     SenderReceiver *m_sndrcv;
     std::vector<UpnpService*> m_services;
     std::string m_friendlyname;
+    bool m_radio{false};
 };
 
 #endif /* _UPMPD_H_X_INCLUDED_ */
