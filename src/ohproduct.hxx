@@ -60,6 +60,7 @@ private:
     ohProductDesc_t& m_ohProductDesc;
     int m_sourceIndex;
     bool m_standby;
+    std::string m_standbycmd;
 };
 
 #endif /* _OHPRODUCT_H_X_INCLUDED_ */

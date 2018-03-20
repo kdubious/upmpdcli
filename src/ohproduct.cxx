@@ -107,6 +107,15 @@ OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc)
     csxml += string("</SourceList>\n");
     LOGDEB("OHProduct::OHProduct: sources: " << csxml << endl);
 
+    g_config->get("onstandby", m_standbycmd);
+    if (!m_standbycmd.empty()) {
+        string out;
+        if (ExecCmd::backtick(vector<string>{m_standbycmd}, out)) {
+            m_standby = atoi(out.c_str());
+            LOGDEB("OHProduct: standby is " << m_standby << endl);
+        }
+    }
+    
     dev->addActionMapping(this, "Manufacturer", 
                           bind(&OHProduct::manufacturer, this, _1, _2));
     dev->addActionMapping(this, "Model", bind(&OHProduct::model, this, _1, _2));
@@ -198,7 +207,7 @@ int OHProduct::product(const SoapIncoming& sc, SoapOutgoing& data)
 int OHProduct::standby(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHProduct::standby" << endl);
-    data.addarg("Value", "0");
+    data.addarg("Value", SoapHelp::i2s(m_standby));
     return UPNP_E_SUCCESS;
 }
 
@@ -207,6 +216,14 @@ int OHProduct::setStandby(const SoapIncoming& sc, SoapOutgoing& data)
     LOGDEB("OHProduct::setStandby" << endl);
     if (!sc.get("Value", &m_standby)) {
         return UPNP_E_INVALID_PARAM;
+    }
+    if (!m_standbycmd.empty()) {
+        string out;
+        if (ExecCmd::backtick(vector<string>{m_standbycmd,
+                        SoapHelp::i2s(m_standby)}, out)) {
+            m_standby = atoi(out.c_str());
+            LOGDEB("OHProduct: standby is " << m_standby << endl);
+        }
     }
     m_dev->loopWakeup();
     return UPNP_E_SUCCESS;

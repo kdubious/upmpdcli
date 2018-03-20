@@ -152,6 +152,13 @@
 # e.g. /usr/bin/logger.</descr></var>
 #onstop =
 
+# <var name="onstandby" type="fn"><brief>Command to run when the setstandby
+# action is called.</brief><descr>Specify the full path to the program. It
+# is called with one 0/1 argument to change the standby state (1 for activating
+# standby), and with no argument to query the state. In all cases, it should
+# print the standby state (0/1) to stdout before exiting.</descr></var>
+#onstandby =
+
 # <var name="externalvolumecontrol" type="fn"><brief>Use external command
 # to manage the the sound volume (0/1).</brief><descr>This is used in the
 # case where MPD is unable to control the volume, but some other command
