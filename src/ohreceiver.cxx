@@ -309,7 +309,7 @@ bool OHReceiver::iSetSender(const string& uri, const string& metadata)
             iStop();
         m_uri = uri;
         m_metadata = metadata;
-        if (m_conf->ok())
+        if (m_conf && m_conf->ok())
             writeSenderToConf();
         LOGDEB("OHReceiver::setSender: uri [" << m_uri << "] meta [" << 
                m_metadata << "]" << endl);
