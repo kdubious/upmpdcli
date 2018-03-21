@@ -287,9 +287,9 @@ bool MPDCli::updStatus()
         m_stat.currentsong.bitrate = m_stat.kbrate * 1000;
         m_stat.currentsong.channels = m_stat.channels;
 
-        LOGDEB("MPD AUDIO FORMAT: " <<  int(maf->sample_rate) << " samps/S " <<
-               m_stat.kbrate << " kbits/S " << int(maf->bits) << " bits " <<
-               int(maf->channels) << " channels\n");
+        LOGDEB1("MPD AUDIO FORMAT: " <<  int(maf->sample_rate) << " samps/S " <<
+                m_stat.kbrate << " kbits/S " << int(maf->bits) << " bits " <<
+                int(maf->channels) << " channels\n");
     } else {
         m_stat.bitdepth = m_stat.channels = m_stat.sample_rate = 0;
     }
