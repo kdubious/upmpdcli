@@ -200,7 +200,7 @@ def _parse_album(json_obj, artist=None, artists=None):
         artist = _parse_artist(json_obj['artist'])
     #if artists is None:
     #    artists = _parse_artists(json_obj['artists'])
-    available = json_obj['streamable'] if 'streamable' in json_obj else false
+    available = json_obj['streamable'] if 'streamable' in json_obj else False
     #if not available:
     #    uplog("Album not streamable: %s " % json_obj['title'])
     kwargs = {
