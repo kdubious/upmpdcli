@@ -410,7 +410,7 @@ uprclautostart = 1
 
 # <var name="sccvttype" type="cstr" values="SRC_SINC_FASTEST
 # SRC_SINC_BEST_QUALITY SRC_SINC_MEDIUM_QUALITY SRC_ZERO_ORDER_HOLD
-# SRC_LINEAR"><brief>sc2mpd resampling method.</brief><descr> 
+# SRC_LINEAR NONE"><brief>sc2mpd resampling method.</brief><descr> 
 # Only used for scplaymethod=alsa. sc2mpd uses libsamplerate. The default
 # method is SRC_SINC_FASTEST and a Rasberry Pi 1 is fast enough to use it.
 # Possible values: SRC_SINC_BEST_QUALITY, SRC_SINC_MEDIUM_QUALITY,
@@ -420,7 +420,9 @@ uprclautostart = 1
 # 4770T. Obviously too much, actually might not be sustainable (it's almost
 # 100% of 1 cpu).  MEDIUM_QUALITY is around 10% on the same machine,
 # FASTEST is 4-5%. Given that this is measured for the full process, probably
-# a couple % for the conversion in fact.</descr></var>
+# a couple % for the conversion in fact. NONE will turn resampling off:
+# minimum CPU and best quality, but guaranteed glitches from time
+# to time, depending on the clocks skew.</descr></var>
 #sccvttype = SRC_SINC_FASTEST
 
 # <var name="sc2mpd" type="string"><brief>Path to
