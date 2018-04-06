@@ -1,5 +1,32 @@
 = Upmpdcli release notes
 
+== upmpdcli 1.2.16
+
+- Multiple small fixes for crashes in rare circumstances.
+- New GUI editor for the configuration file (not built by default, use
+  configure --enable-confgui, which in turns needs qt5 dev modules).
+- Add wavpack, APE to supported formats (used checkcontentformat is set).
+- Reset MPD single, random, and repeat modes when needed (SetAVTransportURI).
+- Radios: add preferScript parameter to override Icy metadata with the one
+  fetched by the script.
+- Radios: support HTTPS.
+- Fix Tidal search and other issues in the Tidal and Qobuz modules (crashes).
+- Fix handling of Qobuz and Tidal playlists (recently broken).
+- Media Server: allow configuring the names for the plugin entries
+  in the server root (e.g. uprcl -> "Local Music")
+- New GUI editor for the configuration file (not built by default, use
+  configure --enable-confgui, which in turns needs qt5 dev modules).
+- OpenHome Receivers: add possibility to use a state file, allowing the
+  Receiver to reconnect to the previous Sender when starting up
+- uprcl plugin (Media Server for local files): multiple improvements, still alpha
+  quality.
+
+== libupnpp 0.16.1
+
+* Small additions to the Songcast control interface.
+* Worked around possible crash when calling UpnpCloseLog()
+* Mac OS X build tweaks
+
 == libupnpp 0.16.0
 
 * Interfaces used by the Python binding merged into the main branch.
