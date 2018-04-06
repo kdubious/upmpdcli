@@ -63,12 +63,6 @@ using namespace UPnPP;
 using namespace std;
 using namespace Songcast;
 
-#ifdef LIBUPNPP_VERSION_MAJOR
-#if LIBUPNPP_AT_LEAST(0,16,0)
-#define HAVE_SETSOURCEINDEX_IN_LINN
-#endif
-#endif
-
 #define OPT_L 0x1
 #define OPT_S 0x2
 #define OPT_f 0x4

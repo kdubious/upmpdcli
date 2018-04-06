@@ -1,6 +1,7 @@
 AC_INIT([upmpdcli], [1.2.16], [jfd@lesbonscomptes.com],
              [upmpdcli], [http://www.lesbonscomptes.com/upmpdcli])
 AC_PREREQ([2.53])
+AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_SRCDIR([src/upmpd.cxx])
 AC_CONFIG_HEADERS([src/config.h])
 AH_BOTTOM([#include "src/conf_post.h"])
@@ -71,6 +72,9 @@ UPMPDCLI_LIBS="$LIBS $upnpp_LIBS $libmpdclient_LIBS $libmicrohttpd_LIBS $jsoncpp
 echo "UPMPDCLI_LIBS=$UPMPDCLI_LIBS"
 
 LIBS=""
+
+#### Functions
+AC_FUNC_LIBUPNPP_LINNSONGCAST
 
 AC_SUBST(UPMPDCLI_LIBS)
 AC_SUBST(SCCTL_LIBS)
