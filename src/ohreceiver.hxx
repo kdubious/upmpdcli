@@ -78,7 +78,7 @@ private:
     std::string m_sc2mpdpath;
     std::string m_httpuri;
     OHReceiverParams::PlayMethod m_pm;
-    ConfSimple *m_conf;
+    ConfSimple *m_conf{0};
 };
 
 #endif /* _OHRECEIVER_H_X_INCLUDED_ */
