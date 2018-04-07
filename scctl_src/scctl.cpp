@@ -63,12 +63,6 @@ using namespace UPnPP;
 using namespace std;
 using namespace Songcast;
 
-#ifdef LIBUPNPP_VERSION_MAJOR
-#if LIBUPNPP_AT_LEAST(0,16,0)
-#define HAVE_SETSOURCEINDEX_IN_LINN
-#endif
-#endif
-
 #define OPT_L 0x1
 #define OPT_S 0x2
 #define OPT_f 0x4
@@ -81,6 +75,7 @@ using namespace Songcast;
 #define OPT_x 0x200
 #define OPT_i 0x400
 #define OPT_I 0x800
+#define OPT_R 0x1000
 
 static const string sep("||");
 
@@ -158,6 +153,12 @@ int dosomething(int opflags, const vector<string>& args, string& out)
             return 1;
         setSourceIndexByName(args[0], args[1]);
 #endif
+#ifdef HAVE_SETRECEIVERSPLAYING_IN_LINN
+    } else if (opflags & OPT_R) {
+        if (args.size() < 1)
+            return 1;
+        setReceiversPlaying(args);
+#endif
     }
     return 0;
 }
@@ -179,6 +180,11 @@ static char usage [] =
 " -r <sender> <renderer> <renderer> : set up the renderers in Receiver mode\n"
 "    playing data from the sender. This is like -s but we get the uri from \n"
 "    the sender instead of a sibling receiver\n"
+#ifdef HAVE_SETRECEIVERSPLAYING_IN_LINN
+" -R <renderer> [renderer ...] Set renderers to Songcast receiver source\n"
+"    without looking for the Songcast sender first (requires usage of\n"
+"    screceiverstatefile in the configfile).\n"
+#endif
 " -S Run as server\n"
 " -f If no server is found, scctl will fork one after performing the\n"
 "    requested command, so that the next execution will not have to wait for\n"
@@ -206,7 +212,7 @@ int main(int argc, char *argv[])
     thisprog = argv[0];
 
     int ret;
-    while ((ret = getopt(argc, argv, "fhmLlrsSxiI")) != -1) {
+    while ((ret = getopt(argc, argv, "fhmLlrRsSxiI")) != -1) {
         switch (ret) {
         case 'f': op_flags |= OPT_f; break;
         case 'h': Usage(stdout); break;
@@ -214,6 +220,7 @@ int main(int argc, char *argv[])
         case 'L': op_flags |= OPT_L; break;
         case 'm': op_flags |= OPT_m; break;
         case 'r': op_flags |= OPT_r; break;
+        case 'R': op_flags |= OPT_R; break;
         case 's': op_flags |= OPT_s; break;
         case 'S': op_flags |= OPT_S; break;
         case 'x': op_flags |= OPT_x; break;
