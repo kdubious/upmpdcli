@@ -137,6 +137,13 @@ onstop:: Command to run when MPD state switches to
 "STOP". Specify the full path to the program,
 e.g. /usr/bin/logger.
 
+[[onstandby]]
+onstandby:: Command to run when the setstandby
+action is called. Specify the full path to the program. It
+is called with one 0/1 argument to change the standby state (1 for activating
+standby), and with no argument to query the state. In all cases, it should
+print the standby state (0/1) to stdout before exiting.
+
 [[externalvolumecontrol]]
 externalvolumecontrol:: Use external command
 to manage the the sound volume (0/1). This is used in the
@@ -396,12 +403,21 @@ serious CPU.  BEST_QUALITY uses approx 25% cpu on a core i7
 4770T. Obviously too much, actually might not be sustainable (it's almost
 100% of 1 cpu).  MEDIUM_QUALITY is around 10% on the same machine,
 FASTEST is 4-5%. Given that this is measured for the full process, probably
-a couple % for the conversion in fact.
+a couple % for the conversion in fact. NONE will turn resampling off:
+minimum CPU and best quality, but guaranteed glitches from time
+to time, depending on the clocks skew.
 
 [[sc2mpd]]
 sc2mpd:: Path to
 sc2mpd. Only useful if it is not in /usr/bin and the
 location is not in the $PATH for the init scripts.
+
+[[screceiverstatefile]]
+screceiverstatefile:: Path to a screceiver
+state file. If set, the sender uri and metadata will be read
+from the file when initializing the Songcast Receiver service and written to
+the file when a Sender is set for the service. Useful for preserving the
+sender information between restarts.
 
 === Songcast Sender parameters 
 
