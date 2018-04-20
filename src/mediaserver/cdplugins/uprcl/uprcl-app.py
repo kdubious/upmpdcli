@@ -22,9 +22,6 @@ import json
 import re
 import cmdtalkplugin
 
-import uprclfolders
-import uprcltags
-import uprcluntagged
 import uprclsearch
 import uprclindex
 
@@ -72,38 +69,22 @@ def _rootentries():
     # let the different modules return their stuff, and we take note
     # of the objid prefixes for later dispatching
     entries = []
-
-    nents = uprcltags.rootentries(g_myprefix)
-    for e in nents:
-        rootmap[e['id']] = 'tags'
-    entries += nents
-
-    nents = uprcluntagged.rootentries(g_myprefix)
-    for e in nents:
-        rootmap[e['id']] = 'untagged'
-    entries += nents
-
-    nents = uprclfolders.rootentries(g_myprefix)
-    for e in nents:
-        rootmap[e['id']] = 'folders'
-    entries += nents
-
+    for treename in uprclinit.g_trees.keys():
+        nents = uprclinit.g_trees[treename].rootentries(g_myprefix)
+        for e in nents:
+            rootmap[e['id']] = treename
+        entries += nents
     uplog("Browse root: rootmap now %s" % rootmap)
     return entries
 
-def _browsedispatch(objid, bflg, httphp, pathprefix):
-    for id,mod in rootmap.iteritems():
+
+def _browsedispatch(objid, bflg):
+    for id,treename in rootmap.items():
         #uplog("Testing %s against %s" % (objid, id))
         if objid.startswith(id):
-            if mod == 'folders':
-                return uprclfolders.browse(objid, bflg, httphp, pathprefix)
-            elif mod == 'tags':
-                return uprcltags.browse(objid, bflg, httphp, pathprefix)
-            elif mod == 'untagged':
-                return uprcluntagged.browse(objid, bflg, httphp, pathprefix)
-            else:
-                raise Exception("Browse: dispatch: bad mod " + mod)
+            return uprclinit.g_trees[treename].browse(objid, bflg)
     raise Exception("Browse: dispatch: bad objid not in rootmap: " + objid)
+
 
 @dispatcher.record('browse')
 def browse(a):
@@ -134,8 +115,7 @@ def browse(a):
             elif not idpath:
                 entries = _rootentries()
             else:
-                entries = _browsedispatch(objid, bflg, uprclinit.g_httphp,
-                                          uprclinit.g_pathprefix)
+                entries = _browsedispatch(objid, bflg)
         finally:
             uprclinit.g_dblock.release_read()
 
@@ -160,9 +140,9 @@ def search(a):
                                  uprclinit.g_httphp),]
             nocache = "1"
         else:
-            entries = uprclsearch.search(uprclinit.g_rclconfdir, objid, upnps,
-                                         g_myprefix, uprclinit.g_httphp,
-                                         uprclinit.g_pathprefix)
+            entries = uprclsearch.search(
+                uprclinit.g_trees['folders'], uprclinit.g_rclconfdir, objid,
+                upnps, g_myprefix, uprclinit.g_httphp, uprclinit.g_pathprefix)
     finally:
         uprclinit.g_dblock.release_read()
 

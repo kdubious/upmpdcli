@@ -24,9 +24,10 @@ import time
 from timeit import default_timer as timer
 
 from rwlock import ReadWriteLock
-import uprclfolders
-import uprcltags
-import uprcluntagged
+
+from uprclfolders import Folders
+from uprcluntagged import Untagged
+from uprcltags import Tagged
 import uprclsearch
 import uprclindex
 from uprclhttp import runbottle
@@ -34,18 +35,21 @@ from uprclhttp import runbottle
 from upmplgutils import uplog
 from uprclutils import findmyip, stringToStrings
 
+# Once initialization (not on imports)
 try:
     _s = g_httphp
 except:
     # The recoll documents
-    g_rcldocs = []
     g_pathprefix = ""
     g_httphp = ""
     g_dblock = ReadWriteLock()
     g_rclconfdir = ""
     g_friendlyname = "UpMpd-mediaserver"
-
-# Create or update Recoll index, then read and process the data.
+    g_trees = {}
+    
+# Create or update Recoll index, then read and process the data.  This
+# runs in the separate uprcl_init_worker thread, and signals
+# startup/completion by setting/unsetting the g_initrunning flag
 def _update_index():
     uplog("Creating/updating index in %s for %s" % (g_rclconfdir, g_rcltopdirs))
 
@@ -54,7 +58,7 @@ def _update_index():
     # lock. This allows future browse operations to signal the
     # condition to the user instead of blocking (if we kept the write
     # lock).
-    global g_initrunning
+    global g_initrunning, g_trees
     g_dblock.acquire_write()
     g_initrunning = True
     g_dblock.release_write()
@@ -69,10 +73,14 @@ def _update_index():
             fin = timer()
         uplog("Indexing took %.2f Seconds" % (fin - start))
 
-        global g_rcldocs
-        g_rcldocs = uprclfolders.inittree(g_rclconfdir, g_httphp, g_pathprefix)
-        uprcltags.recolltosql(g_rcldocs)
-        uprcluntagged.recoll2untagged(g_rcldocs)
+        folders = Folders(g_rclconfdir, g_httphp, g_pathprefix)
+        untagged = Untagged(folders.rcldocs(), g_httphp, g_pathprefix)
+        tagged = Tagged(folders.rcldocs(), g_httphp, g_pathprefix)
+        newtrees = {}
+        newtrees['folders'] = folders
+        newtrees['untagged'] = untagged
+        newtrees['tags'] = tagged
+        g_trees = newtrees
     finally:
         g_dblock.acquire_write()
         g_initrunning = False

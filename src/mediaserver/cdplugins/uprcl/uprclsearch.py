@@ -17,7 +17,6 @@
 from __future__ import print_function
 
 import re
-import uprclfolders
 from recoll import recoll
 
 from upmplgutils import uplog
@@ -101,8 +100,8 @@ def _appendterms(out, v, field, oper):
         out.append(oper)
         out.append('"' + ph + '"')
             
-def upnpsearchtorecoll(s):
-    uplog("upnpsearchtorecoll:in: <%s>" % s)
+def _upnpsearchtorecoll(s):
+    uplog("_upnpsearchtorecoll:in: <%s>" % s)
 
     s = re.sub('[\t\n\r\f ]+', ' ', s)
 
@@ -115,7 +114,7 @@ def upnpsearchtorecoll(s):
         i,c = _getchar(s, i)
         if not c:
             break
-        #uplog("upnpsearchtorecoll: nextchar: <%s>" % c)
+        #uplog("_upnpsearchtorecoll: nextchar: <%s>" % c)
 
         if c.isspace():
             continue
@@ -185,14 +184,14 @@ def upnpsearchtorecoll(s):
     ostr = ""
     for tok in out:
         ostr += tok + " "
-    uplog("upnpsearchtorecoll:out: <%s>" % ostr)
+    uplog("_upnpsearchtorecoll:out: <%s>" % ostr)
     return ostr
 
 
-def search(rclconfdir, objid, upnps, idprefix, httphp, pathprefix):
-    rcls = upnpsearchtorecoll(upnps)
+def search(foldersobj, rclconfdir, objid, upnps, idprefix, httphp, pathprefix):
+    rcls = _upnpsearchtorecoll(upnps)
 
-    filterdir = uprclfolders.dirpath(objid)
+    filterdir = foldersobj.dirpath(objid)
     if filterdir and filterdir != "/":
         rcls += " dir:\"" + filterdir + "\""
     

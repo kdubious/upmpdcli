@@ -35,74 +35,76 @@ import sys
 from upmplgutils import uplog
 from uprclutils import rcldoctoentry, rcldirentry
 
-untg_prefix = '0$uprcl$untagged'
-
-# Create the untagged entries static vector by filtering the global
-# doc vector, storing the indexes of all tracks without a title
-# field. We keep a reference to the doc vector.
-def recoll2untagged(docs):
-    global g_utidx, g_rcldocs
-    g_rcldocs = docs
-    # The -1 entry is because we use index 0 for our root.
-    g_utidx = [-1]
+class Untagged(object):
+    def __init__(self, docs, httphp, pathprefix):
+        self._idprefix = '0$uprcl$untagged'
+        self._httphp = httphp
+        self._pprefix = pathprefix
+        self.recoll2untagged(docs)
+        
+    # Create the untagged entries static vector by filtering the global
+    # doc vector, storing the indexes of all tracks without a title
+    # field. We keep a reference to the doc vector.
+    def recoll2untagged(self, docs):
+        self.rcldocs = docs
+        # The -1 entry is because we use index 0 for our root.
+        self.utidx = [-1]
     
-    for docidx in range(len(docs)):
-        doc = docs[docidx]
-        if doc.mtype == 'inode/directory':
-            continue
-        if not doc.title:
-            g_utidx.append(docidx)
+        for docidx in range(len(docs)):
+            doc = docs[docidx]
+            if doc.mtype == 'inode/directory':
+                continue
+            if not doc.title:
+                self.utidx.append(docidx)
 
+    # Compute index into our entries vector by 'parsing' the objid.
+    def _objidtoidx(self, pid):
+        if not pid.startswith(self._idprefix):
+            raise Exception("untagged:browse: bad pid %s" % pid)
 
-# Compute index into our entries vector by 'parsing' the objid.
-def _objidtoidx(pid):
-    if not pid.startswith(untg_prefix):
-        raise Exception("untagged.browse: bad pid %s" % pid)
+        if len(self.rcldocs) == 0:
+            raise Exception("untagged:browse: no docs")
 
-    if len(g_rcldocs) == 0:
-        raise Exception("untagged:browse: no docs")
-
-    idx = pid[len(untg_prefix):]
-    if not idx:
-        # Browsing the root.
-        idx = 0
-    else:
-        if idx[1] != 'u':
-            raise Exception("untagged:browse: called on bad objid %s" % pid)
-        idx = int(idx[2:])
+        idx = pid[len(self._idprefix):]
+        if not idx:
+            # Browsing the root.
+            idx = 0
+        else:
+            if idx[1] != 'u':
+                raise Exception("untagged:browse: called on bad objid %s" % pid)
+            idx = int(idx[2:])
     
-    if idx >= len(g_utidx):
-        raise Exception("untagged:browse: bad pid %s" % pid)
+        if idx >= len(self.utidx):
+            raise Exception("untagged:browse: bad pid %s" % pid)
 
-    return idx
+        return idx
+
+    # Return entry to be created in the top-level directory ([untagged]).
+    def rootentries(self, pid):
+        return [rcldirentry(pid + 'untagged', pid, '[untagged]'),]
 
 
-# Return entry to be created in the top-level directory ([untagged]).
-def rootentries(pid):
-    return [rcldirentry(pid + 'untagged', pid, '[untagged]'),]
+    # Browse method
+    # objid is like untagged$u<index>
+    # flag is meta or children.
+    def browse(self, pid, flag):
+        idx = self._objidtoidx(pid)
 
-
-# Browse method
-# objid is like untagged$u<index>
-# flag is meta or children.
-def browse(pid, flag, httphp, pathprefix):
-    idx = _objidtoidx(pid)
-
-    entries = []
-    if idx == 0:
-        # Browsing root
-        for i in range(len(g_utidx))[1:]:
-            doc = g_rcldocs[g_utidx[i]]
-            id = untg_prefix + '$u' + str(i)
-            e = rcldoctoentry(id, pid, httphp, pathprefix, doc)
+        entries = []
+        if idx == 0:
+            # Browsing root
+            for i in range(len(self.utidx))[1:]:
+                doc = self.rcldocs[self.utidx[i]]
+                id = self._idprefix + '$u' + str(i)
+                e = rcldoctoentry(id, pid, self._httphp, self._pprefix, doc)
+                if e:
+                    entries.append(e)
+        else:
+            # Non root: only items in there. flag needs to be 'meta'
+            doc = self.rcldocs[thisdocidx]
+            id = self._idprefix + '$u' + str(idx)
+            e = rcldoctoentry(id, pid, self._httphp, self._pprefix, doc)
             if e:
                 entries.append(e)
-    else:
-        # Non root: only items in there. flag needs to be 'meta'
-        doc = g_rcldocs[thisdocidx]
-        id = untg_prefix + '$u' + str(idx)
-        e = rcldoctoentry(id, pid, httphp, pathprefix, doc)
-        if e:
-            entries.append(e)
 
-    return sorted(entries, key=lambda entry: entry['tt'].lower())
+        return sorted(entries, key=lambda entry: entry['tt'].lower())
