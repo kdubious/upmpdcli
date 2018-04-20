@@ -168,6 +168,7 @@ def direntry(id, pid, title, arturi=None, artist=None, upnpclass=None):
 
 
 def uplog(s):
+    if not type(s) == type(u''):
+        s = s.decode('utf-8', errors='replace')
     print(("%s: %s" % (_idprefix, s)).encode('utf-8',errors='replace'),
           file=sys.stderr)
-

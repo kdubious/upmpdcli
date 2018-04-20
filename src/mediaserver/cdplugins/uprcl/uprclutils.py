@@ -25,6 +25,8 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+from upmplgutils import uplog
+
 # This must be consistent with what contentdirectory.cxx does
 g_myprefix = '0$uprcl$'
 
@@ -300,12 +302,6 @@ def rcldirentry(id, pid, title, arturi=None, artist=None, upnpclass=None,
     else:
         ret['upnp:class'] = 'object.container'
     return ret
-
-
-def uplog(s):
-    if not isinstance(s, unicode):
-        s = s.decode('utf-8', errors='replace')
-    print("%s: %s" % ('uprcl', s), file=sys.stderr)
 
 
 # Parse string into (possibly multiword) tokens

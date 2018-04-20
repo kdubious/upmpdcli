@@ -28,8 +28,11 @@ import uprcluntagged
 import uprclsearch
 import uprclindex
 
+from upmplgutils import uplog, setidprefix
 from uprclutils import uplog, g_myprefix, rcldirentry, waitentry
 import uprclinit
+
+setidprefix("uprcl")
 
 #####
 # Initialize communication with our parent process: pipe and method

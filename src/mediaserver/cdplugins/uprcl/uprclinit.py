@@ -31,7 +31,8 @@ import uprclsearch
 import uprclindex
 from uprclhttp import runbottle
 
-from uprclutils import uplog, findmyip, stringToStrings
+from upmplgutils import uplog
+from uprclutils import findmyip, stringToStrings
 
 try:
     _s = g_httphp
@@ -149,7 +150,7 @@ def _uprcl_init_worker():
     
     _update_index()
 
-    uplog("Uprcl: init done")
+    uplog("Init done")
 
 def uprcl_init():
     global g_initrunning

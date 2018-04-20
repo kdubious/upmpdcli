@@ -25,7 +25,7 @@ import subprocess
 import time
 import copy
 
-from uprclutils import uplog
+from upmplgutils import uplog
 
 def _initconfdir(confdir, topdirs):
     if os.path.exists(confdir):

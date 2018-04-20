@@ -54,7 +54,8 @@ import sys
 import time
 from timeit import default_timer as timer
 
-from uprclutils import uplog, docarturi, audiomtypes, rcldirentry, \
+from upmplgutils import uplog
+from uprclutils import docarturi, audiomtypes, rcldirentry, \
      rcldoctoentry, cmpentries
 from recoll import recoll
 from recoll import rclconfig

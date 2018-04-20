@@ -32,7 +32,8 @@ import shlex
 import urllib
 import sys
 
-from uprclutils import uplog, rcldoctoentry, rcldirentry
+from upmplgutils import uplog
+from uprclutils import rcldoctoentry, rcldirentry
 
 untg_prefix = '0$uprcl$untagged'
 

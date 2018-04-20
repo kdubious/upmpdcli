@@ -21,7 +21,8 @@ import os
 import time
 import bottle
 
-from uprclutils import uplog, embedded_open
+from upmplgutils import uplog
+from uprclutils import embedded_open
 import uprclinit
 
 @bottle.route('/')
@@ -75,7 +76,7 @@ class Streamer(object):
             bottle.response.set_header("Content-type", ctype)
             bottle.response.set_header("Content-Length", size)
             return f
-        uplog("Uprcl: streaming: %s" % os.path.join(self.root,filepath))
+        uplog("Streaming: %s" % os.path.join(self.root,filepath))
         return bottle.static_file(filepath, root=self.root)
 
     

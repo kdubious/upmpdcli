@@ -20,7 +20,8 @@ import re
 import uprclfolders
 from recoll import recoll
 
-from uprclutils import uplog, stringToStrings, rcldoctoentry, cmpentries
+from upmplgutils import uplog
+from uprclutils import stringToStrings, rcldoctoentry, cmpentries
 
 def _getchar(s, i):
     if i < len(s):

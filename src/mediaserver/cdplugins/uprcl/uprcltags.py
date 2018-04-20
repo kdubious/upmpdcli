@@ -21,7 +21,8 @@ import time
 import tempfile
 from timeit import default_timer as timer
 
-from uprclutils import g_myprefix, audiomtypes, docfolder, uplog, \
+from upmplgutils import uplog
+from uprclutils import g_myprefix, audiomtypes, docfolder, \
      rcldirentry, rcldoctoentry, cmpentries
 
 # After initialization, this holds the list of all records out of
