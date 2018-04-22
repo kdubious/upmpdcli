@@ -32,8 +32,11 @@ from uprclutils import g_myprefix, audiomtypes, docfolder, \
 #
 # TBD: All Artists
 #
-# Maybe we'd actually need a 3rd value for the recoll field name, but
-# it can be the same for the currently relevant fields.
+# The key is the presentation name (container title). The value is the
+# auxiliary table name, used also as base for unique id and join
+# columns (with _id) appended, and is also currently the recoll field
+# name (with a provision to differ if needed, thanks to the
+# currently empty _coltorclfield dict).
 _tagtotable = {
     'Artist' : 'artist',
     'Date' : 'date',
@@ -46,15 +49,17 @@ _tagtotable = {
     'Comment' : 'comment'
     }
 
+def _clid(table):
+    return table + '_id'
+
 # Translation only used when fetching fields from the recoll
 # record. None at the moment
 _coltorclfield = {
     }
 
 
-def _clid(col):
-    return col + '_id'
 
+# The browseable object which defines the tree of tracks organized by tags.
 class Tagged(object):
     def __init__(self, docs, httphp, pathprefix):
         self._httphp = httphp
@@ -62,6 +67,15 @@ class Tagged(object):
         self._conn = None
         self._rcldocs = docs
         self._init_sqconn()
+        # Compute an array of (table name, recoll field) translations. Most
+        # often they are identical.
+        self._tabtorclfield = []
+        for tb in _tagtotable.values():
+            if tb in _coltorclfield:
+                rclfld = _coltorclfield[tb]
+            else:
+                rclfld = tb
+            self._tabtorclfield.append((tb, rclfld))
         self._recolltosql(docs)
         
 
@@ -125,6 +139,42 @@ class Tagged(object):
         return rowid
 
 
+    # tracknos like n/max are now supposedly processed by rclaudio and
+    # should not arrive here, but let's play it safe.
+    def _tracknofordoc(self, doc):
+        try:
+            return int(doc.tracknumber.split('/')[0])
+        except:
+            return 0
+
+    # Create album record if needed.
+    # The albums table is special, can't use auxtableinsert()
+    def _maybecreatealbum(self, c, doc):
+        folder = docfolder(doc).decode('utf-8', errors = 'replace')
+        album = getattr(doc, 'album', None)
+        if not album:
+            album = os.path.basename(folder)
+            #uplog("Using %s for alb: mime %s title %s" %
+            #(album,doc.mtype, doc.url))
+        if doc.albumartist:
+            albartist_id = self._auxtableinsert('artist', doc.albumartist)
+        else:
+            albartist_id = None
+        c.execute('''SELECT album_id, artist_id FROM albums
+        WHERE albtitle = ? AND albfolder = ?''', (album, folder))
+        r = c.fetchone()
+        if r:
+            album_id = r[0]
+            albartist_id = r[1]
+        else:
+            c.execute('''INSERT INTO albums(albtitle, albfolder, artist_id,
+            albdate, albarturi)
+            VALUES (?,?,?,?,?)''', (album, folder, albartist_id, doc.date,
+                                    doc.albumarturi))
+            album_id = c.lastrowid
+        return album_id, albartist_id
+
+
     # Create the db and fill it up with the values we need, taken out of
     # the recoll records list
     def _recolltosql(self, docs):
@@ -132,16 +182,6 @@ class Tagged(object):
 
         self._createsqdb()
 
-        # Compute a list of table names and corresponding recoll
-        # fields. most often they are identical
-        tabfields = []
-        for tb in _tagtotable.values():
-            if tb in _coltorclfield:
-                rclfld = _coltorclfield[tb]
-            else:
-                rclfld = tb
-            tabfields.append((tb, rclfld))
-        
         c = self._conn.cursor()
         maxcnt = 0
         totcnt = 0
@@ -156,45 +196,18 @@ class Tagged(object):
             if doc.mtype not in audiomtypes or doc.mtype == 'inode/directory':
                 continue
 
-            # Create album record if needed.
-            # The albums table is special, can't use auxtableinsert()
-            folder = docfolder(doc).decode('utf-8', errors = 'replace')
-            album = getattr(doc, 'album', None)
-            if not album:
-                album = os.path.basename(folder)
-                #uplog("Using %s for alb: mime %s title %s" %
-                    #(album,doc.mtype, doc.url))
-            if doc.albumartist:
-                albartist_id = self._auxtableinsert('artist', doc.albumartist)
-            else:
-                albartist_id = None
-            c.execute('''SELECT album_id,artist_id FROM albums
-            WHERE albtitle = ? AND albfolder = ?''', (album, folder))
-            r = c.fetchone()
-            if r:
-                album_id = r[0]
-                albartist_id = r[1]
-            else:
-                c.execute('''INSERT INTO albums(albtitle, albfolder, artist_id,
-                albdate, albarturi)
-                VALUES (?,?,?,?,?)''', (album, folder, albartist_id, doc.date,
-                                        doc.albumarturi))
-                album_id = c.lastrowid
-
-            # tracknos like n/max are now supposedly processed by rclaudio
-            # and should not arrive here
-            try:
-                l= doc.tracknumber.split('/')
-                trackno = int(l[0])
-            except:
-                trackno = 0
-
-            # Set base values for column names, values list, placeholders,
-            # then append data from auxiliary tables array
+            album_id, albartist_id = self._maybecreatealbum(c, doc)
+            
+            trackno = self._tracknofordoc(doc)
+            
+            # Set base values for column names, values list,
+            # placeholders
             columns = 'docidx,album_id,trackno,title'
             values = [docidx, album_id, trackno, doc.title]
             placehold = '?,?,?,?'
-            for tb,rclfld in tabfields:
+            # Append data for each auxiliary table if the doc has a value
+            # for the corresponding field (else let SQL set a dflt/null value)
+            for tb, rclfld in self._tabtorclfield:
                 value = getattr(doc, rclfld, None)
                 if not value:
                     continue
@@ -203,12 +216,15 @@ class Tagged(object):
                 values.append(rowid)
                 placehold += ',?'
 
-            # Finally create the main record in the tracks table with
-            # references to the aux tables
+            # Create the main record in the tracks table.
             stmt='INSERT INTO tracks(' + columns + ') VALUES(' + placehold + ')'
             c.execute(stmt, values)
             #uplog(doc.title)
 
+            # If the album had no artist yet, set it from the track
+            # artist.  Means that if tracks for the same album have
+            # different artist values, we arbitrarily use the first
+            # one.
             if not albartist_id:
                 lcols = columns.split(',')
                 try:
@@ -218,7 +234,8 @@ class Tagged(object):
                     c.execute(stmt, (artist_id, album_id))
                 except:
                     pass
-                      
+        ## End Big doc loop
+        
         self._conn.commit()
         end = timer()
         uplog("recolltosql: processed %d docs in %.2f Seconds" %
@@ -240,8 +257,8 @@ class Tagged(object):
         return entries
 
 
-    # Check what tags still have multiple values inside the selected set,
-    # and return their list.
+    # Return the list of tags which have multiple values inside the
+    # input list of docids.
     def _subtreetags(self, docidsl):
         docids = ','.join([str(i) for i in docidsl])
         uplog("subtreetags, docids %s" % docids)
@@ -252,23 +269,21 @@ class Tagged(object):
                    ') FROM tracks WHERE docidx IN (' + docids + ')'
             uplog("subtreetags: executing: <%s>" % stmt)
             c.execute(stmt)
-            for r in c:
-                cnt = r[0]
-                uplog("Found %d distinct values for %s" % (cnt, tb))
-                if cnt > 1:
-                    tags.append(tt)
+            cnt = c.fetchone()[0]
+            uplog("Found %d distinct values for %s" % (cnt, tb))
+            if cnt > 1:
+                tags.append(tt)
         return tags
 
 
+    # Build a list of track directory entries for an SQL statement
+    # which selects docidxs (SELECT docidx,... FROM tracks WHERE...)
     def _trackentriesforstmt(self, stmt, values, pid):
         c = self._conn.cursor()
         c.execute(stmt, values)
-        entries = []
-        for r in c:
-            docidx = r[0]
-            id = pid + '$i' + str(docidx)
-            entries.append(rcldoctoentry(id, pid, self._httphp, self._pprefix,
-                                         self._rcldocs[docidx]))
+        entries = [rcldoctoentry(pid + '$i' + str(r[0]),
+                                 pid, self._httphp, self._pprefix,
+                                 self._rcldocs[r[0]]) for r in c]
         return sorted(entries, cmp=cmpentries)
     
 
@@ -285,7 +300,7 @@ class Tagged(object):
 
     def _trackentriesforalbum(self, albid, pid):
         stmt = 'SELECT docidx FROM tracks WHERE album_id = ? ORDER BY trackno'
-        return self._trackentriesforstmt(stmt,(albid,), pid)
+        return self._trackentriesforstmt(stmt, (albid,), pid)
 
 
     def _direntriesforalbums(self, pid, where):
