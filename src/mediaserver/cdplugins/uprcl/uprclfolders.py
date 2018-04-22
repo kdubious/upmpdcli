@@ -110,16 +110,16 @@ class Folders(object):
         for docidx in range(len(self._rcldocs)):
             doc = self._rcldocs[docidx]
             
+            # No need to include non-audio types in the visible tree.
+            if doc.mtype not in audiomtypes:
+                continue
+
             # Possibly enrich the doc entry with a cover art uri.
             arturi = docarturi(doc, self._httphp, self._pprefix)
             if arturi:
                 # The uri is quoted, so it's ascii and we can just store
                 # it as a doc attribute
                 doc.albumarturi = arturi
-
-            # No need to include non-audio types in the visible tree.
-            if doc.mtype not in audiomtypes:
-                continue
 
             url = doc.getbinurl()
             url = url[7:]
