@@ -65,20 +65,14 @@
 
 #include "pathut.h"
 
-using std::string;
-using std::vector;
-using std::map;
-using std::istream;
-using std::ostream;
-
 /** Internal class used for storing presentation information */
 class ConfLine {
 public:
     enum Kind {CFL_COMMENT, CFL_SK, CFL_VAR, CFL_VARCOMMENT};
     Kind m_kind;
-    string m_data;
-    string m_aux;
-    ConfLine(Kind k, const string& d, string a = string())
+    std::string m_data;
+    std::string m_aux;
+    ConfLine(Kind k, const std::string& d, std::string a = std::string())
         : m_kind(k), m_data(d), m_aux(a) {
     }
     bool operator==(const ConfLine& o) {
@@ -93,18 +87,19 @@ class ConfNull {
 public:
     enum StatusCode {STATUS_ERROR = 0, STATUS_RO = 1, STATUS_RW = 2};
     virtual ~ConfNull() {};
-    virtual int get(const string& name, string& value,
-                    const string& sk = string()) const = 0;
-    virtual bool hasNameAnywhere(const string& nm) const = 0;
-    virtual int set(const string& nm, const string& val,
-                    const string& sk = string()) = 0;
+    virtual int get(const std::string& name, std::string& value,
+                    const std::string& sk = std::string()) const = 0;
+    virtual bool hasNameAnywhere(const std::string& nm) const = 0;
+    virtual int set(const std::string& nm, const std::string& val,
+                    const std::string& sk = std::string()) = 0;
     virtual bool ok() const = 0;
-    virtual vector<string> getNames(const string& sk, const char* = 0)const = 0;
-    virtual int erase(const string&, const string&) = 0;
-    virtual int eraseKey(const string&) = 0;
+    virtual std::vector<std::string> getNames(const std::string& sk,
+                                              const char* = 0)const = 0;
+    virtual int erase(const std::string&, const std::string&) = 0;
+    virtual int eraseKey(const std::string&) = 0;
     virtual void showall() const {};
-    virtual vector<string> getSubKeys() const = 0;
-    virtual vector<string> getSubKeys(bool) const = 0;
+    virtual std::vector<std::string> getSubKeys() const = 0;
+    virtual std::vector<std::string> getSubKeys(bool) const = 0;
     virtual bool holdWrites(bool) = 0;
     virtual bool sourceChanged() const = 0;
 };
@@ -130,7 +125,7 @@ public:
      * @param readonly if true open readonly, else rw
      * @param tildexp  try tilde (home dir) expansion for subsection names
      */
-    ConfSimple(const string& data, int readonly = 0, bool tildexp = false,
+    ConfSimple(const std::string& data, int readonly = 0, bool tildexp = false,
                bool trimvalues = true);
 
     /**
@@ -160,7 +155,7 @@ public:
     }
 
     /** Clear, then reparse from string */
-    void reparse(const string& in);
+    void reparse(const std::string& in);
 
     /** Clear all content */
     void clear() {
@@ -173,40 +168,40 @@ public:
      * in global space if sk is empty).
      * @return 0 if name not found, 1 else
      */
-    virtual int get(const string& name, string& value,
-                    const string& sk = string()) const;
+    virtual int get(const std::string& name, std::string& value,
+                    const std::string& sk = std::string()) const;
 
     /**
      * Get integer value for named parameter, from specified subsection (looks 
      * in global space if sk is empty).
      * @return 0 if name not found, 1 else
      */
-    virtual int get(const string& name, int* value,
-                    const string& sk = string()) const;
+    virtual int get(const std::string& name, int* value,
+                    const std::string& sk = std::string()) const;
 
 
     /**
      * Set value for named string parameter in specified subsection (or global)
      * @return 0 for error, 1 else
      */
-    virtual int set(const string& nm, const string& val,
-                    const string& sk = string());
+    virtual int set(const std::string& nm, const std::string& val,
+                    const std::string& sk = std::string());
     /**
      * Set value for named integer parameter in specified subsection (or global)
      * @return 0 for error, 1 else
      */
-    virtual int set(const string& nm, long long val,
-                    const string& sk = string());
+    virtual int set(const std::string& nm, long long val,
+                    const std::string& sk = std::string());
 
     /**
      * Remove name and value from config
      */
-    virtual int erase(const string& name, const string& sk);
+    virtual int erase(const std::string& name, const std::string& sk);
 
     /**
      * Erase all names under given subkey (and subkey itself)
      */
-    virtual int eraseKey(const string& sk);
+    virtual int eraseKey(const std::string& sk);
 
     virtual StatusCode getStatus() const;
     virtual bool ok() const {
@@ -222,47 +217,47 @@ public:
      */
     enum WalkerCode {WALK_STOP, WALK_CONTINUE};
     virtual WalkerCode sortwalk(WalkerCode
-                                (*wlkr)(void *cldata, const string& nm,
-                                        const string& val),
+                                (*wlkr)(void *cldata, const std::string& nm,
+                                        const std::string& val),
                                 void *clidata) const;
 
     /** Print all values to stdout */
     virtual void showall() const;
 
     /** Return all names in given submap. */
-    virtual vector<string> getNames(const string& sk, const char *pattern = 0)
-    const;
+    virtual std::vector<std::string> getNames(const std::string& sk,
+                                              const char *pattern = 0) const;
 
     /** Check if name is present in any submap. This is relatively expensive
      * but useful for saving further processing sometimes */
-    virtual bool hasNameAnywhere(const string& nm) const;
+    virtual bool hasNameAnywhere(const std::string& nm) const;
 
     /**
      * Return all subkeys
      */
-    virtual vector<string> getSubKeys(bool) const {
+    virtual std::vector<std::string> getSubKeys(bool) const {
         return getSubKeys();
     }
-    virtual vector<string> getSubKeys() const;
+    virtual std::vector<std::string> getSubKeys() const;
     
     /** Return subkeys in file order. BEWARE: only for the original from the 
      * file: the data is not duplicated to further copies */
-    virtual vector<string> getSubKeys_unsorted(bool = false) const {
+    virtual std::vector<std::string> getSubKeys_unsorted(bool = false) const {
         return m_subkeys_unsorted;
     }
 
     /** Test for subkey existence */
-    virtual bool hasSubKey(const string& sk) const {
+    virtual bool hasSubKey(const std::string& sk) const {
         return m_submaps.find(sk) != m_submaps.end();
     }
 
-    virtual string getFilename() const {
+    virtual std::string getFilename() const {
         return m_filename;
     }
 
     /** Used with config files with specially formatted, xml-like comments.
      * Extract the comments as text */
-    virtual bool commentsAsXML(ostream& out);
+    virtual bool commentsAsXML(std::ostream& out);
 
     /** !! Note that assignment and copy constructor do not copy the
         auxiliary data (m_order and subkeys_unsorted). */
@@ -295,10 +290,10 @@ public:
     /**
      * Write in file format to out
      */
-    bool write(ostream& out) const;
+    bool write(std::ostream& out) const;
 
     /** Give access to semi-parsed file contents */
-    const vector<ConfLine>& getlines() const {
+    const std::vector<ConfLine>& getlines() const {
         return m_order;
     }
     
@@ -308,24 +303,24 @@ protected:
     StatusCode status;
 private:
     // Set if we're working with a file
-    string                            m_filename;
+    std::string                            m_filename;
     time_t                            m_fmtime;
     // Configuration data submaps (one per subkey, the main data has a
     // null subkey)
-    map<string, map<string, string> > m_submaps;
-    vector<string> m_subkeys_unsorted;
+    std::map<std::string, std::map<std::string, std::string> > m_submaps;
+    std::vector<std::string> m_subkeys_unsorted;
     // Presentation data. We keep the comments, empty lines and
     // variable and subkey ordering information in there (for
     // rewriting the file while keeping hand-edited information)
-    vector<ConfLine>                    m_order;
+    std::vector<ConfLine>                    m_order;
     // Control if we're writing to the backing store
     bool                              m_holdWrites;
 
-    void parseinput(istream& input);
+    void parseinput(std::istream& input);
     bool write();
     // Internal version of set: no RW checking
-    virtual int i_set(const string& nm, const string& val,
-                      const string& sk, bool init = false);
+    virtual int i_set(const std::string& nm, const std::string& val,
+                      const std::string& sk, bool init = false);
     bool i_changed(bool upd);
 };
 
@@ -353,7 +348,7 @@ public:
      * expansion */
     ConfTree(const char *fname, int readonly = 0, bool trimvalues=true)
         : ConfSimple(fname, readonly, true, trimvalues) {}
-    ConfTree(const string& data, int readonly = 0, bool trimvalues=true)
+    ConfTree(const std::string& data, int readonly = 0, bool trimvalues=true)
         : ConfSimple(data, readonly, true, trimvalues) {}
     ConfTree(int readonly = 0, bool trimvalues=true)
         : ConfSimple(readonly, true, trimvalues) {}
@@ -369,7 +364,8 @@ public:
      * parents.
      * @return 0 if name not found, 1 else
      */
-    virtual int get(const string& name, string& value, const string& sk) const;
+    virtual int get(const std::string& name, std::string& value,
+                    const std::string& sk) const;
     using ConfSimple::get;
 };
 
@@ -389,13 +385,14 @@ public:
     /// Construct from configuration file names. The earler
     /// files in have priority when fetching values. Only the first
     /// file will be updated if ro is false and set() is used.
-    ConfStack(const vector<string>& fns, bool ro = true) {
+    ConfStack(const std::vector<std::string>& fns, bool ro = true) {
         construct(fns, ro);
     }
     /// Construct out of single file name and multiple directories
-    ConfStack(const string& nm, const vector<string>& dirs, bool ro = true) {
-        vector<string> fns;
-        for (vector<string>::const_iterator it = dirs.begin();
+    ConfStack(const std::string& nm, const std::vector<std::string>& dirs,
+              bool ro = true) {
+        std::vector<std::string> fns;
+        for (std::vector<std::string>::const_iterator it = dirs.begin();
                 it != dirs.end(); it++) {
             fns.push_back(path_cat(*it, nm));
         }
@@ -424,7 +421,7 @@ public:
     }
 
     virtual bool sourceChanged() const {
-        typename vector<T*>::const_iterator it;
+        typename std::vector<T*>::const_iterator it;
         for (it = m_confs.begin(); it != m_confs.end(); it++) {
             if ((*it)->sourceChanged()) {
                 return true;
@@ -433,9 +430,9 @@ public:
         return false;
     }
 
-    virtual int get(const string& name, string& value, const string& sk,
-                    bool shallow) const {
-        typename vector<T*>::const_iterator it;
+    virtual int get(const std::string& name, std::string& value,
+                    const std::string& sk, bool shallow) const {
+        typename std::vector<T*>::const_iterator it;
         for (it = m_confs.begin(); it != m_confs.end(); it++) {
             if ((*it)->get(name, value, sk)) {
                 return true;
@@ -446,12 +443,13 @@ public:
         }
         return false;
     }
-    virtual int get(const string& name, string& value, const string& sk) const {
+    virtual int get(const std::string& name, std::string& value,
+                    const std::string& sk) const {
         return get(name, value, sk, false);
     }
 
-    virtual bool hasNameAnywhere(const string& nm) const {
-        typename vector<T*>::const_iterator it;
+    virtual bool hasNameAnywhere(const std::string& nm) const {
+        typename std::vector<T*>::const_iterator it;
         for (it = m_confs.begin(); it != m_confs.end(); it++) {
             if ((*it)->hasNameAnywhere(nm)) {
                 return true;
@@ -460,8 +458,8 @@ public:
         return false;
     }
 
-    virtual int set(const string& nm, const string& val,
-                    const string& sk = string()) {
+    virtual int set(const std::string& nm, const std::string& val,
+                    const std::string& sk = std::string()) {
         if (!m_ok) {
             return 0;
         }
@@ -470,10 +468,10 @@ public:
         // Avoid adding unneeded entries: if the new value matches the
         // one out from the deeper configs, erase or dont add it
         // from/to the topmost file
-        typename vector<T*>::iterator it = m_confs.begin();
+        typename std::vector<T*>::iterator it = m_confs.begin();
         it++;
         while (it != m_confs.end()) {
-            string value;
+            std::string value;
             if ((*it)->get(nm, value, sk)) {
                 // This file has value for nm/sk. If it is the same as the new
                 // one, no need for an entry in the topmost file. Else, stop
@@ -491,34 +489,34 @@ public:
         return m_confs.front()->set(nm, val, sk);
     }
 
-    virtual int erase(const string& nm, const string& sk) {
+    virtual int erase(const std::string& nm, const std::string& sk) {
         return m_confs.front()->erase(nm, sk);
     }
-    virtual int eraseKey(const string& sk) {
+    virtual int eraseKey(const std::string& sk) {
         return m_confs.front()->eraseKey(sk);
     }
     virtual bool holdWrites(bool on) {
         return m_confs.front()->holdWrites(on);
     }
 
-    virtual vector<string> getNames(const string& sk, const char *pattern = 0)
-    const {
+    virtual std::vector<std::string> getNames(const std::string& sk,
+                                              const char *pattern = 0) const {
         return getNames1(sk, pattern, false);
     }
-    virtual vector<string> getNamesShallow(const string& sk,
+    virtual std::vector<std::string> getNamesShallow(const std::string& sk,
                                            const char *patt = 0) const {
         return getNames1(sk, patt, true);
     }
 
-    virtual vector<string> getNames1(const string& sk, const char *pattern,
-                                     bool shallow) const {
-        vector<string> nms;
-        typename vector<T*>::const_iterator it;
+    virtual std::vector<std::string> getNames1(
+        const std::string& sk, const char *pattern, bool shallow) const {
+        std::vector<std::string> nms;
+        typename std::vector<T*>::const_iterator it;
         bool skfound = false;
         for (it = m_confs.begin(); it != m_confs.end(); it++) {
             if ((*it)->hasSubKey(sk)) {
                 skfound = true;
-                vector<string> lst = (*it)->getNames(sk, pattern);
+                std::vector<std::string> lst = (*it)->getNames(sk, pattern);
                 nms.insert(nms.end(), lst.begin(), lst.end());
             }
             if (shallow && skfound) {
@@ -526,19 +524,19 @@ public:
             }
         }
         sort(nms.begin(), nms.end());
-        vector<string>::iterator uit = unique(nms.begin(), nms.end());
+        std::vector<std::string>::iterator uit = unique(nms.begin(), nms.end());
         nms.resize(uit - nms.begin());
         return nms;
     }
 
-    virtual vector<string> getSubKeys() const {
+    virtual std::vector<std::string> getSubKeys() const {
         return getSubKeys(false);
     }
-    virtual vector<string> getSubKeys(bool shallow) const {
-        vector<string> sks;
-        typename vector<T*>::const_iterator it;
+    virtual std::vector<std::string> getSubKeys(bool shallow) const {
+        std::vector<std::string> sks;
+        typename std::vector<T*>::const_iterator it;
         for (it = m_confs.begin(); it != m_confs.end(); it++) {
-            vector<string> lst;
+            std::vector<std::string> lst;
             lst = (*it)->getSubKeys();
             sks.insert(sks.end(), lst.begin(), lst.end());
             if (shallow) {
@@ -546,7 +544,7 @@ public:
             }
         }
         sort(sks.begin(), sks.end());
-        vector<string>::iterator uit = unique(sks.begin(), sks.end());
+        std::vector<std::string>::iterator uit = unique(sks.begin(), sks.end());
         sks.resize(uit - sks.begin());
         return sks;
     }
@@ -557,11 +555,11 @@ public:
 
 private:
     bool     m_ok;
-    vector<T*> m_confs;
+    std::vector<T*> m_confs;
 
     /// Reset to pristine
     void clear() {
-        typename vector<T*>::iterator it;
+        typename std::vector<T*>::iterator it;
         for (it = m_confs.begin(); it != m_confs.end(); it++) {
             delete(*it);
         }
@@ -571,7 +569,7 @@ private:
     /// Common code to initialize from existing object
     void init_from(const ConfStack& rhs) {
         if ((m_ok = rhs.m_ok)) {
-            typename vector<T*>::const_iterator it;
+            typename std::vector<T*>::const_iterator it;
             for (it = rhs.m_confs.begin(); it != rhs.m_confs.end(); it++) {
                 m_confs.push_back(new T(**it));
             }
@@ -579,8 +577,8 @@ private:
     }
 
     /// Common construct from file names code
-    void construct(const vector<string>& fns, bool ro) {
-        vector<string>::const_iterator it;
+    void construct(const std::vector<std::string>& fns, bool ro) {
+        std::vector<std::string>::const_iterator it;
         bool lastok = false;
         for (it = fns.begin(); it != fns.end(); it++) {
             T* p = new T(it->c_str(), ro);
