@@ -363,7 +363,9 @@
 
 # <var name="uprclconfdir" type="dfn"><brief>Recoll index
 # directory</brief><descr>This is usually not defined and defaults to
-# /var/cache/upmpdcli/uprcl</descr></var>
+# /var/cache/upmpdcli/uprcl. The name is a bit misleading because there is
+# no real configuration data in there: it's all programmatically
+# generated from actual configuration found elsewhere.</descr></var> 
 #uprclconfdir = /var/cache/upmpdcli/uprcl
 
 # <var name="uprclautostart" type="bool"><brief>Initialize uprcl as soon as
