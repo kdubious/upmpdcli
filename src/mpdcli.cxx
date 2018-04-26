@@ -611,8 +611,8 @@ bool MPDCli::stop()
 }
 bool MPDCli::seek(int seconds)
 {
-    if (!updStatus())
-        return -1;
+    if (!updStatus() || m_stat.songpos < 0)
+        return false;
     LOGDEB("MPDCli::seek: pos:"<<m_stat.songpos<<" seconds: "<< seconds<<endl);
     RETRY_CMD(mpd_run_seek_pos(M_CONN, m_stat.songpos, (unsigned int)seconds));
     return true;
