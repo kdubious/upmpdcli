@@ -39,6 +39,7 @@
 #include "httpfs.hxx"
 #include "ohsndrcv.hxx"
 #include "protocolinfo.hxx"
+#include "ohcredentials.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -71,6 +72,7 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
         m_services.push_back(m_ohif);
         m_services.push_back(new OHTime(this));
         m_services.push_back(new OHVolume(this));
+        m_services.push_back(new OHCredentials(this, opts.cachedir));
         m_ohpl = new OHPlaylist(this, opts.ohmetasleep);
         m_services.push_back(m_ohpl);
         if (m_avt)

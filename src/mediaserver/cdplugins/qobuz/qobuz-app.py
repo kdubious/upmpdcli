@@ -86,6 +86,16 @@ def maybelogin():
         raise Exception("qobuzuser and/or qobuzpass not set in configuration")
 
     is_logged_in = session.login(username, password)
+
+
+# This is not used by the media server. It's for use by the OpenHome
+# Credentials service
+@dispatcher.record('login')
+def login(a):
+    session.login(a['user'], a['password'])
+    appid, token = session.get_appid_and_token()
+    return {'appid': appid, 'token' : token}
+    
     
 @dispatcher.record('trackuri')
 def trackuri(a):

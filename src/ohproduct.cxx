@@ -51,7 +51,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Product:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Product");
 
 static string csxml("<SourceList>\n");
-static string csattrs("Info Time Volume");
+static string csattrs("Info Credentials Time Volume");
 
 // This can be replaced by config data in listScripts()
 static string scripts_dir("/usr/share/upmpdcli/src_scripts");

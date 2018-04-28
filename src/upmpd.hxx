@@ -77,6 +77,7 @@ public:
         Options() : options(upmpdNone), ohmetasleep(0), schttpport(0),
             sendermpdport(0) {}
         unsigned int options;
+        std::string  cachedir;
         std::string  cachefn;
         std::string  radioconf;
         unsigned int ohmetasleep;

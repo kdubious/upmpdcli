@@ -79,6 +79,8 @@ upmpdcli_SOURCES = \
      src/mpdcli.hxx \
      src/netcon-fixed.cpp \
      src/netcon.h \
+     src/ohcredentials.cxx \
+     src/ohcredentials.hxx \
      src/ohinfo.cxx \
      src/ohinfo.hxx \
      src/ohmetacache.cxx \
@@ -125,7 +127,8 @@ scctl_LDADD = $(SCCTL_LIBS)
               
 dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/RenderingControl.xml src/ConnectionManager.xml \
-                  src/OHProduct.xml src/OHInfo.xml src/OHTime.xml \
+                  src/OHProduct.xml src/OHCredentials.xml src/OHInfo.xml \
+                  src/OHTime.xml \
                   src/OHVolume.xml src/OHPlaylist.xml src/OHReceiver.xml \
                   src/OHRadio.xml src/mediaserver/ContentDirectory.xml \
                   src/protocolinfo.txt src/presentation.html \

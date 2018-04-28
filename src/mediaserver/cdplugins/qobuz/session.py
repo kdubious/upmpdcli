@@ -30,6 +30,11 @@ class Session(object):
         else:
             return False
 
+
+    def get_appid_and_token(self):
+        return (self.api.appid, self.api.user_auth_token)
+    
+
     def get_media_url(self, trackid, format_id=5):
         # Format id: 5 for MP3 320, 6 for FLAC Lossless, 7 for FLAC
         # Hi-Res 24 bit =< 96kHz, 27 for FLAC Hi-Res 24 bit >96 kHz &

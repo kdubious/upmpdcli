@@ -79,6 +79,13 @@ static string ohDesc(
     "  <eventSubURL>/evt/OHInfo</eventSubURL>"
     "</service>"
     "<service>"
+    "  <serviceType>urn:av-openhome-org:service:Credentials:1</serviceType>"
+    "  <serviceId>urn:av-openhome-org:serviceId:Credentials</serviceId>"
+    "  <SCPDURL>/upmpd/OHCredentials.xml</SCPDURL>"
+    "  <controlURL>/ctl/OHCredentials</controlURL>"
+    "  <eventSubURL>/evt/OHCredentials</eventSubURL>"
+    "</service>"
+    "<service>"
     "  <serviceType>urn:av-openhome-org:service:Time:1</serviceType>"
     "  <serviceId>urn:av-openhome-org:serviceId:Time</serviceId>"
     "  <SCPDURL>/upmpd/OHTime.xml</SCPDURL>"
@@ -200,7 +207,7 @@ static vector<const char *> xmlfilenames =
 static vector<const char *> ohxmlfilenames = 
 {
     "OHProduct.xml", "OHInfo.xml", "OHTime.xml", "OHVolume.xml", 
-    "OHPlaylist.xml", "OHRadio.xml"
+    "OHPlaylist.xml", "OHRadio.xml", "OHCredentials.xml"
 };
 
 // Read and setup our (mostly XML) data to make it available from the
