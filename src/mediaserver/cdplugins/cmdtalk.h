@@ -94,10 +94,12 @@ class CmdTalk {
 	const std::string& proc,
 	const std::unordered_map<std::string, std::string>& args,
 	std::unordered_map<std::string, std::string>& rep);
-    
+
+    CmdTalk(const CmdTalk&) = delete;
+    CmdTalk &operator=(const CmdTalk &) = delete;
 private:
     class Internal;
-    Internal *m;
+    Internal *m{0};
 };
 
 #endif /* _CMDTALK_H_INCLUDED_ */
