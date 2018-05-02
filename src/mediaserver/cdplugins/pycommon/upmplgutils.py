@@ -30,6 +30,7 @@ from __future__ import print_function, unicode_literals
 import posixpath
 import re
 import sys
+import conftree
 
 default_mime = "audio/mpeg"
 default_samplerate = "44100"
@@ -166,6 +167,23 @@ def direntry(id, pid, title, arturi=None, artist=None, upnpclass=None):
         ret['upnp:class'] = upnpclass
     return ret
 
+# Get user and password from service, from the main configuration
+# file, or possibly from the ohcredentials scratchpad. In the main
+# file, the entries are like:
+#    qobuzuser=xxx
+#    qobuzpass=yyy
+# In the ohcreds file, they are like:
+#    [qobuz]
+#    u=xxx
+#    p=yyy
+def getserviceuserpass(upconfig, servicename):
+    username = upconfig.get(servicename + 'user')
+    password = upconfig.get(servicename + 'pass')
+    if not username or not password:
+        altconf = conftree.ConfSimple('/var/cache/upmpdcli/ohcreds/screds')
+        username = altconf.get('u', servicename)
+        password = altconf.get('p', servicename)
+    return username, password
 
 def uplog(s):
     if not type(s) == type(u''):

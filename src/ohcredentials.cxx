@@ -21,6 +21,7 @@
 #include "ohcredentials.hxx"
 
 #include <upnp/upnp.h>
+#include <sys/stat.h>
 
 #include <functional>
 #include <iostream>
@@ -138,8 +139,8 @@ struct ServiceCreds {
     string str() {
         string s;
         s += "Service: " + servicename + " User: " + user +
-            " Pass: " + password + " Appid " + appid + " Token " + token +
-            " EPass: " + encryptedpass + " Enabled: " +
+            /*" Pass: "+password*/ + " Appid " + appid + " Token " + token +
+            /*" EPass: "+encryptedpass*/ + " Enabled: " +
             SoapHelp::i2s(enabled) + " Status: " + status + " Data: " + data;
         return s;
     }
@@ -163,7 +164,7 @@ class OHCredentials::Internal {
 public:
     
     Internal(const string& cd) {
-        string cachedir = path_cat(cd, "ohcreds");
+        cachedir = path_cat(cd, "ohcreds");
         if (!path_makepath(cachedir, 0700)) {
             LOGERR("OHCredentials: can't create cache dir " << cachedir <<endl);
             return;
@@ -174,6 +175,7 @@ public:
         if (!path_exists(keyfile)) {
             vector<string> acmd{"openssl", "genrsa", "-out", keyfile, "4096"};
             int status = cmd.doexec1(acmd);
+            chmod(keyfile.c_str(), 0600);
             if (status != 0) {
                 LOGERR("OHCredentials: could not create key\n");
                 return;
@@ -186,7 +188,7 @@ public:
             return;
         }
 
-        LOGDEB("OHCredentials: my public key:\n" << pubkey << endl);
+        LOGDEB1("OHCredentials: my public key:\n" << pubkey << endl);
     }
 
     bool decrypt(const string& in, string& out) {
@@ -197,7 +199,7 @@ public:
             LOGERR("OHCredentials: decrypt failed\n");
             return false;
         }
-        LOGDEB("decrypt: [" << out << "]\n");
+        //LOGDEB1("decrypt: [" << out << "]\n");
         return true;
     }
 
@@ -209,8 +211,26 @@ public:
         it->second.enabled = enabled;
         return true;
     }
+
+    bool save() {
+        string credsfile = path_cat(cachedir, "screds");
+        FILE *fp = fopen(credsfile.c_str(), "w");
+        fchmod(fileno(fp), 0600);
+        if (nullptr == fp) {
+            LOGERR("OHCredentials: error opening " << credsfile <<
+                   " errno " << errno << endl);
+            return false;
+        }
+        for (const auto& cred : creds) {
+            fprintf(fp, "[%s]\nu=%s\np=%s\n", cred.second.servicename.c_str(),
+                    cred.second.user.c_str(), cred.second.password.c_str());
+        }
+        fclose(fp);
+        return true;
+    }
     
     ExecCmd cmd;
+    string cachedir;
     string keyfile;
     string pubkey;
     int seq{1};
@@ -312,7 +332,7 @@ int OHCredentials::actSet(const SoapIncoming& sc, SoapOutgoing& data)
                                        in_Password);
     }
     m->seq++;
-
+    m->save();
     if (m->setEnabled(in_Id, true)) {
         return UPNP_E_SUCCESS;
     } else {

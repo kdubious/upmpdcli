@@ -67,11 +67,11 @@ def maybelogin():
     pathprefix = os.environ["UPMPD_PATHPREFIX"]
     if "UPMPD_CONFIG" not in os.environ:
         raise Exception("No UPMPD_CONFIG in environment")
+
     upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
-    
-    username = upconfig.get('qobuzuser')
-    password = upconfig.get('qobuzpass')
     formatid = upconfig.get('qobuzformatid')
+    username, password = getserviceuserpass(upconfig, 'qobuz')
+      
     if formatid:
         formatid = int(formatid)
     else:
