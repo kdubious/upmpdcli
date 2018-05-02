@@ -469,11 +469,6 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
     return UPNP_E_SUCCESS;
 }
 
-std::string ContentDirectory::getpathprefix(CDPlugin *plg)
-{
-    return string("/") + plg->getname();
-}
-
 static string firstpathelt(const string& path)
 {
     // The parameter is normally a path, but make this work with an URL too

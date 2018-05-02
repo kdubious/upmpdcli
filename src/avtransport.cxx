@@ -23,6 +23,7 @@
 #include <iostream>
 #include <map>
 #include <utility>
+#include <regex>
 
 #include "libupnpp/log.hxx"
 #include "libupnpp/soaphelp.hxx"
@@ -33,6 +34,9 @@
 #include "upmpd.hxx"
 #include "upmpdutils.hxx"
 #include "smallut.h"
+#include "pathut.h"
+#include "conftree.h"
+#include "mediaserver/cdplugins/cdplugin.hxx"
 
 // For testing upplay with a dumb renderer.
 // #define NO_SETNEXT
@@ -42,6 +46,12 @@ using namespace std::placeholders;
 
 static const string sIdTransport("urn:upnp-org:serviceId:AVTransport");
 static const string sTpTransport("urn:schemas-upnp-org:service:AVTransport:1");
+
+// this is used for translating urls for the very special use of
+// Kazoo/Lumin + ohcredentials. Actually, this should be configurable
+// as there is no need for the media server, which is used to do the
+// real data access to run on this host.
+static string upnphost;
 
 UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev, bool noev)
     : UpnpService(sTpTransport, sIdTransport, dev, noev), m_dev(dev), m_ohp(0)
@@ -89,6 +99,9 @@ UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev, bool noev)
                             bind(&UpMpdAVTransport::seqcontrol, 
                                  this, _1, _2, 1));
 
+    unsigned short usport;
+    m_dev->ipv4(&upnphost, &usport);
+    
     // This would make our life easier, but it's incompatible if
     // ohplaylist is also in use, so refrain.
 //    dev->m_mpdcli->consume(true);
@@ -366,6 +379,49 @@ bool UpMpdAVTransport::getEventData(bool all, std::vector<std::string>& names,
     return true;
 }
 
+// Hack for working with OHCredentials. The CP aware of this
+// (Kazoo/Lumin mostly) will send URIs like qobuz:// tidal:// and
+// expect the renderer to know what to do with them. We transform them
+// so that they point to our media server gateway (which should be
+// running of course for this to work).
+static bool maybeMorphSpecialUri(string& uri)
+{
+    if (uri.find("http://") == 0 || uri.find("https://") == 0) {
+        return true;
+    }
+
+    static string sport;
+    if (sport.empty()) {
+        std::unique_lock<std::mutex>(g_configlock);
+        int port = CDPluginServices::default_microhttpport();
+        if (!g_config->get("plgmicrohttpport", sport)) {
+            sport = SoapHelp::i2s(port);
+        }
+    }
+
+    // http://wiki.openhome.org/wiki/Av:Developer:Eriskay:StreamingServices
+    // Tidal and qobuz tracks added by Kazoo / Lumin: 
+    //   tidal://track?version=1&trackId=[tidal_track_id]
+    //   qobuz://track?version=2&trackId=[qobuz_track_id]
+    
+    string se =
+        "(tidal|qobuz)://track\\?version=([[:digit:]]+)&trackId=([[:digit:]]+)";
+    std::regex e(se);
+    std::smatch mr;
+    bool found = std::regex_match(uri, mr, e);
+    if (found) {
+        string pathprefix = CDPluginServices::getpathprefix(mr[1]);
+
+        // The microhttpd code actually only cares about getting a
+        // trackId parameter. Make it look what the plugins normally
+        // generate anyway:
+        string path = path_cat(pathprefix,
+                               "track?version=1&trackId=" + mr[3].str());
+        uri = string("http://") + upnphost + ":" + sport + path;
+    }
+    return found;
+}
+
 // http://192.168.4.4:8200/MediaItems/246.mp3
 int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc,
                                         SoapOutgoing& data, bool setnext)
@@ -383,6 +439,11 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc,
     if (!found) {
         return UPNP_E_INVALID_PARAM;
     }
+    if (!maybeMorphSpecialUri(uri)) {
+        LOGERR("Set(Next)AVTransportURI: bad uri: " << uri << endl);
+        return UPNP_E_INVALID_PARAM;
+    }
+
     string metadata;
     found = setnext ? sc.get("NextURIMetaData", &metadata) :
         sc.get("CurrentURIMetaData", &metadata);
