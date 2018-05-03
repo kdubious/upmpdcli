@@ -91,6 +91,7 @@ public:
     bool consume(bool on);
     bool seek(int seconds);
     bool clearQueue();
+    // Insert. use pos==-1 for just adding to the queue
     int insert(const std::string& uri, int pos, const UpSong& meta);
     // Insert after given id. Returns new id or -1
     int insertAfterId(const std::string& uri, int id, const UpSong& meta);

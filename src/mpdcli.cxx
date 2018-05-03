@@ -716,8 +716,13 @@ int MPDCli::insert(const string& uri, int pos, const UpSong& meta)
     if (!ok())
         return -1;
 
-    RETRY_CMD((m_lastinsertid = 
-               mpd_run_add_id_to(M_CONN, uri.c_str(), (unsigned)pos)) != -1);
+    if (pos == -1) {
+        RETRY_CMD((m_lastinsertid = 
+                   mpd_run_add_id(M_CONN, uri.c_str())) != -1);
+    } else {        
+        RETRY_CMD((m_lastinsertid = 
+                  mpd_run_add_id_to(M_CONN, uri.c_str(), (unsigned)pos)) != -1);
+    }
     
     if (m_have_addtagid)
         send_tag_data(m_lastinsertid, meta);
