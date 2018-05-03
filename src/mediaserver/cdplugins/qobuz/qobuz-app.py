@@ -47,7 +47,7 @@ session = Session()
 
 is_logged_in = False
 
-def maybelogin():
+def maybelogin(a={}):
     global formatid
     global httphp
     global pathprefix
@@ -67,11 +67,15 @@ def maybelogin():
     pathprefix = os.environ["UPMPD_PATHPREFIX"]
     if "UPMPD_CONFIG" not in os.environ:
         raise Exception("No UPMPD_CONFIG in environment")
+
     upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
-    
-    username = upconfig.get('qobuzuser')
-    password = upconfig.get('qobuzpass')
     formatid = upconfig.get('qobuzformatid')
+    if 'user' in a:
+        username = a['user']
+        password = a['password']
+    else:
+        username, password = getserviceuserpass(upconfig, 'qobuz')
+      
     if formatid:
         formatid = int(formatid)
     else:
@@ -86,6 +90,16 @@ def maybelogin():
         raise Exception("qobuzuser and/or qobuzpass not set in configuration")
 
     is_logged_in = session.login(username, password)
+
+
+# This is not used by the media server. It's for use by the OpenHome
+# Credentials service
+@dispatcher.record('login')
+def login(a):
+    maybelogin(a)
+    appid, token = session.get_appid_and_token()
+    return {'appid': appid, 'token' : token}
+    
     
 @dispatcher.record('trackuri')
 def trackuri(a):

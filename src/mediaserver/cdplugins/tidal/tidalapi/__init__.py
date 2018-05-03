@@ -140,6 +140,9 @@ class Session(object):
 
         return self.is_logged_in
 
+    def get_token_and_country(self):
+        return self.session_id, self.country_code
+    
     def init_user(self, user_id, subscription_type):
         return User(self, user_id=user_id, subscription_type=subscription_type)
 

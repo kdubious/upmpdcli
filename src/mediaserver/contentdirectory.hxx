@@ -34,8 +34,6 @@ public:
     ContentDirectory(MediaServer *dev);
     ~ContentDirectory();
 
-    /// Returns something like "/tidal" (no end slash)
-    virtual std::string getpathprefix(CDPlugin *);
     /// Return plugin based on path prefix
     CDPlugin *getpluginforpath(const std::string& path);
 

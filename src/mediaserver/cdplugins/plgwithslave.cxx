@@ -18,22 +18,20 @@
 
 #include "plgwithslave.hxx"
 
-#include <fcntl.h>
-
 #include <string>
 #include <vector>
 #include <sstream>
 #include <string.h>
+#include <fcntl.h>
 #include <upnp/upnp.h>
 #include <microhttpd.h>
 #include <json/json.h>
+#include <libupnpp/log.hxx>
 
 #include "cmdtalk.h"
 #include "pathut.h"
 #include "smallut.h"
-#include "libupnpp/log.hxx"
 #include "main.hxx"
-#include "conftree.h"
 
 using namespace std;
 using namespace std::placeholders;
@@ -190,7 +188,7 @@ bool PlgWithSlave::Internal::maybeStartCmd()
         return true;
     }
 
-    int port = 49149;
+    int port = CDPluginServices::default_microhttpport();
     string sport;
     if (plg->m_services->config_get("plgmicrohttpport", sport)) {
         port = atoi(sport.c_str());
@@ -227,7 +225,6 @@ bool PlgWithSlave::Internal::maybeStartCmd()
     ss << upnphost << ":" << port;
     string hostport = string("UPMPD_HTTPHOSTPORT=") + ss.str();
     string pp = string("UPMPD_PATHPREFIX=") + pathprefix;
-    string fn = string("UPMPD_FNAME=") + plg->m_services->getfname();
     if (!cmd.startCmd(exepath, {/*args*/},
                       /* env */ {pythonpath, configname, hostport, pp})) {
         LOGERR("PlgWithSlave::maybeStartCmd: startCmd failed\n");

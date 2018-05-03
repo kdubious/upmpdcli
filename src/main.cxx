@@ -287,7 +287,6 @@ int main(int argc, char *argv[])
     
     UpMpd::Options opts;
 
-    string cachedir;
     if (!g_configfilename.empty()) {
         g_config = new ConfSimple(g_configfilename.c_str(), 1, true);
         if (!g_config || !g_config->ok()) {
@@ -338,7 +337,7 @@ int main(int argc, char *argv[])
         }
         g_config->get("iconpath", iconpath);
         g_config->get("presentationhtml", presentationhtml);
-        g_config->get("cachedir", cachedir);
+        g_config->get("cachedir", opts.cachedir);
         g_config->get("pidfile", pidfilename);
         if (!(op_flags & OPT_i)) {
             g_config->get("upnpiface", iface);
@@ -460,19 +459,20 @@ int main(int argc, char *argv[])
             LOGFAT("Can't write pidfile: " << pidfile.getreason() << endl);
             return 1;
         }
-	if (cachedir.empty())
-            cachedir = "/var/cache/upmpdcli";
+	if (opts.cachedir.empty())
+            opts.cachedir = "/var/cache/upmpdcli";
     } else {
-	if (cachedir.empty())
-            cachedir = path_cat(path_tildexpand("~") , "/.cache/upmpdcli");
+	if (opts.cachedir.empty())
+            opts.cachedir = path_cat(path_tildexpand("~") , "/.cache/upmpdcli");
     }
 
     string& mcfn = opts.cachefn;
     // no cache access needed or desirable for a pure media server
     if (!msonly && ohmetapersist) {
-        opts.cachefn = path_cat(cachedir, "/metacache");
-        if (!path_makepath(cachedir, 0755)) {
-            LOGERR("makepath("<< cachedir << ") : errno : " << errno << endl);
+        opts.cachefn = path_cat(opts.cachedir, "/metacache");
+        if (!path_makepath(opts.cachedir, 0755)) {
+            LOGERR("makepath("<< opts.cachedir << ") : errno : " <<
+                   errno << endl);
         } else {
             int fd;
             if ((fd = open(mcfn.c_str(), O_CREAT|O_RDWR, 0644)) < 0) {
@@ -482,8 +482,10 @@ int main(int argc, char *argv[])
                 if (geteuid() == 0 && chown(mcfn.c_str(), runas, -1) != 0) {
                     LOGERR("chown("<< mcfn << ") : errno : " << errno << endl);
                 }
-                if (geteuid() == 0 && chown(cachedir.c_str(), runas, -1) != 0) {
-                    LOGERR("chown("<< cachedir << ") : errno : " <<errno<< endl);
+                if (geteuid() == 0 &&
+                    chown(opts.cachedir.c_str(), runas, -1) != 0) {
+                    LOGERR("chown("<< opts.cachedir << ") : errno : " <<
+                           errno << endl);
                 }
             }
         }

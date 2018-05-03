@@ -39,6 +39,9 @@
 #include "smallut.h"
 #include "ohproduct.hxx"
 #include "protocolinfo.hxx"
+#include "pathut.h"
+#include "conftree.h"
+#include "ohcredentials.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -604,6 +607,7 @@ bool OHPlaylist::ireadList(const vector<int>& ids, vector<UpSong>& songs)
     return true;
 }
 
+
 // Adds the given uri and metadata as a new track to the playlist. 
 // Set the AfterId argument to 0 to insert a track at the start of the
 // playlist.
@@ -620,6 +624,9 @@ int OHPlaylist::insert(const SoapIncoming& sc, SoapOutgoing& data)
     ok = ok && sc.get("Uri", &uri);
     if (ok)
         ok = ok && sc.get("Metadata", &metadata);
+
+    // Maybe transform a qobuz:// or tidal:// uri if we're doing this
+    OHCredsMaybeMorphSpecialUri(uri);
 
     if (!m_active) {
         // See comment in seekId()
