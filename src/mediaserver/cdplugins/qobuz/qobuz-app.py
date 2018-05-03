@@ -47,7 +47,7 @@ session = Session()
 
 is_logged_in = False
 
-def maybelogin():
+def maybelogin(a={}):
     global formatid
     global httphp
     global pathprefix
@@ -70,7 +70,11 @@ def maybelogin():
 
     upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
     formatid = upconfig.get('qobuzformatid')
-    username, password = getserviceuserpass(upconfig, 'qobuz')
+    if 'user' in a:
+        username = a['user']
+        password = a['password']
+    else:
+        username, password = getserviceuserpass(upconfig, 'qobuz')
       
     if formatid:
         formatid = int(formatid)
@@ -92,7 +96,7 @@ def maybelogin():
 # Credentials service
 @dispatcher.record('login')
 def login(a):
-    session.login(a['user'], a['password'])
+    maybelogin(a)
     appid, token = session.get_appid_and_token()
     return {'appid': appid, 'token' : token}
     

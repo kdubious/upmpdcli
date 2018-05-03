@@ -26,7 +26,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <regex>
 
 #include "libupnpp/base64.hxx"
 #include "libupnpp/log.hxx"
@@ -42,20 +41,13 @@
 #include "protocolinfo.hxx"
 #include "pathut.h"
 #include "conftree.h"
-#include "mediaserver/cdplugins/cdplugin.hxx"
+#include "ohcredentials.hxx"
 
 using namespace std;
 using namespace std::placeholders;
 
 static const string sTpProduct("urn:av-openhome-org:service:Playlist:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Playlist");
-
-// This is used for translating urls for the special use of
-// Kazoo/Lumin + ohcredentials. The media server, which is used to run
-// the http server and for getting the real media URLs, must run on
-// this host (for one thing the creds are passed through a local
-// file).
-static string upnphost;
 
 // Playlist is the default oh service, so it's active when starting up
 OHPlaylist::OHPlaylist(UpMpd *dev, unsigned int cssleep)
@@ -111,9 +103,6 @@ OHPlaylist::OHPlaylist(UpMpd *dev, unsigned int cssleep)
     dev->addActionMapping(this, "ProtocolInfo",
                           bind(&OHPlaylist::protocolInfo, this, _1, _2));
     
-    unsigned short usport;
-    dev->ipv4(&upnphost, &usport);
-
     if ((dev->m_options & UpMpd::upmpdOhMetaPersist)) {
         dmcacheSetOpts(cssleep);
         if (!dmcacheRestore(dev->getMetaCacheFn(), m_metacache)) {
@@ -619,49 +608,6 @@ bool OHPlaylist::ireadList(const vector<int>& ids, vector<UpSong>& songs)
 }
 
 
-// Hack for working with OHCredentials. The CP aware of this
-// (Kazoo/Lumin mostly) will send URIs like qobuz:// tidal:// and
-// expect the renderer to know what to do with them. We transform them
-// so that they point to our media server gateway (which should be
-// running of course for this to work).
-static bool maybeMorphSpecialUri(string& uri)
-{
-    if (uri.find("http://") == 0 || uri.find("https://") == 0) {
-        return true;
-    }
-
-    static string sport;
-    if (sport.empty()) {
-        std::unique_lock<std::mutex>(g_configlock);
-        int port = CDPluginServices::default_microhttpport();
-        if (!g_config->get("plgmicrohttpport", sport)) {
-            sport = SoapHelp::i2s(port);
-        }
-    }
-
-    // http://wiki.openhome.org/wiki/Av:Developer:Eriskay:StreamingServices
-    // Tidal and qobuz tracks added by Kazoo / Lumin: 
-    //   tidal://track?version=1&trackId=[tidal_track_id]
-    //   qobuz://track?version=2&trackId=[qobuz_track_id]
-    
-    string se =
-        "(tidal|qobuz)://track\\?version=([[:digit:]]+)&trackId=([[:digit:]]+)";
-    std::regex e(se);
-    std::smatch mr;
-    bool found = std::regex_match(uri, mr, e);
-    if (found) {
-        string pathprefix = CDPluginServices::getpathprefix(mr[1]);
-
-        // The microhttpd code actually only cares about getting a
-        // trackId parameter. Make it look what the plugins normally
-        // generate anyway:
-        string path = path_cat(pathprefix,
-                               "track?version=1&trackId=" + mr[3].str());
-        uri = string("http://") + upnphost + ":" + sport + path;
-    }
-    return found;
-}
-
 // Adds the given uri and metadata as a new track to the playlist. 
 // Set the AfterId argument to 0 to insert a track at the start of the
 // playlist.
@@ -679,10 +625,8 @@ int OHPlaylist::insert(const SoapIncoming& sc, SoapOutgoing& data)
     if (ok)
         ok = ok && sc.get("Metadata", &metadata);
 
-    if (!maybeMorphSpecialUri(uri)) {
-        LOGERR("OHPlaylist::insert: bad uri: " << uri << endl);
-        return UPNP_E_INVALID_PARAM;
-    }
+    // Maybe transform a qobuz:// or tidal:// uri if we're doing this
+    OHCredsMaybeMorphSpecialUri(uri);
 
     if (!m_active) {
         // See comment in seekId()

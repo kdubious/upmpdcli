@@ -50,7 +50,7 @@ is_logged_in = False
 
 tidalidprefix = '0$tidal$'
 
-def maybelogin():
+def maybelogin(a={}):
     global session
     global quality
     global httphp
@@ -71,14 +71,17 @@ def maybelogin():
     pathprefix = os.environ["UPMPD_PATHPREFIX"]
     if "UPMPD_CONFIG" not in os.environ:
         raise Exception("No UPMPD_CONFIG in environment")
+
     upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
-    
-    username = upconfig.get('tidaluser')
-    password = upconfig.get('tidalpass')
-    qalstr = upconfig.get('tidalquality')
+    if 'user' in a:
+        username = a['user']
+        password = a['password']
+    else:
+        username, password = getserviceuserpass(upconfig, 'tidal')
     if not username or not password:
         raise Exception("tidaluser and/or tidalpass not set in configuration")
 
+    qalstr = upconfig.get('tidalquality')
     if qalstr == 'lossless':
         quality = Quality.lossless
     elif qalstr == 'high':
@@ -107,6 +110,14 @@ def get_mimeandkbs():
         return ('audio/mpeg', str(320))
     else:
         return ('audio/mpeg', str(96))
+
+# This is not used by the media server. It's for use by the OpenHome
+# Credentials service
+@dispatcher.record('login')
+def login(a):
+    maybelogin(a)
+    session_id, country_code = session.get_token_and_country()
+    return {'token' : session_id, 'country' : country_code}
 
 @dispatcher.record('trackuri')
 def trackuri(a):

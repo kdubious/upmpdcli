@@ -50,5 +50,8 @@ private:
 
     Internal *m{0};
 };
+
+extern bool OHCredsMaybeMorphSpecialUri(std::string& uri);
+
 #endif
 

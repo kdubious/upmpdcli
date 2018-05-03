@@ -172,11 +172,13 @@ static bool makerootdir()
         if (!entry.compare("pycommon")) {
             continue;
         }
-        string userparam = entry + "user";
-        if (!g_config->hasNameAnywhere(userparam)) {
-            LOGDEB("ContentDirectory: not creating entry for " << entry <<
-                   " because " << userparam <<
-                   " is not defined in configuration\n");
+        string userkey = entry + "user";
+        string autostartkey = entry + "autostart";
+        if (!g_config->hasNameAnywhere(userkey) &&
+            !g_config->hasNameAnywhere(autostartkey)) {
+            LOGINF("ContentDirectory: not creating entry for " << entry <<
+                   " because neither " << userkey << " nor " << autostartkey <<
+                   " are defined in the configuration\n");
             continue;
         }
 
