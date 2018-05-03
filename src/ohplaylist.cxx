@@ -280,6 +280,8 @@ void OHPlaylist::setActive(bool onoff)
     if (m_active) {
         m_dev->m_mpdcli->clearQueue();
         m_dev->m_mpdcli->restoreState(m_mpdsavedstate);
+        m_dev->m_mpdcli->consume(false);
+        m_dev->m_mpdcli->single(false);
         refreshState();
         maybeWakeUp(true);
     } else {
