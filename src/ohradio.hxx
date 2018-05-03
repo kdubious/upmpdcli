@@ -30,6 +30,9 @@ class UpMpd;
 
 using namespace UPnPP;
 
+class RadioMeta;
+class MpdStatus;
+
 class OHRadio : public OHService {
 public:
     OHRadio(UpMpd *dev);
@@ -70,6 +73,7 @@ private:
     int setPlaying();
     bool makeIdArray(std::string&);
     void maybeWakeUp(bool ok);
+    void maybeExecMetaScript(RadioMeta& radio, MpdStatus &);
 
     bool m_active;
     MpdState m_mpdsavedstate;

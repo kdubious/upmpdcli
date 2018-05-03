@@ -131,6 +131,11 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/protocolinfo.txt src/presentation.html \
                   src/upmpdcli.conf-dist 
 
+radioscriptsdir = $(pkgdatadir)/radio_scripts
+dist_radioscripts_DATA = \
+                    src/radio_scripts/radio-paradise-get-art.sh \
+                    src/radio_scripts/radio-paradise-get-flac.py
+
 cdpluginspycomdir = $(pkgdatadir)/cdplugins/pycommon
 dist_cdpluginspycom_DATA = \
                     src/mediaserver/cdplugins/pycommon/cmdtalk.py \
@@ -139,7 +144,6 @@ dist_cdpluginspycom_DATA = \
                     src/mediaserver/cdplugins/pycommon/routing.py \
                     src/mediaserver/cdplugins/pycommon/upmplgmodels.py \
                     src/mediaserver/cdplugins/pycommon/upmplgutils.py
-
 cdpluginstidaldir = $(pkgdatadir)/cdplugins/tidal
 dist_cdpluginstidal_DATA = \
                   src/mediaserver/cdplugins/tidal/tidal-app.py 
@@ -229,7 +233,8 @@ install-data-hook: web.tar.gz rdpl2stream.tar.gz uprclbottle.tar.gz
 	(cd $(DESTDIR)/$(cdpluginsqobuzdir); chmod a+x qobuz-app.py) 
 	(cd $(DESTDIR)/$(cdpluginsgmusicdir); chmod a+x gmusic-app.py) 
 	(cd $(DESTDIR)/$(cdpluginsuprcldir); chmod a+x uprcl-app.py) 
-
+	(cd $(DESTDIR)/$(radioscriptsdir);chmod a+rx . *)
+        
 dist_pkgdata_SCRIPTS = samplescripts/Analog-Input
 
 dist_sysconf_DATA = src/upmpdcli.conf-dist

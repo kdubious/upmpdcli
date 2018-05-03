@@ -192,7 +192,7 @@
 
 # <var name="radiolist" type="fn"><brief>Path to an external file with radio
 # definitions.</brief><descr>Radio stations can be defined at the end of
-# the the main file, or in an external file (or both). Using an external file
+# the main file, or in an external file (or both). Using an external file
 # can ease distribution to multiple machines. Either way, each radio
 # station is defined as a section with a name beginning with 'radio',
 # containing a mandatory URL parameter, and optional values. The part of
@@ -473,7 +473,22 @@ uprclautostart = 1
 # The section markers are the radio names. The definitions must be at the
 # end of the file because a section definition extends to the EOF and would
 # hide any parameters found inside which is not one of the radio
-# attributes.
+# attributes. See the radio definitions section in the manual for details,
+# esp. about the scripts which can be used to fetch cover art and metadata
+# about the current song.
+
+[radio Radio Paradise (lossy)]
+# There are many different urls and data formats for radio paradise. See
+# the details here:
+# http://www.radioparadise.com/rp_2.php#name=Listen&file=links
+url = http://stream-uk1.radioparadise.com/aac-128
+artUrl = https://www.radioparadise.com/graphics/fb_logo.png
+artscript = radio-paradise-get-art.sh
+
+[radio Radio Paradise (flac)]
+artUrl = https://www.radioparadise.com/graphics/fb_logo.png
+metaScript = radio-paradise-get-flac.py
+
 [radio FIP autour du rock]
 url = http://direct.fipradio.fr/live/fip-webradio1.mp3
 artUrl = http://www.fipradio.fr/sites/all/themes/custom/fip/img/logo_fip_header.png
