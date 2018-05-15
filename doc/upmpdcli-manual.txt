@@ -616,8 +616,50 @@ the Receivers can be out of sync by several seconds.
 
 
 [[UPMPDCLI-MS-STR]]
-== Upmpdcli Media Server: streaming services
+== Support for Streaming Services
 
+=== Streaming Services and UPnP
+
+Streaming services like Qobuz or Tidal give access to a huge catalog of
+music through a WEB interface (also usable by programs).
+
+The only thing that they have in common with UPnP is that the actual audio
+stream is obtained through HTTP. However, given their importance, they can
+be accessed through many UPnP Control Points and Renderers.
+
+There are three main ways to integrate the streaming services in an UPnP
+framework, and knowing which way you are using will avoid confusion:
+
+- The first approach is to have a UPnP Media Server act as a proxy for the
+  service: the catalog is browsed through a standard UPnP interface (the
+  Media Server translates this to the service API behind the scenes), and
+  the audio URIs are also accessed in an almost standard way (after a bit
+  of magic inside the Media Server). The one inconvenient of this approach
+  is that the special functions of the service (like managing the user
+  favourites lists) are mostly inaccessible. The advantage is that any
+  naive UPnP Control Point can access the streaming service. The Media
+  Server inside upmpdcli xref:UPMPDCLI-MS-STR-MS[implements this method].
+
+- The second approach is to do everything inside the Control Point. The CP
+  uses the service API for browsing (and possibly do things like managing
+  favourites). The CP also mediates the HTTP access to the audio streams
+  (the URIs the CP sends to the Renderer point to itself, and it arranges
+  to forward the data from the service). This is implemented, for example,
+  by Bubble UPnP. The drawback of this approach is that the CP can't go to
+  sleep or out of reach, else the music will stop (maybe at the next track).
+
+- The third approach is to distribute the function between CP and
+  Renderer. The Control Point performs the browsing and access to special
+  functions, and the Renderer knows how to access the service streams. This
+  is the OpenHome approach and can be considered the best of both worlds,
+  at the price of complexity and compatibility issues. This method is
+  implemented by the Kazoo and Lumin Control Points, and a number of
+  Renderers, the Linn and Lumin ones of course, but also,
+  xref:UPMPDCLI-MS-STR-CRED[lately by upmpdcli]. 
+
+[[UPMPDCLI-MS-STR-MS]]
+=== Accessing Streaming Services through the upmpdcli Media Server
+  
 The Media Server function in Upmpdcli (1.2.0 and later) gives access to
 external streaming services: Qobuz, Tidal, and Google Music at the moment.
 
@@ -654,7 +696,7 @@ NOTE: I have no reason to believe that upmpdcli is technically mis-using
 the streaming services in any way, but it is definitely not approved by any
 of them, and you are using it under your own responsibility.
 
-=== Notes on the Tidal interface
+==== Notes on the Tidal interface
 
 [NOTE]
 ===================================
@@ -683,7 +725,7 @@ It only works with a valid Tidal subscription.
 The configuration parameters are described in the
 <<tidaluser,configuration section>>
 
-=== Notes on the Qobuz interface
+==== Notes on the Qobuz interface
 
 This is based on the service API from the
 link:https://github.com/tidalf/plugin.audio.qobuz[Kodi add-on], by Joachim
@@ -702,7 +744,7 @@ The configuration parameters are described in the
 <<qobuzuser,configuration section>>
 
 [[upmpdcli.googlemusicnotes]]
-=== Notes on the Google Music interface
+==== Notes on the Google Music interface
 
 This is based on the
 link:https://github.com/simon-weber/gmusicapi[gmusicapi] Python package by
@@ -727,6 +769,22 @@ way to make things work, using an app password].
 The configuration parameters are described in the
 <<gmusicuser,configuration section>>
 
+
+[[UPMPDCLI-MS-STR-CRED]]
+=== Accessing the streaming services with OpenHome from Kazoo or Lumin
+
+This only works for Qobuz and Tidal. The corresponding media server module
+must be installed, but no other configuration should be needed on the
+renderer. The media service icons will appear in the CP interface, and the
+service will be accessible after entering the login and password.
+
+NOTE: the user name and password will be stored on the renderer in an
+insecure way, meaning that if someone steals the machine or obtains root
+access, there is nothing to prevent them from getting the credentials.
+
+Of course Kazoo or Lumin can also access the services through the media
+server interface (after configuring upmpdcli, see the
+xref:UPMPDCLI-MS-STR-MS[previous section]).
 
 [[UPRCL]]
 == Upmpdcli local Media Server: uprcl

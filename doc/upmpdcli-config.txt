@@ -178,7 +178,7 @@ name.
 [[radiolist]]
 radiolist:: Path to an external file with radio
 definitions. Radio stations can be defined at the end of
-the the main file, or in an external file (or both). Using an external file
+the main file, or in an external file (or both). Using an external file
 can ease distribution to multiple machines. Either way, each radio
 station is defined as a section with a name beginning with 'radio',
 containing a mandatory URL parameter, and optional values. The part of
@@ -353,7 +353,9 @@ of the uprclmediadirs entries.
 [[uprclconfdir]]
 uprclconfdir:: Recoll index
 directory This is usually not defined and defaults to
-/var/cache/upmpdcli/uprcl
+/var/cache/upmpdcli/uprcl. The name is a bit misleading because there is
+no real configuration data in there: it's all programmatically
+generated from actual configuration found elsewhere.
 
 [[uprclautostart]]
 uprclautostart:: Initialize uprcl as soon as
