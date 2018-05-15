@@ -111,7 +111,7 @@ public:
     // present in the input set. Convert the metadata to an mpdcli song
     // while we are at it.
     bool checkContentFormat(const std::string& uri, const std::string& didl,
-                            UpSong *ups = 0);
+                            UpSong *ups, bool nocheck = false);
 
     // Help avtransport report correct metadata for radios (for which
     // the uri, normally used to detect track transitions, does not

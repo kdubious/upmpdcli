@@ -67,12 +67,14 @@ static string upnphost;
 // like qobuz:// tidal:// and expect the renderer to know what to do
 // with them. We transform them so that they point to our media server
 // gateway (which should be running of course for this to work).
-bool OHCredsMaybeMorphSpecialUri(string& uri)
+bool OHCredsMaybeMorphSpecialUri(string& uri, bool& isStreaming)
 {
+    isStreaming = false;
     if (uri.find("http://") == 0 || uri.find("https://") == 0) {
         return true;
     }
 
+    // Possibly retrieve the IP port used by our proxy server
     static string sport;
     if (sport.empty()) {
         std::unique_lock<std::mutex>(g_configlock);
@@ -101,6 +103,7 @@ bool OHCredsMaybeMorphSpecialUri(string& uri)
         string path = path_cat(pathprefix,
                                "track?version=1&trackId=" + mr[3].str());
         uri = string("http://") + upnphost + ":" + sport + path;
+        isStreaming = true;
     }
     return found;
 }

@@ -627,9 +627,20 @@ int OHPlaylist::insert(const SoapIncoming& sc, SoapOutgoing& data)
     if (ok)
         ok = ok && sc.get("Metadata", &metadata);
 
-    // Maybe transform a qobuz:// or tidal:// uri if we're doing this
-    OHCredsMaybeMorphSpecialUri(uri);
+    if (!ok) {
+        LOGERR("OHPlaylist::insert: no AfterId, Uri or Metadata parameter\n");
+        return UPNP_E_INVALID_PARAM;
+    }
 
+    // Maybe transform a qobuz:// or tidal:// uri if we're doing this
+    // isStreaming is used to disable content format check in this
+    // case (there is no valid protocolinfo in general).
+    bool isStreaming;
+    if (!OHCredsMaybeMorphSpecialUri(uri, isStreaming)) {
+        LOGERR("OHPlaylist::insert: bad uri: " << uri << endl);
+        return UPNP_E_INVALID_PARAM;
+    }
+        
     if (!m_active) {
         // See comment in seekId()
         // It's not clear if special-casing afterId == 0 is a good
@@ -646,20 +657,19 @@ int OHPlaylist::insert(const SoapIncoming& sc, SoapOutgoing& data)
 
     LOGDEB("OHPlaylist::insert: afterid " << afterid << " Uri " <<
            uri << " Metadata " << metadata << endl);
+
+    int newid;
+    ok = insertUri(afterid, uri, metadata, &newid, isStreaming);
     if (ok) {
-        int newid;
-        ok = insertUri(afterid, uri, metadata, &newid);
-        if (ok) {
-            data.addarg("NewId", SoapHelp::i2s(newid));
-            LOGDEB("OHPlaylist::insert: new id: " << newid << endl);
-        }
+        data.addarg("NewId", SoapHelp::i2s(newid));
+        LOGDEB("OHPlaylist::insert: new id: " << newid << endl);
     }
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
 bool OHPlaylist::insertUri(int afterid, const string& uri, 
-                           const string& metadata, int *newid)
+                           const string& metadata, int *newid, bool nocheck)
 {
     LOGDEB1("OHPlaylist::insertUri: " << uri << endl);
     if (!m_active) {
@@ -668,7 +678,7 @@ bool OHPlaylist::insertUri(int afterid, const string& uri,
     }
 
     UpSong metaformpd;
-    if (!m_dev->checkContentFormat(uri, metadata, &metaformpd)) {
+    if (!m_dev->checkContentFormat(uri, metadata, &metaformpd, nocheck)) {
         LOGERR("OHPlaylist::insertUri: unsupported format: uri " << uri <<
                " metadata " << metadata);
         return false;

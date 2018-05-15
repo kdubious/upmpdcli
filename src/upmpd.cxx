@@ -129,14 +129,15 @@ const MpdStatus& UpMpd::getMpdStatus()
 }
 
 bool UpMpd::checkContentFormat(const string& uri, const string& didl,
-                               UpSong *ups)
+                               UpSong *ups, bool p_nocheck)
 {
+    bool nocheck = (m_options & upmpdNoContentFormatCheck) || p_nocheck;
     UPnPClient::UPnPDirContent dirc;
     if (!dirc.parse(didl) || dirc.m_items.size() == 0) {
         if (!didl.empty()) {
             LOGERR("checkContentFormat: didl parse failed\n");
         }
-        if ((m_options & upmpdNoContentFormatCheck)) {
+        if (nocheck) {
             noMetaUpSong(ups);
             return true;
         } else {
@@ -145,7 +146,7 @@ bool UpMpd::checkContentFormat(const string& uri, const string& didl,
     }
     UPnPClient::UPnPDirObject& dobj = *dirc.m_items.begin();
 
-    if ((m_options & upmpdNoContentFormatCheck)) {
+    if (nocheck) {
         LOGINFO("checkContentFormat: format check disabled\n");
         return dirObjToUpSong(dobj, ups);
     }

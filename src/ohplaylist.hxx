@@ -38,7 +38,7 @@ public:
     // Internal non-soap versions of some of the interface for use by
     // e.g. ohreceiver
     bool insertUri(int afterid, const std::string& uri, 
-                   const std::string& metadata, int *newid = 0);
+                   const std::string& metadata, int *newid, bool nocheck);
     bool ireadList(const std::vector<int>&, std::vector<UpSong>&);
     bool iidArray(std::string& idarray, int *token);
     bool urlMap(std::unordered_map<int, std::string>& umap);
