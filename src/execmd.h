@@ -1,4 +1,4 @@
-/* Copyright (C) 2004 J.F.Dockes
+/* Copyright (C) 2004-2018 J.F.Dockes
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -116,6 +116,17 @@ public:
      * stderr will be closed.
      */
     void setStderr(const std::string& stderrFile);
+
+    /**
+     * Set kill wait timeout. This is the maximum time we'll wait for
+     * the command after sending a SIGTERM, before sending a SIGKILL.
+
+     * @param mS the maximum number of mS to wait. Note that values
+     *    below 1000 mS make no sense as the program will sleep for
+     *    longer time before retrying the waitpid(). Use -1 for
+     *    forever (bad idea), 0 for absolutely no pity.
+     */
+     void setKillTimeout(int mS);
 
     /**
      * Execute command.

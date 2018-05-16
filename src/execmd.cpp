@@ -1,4 +1,4 @@
-/* Copyright (C) 2004 J.F.Dockes
+/* Copyright (C) 2004-2018 J.F.Dockes
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -14,7 +14,6 @@
  *   Free Software Foundation, Inc.,
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#ifndef TEST_EXECMD
 #ifdef BUILDING_RECOLL
 #include "autoconfig.h"
 #else
@@ -74,6 +73,7 @@ public:
     ExecCmdProvide  *m_provide{0};
     bool             m_killRequest{false};
     int              m_timeoutMs{1000};
+    int              m_killTimeoutMs{2000};
     int              m_rlimit_as_mbytes{0};
     string           m_stderrFile;
     // Pipe for data going to the command
@@ -121,6 +121,10 @@ void ExecCmd::setTimeout(int mS)
     if (mS > 30) {
         m->m_timeoutMs = mS;
     }
+}
+void ExecCmd::setKillTimeout(int mS)
+{
+    m->m_killTimeoutMs = mS;
 }
 void ExecCmd::setStderr(const std::string& stderrFile)
 {
@@ -276,17 +280,23 @@ public:
                    ", SIGTERM)\n");
             int ret = killpg(grp, SIGTERM);
             if (ret == 0) {
-                for (int i = 0; i < 3; i++) {
-                    msleep(i == 0 ? 5 : (i == 1 ? 100 : 2000));
+                int ms_slept{0};
+                for (int i = 0; ; i++) {
+                    int tosleep = i == 0 ? 5 : (i == 1 ? 100 : 1000);
+                    msleep(tosleep);
+                    ms_slept += tosleep;
                     int status;
                     (void)waitpid(m_parent->m_pid, &status, WNOHANG);
                     if (kill(m_parent->m_pid, 0) != 0) {
                         break;
                     }
-                    if (i == 2) {
-                        LOGDEB("ExecCmd: killpg(" << (grp) << ", SIGKILL)\n");
+                    // killtimeout == -1 -> never KILL
+                    if (m_parent->m_killTimeoutMs >= 0 &&
+                        ms_slept >= m_parent->m_killTimeoutMs) {
+                        LOGDEB("ExecCmd: killpg(" << grp << ", SIGKILL)\n");
                         killpg(grp, SIGKILL);
                         (void)waitpid(m_parent->m_pid, &status, WNOHANG);
+                        break;
                     }
                 }
             } else {
@@ -1144,375 +1154,3 @@ void ReExec::reexec()
     argv[i] = 0;
     execvp(m_argv[0].c_str(), (char *const*)argv);
 }
-
-
-////////////////////////////////////////////////////////////////////
-#else // TEST
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <signal.h>
-
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <vector>
-
-#include "log.h"
-
-#include "execmd.h"
-#ifdef BUILDING_RECOLL
-#include "smallut.h"
-#include "cancelcheck.h"
-#endif
-
-using namespace std;
-
-#ifdef BUILDING_RECOLL
-// Testing the rclexecm protocol outside of recoll. Here we use the
-// rcldoc.py filter, you can try with rclaudio too, adjust the file arg
-// accordingly
-bool exercise_mhexecm(const string& cmdstr, const string& mimetype,
-                      vector<string>& files)
-{
-    ExecCmd cmd;
-
-    vector<string> myparams;
-
-    if (cmd.startExec(cmdstr, myparams, 1, 1) < 0) {
-        cerr << "startExec " << cmdstr << " failed. Missing command?\n";
-        return false;
-    }
-
-    for (vector<string>::const_iterator it = files.begin();
-            it != files.end(); it++) {
-        // Build request message
-        ostringstream obuf;
-        obuf << "Filename: " << (*it).length() << "\n" << (*it);
-        obuf << "Mimetype: " << mimetype.length() << "\n" << mimetype;
-        // Bogus parameter should be skipped by filter
-        obuf << "BogusParam: " << string("bogus").length() << "\n" << "bogus";
-        obuf << "\n";
-        cerr << "SENDING: [" << obuf.str() << "]\n";
-        // Send it
-        if (cmd.send(obuf.str()) < 0) {
-            // The real code calls zapchild here, but we don't need it as
-            // this will be handled by ~ExecCmd
-            //cmd.zapChild();
-            cerr << "send error\n";
-            return false;
-        }
-
-        // Read answer
-        for (int loop = 0;; loop++) {
-            string name, data;
-
-            // Code from mh_execm.cpp: readDataElement
-            string ibuf;
-            // Read name and length
-            if (cmd.getline(ibuf) <= 0) {
-                cerr << "getline error\n";
-                return false;
-            }
-            // Empty line (end of message)
-            if (!ibuf.compare("\n")) {
-                cerr << "Got empty line\n";
-                name.clear();
-                break;
-            }
-
-            // Filters will sometimes abort before entering the real
-            // protocol, ie if a module can't be loaded. Check the
-            // special filter error first word:
-            if (ibuf.find("RECFILTERROR ") == 0) {
-                cerr << "Got RECFILTERROR\n";
-                return false;
-            }
-
-            // We're expecting something like Name: len\n
-            vector<string> tokens;
-            stringToTokens(ibuf, tokens);
-            if (tokens.size() != 2) {
-                cerr << "bad line in filter output: [" << ibuf << "]\n";
-                return false;
-            }
-            vector<string>::iterator it = tokens.begin();
-            name = *it++;
-            string& slen = *it;
-            int len;
-            if (sscanf(slen.c_str(), "%d", &len) != 1) {
-                cerr << "bad line in filter output (no len): [" <<
-                     ibuf << "]\n";
-                return false;
-            }
-            // Read element data
-            data.erase();
-            if (len > 0 && cmd.receive(data, len) != len) {
-                cerr << "MHExecMultiple: expected " << len <<
-                     " bytes of data, got " << data.length() << endl;
-                return false;
-            }
-
-            // Empty element: end of message
-            if (name.empty()) {
-                break;
-            }
-            cerr << "Got name: [" << name << "] data [" << data << "]\n";
-        }
-    }
-    return true;
-}
-#endif
-
-static char *thisprog;
-static char usage [] =
-    "trexecmd [-c -r -i -o] cmd [arg1 arg2 ...]\n"
-    "   -c : test cancellation (ie: trexecmd -c sleep 1000)\n"
-    "   -r : run reexec. Must be separate option.\n"
-    "   -i : command takes input\n"
-    "   -o : command produces output\n"
-    "    If -i is set, we send /etc/group contents to whatever command is run\n"
-    "    If -o is set, we print whatever comes out\n"
-    "trexecmd -m <filter> <mimetype> <file> [file ...]: test execm:\n"
-    "     <filter> should be the path to an execm filter\n"
-    "     <mimetype> the type of the file parameters\n"
-    "trexecmd -w cmd : do the 'which' thing\n"
-    "trexecmd -l cmd test getline\n"
-    ;
-
-static void Usage(void)
-{
-    fprintf(stderr, "%s: usage:\n%s", thisprog, usage);
-    exit(1);
-}
-
-static int     op_flags;
-#define OPT_MOINS 0x1
-#define OPT_i     0x4
-#define OPT_w     0x8
-#define OPT_c     0x10
-#define OPT_r     0x20
-#define OPT_m     0x40
-#define OPT_o     0x80
-#define OPT_l     0x100
-
-// Data sink for data coming out of the command. We also use it to set
-// a cancellation after a moment.
-class MEAdv : public ExecCmdAdvise {
-public:
-    void newData(int cnt) {
-        if (op_flags & OPT_c) {
-#ifdef BUILDING_RECOLL
-            static int  callcnt;
-            if (callcnt++ == 10) {
-                // Just sets the cancellation flag
-                CancelCheck::instance().setCancel();
-                // Would be called from somewhere else and throws an
-                // exception. We call it here for simplicity
-                CancelCheck::instance().checkCancel();
-            }
-#endif
-        }
-        cerr << "newData(" << cnt << ")" << endl;
-    }
-};
-
-// Data provider, used if the -i flag is set
-class MEPv : public ExecCmdProvide {
-public:
-    FILE *m_fp;
-    string *m_input;
-    MEPv(string *i)
-        : m_input(i) {
-        m_fp = fopen("/etc/group", "r");
-    }
-    ~MEPv() {
-        if (m_fp) {
-            fclose(m_fp);
-        }
-    }
-    void newData() {
-        char line[1024];
-        if (m_fp && fgets(line, 1024, m_fp)) {
-            m_input->assign((const char *)line);
-        } else {
-            m_input->erase();
-        }
-    }
-};
-
-
-
-ReExec reexec;
-int main(int argc, char *argv[])
-{
-    reexec.init(argc, argv);
-
-    if (0) {
-        // Disabled: For testing reexec arg handling
-        vector<string> newargs;
-        newargs.push_back("newarg");
-        newargs.push_back("newarg1");
-        newargs.push_back("newarg2");
-        newargs.push_back("newarg3");
-        newargs.push_back("newarg4");
-        reexec.insertArgs(newargs, 2);
-    }
-
-    thisprog = argv[0];
-    argc--;
-    argv++;
-
-    while (argc > 0 && **argv == '-') {
-        (*argv)++;
-        if (!(**argv))
-            /* Cas du "adb - core" */
-        {
-            Usage();
-        }
-        while (**argv)
-            switch (*(*argv)++) {
-            case 'c':
-                op_flags |= OPT_c;
-                break;
-            case 'r':
-                op_flags |= OPT_r;
-                break;
-            case 'w':
-                op_flags |= OPT_w;
-                break;
-#ifdef BUILDING_RECOLL
-            case 'm':
-                op_flags |= OPT_m;
-                break;
-#endif
-            case 'i':
-                op_flags |= OPT_i;
-                break;
-            case 'l':
-                op_flags |= OPT_l;
-                break;
-            case 'o':
-                op_flags |= OPT_o;
-                break;
-            default:
-                Usage();
-                break;
-            }
-        argc--;
-        argv++;
-    }
-
-    if (argc < 1) {
-        Usage();
-    }
-
-    string arg1 = *argv++;
-    argc--;
-    vector<string> l;
-    while (argc > 0) {
-        l.push_back(*argv++);
-        argc--;
-    }
-
-#ifdef BUILDING_RECOLL
-    DebugLog::getdbl()->setloglevel(DEBDEB1);
-    DebugLog::setfilename("stderr");
-#endif
-    signal(SIGPIPE, SIG_IGN);
-
-    if (op_flags & OPT_r) {
-        // Test reexec. Normally only once, next time we fall through
-        // because we remove the -r option (only works if it was isolated, not like -rc
-        chdir("/");
-        argv[0] = strdup("");
-        sleep(1);
-        cerr << "Calling reexec\n";
-        // We remove the -r arg from list, otherwise we are going to
-        // loop (which you can try by commenting out the following
-        // line)
-        reexec.removeArg("-r");
-        reexec.reexec();
-    }
-
-    if (op_flags & OPT_w) {
-        // Test "which" method
-        string path;
-        if (ExecCmd::which(arg1, path)) {
-            cout << path << endl;
-            return 0;
-        }
-        return 1;
-#ifdef BUILDING_RECOLL
-    } else if (op_flags & OPT_m) {
-        if (l.size() < 2) {
-            Usage();
-        }
-        string mimetype = l[0];
-        l.erase(l.begin());
-        return exercise_mhexecm(arg1, mimetype, l) ? 0 : 1;
-#endif
-    } else if (op_flags & OPT_l) {
-        ExecCmd mexec;
-
-        if (mexec.startExec(arg1, l, false, true) < 0) {
-            cerr << "Startexec failed\n";
-            exit(1);
-        }
-        string output;
-        int ret = mexec.getline(output, 2);
-        cerr << "Got ret " << ret << " output " << output << endl;
-        cerr << "Waiting\n";
-        int status = mexec.wait();
-        cerr << "Got status " << status << endl;
-        exit(status);
-    } else {
-        // Default: execute command line arguments
-        ExecCmd mexec;
-
-        // Set callback to be called whenever there is new data
-        // available and at a periodic interval, to check for
-        // cancellation
-        MEAdv adv;
-        mexec.setAdvise(&adv);
-        mexec.setTimeout(5);
-
-        // Stderr output goes there
-        mexec.setStderr("/tmp/trexecStderr");
-
-        // A few environment variables. Check with trexecmd env
-        mexec.putenv("TESTVARIABLE1=TESTVALUE1");
-        mexec.putenv("TESTVARIABLE2=TESTVALUE2");
-        mexec.putenv("TESTVARIABLE3=TESTVALUE3");
-
-        string input, output;
-        MEPv  pv(&input);
-
-        string *ip = 0;
-        if (op_flags  & OPT_i) {
-            ip = &input;
-            mexec.setProvide(&pv);
-        }
-        string *op = 0;
-        if (op_flags & OPT_o) {
-            op = &output;
-        }
-
-        int status = -1;
-        try {
-            status = mexec.doexec(arg1, l, ip, op);
-        } catch (...) {
-            cerr << "CANCELLED" << endl;
-        }
-
-        fprintf(stderr, "Status: 0x%x\n", status);
-        if (op_flags & OPT_o) {
-            cout << output;
-        }
-        exit(status >> 8);
-    }
-}
-#endif // TEST
-
