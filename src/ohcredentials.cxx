@@ -77,7 +77,6 @@ bool OHCredsMaybeMorphSpecialUri(string& uri, bool& isStreaming)
     // Possibly retrieve the IP port used by our proxy server
     static string sport;
     if (sport.empty()) {
-        std::unique_lock<std::mutex>(g_configlock);
         int port = CDPluginServices::default_microhttpport();
         if (!g_config->get("plgmicrohttpport", sport)) {
             sport = SoapHelp::i2s(port);

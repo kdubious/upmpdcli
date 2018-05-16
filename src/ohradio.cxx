@@ -192,7 +192,6 @@ bool OHRadio::readRadios()
     // Id 0 means no selection
     o_radios.push_back(RadioMeta("Unknown radio", "", "", "", "", ""));
     
-    std::unique_lock<std::mutex>(g_configlock);
     getRadiosFromConf(g_config);
     // Also if radiolist is defined, get from there
     string radiolistfn;

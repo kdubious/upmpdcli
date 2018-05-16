@@ -19,13 +19,11 @@
 
 #include <string>
 #include <unordered_set>
-#include <mutex>
 
 extern std::string g_configfilename;
 extern std::string g_datadir;
 extern bool g_enableL16;
 class ConfSimple;
-extern std::mutex g_configlock;
 extern ConfSimple *g_config;
 
 typedef struct ohInfoDesc {

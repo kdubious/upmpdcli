@@ -410,10 +410,7 @@ static void listScripts(vector<pair<string, string> >& sources)
     if (!g_config)
         return;
 
-    {
-        std::unique_lock<std::mutex>(g_configlock);
-        g_config->get("ohsrc_scripts_dir", scripts_dir);
-    }
+    g_config->get("ohsrc_scripts_dir", scripts_dir);
 
     DIR *dirp = opendir(scripts_dir.c_str());
     if (dirp == 0) {

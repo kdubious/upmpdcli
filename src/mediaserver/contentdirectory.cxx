@@ -535,7 +535,6 @@ bool ContentDirectory::config_get(const string& nm, string& val)
     if (nullptr == g_config) {
         return false;
     }
-    std::unique_lock<std::mutex>(g_configlock);
     return g_config->get(nm, val);
 }
 

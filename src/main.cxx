@@ -157,7 +157,6 @@ string g_datadir(DATADIR "/");
 
 // Global
 string g_configfilename;
-std::mutex g_configlock;
 ConfSimple *g_config;
 bool g_enableL16 = false;
 
