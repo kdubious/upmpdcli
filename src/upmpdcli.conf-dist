@@ -467,6 +467,11 @@ uprclautostart = 1
 # documentation page.</descr></var>
 #scripts_dir = /usr/share/upmpdcli/src_scripts
 
+# <var name="scscriptgracesecs" type="int"><brief>Grace period to wait for
+# a script process to exit before it is forcely killed.</brief>
+# <descr>In seconds. Default 2 S.</descr></var>
+#scscriptgracesecs = 2
+
 # Initial / default List of radios borrowed from misc sources. Edit to taste
 # See 'radiolist' above for a description of the entries.
 #

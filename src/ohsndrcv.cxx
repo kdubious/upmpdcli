@@ -51,6 +51,9 @@ public:
         if (g_config->get("scstreamscaled", value)) {
             scalestream = atoi(value.c_str()) != 0;
         }
+        if (g_config->get("scscriptgracesecs", value)) {
+            graceperiodms = atoi(value.c_str()) * 1000;
+        }
     }
     ~Internal() {
         clear();
@@ -77,6 +80,7 @@ public:
     string makeisendercmd;
     int mpdport;
     bool scalestream{true};
+    int graceperiodms{0};
 };
 
 
@@ -125,6 +129,9 @@ bool SenderReceiver::start(const string& script, int seekms)
     if (script.empty() && !m->isender) {
         // Internal source, first time: Start fifo MPD and Sender
         m->isender = sndcmd = new ExecCmd();
+        if (m->graceperiodms) {
+            sndcmd->setKillTimeout(m->graceperiodms);
+        }
         vector<string> args;
         args.push_back("-p");
         args.push_back(SoapHelp::i2s(m->mpdport));
@@ -138,6 +145,9 @@ bool SenderReceiver::start(const string& script, int seekms)
         // it just in case
         deleteZ(m->ssender);
         m->ssender = sndcmd = new ExecCmd();
+        if (m->graceperiodms) {
+            sndcmd->setKillTimeout(m->graceperiodms);
+        }
         vector<string> args;
         args.push_back("-f");
         args.push_back(m->dev->m_friendlyname);
