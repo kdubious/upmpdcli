@@ -72,6 +72,9 @@ public:
         upmpdOhSenderReceiver = 32,
         // Do not check content format from input metadata against protocol info
         upmpdNoContentFormatCheck = 64,
+        // Do not add the "PL-to-Songcast" (playlist) and "RD-to-Songcast"
+        // (radio) sources to the source XML.
+        upmpdNoSongcastSource = 128,
     };
     struct Options {
         Options() : options(upmpdNone), ohmetasleep(0), schttpport(0),
