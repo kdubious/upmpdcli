@@ -421,6 +421,13 @@ from the file when initializing the Songcast Receiver service and written to
 the file when a Sender is set for the service. Useful for preserving the
 sender information between restarts.
 
+[[scnosongcastsource]]
+scnosongcastsource:: Do not add the "PL-to-Songcast" (playlist) and
+"RD-to-Songcast" (radio) sources to the source XML. Needs to be set to "1" to
+activate this option. Note, that setting this option will not allow you to use
+the Songcast Tool in Upplay for the renderer, so you better know what you are
+doing.
+
 === Songcast Sender parameters 
 
 [[scsenderpath]]

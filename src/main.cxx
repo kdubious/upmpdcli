@@ -352,6 +352,12 @@ int main(int argc, char *argv[])
         g_config->get("scplaymethod", opts.scplaymethod);
         g_config->get("sc2mpd", sc2mpdpath);
         g_config->get("screceiverstatefile", screceiverstatefile);
+        if (g_config->get("scnosongcastsource", value)) {
+            // If option is specified and 1, set nocheck flag
+            if (atoi(value.c_str()) == 1) {
+                opts.options |= UpMpd::upmpdNoSongcastSource;
+            }
+        }
         if (g_config->get("ohmetasleep", value))
             opts.ohmetasleep = atoi(value.c_str());
         g_config->get("ohmanufacturername", ohProductDesc.manufacturer.name);

@@ -76,15 +76,19 @@ OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc)
         csattrs.append(" Receiver");
         if (m_dev->m_sndrcv &&
             m_dev->m_ohrcv->playMethod() == OHReceiverParams::OHRP_ALSA) {
-            // It might be possible to make things work with the MPD
-            // play method but this would be complicated (the mpd we
-            // want to get playing from sc2mpd HTTP is the
-            // original/saved one, not the current one, which is doing
-            // the playing and sending to the fifo, so we'd need to
-            // tell ohreceiver about using the right one.
-            o_sources.push_back(pair<string,string>("Playlist", SndRcvPLName));
-            if (m_dev->m_ohrd) {
-                o_sources.push_back(pair<string,string>("Radio", SndRcvRDName));
+            if (!(m_dev->m_options & UpMpd::upmpdNoSongcastSource)) {
+                // It might be possible to make things work with the MPD
+                // play method but this would be complicated (the mpd we
+                // want to get playing from sc2mpd HTTP is the
+                // original/saved one, not the current one, which is doing
+                // the playing and sending to the fifo, so we'd need to
+                // tell ohreceiver about using the right one.
+                o_sources.push_back(pair<string,string>("Playlist",
+                                                        SndRcvPLName));
+                if (m_dev->m_ohrd) {
+                    o_sources.push_back(pair<string,string>("Radio",
+                                                            SndRcvRDName));
+                }
             }
             listScripts(o_sources);
         }
