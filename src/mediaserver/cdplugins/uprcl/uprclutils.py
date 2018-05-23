@@ -18,6 +18,7 @@ from __future__ import print_function
 import sys
 import urllib
 import os
+import glob
 import subprocess
 import mutagen
 try:
@@ -157,9 +158,13 @@ def waitentry(id, pid, httphp):
     li['res.mime'] = "audio/mpeg"
     return li
 
+
+# Compute fs path for URL. All Recoll URLs are like file://xx
+def docpath(doc):
+    return doc.getbinurl()[7:]
+
 def docfolder(doc):
-    path = doc.getbinurl()
-    path = path[7:]
+    path = docpath(doc)
     if doc.mtype == 'inode/directory':
         return path
     else:
@@ -181,6 +186,9 @@ def embdimgurl(doc, httphp, pathprefix):
 def printable(s):
     return s.decode('utf-8', errors='replace') if s else ""
 
+def _httpurl(path, httphp, pathprefix):
+    return "http://%s%s" % (httphp, urllib.quote(path))
+    
 # Find cover art for doc.
 #
 # We return a special uri if the file has embedded image data, else an
@@ -188,7 +196,8 @@ def printable(s):
 # We are usually called repeatedly for the same directory, so we cache
 # one result.
 _foldercache = {}
-_artnames = ('folder.jpg', 'folder.png', 'cover.jpg', 'cover.png')
+_artexts = ('.jpg', '.png')
+_artnames = ('folder', 'cover')
 def docarturi(doc, httphp, pathprefix):
     global _foldercache, _artnames
 
@@ -197,32 +206,39 @@ def docarturi(doc, httphp, pathprefix):
         if arturi:
             #uplog("docarturi: embedded: %s"%printable(arturi))
             return arturi
-    
+
+    # Check for an image specific to the track file
+    path,ext = os.path.splitext(docpath(doc))
+    for ext in _artexts:
+        if os.path.exists(path + ext):
+            return _httpurl(os.path.join(pathprefix, path+ext), httphp,
+                           pathprefix)
+
     # If doc is a directory, this returns itself, else the father dir.
     folder = docfolder(doc)
 
     if folder not in _foldercache:
         _foldercache = {}
         _foldercache[folder] = None
-        try:
-            candidates =  [f for f in os.listdir(folder) if
-                           f.lower().startswith('folder.')
-                           or f.lower().startswith('cover.')]
-        except:
-            candidates = []
         artnm = None
-        for targ in _artnames:
-            for nm in candidates:
-                if nm == targ:
-                    artnm = nm
+        try:
+            for f in os.listdir(folder):
+                try:
+                    fsimple = os.path.basename(f)
+                    flowersimple = fsimple.lower()
+                except:
+                    continue
+                for base in _artnames:
+                    for ext in _artexts:
+                        if flowersimple == base + ext:
+                            artnm = fsimple
+                if artnm:
+                    _foldercache[folder] = _httpurl(
+                        urllib.quote(os.path.join(pathprefix, folder, artnm)),
+                        httphp, pathprefix)
                     break
-                elif nm.lower() == targ:
-                    artnm = nm
-                    break
-            if artnm:
-                path = urllib.quote(os.path.join(pathprefix, folder, artnm))
-                _foldercache[folder] = "http://%s%s" % (httphp, path)
-                break
+        except:
+            pass
 
     arturi = _foldercache[folder]
     if arturi:
