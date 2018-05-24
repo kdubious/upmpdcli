@@ -1,5 +1,28 @@
 = Upmpdcli release notes
 
+== upmpdcli 1.3.0
+
+Despite the middle version number jump, this version does not contain major
+changes. I am just going back to the classic method of using the last
+version value exclusively for bug fixes. This contains minor functional
+changes, so it can't be 1.2.
+
+- Support the OpenHome Credentials service. This allows accessing Qobuz and
+  Tidal from Kazoo and Lumin, using their internal service directory
+  browser (instead of going through the upmpdcli media server). This allows
+  managing favourites and other specific service functions.
+- Support Radio Paradise FLAC channel. This is special for a radio because
+  it uses a sequence of audio URLs instead of a single stream. Have a look
+  at the distributed 'upmpdcli.conf' file for the radio definition to use
+  (add it to your '/etc/upmpdcli.conf' which is not automatically updated
+  during an upgrade). The appropriate script is now installed to
+  '/usr/share/upmpdcli/radio_scripts' (along with a small number of art and
+  metadata scripts for other stations).
+
+See the
+link:https://www.lesbonscomptes.com/upmpdcli/upmpdcli-manual.html[Upmpdcli
+manual] for more detail about these functions. 
+
 == upmpdcli 1.2.16
 
 - Multiple small fixes for crashes in rare circumstances.
