@@ -283,9 +283,11 @@ void OHRadio::maybeExecMetaScript(RadioMeta& radio, MpdStatus &mpds)
     }
     radio.nextMetaScriptExecTime = time(0) + reload;
     
-    // If the script returns an audio uri, queue it to mpd
+    // If the script returns an audio uri, queue it to mpd. Don't do
+    // this while stopped
     string audioUri= decoded.get("audioUrl", "").asString();
-    if (!audioUri.empty()) {
+    if (!audioUri.empty() &&
+        (m_playpending || mpds.state == MpdStatus::MPDS_PLAY)) {
         vector<UpSong> queue;
         m_dev->m_mpdcli->getQueueData(queue);
         bool found = false;
