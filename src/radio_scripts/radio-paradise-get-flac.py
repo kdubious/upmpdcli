@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 # Copyright (C) 2017-2018 J.F.Dockes
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -30,6 +30,8 @@
 # right metadata available when upmpdcli calls us
 
 
+from __future__ import print_function
+
 import requests
 import json
 import sys
@@ -49,6 +51,11 @@ def newcache(jsd):
     os.chmod(tmpname, 0o666)
     out["audioUrl"] = jsd['url'] + "?src=alexa"
 
+def makebytes(data):
+    if type(data) == type(u''):
+        return data.encode("UTF-8", errors='replace')
+    return data
+    
 ##### Main script
 
     
@@ -137,5 +144,5 @@ else:
         reload -= 2
     out['reload'] = reload
 
-debug("%s" % json.dumps(out))
-print("%s" % json.dumps(out))
+debug("%s" % makebytes(json.dumps(out)))
+print("%s" % makebytes(json.dumps(out)))

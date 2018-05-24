@@ -1,7 +1,9 @@
-#!/usr/bin/env python3
-#
-# Metadata getter for fip stations, we get the station number as first
-# parameter (set in config file).
+#!/usr/bin/env python2
+from __future__ import print_function
+
+# metadata getter for French radio FIP stations, we get the station
+# number as first parameter (set in config file).
+
 import requests
 import json
 import sys
