@@ -8,7 +8,7 @@ AH_BOTTOM([#include "src/conf_post.h"])
 
 AM_INIT_AUTOMAKE([1.10 no-define subdir-objects foreign])
 
-if test X$CXXFLAGS = X;then
+if test X"$CXXFLAGS" = X;then
    CXXFLAGS="-std=c++11 -g -O2"
 fi
 AC_PROG_CXX
