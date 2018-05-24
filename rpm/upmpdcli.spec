@@ -1,12 +1,11 @@
 Summary:        UPnP Media Renderer front-end to MPD, the Music Player Daemon
 Name:           upmpdcli
-Version:        1.2.16
+Version:        1.3.0pre
 Release:        1%{?dist}
 Group:          Applications/Multimedia
 License:        GPLv2+
 URL:            http://www.lesbonscomptes.com/updmpdcli
 Source0:        http://www.lesbonscomptes.com/upmpdcli/downloads/upmpdcli-%{version}.tar.gz
-Patch0: pinfo-ape.patch
 Requires(pre):  shadow-utils
 Requires(post): systemd
 Requires(preun): systemd
@@ -29,7 +28,6 @@ on Android tablets or phones.
 
 %prep
 %setup -q
-%patch0 -p1
 
 %build
 %configure
