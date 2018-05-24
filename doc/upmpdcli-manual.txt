@@ -621,11 +621,13 @@ the Receivers can be out of sync by several seconds.
 === Streaming Services and UPnP
 
 Streaming services like Qobuz or Tidal give access to a huge catalog of
-music through a WEB interface (also usable by programs).
+music through a WEB interface which is also usable by programs other than
+their own applications.
 
-The only thing that they have in common with UPnP is that the actual audio
-stream is obtained through HTTP. However, given their importance, they can
-be accessed through many UPnP Control Points and Renderers.
+The only thing that they have in common with UPnP is that the use of HTTP
+to retrieve the audio stream. However, given the importance of these
+services for music consumers, many UPnP Control Points and Renderers have
+been extended with specific interfaces to the different services.
 
 There are three main ways to integrate the streaming services in an UPnP
 framework, and knowing which way you are using will avoid confusion:
@@ -773,9 +775,14 @@ The configuration parameters are described in the
 [[UPMPDCLI-MS-STR-CRED]]
 === Accessing the streaming services with OpenHome from Kazoo or Lumin
 
-This only works for Qobuz and Tidal. The corresponding media server module
-must be installed, but no other configuration should be needed on the
-renderer. The media service icons will appear in the CP interface, and the
+This only works for Qobuz and Tidal, and only with upmpdcli versions 1.3.0
+and later. The corresponding media server module must be installed
+(upmpdcli-qobuz and/or upmpdcli-tidal), but no other configuration should
+be necessary on the renderer, except possibly for the stream quality choice
+(xref:tidaluser[Tidal Quality] or xref:qobuzuser[Qobuz format]
+if you are not using the default.
+
+The media service icons will appear in the Control Point interface, and the
 service will be accessible after entering the login and password.
 
 NOTE: the user name and password will be stored on the renderer in an
@@ -785,6 +792,8 @@ access, there is nothing to prevent them from getting the credentials.
 Of course Kazoo or Lumin can also access the services through the media
 server interface (after configuring upmpdcli, see the
 xref:UPMPDCLI-MS-STR-MS[previous section]).
+
+For reference, this method is *not* usable with *Upplay*
 
 [[UPRCL]]
 == Upmpdcli local Media Server: uprcl
