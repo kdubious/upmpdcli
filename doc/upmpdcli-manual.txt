@@ -269,115 +269,38 @@ compensates the small additional CPU load).
 There are situations where the linear formats are needed though, and where
 it may be necessary to use the right MPD and plugins versions.
 
-[[radio-definitions]]
-=== Radio station definitions
+[[radio-stations]]
+=== Radio stations
 
-Upmpdcli versions after 0.13 implement an OpenHome Radio service
-which allows selecting and listening to internet radio stations. 
+Upmpdcli implements an OpenHome Radio service which allows selecting and
+listening to internet radio stations when using an OpenHome-compatible
+Control Point (e.g. Kazoo, Lumin, Bubble UPnP, etc.).
 
 This facility uses Python 2.x, which must be available on the system for
 the radio links to work.
+
+Radio channels can be accessed by using the Control Point application to
+select the _Radio_ OpenHome source.
 
 Radio stations can be defined in the configuration (at the end because of
 the use of section indicators), or in in a separate file by setting the
 <<ohproductroom,+radiolist+>> parameter in the main configuration.
 
-Radio channels can be accessed by selecting the _Radio_ Source from an
-OpenHome Control Point.
-
-Example entry:
-
-----
-[radio Radio Teddy]
-url = http://opml.radiotime.com/Tune.ashx?id=s80044
-artUrl = http://cdn-radiotime-logos.tunein.com/s80044q.png
-artScript = /path/to/some/script
-metaScript = /path/to/some/other/script
-----
-
-The section name must begin with +radio+, the rest will be displayed as the
-station name. The section has several possible entries. Only +url+ is
-mandatory, it points to the playlist or stream.
-
-If set, +artUrl+ is a link to a static icon for the radio (displayed as
-album art).
-
-If set, +artScript+ is the path to an executable script which can retrieve
-the image URL for the currently playing title.
-
-Some radios (e.g.  link:https://www.radioparadise.com/rp_2.php?#[Radio
-Paradise]) publish the album art for the currently playing title. The
-details vary. The +artScript+ parameter, if set, should point to an
-executable script which prints this dynamic art Uri to stdout. The image
-will supercede the radio logo, to be displayed by control points. Beware
-that the path to the script must be accessible by the _upmpdcli_ user,
-which may not be the case for your home. +/usr/local/bin+ is your
-friend. As a very rough example here follows a command which would retrieve
-the Radio Paradise URI (as long as they don't change their format, a proper
-approach would use an XML parser of course):
-
-    curl --max-time 5 -s http://radioparadise.com/xml/now.xml | \
-         grep '<coverart>' | sed -e 's/<coverart>//' -e 's!</coverart>!!'
-
-Also note that upmpdcli does not set a timeout for the +artScript+
-execution. A reasonable value should be used inside the script, to avoid
-freezing upmpdcli forever.
-
-If set, +metaScript+ is the path to an executable script which can retrieve
-the metadata (possibly including art Url) for the currently playing title.
-
-The script should output the metadata in JSON format. Example output
-(the newlines and blank space are just here for readability):
+An example of a simple radio station definition follows. The only mandatory
+value is the +url+ one, which should point to the actual audio stream or to
+the station playlist link which will redirect to it (more detail in the
+<<RADIO-SCRIPTS,radio scripts section>>. +artUrl+ points to a
+static logo image for the station.
 
 ----
-{
-    "title":"The title of the current track",
-    "artist":"The artist playing",
-    "artUrl":"https://www.somesite.com/path/to/image.jpg",
-    "reload":103
-}
+[radio Radio Eins]
+url = http://opml.radiotime.com/Tune.ashx?id=s25111
+artUrl = http://cdn-radiotime-logos.tunein.com/s25111q.png
 ----
 
-The +reload+ value gives the number of seconds after which the script
-should be re-executed (the clever radio sets this to the remaining song
-time). By default, the script is executed every 10 S.
-
-Complete exemple with metadata script:
-
-----
-[radio FIP (Paris)]
-url = http://direct.fipradio.fr/live/fip-midfi.mp3
-artUrl = http://www.fipradio.fr/sites/default/files/fip-quadri-filet.png
-metaScript = /usr/local/bin/fip-paris-meta.rb
-----
-
-And the script (this one in Ruby, thanks to
-link:https://github.com/distler[Jacques Distler]): 
-
-----
-#!/usr/bin/ruby
-require 'net/http'
-require 'json'
-
-uri = URI('http://www.fipradio.fr/livemeta/7')
-response = Net::HTTP.get(uri)
-songs = JSON.parse(response)['steps'].values
-now = Time.now
-songs.each do |song|
-  song_end = Time.at(song['end'])
-  if (song['embedType'] == 'song' && song_end >= now && Time.at(song['start']) <= now)
-    title = song['title'] ? song['title'] : ''
-    artist = song['performers'] ? song['performers'] : song['authors']
-    metadata = {'title' => title.split.collect{|s| s.capitalize}.join(' '),
-               'artist' => artist.split.collect{|s| s.capitalize}.join(' '),
-               'artUrl' => song['visual'],
-               'reload' => (song_end - now + 1).to_i}
-    puts JSON.generate(metadata)
-    break
-  end
-end
-----
-
+Radio definitions may also include paths to scripts to be executed for
+retrieving the metadata and album art for the currently playing song. See
+the <<RADIO-SCRIPTS,radio scripts section>> for more detail.
 
 [[UPMPDCLI-SONGCAST]]
 == Upmpdcli and Songcast
@@ -1202,6 +1125,83 @@ The +Analog-Input+ sample script has provisions for reading the device name
 and setup/teardown instructions from external files, so that it does not
 need to be modified. This is only relevant for the sample, please have a
 look at the comments for details.
+
+[[RADIO-SCRIPTS]]
+== Annex: the radio scripts
+
+=== The radio URL script
+
+The +url+ field inside the radio definition can be a direct audio link or a
+link to the radio station playlist. This link will be interpreted by the
+'fetchstream.py' ('rdpltostream' directory inside the source tree, or see
+'/usr/share/upmpdcli/rdpl2stream'). The Python code knows about the various
+playlist formats used by the stations.
+
+=== The dynamic album art script
+
+If set, +artScript+ is the path to an executable script which can retrieve
+the image URL for the currently playing title. It can also be a simple
+script name if this is located in the PATH or in the 'radio_scripts'
+directory inside the upmpdcli directory (typically '/usr/share/upmpdcli').
+
+Some radios (e.g.  link:https://www.radioparadise.com/rp_2.php?#[Radio
+Paradise]) publish the album art for the currently playing title. The
+details vary. The +artScript+ parameter, if set, should point to an
+executable script which prints this dynamic art Uri to stdout. The image
+will supercede the radio logo, to be displayed by control points. Beware
+that the path to the script must be accessible by the _upmpdcli_ user,
+which may not be the case for your home. +/usr/local/bin+ is your
+friend. The Upmpdcli installation has a very small set of scripts inside
+the '/usr/share/upmpdcli/radio_scripts' directory. This includes a very
+rough example for retrieving the Radio Paradise art URI,
+'radio-paradise-get-art.sh' 
+
+The art script is executed each time the stream metadata changes (the data
+is obtained by mpd from Icy metadata in the stream).
+
+Upmpdcli does not set a timeout for the +artScript+ execution. A reasonable
+value should be used inside the script, to avoid freezing upmpdcli forever.
+
+There is no reason to have an +artScript+ if +metaScript+ exists for the
+radio. +metaScript+ can also return the image URL.
+
+=== The dynamic metadata script
+
+If set, +metaScript+ is the path to an executable script which can retrieve
+the metadata (possibly including art Url) for the currently playing
+title. It can also be a simple script name if this is located in the PATH
+or in the 'radio_scripts' directory inside the upmpdcli directory
+(typically '/usr/share/upmpdcli').
+
+
+The script should output the metadata in JSON format. An example output
+follows (the newlines and whitespace are just here for readability, any
+valid JSON will do):
+
+----
+{
+    "title" : "The title of the current track",
+    "artist" : "The artist playing",
+    "album": "The album name",
+    "artUrl" : "https://www.somesite.com/path/to/image.jpg",
+    "audioUrl" : "http://some url",
+    "reload" : 103
+}
+----
+
+The +reload+ value gives the number of seconds after which the script
+should be re-executed (the clever radio sets this to the remaining song
+time). By default, the script is executed every 10 S.
+
+Any value not present will simply not be used (not an error). +audioUrl+ is
+generally not set. If it is set, it's the next audio Url to queue after the
+current one (this is used for radio streams which are a sequences of URLs
+rather than a continuous stream, for example the Radio Paradise FLAC
+station).
+
+The 'radio_scripts' directory has two examples of radio metadata scripts, a
+simple one ('fip-meta.py'), and a quite complicated one
+('radio-paradise-get-flac.py').
 
 
 [[COMMAND-ENVIRON]]
