@@ -137,7 +137,8 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
 radioscriptsdir = $(pkgdatadir)/radio_scripts
 dist_radioscripts_DATA = \
                     src/radio_scripts/radio-paradise-get-art.sh \
-                    src/radio_scripts/radio-paradise-get-flac.py
+                    src/radio_scripts/radio-paradise-get-flac.py \
+                    src/radio_scripts/fip-meta.py 
 
 cdpluginspycomdir = $(pkgdatadir)/cdplugins/pycommon
 dist_cdpluginspycom_DATA = \

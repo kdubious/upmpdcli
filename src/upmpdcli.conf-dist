@@ -488,43 +488,15 @@ uprclautostart = 1
 # http://www.radioparadise.com/rp_2.php#name=Listen&file=links
 url = http://stream-uk1.radioparadise.com/aac-128
 artUrl = https://www.radioparadise.com/graphics/fb_logo.png
-artscript = radio-paradise-get-art.sh
+artScript = radio-paradise-get-art.sh
 
 [radio Radio Paradise (flac)]
 artUrl = https://www.radioparadise.com/graphics/fb_logo.png
 metaScript = radio-paradise-get-flac.py
 
-[radio FIP autour du rock]
-url = http://direct.fipradio.fr/live/fip-webradio1.mp3
-artUrl = http://www.fipradio.fr/sites/all/themes/custom/fip/img/logo_fip_header.png
-
-[radio Radio Eins]
-url = http://opml.radiotime.com/Tune.ashx?id=s25111
-artUrl = http://cdn-radiotime-logos.tunein.com/s25111q.png
-
-[radio InfoRadio]
-url = http://opml.radiotime.com/Tune.ashx?id=s9176
-artUrl = http://cdn-radiotime-logos.tunein.com/s9176q.png
-
-[radio Radio Teddy]
-url = http://opml.radiotime.com/Tune.ashx?id=s80044
-artUrl = http://cdn-radiotime-logos.tunein.com/s80044q.png
-
-[radio Deutschlandfunk]
-url = http://opml.radiotime.com/Tune.ashx?id=s55698
-artUrl = http://cdn-radiotime-logos.tunein.com/s42828q.png
-
 [radio Naim Radio]
 url =  http://37.130.228.60:8090/listen.pls
-
-[radio 96.2 | The Revolution (Rock)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s45508
-
-[radio 102.0 | Capital Manchester (Top 40/Pop)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s18587
-
-[radio 97.7 | XFM Manchester (Alternative Rock)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s81256
+artUrl = https://www.naimaudio.com/sites/all/themes/naim/images/naim_records_logo.png
 
 [radio Linn Radio (Variety)]
 url =  http://opml.radiotime.com/Tune.ashx?id=s122119
@@ -537,156 +509,16 @@ artUrl = http://small.linncdn.com/website/responsive/images/logo-black-chunky.pn
 url =  http://opml.radiotime.com/Tune.ashx?id=s122120
 artUrl = http://small.linncdn.com/website/responsive/images/logo-black-chunky.png
 
-[radio BBC Radio 1Xtra (Soul and R&B)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s20277
+[radio FIP (Paris)]
+#url = http://direct.fipradio.fr/live/fip-midfi.mp3
+url = https://chai5she.cdn.dvmr.fr/fip-midfi.mp3?ID=radiofrance
+artUrl = https://www.fip.fr/sites/default/files/fip-quadri-filet.png
+metaScript = fip-meta.py 7
+preferScript = 1
 
-[radio 98.2 | BBC Radio 1 (Top 40/Pop)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s83464
-
-[radio 88.6 | BBC Radio 2 (Adult Contemporary)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s83463
-
-[radio 91.3 | BBC Radio 3 (Classical)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s24941
-
-[radio 93.0 | BBC Radio 4 (National News)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s83461
-
-[radio 198 | BBC Radio 4 LW (Public Radio)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s50577
-
-[radio BBC Radio 4 Extra (Comedy)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s6839
-
-[radio 909 | BBC Radio 5 live (Sports Talk)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s24943
-
-[radio BBC Radio 5 live sports extra (Sports)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s50459
-
-[radio BBC Radio 6 Music (AAA)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s44491
-
-[radio BBC World Service (World News)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s50646
-
-[radio 95.1 | BBC Manchester (Community)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s18214
-
-[radio 1107 | talkSPORT (Sports Talk)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s46580
-
-[radio 100.9 | Classic FM (Classical)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s8439
-
-[radio 103.0 | Key 103 (Top 40/Pop)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s6910
-
-[radio 181.FM Beatles (60's)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s113658
-
-[radio Ministry of Sound Radio (Electronic and Dance)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s2262
-
-[radio 106.1 | Real Radio XS Manchester (Classic Rock)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s91723
-
-[radio 100.4 | Smooth North West (Soul and R&B)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s45501
-
-[radio Radio Caroline (Classic Rock)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s10517
-
-[radio Offshore Radio Sounds (Nostalgia)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s141022
-
-[radio Radio 10 Classic (Oldies)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s130799
-
-[radio 94.4 | Salford City Radio (Local Music)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s67827
-
-[radio 106.9 | Silk 106.9 (Top 40/Pop)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s45584
-
-[radio 97.2 | Wythenshawe FM (Local Music)]
-url =  http://opml.radiotime.com/Tune.ashx?id=s37352
-
-[radio Smooth Jazz]
-url = http://smoothjazz.com/streams/smoothjazz_128.pls
-
-[radio Sonic Universe]
-url = http://somafm.com/sonicuniverse.pls
-
-[radio Onda Tropical]
-url = http://yp.shoutcast.com/sbin/tunein-station.pls?id=506392
-
-[radio Top Latino Radio]
-url = http://online.radiodifusion.net:8020/listen.pls
-
-[radio .977 Classic Rock]
-url = http://www.977music.com/tunein/web/classicrock.asx
-
-[radio Covers]
-url = http://somafm.com/covers.pls
-
-[radio KDFC]
-url = http://provisioning.streamtheworld.com/pls/KDFCFM.pls
-
-[radio Classic FM]
-url = http://media-ice.musicradio.com/ClassicFMMP3.m3u
-
-[radio WCPE]
-url = http://www.ibiblio.org/wcpe/wcpe.pls
-
-[radio CINEMIX]
-url = http://cinemix.us/cine.asx
-
-[radio Radio Paradise]
-url = http://www.radioparadise.com/musiclinks/rp_128aac.m3u
-
-[radio Indie Pop Rocks!]
-url = http://somafm.com/indiepop.pls
-
-[radio PopTron]
-url = http://somafm.com/poptron.pls
-
-[radio AM 1710]
-url = http://lin2.ash.fast-serv.com:9022/listen.pls
-
-[radio WNAR]
-url = http://live.wnar-am.com:8500/listen.pls
-
-[radio Beat Blender]
-url = http://somafm.com/beatblender.pls
-
-[radio Secret Agent]
-url = http://somafm.com/secretagent.pls
-
-[radio Groove Salad]
-url = http://somafm.com/groovesalad.pls
-
-[radio Illinois Street Lounge]
-url = http://somafm.com/illstreet.pls
-
-[radio Boot Liquor]
-url = http://somafm.com/bootliquor.pls
-
-[radio Country 108]
-url = http://www.country108.com/listen.pls
-
-[radio Drone Zone]
-url = http://somafm.com/dronezone.pls
-
-[radio Space Station Soma]
-url = http://somafm.com/spacestation.pls
-
-[radio cliqhop idm]
-url = http://somafm.com/cliqhop.pls
-
-[radio Black Rock FM]
-url = http://somafm.com/brfm.pls
-
-[radio New Dance Radio]
-url = http://jbstream.net/tunein.php/blackoutworm/playlist.asx
-
+[radio FIP autour du rock]
+#url = https://direct.fipradio.fr/live/fip-webradio1.mp3?ID=radiofrance
+url = https://chai5she.cdn.dvmr.fr/fip-webradio1.mp3?ID=radiofrance
+artUrl = https://www.fip.fr/sites/default/files/fip-quadri-filet.png
+metaScript = fip-meta.py 64
+preferScript = 1

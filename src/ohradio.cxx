@@ -112,8 +112,7 @@ struct RadioMeta {
 static vector<RadioMeta> o_radios;
 
 OHRadio::OHRadio(UpMpd *dev)
-    : OHService(sTpProduct, sIdProduct, dev), m_active(false),
-      m_id(0), m_ok(false)
+    : OHService(sTpProduct, sIdProduct, dev)
 {
     // Need Python for the radiopl playlist-to-audio-url script
     string pypath;
@@ -243,17 +242,20 @@ bool OHRadio::makeIdArray(string& out)
 
 void OHRadio::maybeExecMetaScript(RadioMeta& radio, MpdStatus &mpds)
 {
-    string seconds("-1");
     if (time(0) < radio.nextMetaScriptExecTime) {
         LOGDEB0("OHRadio::maybeExecMetaScript: next in " <<
                 radio.nextMetaScriptExecTime - time(0) << endl);
         return;
     }
+
+    string elapsedms("-1");
     if (mpds.state == MpdStatus::MPDS_PLAY) {
-        seconds = SoapHelp::i2s(mpds.songelapsedms);
+        elapsedms = SoapHelp::i2s(mpds.songelapsedms);
     }
+    
     vector<string> args{radio.metaScript};
-    args.push_back(seconds);
+    args.push_back("elapsedms");
+    args.push_back(elapsedms);
     string data;
     if (!ExecCmd::backtick(args, data)) {
         LOGERR("OHRadio::makestate: radio metascript failed\n");
@@ -297,7 +299,7 @@ void OHRadio::maybeExecMetaScript(RadioMeta& radio, MpdStatus &mpds)
             UpSong song;
             song.album = radio.title;
             song.uri = audioUri;
-            LOGDEB("INSERTING " << song.uri << endl);
+            LOGDEB0("ohRadio:execmetascript: inserting: " << song.uri << endl);
             m_dev->m_mpdcli->single(false);
             m_dev->m_mpdcli->consume(true);
             if (m_dev->m_mpdcli->insert(audioUri, -1, song) < 0) {
@@ -306,9 +308,10 @@ void OHRadio::maybeExecMetaScript(RadioMeta& radio, MpdStatus &mpds)
                 return;
             }
         }
-        // Have to do this else playing does not start, but this is
-        // going to interfer with a user-initiated pause/stop state
-        if (mpds.state != MpdStatus::MPDS_PLAY && !m_dev->m_mpdcli->play(0)) {
+
+        // Start things up if needed.
+        if (m_playpending && mpds.state != MpdStatus::MPDS_PLAY &&
+            !m_dev->m_mpdcli->play(0)) {
             LOGERR("OHRadio::mkstate: mpd play failed\n");
             return;
         }
@@ -337,7 +340,8 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
         // provide a script to retrieve it.
         bool nompddata = mpds.currentsong.title.empty() &&
             mpds.currentsong.artist.empty();
-        if ((radio.preferScript || nompddata) && radio.metaScript.size()) {
+        if ((m_playpending || radio.preferScript || nompddata) &&
+            radio.metaScript.size()) {
             maybeExecMetaScript(radio, mpds);
             mpds.currentsong.title = radio.dynTitle;
             mpds.currentsong.artist = radio.dynArtist;
@@ -404,6 +408,7 @@ int OHRadio::setPlaying()
         // which will be sent to MPD during makestate().
         radio.currentAudioUri.clear();
         m_dev->m_mpdcli->clearQueue();
+        m_playpending = true;
         return UPNP_E_SUCCESS;
     }
     
@@ -483,6 +488,7 @@ int OHRadio::pause(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHRadio::pause" << endl);
     bool ok = m_dev->m_mpdcli->pause(true);
+    m_playpending = false;
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
@@ -490,6 +496,7 @@ int OHRadio::pause(const SoapIncoming& sc, SoapOutgoing& data)
 int OHRadio::iStop()
 {
     bool ok = m_dev->m_mpdcli->stop();
+    m_playpending = false;
     maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }

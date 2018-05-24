@@ -75,14 +75,16 @@ private:
     void maybeWakeUp(bool ok);
     void maybeExecMetaScript(RadioMeta& radio, MpdStatus &);
 
-    bool m_active;
+    bool m_active{false};
+    // Play requested, but waiting for the metascript to return an uri.
+    bool m_playpending{false};
     MpdState m_mpdsavedstate;
     // Current channel id set by setId
-    unsigned int m_id; 
+    unsigned int m_id{0}; 
     // Current track data (title+artist_. Used for detecting changes,
     // only for executing possible configured art uri fetch script
     std::string m_currentsong;
-    bool m_ok;
+    bool m_ok{false};
 };
 
 #endif /* _OHRADIO_H_X_INCLUDED_ */

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from __future__ import print_function
 # Copyright (C) 2017-2018 J.F.Dockes
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -39,7 +38,7 @@ import os
 tmpname = '/tmp/up-rp-pldata.json'
 
 def debug(x):
-    print("%s"%x, file=sys.stderr)
+    print("radio-paradise-get-flac.py: %s" % x, file=sys.stderr)
     pass
 
 # Write new block data to cache. We always output the audio url in this case.
@@ -50,11 +49,24 @@ def newcache(jsd):
     os.chmod(tmpname, 0o666)
     out["audioUrl"] = jsd['url'] + "?src=alexa"
 
+##### Main script
 
-# We're expecting the current elapsed playing time in mS as arg
+    
+# We're expecting args as successive pairs of "name value", and we
+# need elapsedms (elapsed milliseconds in current track)
+# (e.g. myscript elapsedms 134)
+if (len(sys.argv)+1) % 2:
+    debug("argv len not odd")
+    sys.exit(1)
+args = {}
+for i in range(len(sys.argv)-2):
+    nm = sys.argv[i+1]
+    val = sys.argv[i+2]
+    args[nm] = val
+
 elapsedms = -1
 try:
-    elapsedms = int(sys.argv[1])
+    elapsedms = int(args["elapsedms"])
 except:
     pass
 
