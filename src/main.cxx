@@ -465,7 +465,8 @@ int main(int argc, char *argv[])
 
     Pidfile pidfile(pidfilename);
 
-    // If started by root, do the pidfile + change uid thing
+    // If started by root, we use the pidfile and we will change the
+    // uid (later). First part follows
     uid_t runas(0);
     gid_t runasg(0);
     if (geteuid() == 0) {
@@ -537,6 +538,10 @@ int main(int argc, char *argv[])
                 LOGERR("chown("<<logfilename<<") : errno : " << errno << endl);
             }
         }
+        if (!g_configfilename.empty()) {
+            ensureconfreadable(g_configfilename.c_str(), upmpdcliuser.c_str(),
+                               runas, runasg);
+        }
         if (initgroups(upmpdcliuser.c_str(), runasg) < 0) {
             LOGERR("initgroup failed. Errno: " << errno << endl);
         }
@@ -545,7 +550,7 @@ int main(int argc, char *argv[])
                    << endl);
             return 1;
         }
-#if 0        
+#if 0
         gid_t list[100];
         int ng = getgroups(100, list);
         cerr << "GROUPS: ";
@@ -556,7 +561,8 @@ int main(int argc, char *argv[])
 #endif
     }
 
-//// Dropped root 
+
+/////////////////////////// Dropped root /////////////////////////////
 
     if (sc2mpdpath.empty()) {
         // Do we have an sc2mpd command installed (for songcast)?

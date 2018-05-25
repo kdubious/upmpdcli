@@ -23,33 +23,37 @@
 
 #include "upmpdutils.hxx"
 
-#include <errno.h>                      // for errno
-#include <fcntl.h>                      // for open, O_RDONLY, O_CREAT, etc
-#include <math.h>                       // for exp10, floor, log10, sqrt
-#include <pwd.h>                        // for getpwnam, getpwuid, passwd
-#include <regex.h>                      // for regmatch_t, regfree, etc
-#include <stdio.h>                      // for sprintf
-#include <stdlib.h>                     // for getenv, strtol
-#include <string.h>                     // for strerror, strerror_r
-#include <sys/file.h>                   // for flock, LOCK_EX, LOCK_NB
-#include <sys/stat.h>                   // for fstat, mkdir, stat
-#include <unistd.h>                     // for close, pid_t, ftruncate, etc
+#include <sys/types.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <math.h>
+#include <pwd.h>
+#include <grp.h>
+#include <regex.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <limits.h>
 
 #ifndef O_STREAMING
 #define O_STREAMING 0
 #endif
-#include <fstream>                      // for operator<<, basic_ostream, etc
-#include <sstream>                      // for ostringstream
-#include <utility>                      // for pair
-#include <vector>                       // for vector
+#include <fstream>
+#include <sstream>
+#include <utility>
+#include <vector>
 
-#include "libupnpp/log.hxx"             // for LOGERR
-#include "libupnpp/soaphelp.hxx"        // for xmlQuote
-#include "libupnpp/upnpavutils.hxx"     // for upnpduration
+#include "libupnpp/log.hxx"
+#include "libupnpp/soaphelp.hxx"
+#include "libupnpp/upnpavutils.hxx"
 #include "libupnpp/control/cdircontent.hxx"
 
-#include "mpdcli.hxx"                   // for UpSong
+#include "mpdcli.hxx"
 #include "smallut.h"
+
 
 using namespace std;
 using namespace UPnPP;
@@ -302,4 +306,92 @@ string regsub1(const string& sexp, const string& input, const string& repl)
     out += input.substr(pmatch[0].rm_eo);
     regfree(&expr);
     return out;
+}
+
+// Make sure that the configuration file is readable by user upmpdcli.
+// This is only called if we are started as root, before switching
+// users.  We do the minimum change: set the user read bit if the
+// file belongs to it, else set the group read bit if it belongs to
+// one of the user groups, else, have to chrgp it.
+bool ensureconfreadable(const char *fn, const char *user, uid_t uid,
+                        gid_t gid)
+{
+    LOGDEB1("ensureconfreadable: fn " << fn << " user " << user << " uid " <<
+           uid << " gid " << gid << endl);
+
+    struct stat st;
+    if (stat(fn, &st) < 0) {
+        LOGERR("ensureconfreadable: can't stat " << fn << " errno " <<
+               errno << endl);
+        return false;
+    }
+    if ((st.st_mode & S_IROTH)) {
+        // World-readable, we're done
+        LOGDEB1("ensureconfreadable: file is world-readable\n");
+        return true;
+    }
+
+    if (st.st_uid == uid) {
+        LOGDEB1("ensureconfreadable: file belongs to user\n");
+        // File belongs to user. Make sure that "owner read" is
+        // set. Don't complicate things. "no owner read" does not make
+        // sense anyway (can always chmod).
+        if (!(st.st_mode & S_IRUSR)) {
+            if (chmod(fn, st.st_mode|S_IRUSR) < 0) {
+                LOGERR("ensureconfreadable: chmod(st.st_mode|S_IRUSR) failed."
+                       " errno " << errno << endl);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Deal with groups.
+    // Note that 1000 is arbitrary, we should call with 0 to retrieve
+    // the actual size and allocate accordingly then recall
+    int ngroups{1000};
+    gid_t groups[1000];
+    if (getgrouplist(user, gid, groups, &ngroups) < 0) {
+        LOGERR("ensureconfreadable: getgrouplist failed for " << user << endl);
+        return false;
+    }
+
+    // Check if file belongs to one of our groups. Make it
+    // group-readable if so. Determine our lowest group while we're at
+    // it.
+    unsigned int mingroup{UINT_MAX};
+    for (int i = 0;i < ngroups; i++) {
+        if (groups[i] < mingroup) {
+            mingroup = groups[i];
+        }
+        if (st.st_gid == groups[i]) {
+            if (!(st.st_mode & S_IRGRP)) {
+                if (chmod(fn, st.st_mode|S_IRGRP) < 0) {
+                    LOGERR("ensureconfreadable: chmod(st.st_mode|S_IRGRP) "
+                           "failed.  errno " << errno << endl);
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    // File does not belong to any of our groups. We already checked
+    // that "other read" was not set. Have to change the file
+    // group. Note that we could also add the file group to our group
+    // list, but this seems like a worse idea (making us a setgid
+    // executable in practise).
+    if (chown(fn, (uid_t)-1, mingroup) < 0) {
+        LOGERR("ensureconfreadable: chown(" << fn << "-1, " << mingroup <<") "
+               "failed. errno " << errno << endl);
+        return false;
+    }
+    if (!(st.st_mode & S_IRGRP)) {
+        if (chmod(fn, st.st_mode|S_IRGRP) < 0) {
+            LOGERR("ensureconfreadable: chmod(st.st_mode|S_IRGRP) "
+                   "failed.  errno " << errno << endl);
+            return false;
+        }
+    }
+    return true;
 }

@@ -22,6 +22,8 @@
 #include <vector>
 #include <unordered_set>
 
+#include <unistd.h>
+
 namespace UPnPClient {
     class UPnPDirObject;
 };
@@ -131,4 +133,6 @@ diffmaps(const std::unordered_map<std::string, std::string>& old,
 
 #define UPMPD_UNUSED(X) (void)(X)
 
+extern bool ensureconfreadable(const char *fn, const char *user, uid_t uid,
+                               gid_t gid);
 #endif /* _UPMPDUTILS_H_X_INCLUDED_ */
