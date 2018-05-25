@@ -144,7 +144,7 @@ ohProductDesc_t ohProductDesc = {
     // Product
     {
         "Upmpdcli",                                 // name
-        UPMPDCLI_PACKAGE_VERSION,                            // info
+        UPMPDCLI_PACKAGE_VERSION,                   // info
         "",                                         // url
         ""                                          // imageUri
     }
@@ -181,9 +181,36 @@ static void setupsigs()
         }
 }
 
+static vector<string> savedargs;
+
+// See comment in main.hxx
+bool startMsOnlyProcess()
+{
+    static ExecCmd cmd;
+    if (cmd.getChildPid() > 0) {
+        return true;
+    }
+    // Fork process for media server, replacing whatever -m option
+    // was given with -m 2 (ms only)
+    vector<string> args{"-m", "2"};
+    string cmdpath(savedargs[0]);
+    for (unsigned int i = 1; i < savedargs.size(); i++) {
+        string sa(savedargs[i]);
+        if (sa[sa.length() - 1] == 'm') {
+            sa = sa.substr(0, sa.length()-1);
+            if (i == savedargs.size() - 1)
+                Usage();
+            i++;
+        }
+        if (!sa.empty() && sa.compare("-")) {
+            args.push_back(sa);
+        }
+    }
+    return cmd.startExec(cmdpath, args, false, false) >= 0;
+}
+
 int main(int argc, char *argv[])
 {
-    vector<string> savedargs;
     for (int i = 0; i < argc; i++) {
         savedargs.push_back(argv[i]);
     }
@@ -391,23 +418,21 @@ int main(int argc, char *argv[])
         // for us. The way we then implement it depends on the command
         // line option (see the enum comments near the top of the file):
         enableMediaServer = ContentDirectory::mediaServerNeeded();
-        if (enableMediaServer) {
-            switch (arg_msmode) {
-            case MSOnly:
-                inprocessms = true;
-                msonly = true;
-                break;
-            case Combined:
-                inprocessms = true;
-                msonly = false;
-                break;
-            case RdrOnly:
-            case Forked:
-            default:
-                inprocessms = false;
-                msonly = false;
-                break;
-            }
+        switch (arg_msmode) {
+        case MSOnly:
+            inprocessms = true;
+            msonly = true;
+            break;
+        case Combined:
+            inprocessms = true;
+            msonly = false;
+            break;
+        case RdrOnly:
+        case Forked:
+        default:
+            inprocessms = false;
+            msonly = false;
+            break;
         }
     } else {
         // g_configfilename is empty. Create an empty config anyway
@@ -427,10 +452,9 @@ int main(int argc, char *argv[])
     }
     
     if (msonly && !enableMediaServer) {
-        cerr << "Pure Media Server mode requested, but this is "
-            "disabled by the configuration or by absent Media Server "
-            "modules.\n";
-        return 1;
+        // We used to forbid this, but it's actually ok if we're just using
+        // the "mediaserver" to redirect URLs for ohcredentials/Kazoo
+        ;
     }
 
     if (Logger::getTheLog(logfilename) == 0) {
@@ -484,13 +508,15 @@ int main(int argc, char *argv[])
                 LOGERR("creat("<< mcfn << ") : errno : " << errno << endl);
             } else {
                 close(fd);
-                if (geteuid() == 0 && chown(mcfn.c_str(), runas, -1) != 0) {
-                    LOGERR("chown("<< mcfn << ") : errno : " << errno << endl);
-                }
-                if (geteuid() == 0 &&
-                    chown(opts.cachedir.c_str(), runas, -1) != 0) {
-                    LOGERR("chown("<< opts.cachedir << ") : errno : " <<
-                           errno << endl);
+                if (geteuid() == 0) {
+                    if (chown(mcfn.c_str(), runas, -1) != 0) {
+                        LOGERR("chown("<< mcfn << ") : errno : " <<
+                               errno << endl);
+                    }
+                    if (chown(opts.cachedir.c_str(), runas, -1) != 0) {
+                        LOGERR("chown("<< opts.cachedir << ") : errno : " <<
+                               errno << endl);
+                    }
                 }
             }
         }
@@ -706,11 +732,6 @@ int main(int argc, char *argv[])
     unordered_map<string, VDirContent> emptyfiles =
         unordered_map<string, VDirContent>();
     unordered_map<string, VDirContent> *msfiles = &emptyfiles;
-    vector<string> args{"-m", "2"};
-    // Having this as a stack object means that it will be
-    // deleted when we return from main (on a signal), ensuring that
-    // the child process gets killed.
-    ExecCmd cmd;
     
     if (inprocessms) {
         if (msonly) {
@@ -720,24 +741,9 @@ int main(int argc, char *argv[])
 	// be no reference to the root object because there can be
 	// only one (libupnp restriction)
 	mediaserver = new MediaServer(string("uuid:") + ids.uuidMS, ids.fnameMS,
-                                      *msfiles);
+                                      enableMediaServer, *msfiles);
     } else if (enableMediaServer) {
-        // Fork process for media server, replacing whatever -m option
-        // was given with -m 2 (ms only)
-        string cmdpath(savedargs[0]);
-        for (unsigned int i = 1; i < savedargs.size(); i++) {
-            string sa(savedargs[i]);
-            if (sa[sa.length()-1] == 'm') {
-                sa = sa.substr(0, sa.length()-1);
-                if (int(i) == argc -1)
-                    Usage();
-                i++;
-            }
-            if (!sa.empty() && sa.compare("-")) {
-                args.push_back(sa);
-            }
-        }
-        cmd.startExec(cmdpath, args, false, false);
+        startMsOnlyProcess();
     }
     
     // And forever generate state change events.
@@ -747,7 +753,11 @@ int main(int argc, char *argv[])
         assert(nullptr != mediaserver);
         dev = mediaserver;
         LOGDEB("Media server event loop" << endl);
-        mediaserver->eventloop();
+        if (enableMediaServer) {
+            mediaserver->eventloop();
+        } else {
+            pause();
+        }
     } else {
         LOGDEB("Renderer event loop" << endl);
         assert(nullptr != mediarenderer);

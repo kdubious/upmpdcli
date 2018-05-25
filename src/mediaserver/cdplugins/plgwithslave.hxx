@@ -22,6 +22,8 @@
 #include "cdplugin.hxx"
 #include "libupnpp/device/vdir.hxx"
 
+class CmdTalk;
+
 // Interface to a content plugin implemented through a Python subprocess,
 // e.g. the Tidal, Qobuz and Gmusic interfaces.
 class PlgWithSlave : public CDPlugin {
@@ -48,7 +50,13 @@ public:
 
     // used for plugins which should start initialization asap
     bool startInit();
-    
+
+    // Used by ohcredentials to start a plugin instance
+    static bool startPluginCmd(CmdTalk& cmd, const std::string& appname,
+                               const std::string& host, unsigned int port,
+                               const std::string& pathprefix);
+    static bool maybeStartMHD(CDPluginServices *cdsrv);
+
     class Internal;
 private:
     Internal *m;

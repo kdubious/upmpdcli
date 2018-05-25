@@ -31,7 +31,9 @@ using namespace UPnPP;
 class ContentDirectory : public UPnPProvider::UpnpService,
                          public CDPluginServices {
 public:
-    ContentDirectory(MediaServer *dev);
+    // Enabled==false : used for ohcredentials, no services locally
+    // enabled, force some initializations
+    ContentDirectory(MediaServer *dev, bool enabled);
     ~ContentDirectory();
 
     /// Return plugin based on path prefix
@@ -47,9 +49,6 @@ public:
     /// must be equal or begin with the pathprefix.
     virtual bool setfileops(CDPlugin *, const std::string& path,
                             UPnPProvider::VirtualDir::FileOps ops);
-
-    /// Access the main configuration file.
-    virtual bool config_get(const std::string& nm, std::string& val);
 
     virtual std::string getfname();
 

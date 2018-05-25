@@ -41,6 +41,7 @@
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/device/device.hxx"
 #include "mediaserver/cdplugins/cdplugin.hxx"
+#include "mediaserver/cdplugins/plgwithslave.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -77,10 +78,7 @@ bool OHCredsMaybeMorphSpecialUri(string& uri, bool& isStreaming)
     // Possibly retrieve the IP port used by our proxy server
     static string sport;
     if (sport.empty()) {
-        int port = CDPluginServices::default_microhttpport();
-        if (!g_config->get("plgmicrohttpport", sport)) {
-            sport = SoapHelp::i2s(port);
-        }
+        sport = SoapHelp::i2s(CDPluginServices::microhttpport());
     }
 
     // http://wiki.openhome.org/wiki/Av:Developer:Eriskay:StreamingServices
@@ -147,26 +145,10 @@ struct ServiceCreds {
             return true;
         }
         LOGDEB("ServiceCreds: " << servicename << " starting cmd\n");
-        string exepath = path_cat(g_datadir, "cdplugins");
-        exepath = path_cat(exepath, servicename);
-        exepath = path_cat(exepath, servicename + "-app" + ".py");
-
-        string pythonpath = string("PYTHONPATH=") +
-            path_cat(g_datadir, "cdplugins") + ":" +
-            path_cat(g_datadir, "cdplugins/pycommon") + ":" +
-            path_cat(g_datadir, "cdplugins/" + servicename);
-        string configname = string("UPMPD_CONFIG=") + g_configfilename;
         // hostport is not needed by this login-only instance.
-        string hostport = string("UPMPD_HTTPHOSTPORT=bogus:0");
-        string pp = string("UPMPD_PATHPREFIX=") +
-            CDPluginServices::getpathprefix(servicename);
-        if (!cmd->startCmd(exepath, {/*args*/},
-                           /* env */ {pythonpath, configname, hostport, pp})) {
-            LOGERR("ServiceCreds::maybeStartCmd: startCmd failed\n");
-            return false;
-        }
-        LOGDEB("ServiceCreds: " << servicename << " cmd started\n");
-        return true;
+        return PlgWithSlave::startPluginCmd(
+            *cmd, servicename, "bogus", 0,
+            CDPluginServices::getpathprefix(servicename));
     }
 
     string login() {
@@ -208,6 +190,11 @@ struct ServiceCreds {
             }
             servicedata[toknm] = it->second;
         }
+        // Start a silent/crippled media server process (if not
+        // already done) to perform the URL redirections. If the media
+        // server was actually enabled by one of the services, this
+        // will do nothing.
+        startMsOnlyProcess();
         if (servicename == "qobuz") {
             data = servicedata["appid"];
         } else if (servicename == "tidal") {

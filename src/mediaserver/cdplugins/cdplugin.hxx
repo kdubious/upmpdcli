@@ -152,12 +152,11 @@ public:
                             UPnPProvider::VirtualDir::FileOps ops)= 0;
 
     /// Main configuration file access.
-    virtual bool config_get(const std::string& nm, std::string& val) = 0;
+    static bool config_get(const std::string& nm, std::string& val);
 
-
-    /// Default port to start the server on
-    static int default_microhttpport() { return 49149;}
-
+    /// Port to start the microhttp server on
+    static int microhttpport();
+    
     /// For modules which use the common microhttpd server
     /// (tidal/qobuz/gmusic). Returns something like "/tidal" (no end
     /// slash), which must be inserted at the top of the track URLs

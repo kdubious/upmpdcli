@@ -27,7 +27,12 @@ class UpMpdConMan;
 
 class MediaServer : public UpnpDevice {
 public:
+    // Enabled is false when the mediaserver eventloop will not be
+    // started because we are only using the infrastructure to perform
+    // track url translations for ohcredentials. We need to force
+    // starting some stuff in this case.
     MediaServer(const std::string& deviceid, const std::string& friendlyname,
+                bool enabled,
                 const std::unordered_map<std::string, VDirContent>& files =
                 std::unordered_map<std::string, VDirContent>()
         );

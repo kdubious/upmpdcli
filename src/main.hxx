@@ -26,6 +26,13 @@ extern bool g_enableL16;
 class ConfSimple;
 extern ConfSimple *g_config;
 
+// Start media server upmpdcli process (-m 2). This can be called
+// either from main() if some streaming services plugins are active
+// (have a defined user), or from ohcredentials when a service is
+// activated (it may not be configured locally). Uses static data and
+// only does anything if the process is not already started.
+extern bool startMsOnlyProcess();
+
 typedef struct ohInfoDesc {
     std::string name;
     std::string info;

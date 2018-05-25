@@ -22,11 +22,12 @@
 
 using namespace std;
 
-MediaServer::MediaServer(const string& deviceid, const string& friendlyname,
+MediaServer::MediaServer(
+    const string& deviceid, const string& friendlyname, bool enabled, 
     const std::unordered_map<std::string, VDirContent>& files)
     : UpnpDevice(deviceid, files), m_UDN(deviceid), m_fname(friendlyname)
 {
-    m_cd = new ContentDirectory(this);
+    m_cd = new ContentDirectory(this, enabled);
     m_cm = new UpMpdConMan(this);
 }
 

@@ -67,16 +67,15 @@ static const int read_timeout(60);
 
 class PlgWithSlave::Internal {
 public:
-    Internal(PlgWithSlave *_plg, const string& exe, const string& hst,
+    Internal(PlgWithSlave *_plg, const string& hst,
              int prt, const string& pp)
-        : plg(_plg), cmd(read_timeout), exepath(exe), upnphost(hst),
+        : plg(_plg), cmd(read_timeout), upnphost(hst),
           upnpport(prt), pathprefix(pp), laststream(this) { }
 
     bool maybeStartCmd();
 
     PlgWithSlave *plg;
     CmdTalk cmd;
-    string exepath;
     // Upnp Host and port. This would only be used to generate URLs *if*
     // we were using the libupnp miniserver. We currently use
     // microhttp because it can do redirects
@@ -91,7 +90,7 @@ public:
 
 // microhttpd daemon handle. There is only one of these, and one port, we find
 // the right plugin by looking at the url path.
-static struct MHD_Daemon *mhd;
+static struct MHD_Daemon *o_mhd;
 
 // Microhttpd connection handler. We re-build the complete url + query
 // string (&trackid=value), use this to retrieve a service URL
@@ -118,9 +117,9 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
     // The 'plgi' here is just whatever plugin started up the httpd task
     // We just use it to find the appropriate plugin for this path,
     // and then dispatch the request.
-    PlgWithSlave::Internal *plgi = (PlgWithSlave::Internal*)cls;
+    CDPluginServices *cdpsrv = (CDPluginServices*)cls;
     PlgWithSlave *realplg =
-        dynamic_cast<PlgWithSlave*>(plgi->plg->m_services->getpluginforpath(url));
+        dynamic_cast<PlgWithSlave*>(cdpsrv->getpluginforpath(url));
     if (nullptr == realplg) {
         LOGERR("answer_to_connection: no plugin for path [" << url << endl);
         return MHD_NO;
@@ -181,56 +180,71 @@ static int accept_policy(void *, const struct sockaddr* sa, socklen_t addrlen)
     return MHD_YES;
 }
 
-// Called once for starting the Python program and do other initialization.
-bool PlgWithSlave::Internal::maybeStartCmd()
+// Static
+bool PlgWithSlave::startPluginCmd(CmdTalk& cmd, const string& appname,
+                                  const string& host, unsigned int port,
+                                  const string& pathpref)
 {
-    if (cmd.running()) {
-        return true;
-    }
-
-    int port = CDPluginServices::default_microhttpport();
-    string sport;
-    if (plg->m_services->config_get("plgmicrohttpport", sport)) {
-        port = atoi(sport.c_str());
-    }
-    if (nullptr == mhd) {
-
-        // Start the microhttpd daemon. There can be only one, and it
-        // is started with a context handle which points to whatever
-        // plugin got there first. The callback will only use the
-        // handle to get to the plugin services, and retrieve the
-        // appropriate plugin based on the url path prefix.
-        LOGDEB("PlgWithSlave: starting httpd on port "<< port << endl);
-        mhd = MHD_start_daemon(
-            MHD_USE_THREAD_PER_CONNECTION,
-            //MHD_USE_SELECT_INTERNALLY, 
-            port, 
-            /* Accept policy callback and arg */
-            accept_policy, NULL, 
-            /* handler and arg */
-            &answer_to_connection, this, 
-            MHD_OPTION_END);
-        if (nullptr == mhd) {
-            LOGERR("PlgWithSlave: MHD_start_daemon failed\n");
-            return false;
-        }
-    }
-    
     string pythonpath = string("PYTHONPATH=") +
         path_cat(g_datadir, "cdplugins") + ":" +
         path_cat(g_datadir, "cdplugins/pycommon") + ":" +
-        path_cat(g_datadir, "cdplugins/" + plg->m_name);
+        path_cat(g_datadir, "cdplugins/" + appname);
     string configname = string("UPMPD_CONFIG=") + g_configfilename;
     stringstream ss;
-    ss << upnphost << ":" << port;
+    ss << host << ":" << port;
     string hostport = string("UPMPD_HTTPHOSTPORT=") + ss.str();
-    string pp = string("UPMPD_PATHPREFIX=") + pathprefix;
+    string pp = string("UPMPD_PATHPREFIX=") + pathpref;
+    string exepath = path_cat(g_datadir, "cdplugins");
+    exepath = path_cat(exepath, appname);
+    exepath = path_cat(exepath, appname + "-app" + ".py");
+
     if (!cmd.startCmd(exepath, {/*args*/},
                       /* env */ {pythonpath, configname, hostport, pp})) {
         LOGERR("PlgWithSlave::maybeStartCmd: startCmd failed\n");
         return false;
     }
     return true;
+}
+
+// Static
+bool PlgWithSlave::maybeStartMHD(CDPluginServices *cdsrv)
+{
+    if (nullptr == o_mhd) {
+        int port = CDPluginServices::microhttpport();
+        // Start the microhttpd daemon. There can be only one, and it
+        // is started with a context handle which points to whatever
+        // plugin got there first. The callback will only use the
+        // handle to get to the plugin services, and retrieve the
+        // appropriate plugin based on the url path prefix.
+        LOGDEB("PlgWithSlave: starting httpd on port "<< port << endl);
+        o_mhd = MHD_start_daemon(
+            MHD_USE_THREAD_PER_CONNECTION,
+            //MHD_USE_SELECT_INTERNALLY, 
+            port, 
+            /* Accept policy callback and arg */
+            accept_policy, NULL, 
+            /* handler and arg */
+            &answer_to_connection, cdsrv,
+            MHD_OPTION_END);
+        if (nullptr == o_mhd) {
+            LOGERR("PlgWithSlave: MHD_start_daemon failed\n");
+            return false;
+        }
+    }
+    return true;
+}
+
+// Called once for starting the Python program and do other initialization.
+bool PlgWithSlave::Internal::maybeStartCmd()
+{
+    if (cmd.running()) {
+        return true;
+    }
+    if (!maybeStartMHD(this->plg->m_services)) {
+        return false;
+    }
+    int port = CDPluginServices::microhttpport();
+    return startPluginCmd(cmd, plg->m_name, upnphost, port, pathprefix);
 }
 
 bool PlgWithSlave::startInit()
@@ -281,11 +295,7 @@ string PlgWithSlave::get_media_url(const string& path)
 PlgWithSlave::PlgWithSlave(const string& name, CDPluginServices *services)
     : CDPlugin(name, services)
 {
-    string exepath = path_cat(g_datadir, "cdplugins");
-    exepath = path_cat(exepath, name);
-    exepath = path_cat(exepath, name + "-app" + ".py");
-
-    m = new Internal(this, exepath,
+    m = new Internal(this,
                      services->getupnpaddr(this),
                      services->getupnpport(this),
                      services->getpathprefix(this));

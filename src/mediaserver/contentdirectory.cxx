@@ -54,7 +54,7 @@ public:
 
     // Start plugins which have long init so that the user has less to
     // wait on first access
-    void maybeStartSomePlugins();
+    void maybeStartSomePlugins(bool enabled);
     CDPlugin *pluginFactory(const string& appname) {
 	LOGDEB("ContentDirectory::pluginFactory: for " << appname << endl);
 
@@ -100,7 +100,7 @@ sTpContentDirectory("urn:schemas-upnp-org:service:ContentDirectory:1");
 static const string
 sIdContentDirectory("urn:upnp-org:serviceId:ContentDirectory");
 
-ContentDirectory::ContentDirectory(MediaServer *dev)
+ContentDirectory::ContentDirectory(MediaServer *dev, bool enabled)
     : UpnpService(sTpContentDirectory, sIdContentDirectory, dev),
       m(new Internal(this, dev))
 {
@@ -119,7 +119,7 @@ ContentDirectory::ContentDirectory(MediaServer *dev)
     dev->addActionMapping(
         this, "Search",
         bind(&ContentDirectory::actSearch, this, _1, _2));
-    m->maybeStartSomePlugins();
+    m->maybeStartSomePlugins(enabled);
 }
 
 ContentDirectory::~ContentDirectory()
@@ -251,8 +251,15 @@ static string appForId(const string& id)
 }
 
 
-void ContentDirectory::Internal::maybeStartSomePlugins()
+void ContentDirectory::Internal::maybeStartSomePlugins(bool enabled)
 {
+    // If enabled is not set, no service is locally enabled, we are
+    // working for ohcredentials. Explicitely start the microhttpd
+    // daemon in this case, as we'll need it before any plugin is
+    // created.
+    if (!enabled) {
+        PlgWithSlave::maybeStartMHD(this->service);
+    }
     for (auto& entry : rootdir) {
         string app = appForId(entry.id);
         string sas;
@@ -529,8 +536,12 @@ bool ContentDirectory::setfileops(CDPlugin *plg, const std::string& path,
     dir->addVDir(path, ops);
     return true;
 }
+std::string ContentDirectory::getfname()
+{
+    return m->msdev->getfname();
+}
 
-bool ContentDirectory::config_get(const string& nm, string& val)
+bool CDPluginServices::config_get(const string& nm, string& val)
 {
     if (nullptr == g_config) {
         return false;
@@ -538,8 +549,14 @@ bool ContentDirectory::config_get(const string& nm, string& val)
     return g_config->get(nm, val);
 }
 
-std::string ContentDirectory::getfname()
+int CDPluginServices::microhttpport()
 {
-    return m->msdev->getfname();
+    int port = 49149;
+    string sport;
+    if (g_config->get("plgmicrohttpport", sport)) {
+        port = atoi(sport.c_str());
+    }
+    return port;
 }
+
 
