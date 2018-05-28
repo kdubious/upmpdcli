@@ -53,7 +53,7 @@
 
 #include "mpdcli.hxx"
 #include "smallut.h"
-
+#include "conftree.h"
 
 using namespace std;
 using namespace UPnPP;
@@ -394,4 +394,13 @@ bool ensureconfreadable(const char *fn, const char *user, uid_t uid,
         }
     }
     return true;
+}
+
+bool configBool(ConfSimple *conf, const std::string& nm)
+{
+    string val;
+    if (conf && conf->get(nm, val)) {
+        return stringToBool(val);
+    }
+    return false;
 }

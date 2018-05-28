@@ -31,7 +31,7 @@ using namespace UPnPP;
 
 class OHProduct : public OHService {
 public:
-    OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc);
+    OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc, int version);
     virtual ~OHProduct();
     
     int iSetSourceIndex(int index);

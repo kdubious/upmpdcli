@@ -47,11 +47,11 @@ using namespace std::placeholders;
 
 static void listScripts(vector<pair<string, string> >& sources);
 
-static const string sTpProduct("urn:av-openhome-org:service:Product:2");
+static const string sTpProduct("urn:av-openhome-org:service:Product:");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Product");
 
 static string csxml("<SourceList>\n");
-static string csattrs("Info Credentials Time Volume");
+static string csattrs("Info Time Volume");
 
 // This can be replaced by config data in listScripts()
 static string scripts_dir("/usr/share/upmpdcli/src_scripts");
@@ -62,8 +62,8 @@ static vector<pair<string, string> > o_sources;
 static const string SndRcvPLName("PL-to-Songcast");
 static const string SndRcvRDName("RD-to-Songcast");
 
-OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc)
-    : OHService(sTpProduct, sIdProduct, dev),
+OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc, int version)
+    : OHService(sTpProduct + SoapHelp::i2s(version), sIdProduct, dev),
       m_ohProductDesc(ohProductDesc), m_sourceIndex(0), m_standby(false)
 {
     // Playlist must stay first.
@@ -71,9 +71,13 @@ OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc)
     if (m_dev->m_ohrd) {
         o_sources.push_back(pair<string, string>("Radio", "Radio"));
     }
+    // version == 1 is for lumin compat, see upmpd.cxx
+    if (version != 1) {
+        csattrs.append(" Credentials");
+    }
     if (m_dev->m_ohrcv) {
         o_sources.push_back(pair<string,string>("Receiver", "Receiver"));
-        csattrs.append(" Receiver");
+        csattrs.append(" Receiver");        
         if (m_dev->m_sndrcv &&
             m_dev->m_ohrcv->playMethod() == OHReceiverParams::OHRP_ALSA) {
             if (!(m_dev->m_options & UpMpd::upmpdNoSongcastSource)) {
@@ -406,7 +410,7 @@ int OHProduct::source(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHProduct::attributes(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    LOGDEB("OHProduct::attributes" << endl);
+    LOGDEB("OHProduct::attributes. csattrs: " << csattrs << endl);
     data.addarg("Value", csattrs);
     return UPNP_E_SUCCESS;
 }

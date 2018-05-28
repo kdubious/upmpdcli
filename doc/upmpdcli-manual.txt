@@ -578,9 +578,11 @@ framework, and knowing which way you are using will avoid confusion:
   functions, and the Renderer knows how to access the service streams. This
   is the OpenHome approach and can be considered the best of both worlds,
   at the price of complexity and compatibility issues. This method is
-  implemented by the Kazoo and Lumin Control Points, and a number of
+  implemented by the Kazoo Control Points, and a number of
   Renderers, the Linn and Lumin ones of course, but also,
-  xref:UPMPDCLI-MS-STR-CRED[lately by upmpdcli]. 
+  xref:UPMPDCLI-MS-STR-CRED[lately by upmpdcli]. At the moment, Lumin does
+  not work with upmpdcli except when the Credentials service is disabled by
+  setting the `lumincompat` configuration variable.
 
 [[UPMPDCLI-MS-STR-MS]]
 === Accessing Streaming Services through the upmpdcli Media Server

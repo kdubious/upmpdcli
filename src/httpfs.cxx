@@ -86,13 +86,6 @@ static string ohDesc(
     "  <eventSubURL>/evt/OHInfo</eventSubURL>"
     "</service>"
     "<service>"
-    "  <serviceType>urn:av-openhome-org:service:Credentials:1</serviceType>"
-    "  <serviceId>urn:av-openhome-org:serviceId:Credentials</serviceId>"
-    "  <SCPDURL>/upmpd/OHCredentials.xml</SCPDURL>"
-    "  <controlURL>/ctl/OHCredentials</controlURL>"
-    "  <eventSubURL>/evt/OHCredentials</eventSubURL>"
-    "</service>"
-    "<service>"
     "  <serviceType>urn:av-openhome-org:service:Time:1</serviceType>"
     "  <serviceId>urn:av-openhome-org:serviceId:Time</serviceId>"
     "  <SCPDURL>/upmpd/OHTime.xml</SCPDURL>"
@@ -133,7 +126,17 @@ static string ohDescReceive(
     "  <eventSubURL>/evt/OHReceiver</eventSubURL>"
     "</service>"
     );
-
+// We want to be able to hide the credentials service because it
+// breaks Lumin for some reason.
+static string ohDescCreds(
+    "<service>"
+    "  <serviceType>urn:av-openhome-org:service:Credentials:1</serviceType>"
+    "  <serviceId>urn:av-openhome-org:serviceId:Credentials</serviceId>"
+    "  <SCPDURL>/upmpd/OHCredentials.xml</SCPDURL>"
+    "  <controlURL>/ctl/OHCredentials</controlURL>"
+    "  <eventSubURL>/evt/OHCredentials</eventSubURL>"
+    "</service>"
+    );
 static const string iconDesc(
     "<iconList>"
     "  <icon>"
@@ -299,7 +302,15 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
                 if (enableReceiver) {
                     ohDesc += ohDescReceive;
                 }
+                bool lumincompat = configBool(g_config, "lumincompat");
+                if (!lumincompat) {
+                    ohDesc += ohDescCreds;
+                }
                 data = regsub1("@OPENHOME@", data, ohDesc);
+                // See comment about ohproduct version in upmpd.cxx
+                if (lumincompat) {
+                    data = regsub1("Product:2", data, "Product:1");
+                }
             } else {
                 data = regsub1("@OPENHOME@", data, "");
             }

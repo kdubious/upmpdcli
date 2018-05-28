@@ -72,7 +72,10 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
         m_services.push_back(m_ohif);
         m_services.push_back(new OHTime(this));
         m_services.push_back(new OHVolume(this));
-        m_services.push_back(new OHCredentials(this, opts.cachedir));
+        bool lumincompat = configBool(g_config, "lumincompat");
+        if (!lumincompat) {
+            m_services.push_back(new OHCredentials(this, opts.cachedir));
+        }
         m_ohpl = new OHPlaylist(this, opts.ohmetasleep);
         m_services.push_back(m_ohpl);
         if (m_avt)
@@ -108,7 +111,14 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
                                           opts.sendermpdport);
         }
         // Create ohpr last, so that it can ask questions to other services
-        m_ohpr = new OHProduct(this, ohProductDesc);
+        //
+        // We set the service version to 1 if credentials are
+        // hidden. The 2 are actually unrelated, but both are needed
+        // for Lumin 1.10 to discover upmpdcli (without the credentials
+        // service of course). I could not find what Lumin does not
+        // like when either Product:2 or ohcreds is enabled. Maybe
+        // this will go away at some point.
+        m_ohpr = new OHProduct(this, ohProductDesc, lumincompat ? 1 : 2);
         m_services.push_back(m_ohpr);
     }
 }
