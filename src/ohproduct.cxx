@@ -95,17 +95,18 @@ OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc)
     }
 
 
-    for (auto it = o_sources.begin(); it != o_sources.end(); it++) {
+    for (const auto& entry : o_sources) {
         // Receiver needs to be visible for Kazoo to use it. As a
         // consequence, Receiver appears in older upplay versions
         // source lists. Newer versions filters it out because you
         // can't do anything useful by selecting the receiver source
         // (no way to specify the sender), so it is confusing
-        string visible = "1";//it->first.compare("Receiver") ? "1" : "0";
+        string visible = "1";//entry.first.compare("Receiver") ? "1" : "0";
         csxml += string(" <Source>\n") +
-            "  <Name>" + it->second + "</Name>\n" +
-            "  <Type>" + it->first + "</Type>\n" +
+            "  <Name>" + entry.second + "</Name>\n" +
+            "  <Type>" + entry.first + "</Type>\n" +
             "  <Visible>" + visible + "</Visible>\n" +
+            "  <SystemName>" + entry.second + "</SystemName>\n" +
             "  </Source>\n";
     }
     csxml += string("</SourceList>\n");
@@ -139,6 +140,8 @@ OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc)
                           bind(&OHProduct::setSourceIndex, this, _1, _2));
     dev->addActionMapping(this, "SetSourceIndexByName", 
                           bind(&OHProduct::setSourceIndexByName, this, _1, _2));
+    dev->addActionMapping(this, "SetSourceBySystemName", 
+                          bind(&OHProduct::setSourceBySystemName,this, _1, _2));
     dev->addActionMapping(this, "Source", 
                           bind(&OHProduct::source, this, _1, _2));
     dev->addActionMapping(this, "Attributes", 
@@ -362,10 +365,20 @@ int OHProduct::iSetSourceIndexByName(const string& name)
 
 int OHProduct::setSourceIndexByName(const SoapIncoming& sc, SoapOutgoing& data)
 {
-
     string name;
     if (!sc.get("Value", &name)) {
         LOGERR("OHProduct::setSourceIndexByName: no Value" << endl);
+        return UPNP_E_INVALID_PARAM;
+    }
+    return iSetSourceIndexByName(name);
+}
+
+int OHProduct::setSourceBySystemName(const SoapIncoming& sc,
+                                     SoapOutgoing& data)
+{
+    string name;
+    if (!sc.get("Value", &name)) {
+        LOGERR("OHProduct::setSourceBySystemName: no Value" << endl);
         return UPNP_E_INVALID_PARAM;
     }
     return iSetSourceIndexByName(name);
@@ -383,7 +396,7 @@ int OHProduct::source(const SoapIncoming& sc, SoapOutgoing& data)
         LOGERR("OHProduct::source: bad index: " << sindex << endl);
         return UPNP_E_INVALID_PARAM;
     }
-    data.addarg("SystemName", m_ohProductDesc.room);
+    data.addarg("SystemName", o_sources[sindex].second);
     data.addarg("Type", o_sources[sindex].first);
     data.addarg("Name", o_sources[sindex].second);
     string visible = o_sources[sindex].first.compare("Receiver") ? "1" : "0";

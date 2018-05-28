@@ -53,6 +53,13 @@ static string upnpAVDesc(
     "  <controlURL>/ctl/AVTransport</controlURL>"
     "  <eventSubURL>/evt/AVTransport</eventSubURL>"
     "</service>"
+    "<service>"
+    "  <serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>"
+    "  <serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>"
+    "  <SCPDURL>/upmpd/ConnectionManager.xml</SCPDURL>"
+    "  <controlURL>/ctl/ConnectionManager</controlURL>"
+    "  <eventSubURL>/evt/ConnectionManager</eventSubURL>"
+    "</service>"
     );
 
 // The description XML document is the first thing downloaded by
@@ -65,7 +72,7 @@ static string upnpAVDesc(
 // Description of OpenHome services
 static string ohDesc(
     "<service>"
-    "  <serviceType>urn:av-openhome-org:service:Product:1</serviceType>"
+    "  <serviceType>urn:av-openhome-org:service:Product:2</serviceType>"
     "  <serviceId>urn:av-openhome-org:serviceId:Product</serviceId>"
     "  <SCPDURL>/upmpd/OHProduct.xml</SCPDURL>"
     "  <controlURL>/ctl/OHProduct</controlURL>"

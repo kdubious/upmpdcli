@@ -51,6 +51,7 @@ private:
     int sourceIndex(const SoapIncoming& sc, SoapOutgoing& data);
     int setSourceIndex(const SoapIncoming& sc, SoapOutgoing& data);
     int setSourceIndexByName(const SoapIncoming& sc, SoapOutgoing& data);
+    int setSourceBySystemName(const SoapIncoming& sc, SoapOutgoing& data);
     int source(const SoapIncoming& sc, SoapOutgoing& data);
     int attributes(const SoapIncoming& sc, SoapOutgoing& data);
     int sourceXMLChangeCount(const SoapIncoming& sc, SoapOutgoing& data);
