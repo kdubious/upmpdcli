@@ -47,7 +47,7 @@ using namespace std::placeholders;
 
 static void listScripts(vector<pair<string, string> >& sources);
 
-static const string sTpProduct("urn:av-openhome-org:service:Product:1");
+static const string sTpProduct("urn:av-openhome-org:service:Product:2");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Product");
 
 static string csxml("<SourceList>\n");
