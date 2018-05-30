@@ -698,14 +698,20 @@ The configuration parameters are described in the
 
 
 [[UPMPDCLI-MS-STR-CRED]]
-=== Accessing the streaming services with OpenHome from Kazoo or Lumin
+=== Accessing the streaming services with OpenHome from Kazoo
 
 This only works for Qobuz and Tidal, and only with upmpdcli versions 1.3.0
 and later. The corresponding media server module must be installed
 (upmpdcli-qobuz and/or upmpdcli-tidal), but no other configuration should
-be necessary on the renderer, except possibly for the stream quality choice
-(xref:tidaluser[Tidal Quality] or xref:qobuzuser[Qobuz format]
-if you are not using the default.
+be necessary on the renderer.
+
+This should also work with Lumin, but it does not currently, the reason is
+unknown. When feature is active, it actually prevents Lumin from
+discovering upmpdcli at all, so there is a configuration variable to
+disable it: '+lumincompat+'. Set to 1 to use upmpdcli v1.3.0 with Lumin.
+
+Upmpdcli uses the *openssl* command to perform the cryptography work. This
+was not made a hard dependancy, so you should check that it is installed.
 
 The media service icons will appear in the Control Point interface, and the
 service will be accessible after entering the login and password.
