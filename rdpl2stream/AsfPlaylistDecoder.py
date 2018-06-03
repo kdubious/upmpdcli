@@ -17,21 +17,24 @@
 # along with Radio Tray.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##########################################################################
-import urllib2
-from lib.common import USER_AGENT
-from StringIO import StringIO
-import logging
+import sys
+PY3 = sys.version > '3'
+if PY3:
+    from urllib.request import Request as UrlRequest
+    from urllib.request import urlopen as urlUrlopen
+else:
+    from urllib2 import Request as UrlRequest
+    from urllib2 import urlopen as urlUrlopen
+
+from lib.common import USER_AGENT, Logger
 
 class AsfPlaylistDecoder:
-
     def __init__(self):
-        self.log = logging.getLogger('radiotray')
-        self.log.debug('Initializing ASF playlist decoder')
-
+        self.log = Logger()
 
     def isStreamValid(self, contentType, firstBytes):
-
-        if('video/x-ms-asf' in contentType and firstBytes.strip().lower().startswith('[reference]')):
+        if 'video/x-ms-asf' in contentType and \
+           firstBytes.strip().lower().startswith('b[reference]'):
             self.log.info('Stream is readable by ASF Playlist Decoder')
             return True
         else:
@@ -39,31 +42,24 @@ class AsfPlaylistDecoder:
 
         
     def extractPlaylist(self,  url):
-
-        self.log.info('Downloading playlist..')
-
-        req = urllib2.Request(url)
+        self.log.info('ASF: downloading playlist..')
+        req = UrlRequest(url)
         req.add_header('User-Agent', USER_AGENT)
-        f = urllib2.urlopen(req)
+        f = urlUrlopen(req)
         str = f.read()
         f.close()
 
-        self.log.info('Playlist downloaded')
-        self.log.info('Decoding playlist...')
+        self.log.info('ASF: playlist downloaded, decoding...')
 
         playlist = []
-        lines = str.split("\n")
+        lines = str.splitlines()
         for line in lines:
-
-            if (line.startswith("Ref") == True):
-
-                list = line.split("=", 1)
+            if line.startswith(b"Ref"):
+                list = line.split(b"=", 1)
                 tmp = list[1].strip()
-
-                if (tmp.endswith("?MSWMExt=.asf")):
-                    playlist.append(tmp.replace("http", "mms"))
+                if tmp.endswith(b"?MSWMExt=.asf"):
+                    playlist.append(tmp.replace(b"http", b"mms"))
                 else:
                     playlist.append(tmp)
          
         return playlist
-

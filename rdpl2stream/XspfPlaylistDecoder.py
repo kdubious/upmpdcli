@@ -17,44 +17,41 @@
 # along with Radio Tray.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##########################################################################
-import urllib2
+import sys
+PY3 = sys.version > '3'
+if PY3:
+    from urllib.request import Request as UrlRequest
+    from urllib.request import urlopen as urlUrlopen
+else:
+    from urllib2 import Request as UrlRequest
+    from urllib2 import urlopen as urlUrlopen
+
 import xml.etree.ElementTree as ET
-from StringIO import StringIO
-from lib.common import USER_AGENT
-import logging
+from io import BytesIO
+from lib.common import USER_AGENT, Logger
 
 class XspfPlaylistDecoder:
-
     def __init__(self):
-        self.log = logging.getLogger('radiotray')
-        self.log.debug('XSPF playlist decoder')
-
+        self.log = Logger()
 
     def isStreamValid(self, contentType, firstBytes):
-
-        if('application/xspf+xml' in contentType):
+        if 'application/xspf+xml' in contentType:
             self.log.info('Stream is readable by XSPF Playlist Decoder')
             return True
         else:
             return False
-        
 
 
     def extractPlaylist(self,  url):
-
-        self.log.info('Downloading playlist...')
-
-        req = urllib2.Request(url)
+        self.log.info('XSPF: downloading playlist...')
+        req = UrlRequest(url)
         req.add_header('User-Agent', USER_AGENT)
-        f = urllib2.urlopen(req)
+        f = urlUrlopen(req)
         str = f.read()
         f.close()
+        self.log.info('XSPF: playlist downloaded, decoding...')
 
-        self.log.info('Playlist downloaded')
-        self.log.info('Decoding playlist...')
-
-        root = ET.parse(StringIO(str))
-
+        root = ET.parse(BytesIO(str))
         ns = {'xspf':'http://xspf.org/ns/0/'}
         elements = root.findall(".//xspf:track/xspf:location", ns)
 

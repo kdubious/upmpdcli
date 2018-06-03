@@ -48,6 +48,6 @@ if urlInfo is not None:
     print("%s" % urlInfo.getUrl())
 else:
     logger.error("Ended with null urlinfo")
-    print
+    print()
 
     

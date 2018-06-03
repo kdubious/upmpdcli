@@ -17,15 +17,27 @@
 # along with Radio Tray.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##########################################################################
-import urllib2
+import sys
+PY3 = sys.version > '3'
+if PY3:
+    from urllib.error import URLError as URLError
+    from urllib.request import HTTPRedirectHandler
+else:
+    from urllib2 import URLError as URLError
+    from urllib2 import HTTPRedirectHandler
 
-class DummyMMSHandler(urllib2.HTTPRedirectHandler):
+from lib.common import Logger
+
+class DummyMMSHandler(HTTPRedirectHandler):
+    def __init__(self):
+        self.log = Logger()
 
     # Handle mms redirection, or let the standard code deal with it.
     def http_error_302(self, req, fp, code, msg, headers):
+        #self.log.info("http_error_302: code %s headers %s" % (code, headers))
         if 'location' in headers:
-            newurl = headers.getheaders('location')[0]
+            newurl = headers['location']
             if newurl.startswith('mms:'):
-                raise urllib2.URLError("MMS REDIRECT:"+headers["Location"])
-        return urllib2.HTTPRedirectHandler.http_error_302(self, req, fp, code,
-                                                          msg, headers)
+                raise URLError("MMS REDIRECT:" + headers["Location"])
+        return HTTPRedirectHandler.http_error_302(self, req, fp, code,
+                                                  msg, headers)

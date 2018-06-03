@@ -1,0 +1,7 @@
+http://jbstream.net/tunein.php/blackoutworm/playlist.asx
+http://direct.fipradio.fr/live/fip-midfi.mp3
+http://opml.radiotime.com/Tune.ashx?id=s25111
+http://37.130.228.60:8090/listen.pls
+http://www.radioparadise.com/musiclinks/rp_128aac.m3u
+# mms redirect
+http://juoradio.appspot.com/kbs1 

@@ -17,23 +17,31 @@
 # along with Radio Tray.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##########################################################################
-import urllib2
-from lib.common import USER_AGENT
+import sys
+PY3 = sys.version > '3'
+if PY3:
+    from urllib.request import Request as UrlRequest
+    from urllib.request import urlopen as urlUrlopen
+else:
+    from urllib2 import Request as UrlRequest
+    from urllib2 import urlopen as urlUrlopen
+
+from lib.common import USER_AGENT, Logger
 import xml.etree.ElementTree as ET
-from StringIO import StringIO
-import logging
+from io import BytesIO
 import re
 
 class AsxPlaylistDecoder:
-
     def __init__(self):
-        self.log = logging.getLogger('radiotray')
-        self.log.debug('ASX-familiy playlist decoder')
+        self.log = Logger()
 
 
     def isStreamValid(self, contentType, firstBytes):
-
-        if(('audio/x-ms-wax' in contentType or 'video/x-ms-wvx' in contentType or 'video/x-ms-asf' in contentType or 'video/x-ms-wmv' in contentType) and firstBytes.strip().lower().startswith('<asx')):
+        if ('audio/x-ms-wax' in contentType or \
+            'video/x-ms-wvx' in contentType or \
+            'video/x-ms-asf' in contentType or \
+            'video/x-ms-wmv' in contentType) and \
+            firstBytes.strip().lower().startswith(b'<asx'):
             self.log.info('Stream is readable by ASX Playlist Decoder')
             return True
         else:
@@ -41,30 +49,27 @@ class AsxPlaylistDecoder:
 
         
     def extractPlaylist(self,  url):
+        self.log.info('ASX: Downloading playlist...')
 
-        self.log.info('Downloading playlist...')
-
-        req = urllib2.Request(url)
+        req = UrlRequest(url)
         req.add_header('User-Agent', USER_AGENT)
-        f = urllib2.urlopen(req)
+        f = urlUrlopen(req)
         str = f.read()
         f.close()
 
-        self.log.info('Playlist downloaded')
-        self.log.info('Decoding playlist...')
+        self.log.info('ASX: playlist downloaded, decoding...')
 
         try:
-            root = ET.parse(StringIO(str))
+            root = ET.parse(BytesIO(str))
         except:
             # Last ditch: try to fix docs with mismatched tag name case
             str = re.sub('''<([A-Za-z0-9/]+)''', \
                          lambda m: "<" + m.group(1).lower(),
                          str)
-            root = ET.parse(StringIO(str))
+            root = ET.parse(BytesIO(str))
             
         #ugly hack to normalize the XML
         for element in root.iter():
-
             tmp = element.tag
             element.tag = tmp.lower()
 

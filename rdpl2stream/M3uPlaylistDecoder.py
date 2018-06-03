@@ -17,47 +17,49 @@
 # along with Radio Tray.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##########################################################################
-import urllib2
-from lib.common import USER_AGENT
-import logging
+import sys
+PY3 = sys.version > '3'
+if PY3:
+    from urllib.request import Request as UrlRequest
+    from urllib.request import urlopen as urlUrlopen
+else:
+    from urllib2 import Request as UrlRequest
+    from urllib2 import urlopen as urlUrlopen
+    
+from lib.common import USER_AGENT, Logger
 
 class M3uPlaylistDecoder:
-
     def __init__(self):
-        self.log = logging.getLogger('radiotray')
-        self.log.debug('M3U playlist decoder')
+        self.log = Logger()
+
 
     def isStreamValid(self, contentType, firstBytes):
-
-        if('audio/mpegurl' in contentType or 'audio/x-mpegurl' in contentType):
+        if 'audio/mpegurl' in contentType or 'audio/x-mpegurl' in contentType:
             self.log.info('Stream is readable by M3U Playlist Decoder')
             return True
         else:
             lines = firstBytes.splitlines()
             for line in lines:
-                if(line.startswith("http://")):
+                if line.startswith(b"http://"):
                     return True
         return False
 
 
-
     def extractPlaylist(self,  url):
-        self.log.info('Downloading playlist...')
-
-        req = urllib2.Request(url)
+        self.log.info('M3u: downloading playlist...')
+        req = UrlRequest(url)
         req.add_header('User-Agent', USER_AGENT)
-        f = urllib2.urlopen(req)
+        f = urlUrlopen(req)
         str = f.read()
         f.close()
 
-        self.log.info('Playlist downloaded')
-        self.log.info('Decoding playlist...')
+        self.log.info('M3U: playlist downloaded, decoding... ')
 
         lines = str.splitlines()
         playlist = []
 
         for line in lines:
-            if line.startswith("#") == False and len(line) > 0:
+            if line.startswith(b"#") == False and len(line) > 0:
                 playlist.append(line)
 
         return playlist

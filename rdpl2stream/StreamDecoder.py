@@ -19,11 +19,28 @@
 ##########################################################################
 from __future__ import print_function
 
-import urllib2
 import sys
+
+PY3 = sys.version > '3'
+if PY3:
+    from urllib.request import Request as UrlRequest
+    import urllib.request, urllib.error, urllib.parse
+    from urllib.error import HTTPError as HTTPError
+    from urllib.error import URLError as URLError
+    from http.client import BadStatusLine as BadStatusLine
+    from urllib.request import build_opener as urlBuild_opener
+    from urllib.request import HTTPSHandler    
+else:
+    from urllib2 import Request as UrlRequest
+    from urllib2 import HTTPError as HTTPError
+    from urllib2 import URLError as URLError
+    from urllib2 import build_opener as urlBuild_opener
+    from urllib2 import HTTPSHandler
+    class BadStatusLine:
+        pass
 import ssl
 
-from lib.common import USER_AGENT
+from lib.common import USER_AGENT, Logger
 from lib.DummyMMSHandler import DummyMMSHandler
 from PlsPlaylistDecoder import PlsPlaylistDecoder
 from M3uPlaylistDecoder import M3uPlaylistDecoder
@@ -33,19 +50,7 @@ from AsfPlaylistDecoder import AsfPlaylistDecoder
 from RamPlaylistDecoder import RamPlaylistDecoder
 from UrlInfo import UrlInfo
 
-class Logger:
-    def mprint(self, m):
-        #print("%s"%m, file=sys.stderr)
-        pass
-    def error(self, m):
-        self.mprint(m)
-    def warn(self, m):
-        self.mprint(m)
-    def info(self, m):
-        self.mprint(m)
-    def debug(self, m):
-        self.mprint(m)
-        
+      
 class StreamDecoder:
 
     def __init__(self, cfg_provider):
@@ -68,7 +73,7 @@ class StreamDecoder:
                 self.log.warn("Couldn't find url_timeout configuration")
                 self.url_timeout = 100
                 cfg_provider.setConfigValue("url_timeout", str(self.url_timeout))
-        except Exception, e:
+        except Exception as e:
             self.log.warn("Couldn't find url_timeout configuration")
             self.url_timeout = 100
             cfg_provider.setConfigValue("url_timeout", str(self.url_timeout))
@@ -77,58 +82,57 @@ class StreamDecoder:
 
 
     def getMediaStreamInfo(self, url):
-
+        if type(url) != type(u""):
+            url = url.decode('utf-8')
         if url.startswith("http") == False:
             self.log.info('Not an HTTP url. Maybe direct stream...')
             return UrlInfo(url, False, None)
 
         self.log.info('Requesting stream... %s'% url)
-        req = urllib2.Request(url)
+        req = UrlRequest(url)
         req.add_header('User-Agent', USER_AGENT)
 
         try:
-            opener = urllib2.build_opener(
+            opener = urlBuild_opener(
                 DummyMMSHandler(),
-                urllib2.HTTPSHandler(context =
-                                     ssl._create_unverified_context()))
+                HTTPSHandler(context = ssl._create_unverified_context()))
             f = opener.open(req, timeout=float(self.url_timeout))
-
-        except urllib2.HTTPError, e:
-            self.log.warn('HTTP Error: No radio stream found for %s - %s' %
-                          (url, str(e)))
+        except HTTPError as e:
+            self.log.warn('HTTP Error for %s: %s' % (url, e))
             return None
-        except urllib2.URLError, e:
-            self.log.info('No radio stream found for %s'% url)
+        except URLError as e:
+            self.log.info('URLError for %s: %s ' % (url, e))
             if str(e.reason).startswith('MMS REDIRECT'):
                 newurl = e.reason.split("MMS REDIRECT:",1)[1]
                 self.log.info('Found mms redirect for: %s' % newurl)
                 return UrlInfo(newurl, False, None)
             else:
                 return None
-        except Exception, e:
-            self.log.warn('No radio stream found. Error: %s'% str(e))
+        except BadStatusLine as e:
+            if str(e).startswith('ICY 200'):
+                self.log.info('Found ICY stream')
+                return UrlInfo(url, False, None)
+            else:
+                return None
+        except Exception as e:
+            self.log.warn('%s: for %s: Error %s: %s' % (type(e), url, e))
             return None
 
         metadata = f.info()
         firstbytes = f.read(500)
         f.close()
-        
-        try:            
-            self.log.debug('Metadata obtained...')
-            contentType = metadata["Content-Type"]
-            self.log.info('Content-Type: %s'% contentType)
-            
 
-        except Exception, e:
+        try:            
+            contentType = metadata["content-type"]
+            self.log.info('Content-Type: %s'% contentType)
+        except Exception as e:
             self.log.info("Couldn't read content-type. Maybe direct stream...")
-            self.log.info('Error: %s'%e)
             return UrlInfo(url, False, None)
 
         for decoder in self.decoders:
                 
             self.log.info('Checking decoder')
-            if(decoder.isStreamValid(contentType, firstbytes)):
-
+            if decoder.isStreamValid(contentType, firstbytes):
                 return UrlInfo(url, True, contentType, decoder)
             
         # no playlist decoder found. Maybe a direct stream
@@ -136,8 +140,6 @@ class StreamDecoder:
         return UrlInfo(url, False, contentType)
         
 
-
     def getPlaylist(self, urlInfo):
-
         return urlInfo.getDecoder().extractPlaylist(urlInfo.getUrl())
 

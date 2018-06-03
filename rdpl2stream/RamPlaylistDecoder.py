@@ -17,45 +17,47 @@
 # along with Radio Tray.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##########################################################################
-import urllib2
-from lib.common import USER_AGENT
-import logging
+import sys
+PY3 = sys.version > '3'
+if PY3:
+    from urllib.request import Request as UrlRequest
+    from urllib.request import urlopen as urlUrlopen
+else:
+    from urllib2 import Request as UrlRequest
+    from urllib2 import urlopen as urlUrlopen
+
+from lib.common import USER_AGENT, Logger
 
 class RamPlaylistDecoder:
-
     def __init__(self):
-        self.log = logging.getLogger('radiotray')
-        self.log.debug('RAM playlist decoder')
+        self.log = Logger()
+
 
     def isStreamValid(self, contentType, firstBytes):
-
-        if('audio/x-pn-realaudio' in contentType or 'audio/vnd.rn-realaudio' in contentType):
+        if 'audio/x-pn-realaudio' in contentType or \
+           'audio/vnd.rn-realaudio' in contentType:
             self.log.info('Stream is readable by RAM Playlist Decoder')
             return True
         else:
             return False
 
 
-
     def extractPlaylist(self,  url):
-        self.log.info('Downloading playlist...')
-
-        req = urllib2.Request(url)
+        self.log.info('RAM: Downloading playlist...')
+        req = UrlRequest(url)
         req.add_header('User-Agent', USER_AGENT)
-        f = urllib2.urlopen(req)
+        f = urUrlopen(req)
         str = f.read()
         f.close()
 
-        self.log.info('Playlist downloaded')
-        self.log.info('Decoding playlist...')
+        self.log.info('RAM Playlist downloaded, decoding...')
 
         lines = str.splitlines()
         playlist = []
-
         for line in lines:
-            if line.startswith("#") == False and len(line) > 0:
+            if len(line) > 0 and not line.startswith(b"#"):
                 tmp = line.strip()
-                if(len(tmp) > 0):
+                if len(tmp) > 0:
                     playlist.append(line.strip())
 
         return playlist
