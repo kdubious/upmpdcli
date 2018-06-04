@@ -8,7 +8,9 @@ from __future__ import print_function
     :license: GPLv3, see LICENSE for more details.
 '''
 import sys
-
+PY3 = sys.version > '3'
+if PY3:
+    basestring = str
 __debugging__ = True
 ourlog = None
 LOGDEBUG = None

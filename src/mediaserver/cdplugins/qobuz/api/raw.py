@@ -10,13 +10,18 @@
     :license: GPLv3, see LICENSE for more details.
 '''
 import sys
+PY3 = sys.version > '3'
 import pprint
 from time import time
 import math
 import hashlib
 import socket
 import binascii
-from itertools import izip, cycle
+if PY3:
+    itzip = zip
+else:
+    from itertools import izip as itzip
+from itertools import cycle
 import requests
 
 from qobuz.exception import QobuzXbmcError
@@ -27,7 +32,7 @@ socket.timeout = 5
 class RawApi(object):
 
     def __init__(self):
-        self.appid = '285473059'  # XBMC
+        self.appid = b'285473059'  # XBMC
         self.version = '0.2'
         self.baseUrl = 'http://www.qobuz.com/api.json/'
 
@@ -74,11 +79,16 @@ class RawApi(object):
         General Terms and Conditions
         (http://www.qobuz.com/apps/api/QobuzAPI-TermsofUse.pdf)
         '''
-        s3b = 'Bg8HAA5XAFBYV15UAlVVBAZYCw0MVwcKUVRaVlpWUQ8='
+        s3b = b'Bg8HAA5XAFBYV15UAlVVBAZYCw0MVwcKUVRaVlpWUQ8='
         s3s = binascii.a2b_base64(s3b)
-        self.s4 = ''.join(chr(ord(x) ^ ord(y))
-                          for (x, y) in izip(s3s,
-                                             cycle(self.appid)))
+        a = cycle(self.appid)
+        b = itzip(s3s, cycle(self.appid))
+        if PY3:
+            self.s4 = b''.join((x ^ y).to_bytes(1, byteorder='big')
+                               for (x, y) in itzip(s3s, cycle(self.appid)))
+        else:
+            self.s4 = b''.join(chr(ord(x) ^ ord(y))
+                               for (x, y) in itzip(s3s, cycle(self.appid)))
 
     def _api_request(self, params, uri, **opt):
         '''Qobuz API HTTP get request
