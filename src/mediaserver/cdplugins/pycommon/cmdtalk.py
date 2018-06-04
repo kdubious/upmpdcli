@@ -27,6 +27,7 @@ import os
 import tempfile
 import shutil
 import getopt
+import traceback
 
 PY3 = sys.version > '3'
 
@@ -145,7 +146,7 @@ class CmdTalk:
         
     # Send answer: document, ipath, possible eof.
     def answer(self, outfields):
-        for nm,value in outfields.iteritems():
+        for nm,value in outfields.items():
             #self.log("Senditem: [%s] -> [%s]" % (nm, value))
             self.senditem(nm, value)
             
@@ -164,6 +165,7 @@ class CmdTalk:
                 outfields = processor.process(params)
             except Exception as err:
                 self.log("processmessage: processor raised: [%s]" % err)
+                traceback.print_exc()
                 outfields = {}
                 outfields["cmdtalkstatus"] = "1"
                 outfields["cmdtalkerrstr"] = str(err)
@@ -217,7 +219,7 @@ def main(proto, processor):
 
     ioout = sys.stdout.buffer if PY3 else sys.stdout
 
-    for nm,value in res.iteritems():
+    for nm,value in res.items():
         #self.log("Senditem: [%s] -> [%s]" % (nm, value))
         bdata = makebytes(value)
         debprint(ioout, "%s->" % nm)

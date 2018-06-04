@@ -27,6 +27,9 @@ class Dispatch:
         self.map = {}
         
     def record(self, nm):
+        # The things we get from the pipe are bytes, use bytes as keys
+        if type(nm) != type(b''):
+            nm = nm.encode('utf-8')
         def decorator(func):
             self.map[nm] = func
             return func
