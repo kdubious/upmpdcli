@@ -15,7 +15,6 @@
 #   Free Software Foundation, Inc.,
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-
 from __future__ import print_function
 
 import locale
@@ -25,10 +24,14 @@ import sys
 import base64
 import platform
 
-class ConfSimple:
-    """A ConfSimple class reads a recoll configuration file, which is a typical
-    ini file (see the Recoll manual). It's a dictionary of dictionaries which
-    lets you retrieve named values from the top level or a subsection"""
+def _debug(s):
+    print("%s"%s, file=sys.stderr)
+    
+class ConfSimple(object):
+    """A ConfSimple class reads a recoll configuration file, which is
+    a typical ini file (see the Recoll manual). It's a dictionary of
+    dictionaries which lets you retrieve named values from the top
+    level or a subsection"""
 
     def __init__(self, confname, tildexp = False, readonly = True):
         self.submaps = {}
@@ -37,93 +40,140 @@ class ConfSimple:
         self.confname = confname
         
         try:
-            f = open(confname, 'r')
+            f = open(confname, 'rb')
         except Exception as exc:
-            #print("Open Exception: %s" % exc, file=sys.stderr)
+            #_debug("Open Exception: %s" % exc)
             # File does not exist -> empty config, not an error.
             self.submaps = {}
-            self.submaps[''] = {}
+            self.submaps[b''] = {}
             return
 
-        self.parseinput(f)
+        self._parseinput(f)
         
-    def parseinput(self, f):
+    def _parseinput(self, f):
         appending = False
-        line = ''
-        submapkey = ''
+        line = b''
+        submapkey = b''
         for cline in f:
-            cline = cline.rstrip("\r\n")
+            cline = cline.rstrip(b'\r\n')
             if appending:
                 line = line + cline
             else:
                 line = cline
             line = line.strip()
-            if line == '' or line[0] == '#':
+            if line == b'' or line[0] == b'#'[0]:
                 continue
 
-            if line[len(line)-1] == '\\':
+            if line[len(line)-1] == b'\\'[0]:
                 line = line[0:len(line)-1]
                 appending = True
                 continue
+
             appending = False
-            #print(line)
-            if line[0] == '[':
-                line = line.strip('[]')
+            #_debug(line)
+            if line[0] == b'['[0]:
+                line = line.strip(b'[]')
                 if self.dotildexpand:
                     submapkey = os.path.expanduser(line)
+                    if type(submapkey) == type(u''):
+                        submapkey = submapkey.encode('utf-8')
                 else:
                     submapkey = line
-                #print("Submapkey: [%s]" % submapkey)
+                #_debug("Submapkey: [%s]" % submapkey)
                 continue
-            nm, sep, value = line.partition('=')
-            if sep == '':
+
+            nm, sep, value = line.partition(b'=')
+            if sep == b'':
+                # No equal sign in line -> considered comment
                 continue
+
             nm = nm.strip()
             value = value.strip()
-            #print("Name: [%s] Value: [%s]" % (nm, value))
-
+            #_debug("sk [%s] nm: [%s] value: [%s]" % (submapkey, nm, value))
             if not submapkey in self.submaps:
                 self.submaps[submapkey] = {}
             self.submaps[submapkey][nm] = value
 
-    def get(self, nm, sk = ''):
+    def getbin(self, nm, sk = b''):
         '''Returns None if not found, empty string if found empty'''
+        if type(nm) != type(b'') or type(sk) != type(b''):
+            raise TypeError("getbin: parameters must be binary not unicode")
+        #_debug("ConfSimple::getbin nm [%s] sk [%s]" % (nm, sk))
         if not sk in self.submaps:
             return None
         if not nm in self.submaps[sk]:
             return None
         return self.submaps[sk][nm]
 
+    def get(self, nm, sk = b''):
+        dodecode = False
+        if type(nm) == type(u''):
+            dodecode = True
+            nm = nm.encode('utf-8')
+        if type(sk) == type(u''):
+            sk = sk.encode('utf-8')
+        #v = ConfSimple.getbin(self, nm, sk)
+        v = self.getbin(nm, sk)
+        if v and dodecode:
+            v = v.decode('utf-8')
+        return v
+
+    def getNamesbin(self, sk = b''):
+        if not sk in self.submaps:
+            return None
+        return list(self.submaps[sk].keys())
+
+    def getNames(self, sk = ''):
+        if not sk in self.submaps:
+            return None
+        dodecode = False
+        if type(sk) == type(u''):
+            dodecode = True
+            sk = sk.encode('utf-8')
+        names = self.getNamesbin(sk)
+        if names and dodecode:
+            names = [nm.decode('utf-8') for nm in names]
+        return names
+
     def _rewrite(self):
         if self.readonly:
             raise Exception("ConfSimple is readonly")
 
         tname = self.confname + "-"
-        f = open(tname, 'w')
+        f = open(tname, 'wb')
         # First output null subkey submap
-        if '' in self.submaps:
-            for nm,value in self.submaps[''].iteritems():
-                f.write(nm + " = " + value + "\n")
-        for sk,mp in self.submaps.iteritems():
-            if sk == '':
+        if b'' in self.submaps:
+            for nm,value in self.submaps[b''].items():
+                f.write(nm + b'=' + value + b'\n')
+        for sk,mp in self.submaps.items():
+            if sk == b'':
                 continue
-            f.write("[" + sk + "]\n")
-            for nm,value in mp.iteritems():
-                f.write(nm + " = " + value + "\n")
+            f.write(b'[' + sk + b']\n')
+            for nm,value in mp.items():
+                f.write(nm + b'=' + value + b'\n')
         f.close()
         os.rename(tname, self.confname)
 
-    def set(self, nm, value, sk = ''):
+    def setbin(self, nm, value, sk = b''):
         if self.readonly:
             raise Exception("ConfSimple is readonly")
+        if sk not in self.submaps:
+            self.submaps[sk] = {}
         self.submaps[sk][nm] = value
         self._rewrite()
         return True
 
-    def getNames(self, sk = ''):
-        if not sk in self.submaps:
-            return None
-        return list(self.submaps[sk].keys())
+    def set(self, nm, value, sk = b''):
+        if self.readonly:
+            raise Exception("ConfSimple is readonly")
+        if type(nm) == type(u''):
+            nm = nm.encode('utf-8')
+        if type(value) == type(u''):
+            value = value.encode('utf-8')
+        if type(sk) == type(u''):
+            sk = sk.encode('utf-8')
+        return self.setbin(nm, value, sk)
+    
     
 class ConfTree(ConfSimple):
     """A ConfTree adds path-hierarchical interpretation of the section keys,
@@ -131,26 +181,33 @@ class ConfTree(ConfSimple):
     given path, it will also be searched in the sections corresponding to
     the ancestors. E.g. get(name, '/a/b') will also look in sections '/a' and
     '/' or '' (the last 2 are equivalent)"""
-    def get(self, nm, sk = ''):
-        if sk == '' or sk[0] != '/':
-            return ConfSimple.get(self, nm, sk)
-            
-        if sk[len(sk)-1] != '/':
-            sk = sk + '/'
 
-        # Try all sk ancestors as submaps (/a/b/c-> /a/b/c, /a/b, /a, '')
-        while sk.find('/') != -1:
-            val = ConfSimple.get(self, nm, sk)
-            if val is not None:
-                return val
-            i = sk.rfind('/')
+    def getbin(self, nm, sk = b''):
+        if type(nm) != type(b'') or type(sk) != type(b''):
+            raise TypeError("getbin: parameters must be binary not unicode")
+        #_debug("ConfTree::getbin: nm [%s] sk [%s]" % (nm, sk))
+        
+        if sk == b'' or sk[0] != b'/'[0]:
+            return ConfSimple.getbin(self, nm, sk)
+
+        if sk[len(sk)-1] == b'/'[0]:
+             sk = sk[:len(sk)-1]
+
+        # Try all sk ancestors as submaps (/a/b/c-> /a/b/c, /a/b, /a, b'')
+        while sk:
+            if sk in self.submaps:
+                return ConfSimple.getbin(self, nm, sk)
+            if sk + b'/' in self.submaps:
+                return ConfSimple.getbin(self, nm, sk+b'/')
+            i = sk.rfind(b'/')
             if i == -1:
                 break
             sk = sk[:i]
 
-        return ConfSimple.get(self, nm)
+        return ConfSimple.getbin(self, nm)
 
-class ConfStack:
+
+class ConfStack(object):
     """ A ConfStack manages the superposition of a list of Configuration
     objects. Values are looked for in each object from the list until found.
     This typically provides for defaults overriden by sparse values in the
@@ -172,31 +229,43 @@ class ConfStack:
                 conf = ConfTree(fname)
             self.confs.append(conf)
 
-    def get(self, nm, sk = ''):
+    # Accepts / returns binary strings (non-unicode)
+    def getbin(self, nm, sk = b''):
+        if type(nm) != type(b'') or type(sk) != type(b''):
+           raise TypeError("getbin: parameters must be binary not unicode")
         for conf in self.confs:
-            value = conf.get(nm, sk)
+            value = conf.getbin(nm, sk)
             if value is not None:
                 return value
         return None
 
-if __name__ == '__main__':
-    def Usage():
-        print("Usage: conftree.py <filename> <paramname> [<section>]",
-              file=sys.stderr)
-        sys.exit(1)
-    section = ''
-    if len(sys.argv) >= 3:
-        fname = sys.argv[1]
-        pname = sys.argv[2]
-        if len(sys.argv) == 4:
-            section = sys.argv[3]
-        elif len(sys.argv) != 3:
-            Usage()
-    else:
-        Usage()
+    def get(self, nm, sk = b''):
+        dodecode = False
+        if type(nm) == type(u''):
+            dodecode = True
+            nm = nm.encode('utf-8')
+        if type(sk) == type(u''):
+            sk = sk.encode('utf-8')
+        #v = ConfSimple.getbin(self, nm, sk)
+        v = self.getbin(nm, sk)
+        if v and dodecode:
+            v = v.decode('utf-8')
+        return v
 
-    conf = ConfSimple(fname)
-    if section:
-        print("[%s] %s -> %s" % (section, pname, conf.get(pname)))
-    else:
-        print("%s -> %s" % (pname, conf.get(pname)))
+def stringToStrings(s):
+    '''Parse a string made of space-separated words and C-Style strings
+    (double-quoted with backslash escape). E.g.:
+        word1 word2 "compound \\"quoted\\" string" ->
+        ['word1', 'word2', 'compound "quoted string']'''
+    import shlex
+    lex = shlex.shlex(s, posix=True)
+    lex.quotes = '"'
+    lex.escape = '\\'
+    lex.escapedquotes = '"'
+    l = []
+    while True:
+        tok = lex.get_token()
+        if not tok:
+            break
+        l.append(tok)
+    return l
