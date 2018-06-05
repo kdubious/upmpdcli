@@ -16,15 +16,18 @@
 from __future__ import print_function
 
 import sys
-import urllib
+PY3 = sys.version > '3'
+if PY3:
+    from urllib.parse import quote as urlquote
+    import functools
+else:
+    from urllib import quote as urlquote
+    
 import os
 import glob
 import subprocess
 import mutagen
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+import io
 
 from upmplgutils import uplog
 
@@ -104,7 +107,7 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
         # TBD
         li['upnp:class'] = 'object.item.audioItem.musicTrack'
 
-    for oname,dname in upnp2rclfields.iteritems():
+    for oname,dname in upnp2rclfields.items():
         val = getattr(doc, dname)
         if val:
             li[oname] = val
@@ -135,8 +138,8 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     path = path[7:]
     if 'tt' not in li:
         li['tt'] = os.path.basename(path.decode('UTF-8', errors = 'replace'))
-    path = os.path.join(pathprefix, path)
-    li['uri'] = "http://%s%s" % (httphp, urllib.quote(path))
+    path = os.path.join(pathprefix.encode('ascii'), path)
+    li['uri'] = "http://%s%s" % (httphp, urlquote(path))
     #uplog("rcldoctoentry: uri: %s" % li['uri'])
 
     # The album art uri is precooked with httphp and prefix
@@ -172,14 +175,14 @@ def docfolder(doc):
 
 def embdimgurl(doc, httphp, pathprefix):
     if doc.embdimg == 'jpg':
-        ext = '.jpg'
+        ext = b'.jpg'
     elif doc.embdimg == '.png':
-        ext = 'png'
+        ext = b'png'
     else:
         return None
     path = doc.getbinurl()
     path = path[7:]
-    path = urllib.quote(os.path.join(pathprefix, path+ext))
+    path = urlquote(os.path.join(pathprefix.encode('ascii'), path+ext))
     path +=  "?embed=1"
     return "http://%s%s" % (httphp, path)
 
@@ -187,7 +190,7 @@ def printable(s):
     return s.decode('utf-8', errors='replace') if s else ""
 
 def _httpurl(path, httphp, pathprefix):
-    return "http://%s%s" % (httphp, urllib.quote(path))
+    return "http://%s%s" % (httphp, urlquote(path))
     
 # Find cover art for doc.
 #
@@ -196,7 +199,7 @@ def _httpurl(path, httphp, pathprefix):
 # We are usually called repeatedly for the same directory, so we cache
 # one result.
 _foldercache = {}
-_artexts = ('.jpg', '.png')
+_artexts = (b'.jpg', b'.png')
 _artnames = ('folder', 'cover')
 def docarturi(doc, httphp, pathprefix):
     global _foldercache, _artnames
@@ -211,8 +214,8 @@ def docarturi(doc, httphp, pathprefix):
     path,ext = os.path.splitext(docpath(doc))
     for ext in _artexts:
         if os.path.exists(path + ext):
-            return _httpurl(os.path.join(pathprefix, path+ext), httphp,
-                           pathprefix)
+            return _httpurl(os.path.join(pathprefix.encode('ascii'),
+                                         path+ext), httphp, pathprefix)
 
     # If doc is a directory, this returns itself, else the father dir.
     folder = docfolder(doc)
@@ -234,7 +237,7 @@ def docarturi(doc, httphp, pathprefix):
                             artnm = fsimple
                 if artnm:
                     _foldercache[folder] = _httpurl(
-                        urllib.quote(os.path.join(pathprefix, folder, artnm)),
+                        urlquote(os.path.join(pathprefix, folder, artnm)),
                         httphp, pathprefix)
                     break
         except:
@@ -257,7 +260,7 @@ def _logentry(nm, e1):
     tn = _keyvalornull(e1, 'upnp:originalTrackNumber')
     uplog("%s tp %s alb %s dir %s tno %s" % (nm, tp,al,dr,tn))
 
-def cmpentries(e1, e2):
+def _cmpentries_func(e1, e2):
     #uplog("cmpentries");_logentry("e1", e1);_logentry("e2", e2)
     tp1 = e1['tp']
     tp2 = e2['tp']
@@ -298,8 +301,16 @@ def cmpentries(e1, e2):
     k = 'upnp:originalTrackNumber'
     a1 = e1[k] if k in e1 else "0"
     a2 = e2[k] if k in e2 else "0"
-    return int(a1) - int(a2)
+    try:
+        return int(a1) - int(a2)
+    except:
+        uplog("upnp:originalTrackNumber %s %s"% (a1, a2))
+        return 0
 
+if PY3:
+    cmpentries=functools.cmp_to_key(_cmpentries_func)
+else:
+    cmpentries=_cmpentries_func
 
 def rcldirentry(id, pid, title, arturi=None, artist=None, upnpclass=None,
                 searchable='1', date=None):
@@ -414,27 +425,27 @@ def embedded_open(path):
     f = None
     size = 0
     if 'audio/mp3' in mutf.mime:
-        for tagname in mutf.iterkeys():
+        for tagname in mutf.keys():
             if tagname.startswith('APIC:'):
                 #self.em.rclog("mp3 img: %s" % mutf[tagname].mime)
                 mtype = mutf[tagname].mime
                 s = mutf[tagname].data
                 size = len(s)
-                f = StringIO(s)
+                f = io.BytesIO(s)
     elif 'audio/x-flac' in mutf.mime:
         if mutf.pictures:
             mtype = mutf.pictures[0].mime
             size = len(mutf.pictures[0].data)
-            f = StringIO(mutf.pictures[0].data)
+            f = io.BytesIO(mutf.pictures[0].data)
     elif 'audio/mp4' in mutf.mime:
-        if 'covr' in mutf.iterkeys():
+        if 'covr' in mutf.keys():
             format = mutf['covr'][0].imageformat 
             if format == mutagen.mp4.AtomDataType.JPEG:
                 mtype = 'image/jpeg'
             else:
                 mtype = 'image/png'
             size = len(mutf['covr'][0])
-            f = StringIO(mutf['covr'][0])
+            f = io.BytesIO(mutf['covr'][0])
 
     if f is None:
         raise Exception("can't open embedded image")

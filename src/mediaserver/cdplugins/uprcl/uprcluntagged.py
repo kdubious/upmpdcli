@@ -29,7 +29,6 @@
 
 import os
 import shlex
-import urllib
 import sys
 
 from upmplgutils import uplog

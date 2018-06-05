@@ -30,6 +30,7 @@ from __future__ import print_function, unicode_literals
 import posixpath
 import re
 import sys
+PY3 = sys.version > '3'
 import conftree
 
 default_mime = "audio/mpeg"
@@ -186,7 +187,10 @@ def getserviceuserpass(upconfig, servicename):
     return username, password
 
 def uplog(s):
-    if not type(s) == type(u''):
-        s = s.decode('utf-8', errors='replace')
-    print(("%s: %s" % (_idprefix, s)).encode('utf-8',errors='replace'),
-          file=sys.stderr)
+    if not type(s) == type(b''):
+        s = ("%s: %s" % (_idprefix, s)).encode('utf-8')
+    if PY3:
+        sys.stderr.buffer.write(s + b'\n')
+    else:
+        sys.stderr.write(s + b'\n')
+    sys.stderr.flush()

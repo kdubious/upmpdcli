@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
 # Copyright (C) 2017 J.F.Dockes
 #
@@ -69,7 +69,7 @@ def _rootentries():
     # let the different modules return their stuff, and we take note
     # of the objid prefixes for later dispatching
     entries = []
-    for treename in uprclinit.g_trees.keys():
+    for treename in uprclinit.g_trees_order:
         nents = uprclinit.g_trees[treename].rootentries(g_myprefix)
         for e in nents:
             rootmap[e['id']] = treename

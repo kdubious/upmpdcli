@@ -223,8 +223,10 @@ def search(foldersobj, rclconfdir, objid, upnps, idprefix, httphp, pathprefix):
             break
     uplog("Search retrieved %d docs" % (len(entries),))
 
-    return sorted(entries, cmp=cmpentries)
-
+    if PY3:
+        return sorted(entries, key=cmpentries)
+    else:
+        return sorted(entries, cmp=cmpentries)
 
 
 if __name__ == '__main__':

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+PY3 = sys.version > '3'
 import os
 import sqlite3
 import time
@@ -284,7 +285,10 @@ class Tagged(object):
         entries = [rcldoctoentry(pid + '$i' + str(r[0]),
                                  pid, self._httphp, self._pprefix,
                                  self._rcldocs[r[0]]) for r in c]
-        return sorted(entries, cmp=cmpentries)
+        if PY3:
+            return sorted(entries, key=cmpentries)
+        else:
+            return sorted(entries, cmp=cmpentries)
     
 
     # Return a list of trackids as selected by the current
@@ -463,7 +467,10 @@ class Tagged(object):
                     entries.append(rcldoctoentry(id, pid, self._httphp,
                                                  self._pprefix,
                                                  self._rcldocs[docidx]))
-                    entries = sorted(entries, cmp=cmpentries)
+                    if PY3:
+                        entries = sorted(entries, key=cmpentries)
+                    else:
+                        entries = sorted(entries, cmp=cmpentries)
             else:
                 for tt in subqs:
                     id = pid + '$=' + tt

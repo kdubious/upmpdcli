@@ -48,8 +48,13 @@
 
 import os
 import shlex
-import urllib
 import sys
+PY3 = sys.version > '3'
+if PY3:
+    from urllib.parse import quote as urlquote
+else:
+    from urllib import quote as urlquote
+
 import time
 from timeit import default_timer as timer
 
@@ -107,6 +112,14 @@ class Folders(object):
         # Walk the doc list and update the directory tree according to the
         # url: create intermediary directories if needed, create leaf
         # entry.
+        #
+        # Binary path issue: at the moment the python rclconfig can't
+        # handle binary (the underlying conftree.py can, we'd need a
+        # binary stringToStrings). So the topdirs entries have to be
+        # strings, and so we decode the binurl too. This probably
+        # could be changed we wanted to support binary, (non utf-8)
+        # paths. For now, for python3 all dir/file names in the tree
+        # are str
         for docidx in range(len(self._rcldocs)):
             doc = self._rcldocs[docidx]
             
@@ -121,22 +134,19 @@ class Folders(object):
                 # it as a doc attribute
                 doc.albumarturi = arturi
 
-            url = doc.getbinurl()
+            url = doc.getbinurl().decode('utf-8', errors='replace')
             url = url[7:]
-            try:
-                decoded = url.decode('utf-8')
-            except:
-                decoded = urllib.quote(url).decode('utf-8')
-
             # Determine the root entry (topdirs element). Special because
             # its path is not a simple name.
             fathidx = -1
-            for rtpath,idx in self._dirvec[0].iteritems():
+            for rtpath,idx in self._dirvec[0].items():
+                #uplog("type(url) %s type(rtpath) %s rtpath %s url %s" %
+                # (type(url),type(rtpath),rtpath, url))
                 if url.startswith(rtpath):
                     fathidx = idx[0]
                     break
             if fathidx == -1:
-                uplog("No parent in topdirs: %s" % decoded)
+                uplog("No parent in topdirs: %s" % url)
                 continue
 
             # Compute rest of path
@@ -148,8 +158,8 @@ class Folders(object):
             # directory in the path. This only affects the visible tree,
             # not the 'real' URLs of course.
             if doc.contentgroup:
-                a = os.path.dirname(url1).decode('utf-8', errors='replace')
-                b = os.path.basename(url1).decode('utf-8', errors='replace')
+                a = os.path.dirname(url1)
+                b = os.path.basename(url1)
                 url1 = os.path.join(a, doc.contentgroup, b)
             
             # Split path, then walk the vector, possibly creating
@@ -164,8 +174,8 @@ class Folders(object):
                     # the doc idx (previous entries were created for
                     # intermediate elements without a Doc).
                     if idx == len(path) -1:
-                        self._dirvec[fathidx][elt] = (self._dirvec[fathidx][elt][0], docidx)
-                        #uplog("updating docidx for %s" % decoded)
+                        self._dirvec[fathidx][elt] = \
+                                   (self._dirvec[fathidx][elt][0], docidx)
                     # Update fathidx for next iteration
                     fathidx = self._dirvec[fathidx][elt][0]
                 else:
@@ -179,7 +189,6 @@ class Folders(object):
                         # Last element. If directory, needs a self._dirvec entry
                         if doc.mtype == 'inode/directory':
                             fathidx = self._createdir(fathidx, docidx, elt)
-                            #uplog("Setting docidx for %s" % decoded)
                         else:
                             self._dirvec[fathidx][elt] = (-1, docidx)
 
@@ -206,10 +215,18 @@ class Folders(object):
         totcnt = 0
         self._rcldocs = []
         while True:
-            docs = rclq.fetchmany()
-            for doc in docs:
-                self._rcldocs.append(doc)
-                totcnt += 1
+            # There are issues at the end of list with fetchmany (sets
+            # an exception). Works in python2 for some reason, but
+            # breaks p3. Until recoll is fixed, catch exception
+            # here. Also does not work if we try to fetch by bigger
+            # slices (we get an exception and a truncated list)
+            try:
+                docs = rclq.fetchmany()
+                for doc in docs:
+                    self._rcldocs.append(doc)
+                    totcnt += 1
+            except:
+                docs = []
             if (self._maxrclcnt > 0 and totcnt >= self._maxrclcnt) or \
                    len(docs) != rclq.arraysize:
                 break
@@ -252,7 +269,7 @@ class Folders(object):
     # Look all non-directory docs inside directory, and return the cover
     # art we find.
     def _arturifordir(self, diridx):
-        for nm,ids in self._dirvec[diridx].iteritems():
+        for nm,ids in self._dirvec[diridx].items():
             if ids[1] >= 0:
                 doc = self._rcldocs[ids[1]]
                 if doc.mtype != 'inode/directory' and doc.albumarturi:
@@ -276,7 +293,7 @@ class Folders(object):
 
         # The basename call is just for diridx==0 (topdirs). Remove it if
         # this proves a performance issue
-        for nm,ids in self._dirvec[diridx].iteritems():
+        for nm,ids in self._dirvec[diridx].items():
             if nm == "..":
                 continue
             thisdiridx = ids[0]
@@ -309,7 +326,10 @@ class Folders(object):
                 if e:
                     entries.append(e)
 
-        return sorted(entries, cmp=cmpentries)
+        if PY3:
+            return sorted(entries, key=cmpentries)
+        else:
+            return sorted(entries, cmp=cmpentries)
 
     # Return path for objid, which has to be a container.This is good old
     # pwd... It is called from the search module for generating a 'dir:'
@@ -328,7 +348,7 @@ class Folders(object):
         lpath = []
         while True:
             fathidx = self._dirvec[diridx][".."][0]
-            for nm, ids in self._dirvec[fathidx].iteritems():
+            for nm, ids in self._dirvec[fathidx].items():
                 if ids[0] == diridx:
                     lpath.append(nm)
                     break

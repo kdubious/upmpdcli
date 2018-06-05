@@ -44,6 +44,8 @@ except:
     g_rclconfdir = ""
     g_friendlyname = "UpMpd-mediaserver"
     g_trees = {}
+    # order in python3 maps is unstable
+    g_trees_order = ['folders', 'untagged', 'tags']
     
 # Create or update Recoll index, then read and process the data.  This
 # runs in the separate uprcl_init_worker thread, and signals
