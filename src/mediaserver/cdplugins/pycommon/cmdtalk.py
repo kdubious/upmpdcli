@@ -126,6 +126,8 @@ class CmdTalk:
                       (paramsize, len(paramdata)), 1, 1)
         else:
             paramdata = b''
+        if PY3:
+            paramdata = paramdata.decode('utf-8')
     
         #self.log("paramname [%s] paramsize %d value [%s]" %
         #          (paramname, paramsize, paramdata))

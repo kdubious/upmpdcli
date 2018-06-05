@@ -218,16 +218,19 @@ class RawApi(object):
     def track_getFileUrl(self, intent="stream", **ka):
         self._check_ka(ka, ['format_id', 'track_id'])
         ka['request_ts'] = time()
+        stringvalue = 'trackgetFileUrlformat_id' \
+                      + str(ka['format_id']) \
+                      + 'intent'+intent \
+                      + 'track_id' \
+                      + str(ka['track_id']) \
+                      + str(ka['request_ts'])
+        if PY3:
+            stringvalue = stringvalue.encode('ASCII')
+        stringvalue  += self.s4
         params = {'format_id': str(ka['format_id']),
                   'intent': intent,
                   'request_ts': ka['request_ts'],
-                  'request_sig': str(hashlib.md5('trackgetFileUrlformat_id'
-                                                 + str(ka['format_id'])
-                                                 + 'intent'+intent
-                                                 + 'track_id'
-                                                 + str(ka['track_id'])
-                                                 + str(ka['request_ts'])
-                                                 + self.s4).hexdigest()),
+                  'request_sig': str(hashlib.md5(stringvalue).hexdigest()),
                   'track_id': str(ka['track_id'])
                   }
         return self._api_request(params, '/track/getFileUrl')

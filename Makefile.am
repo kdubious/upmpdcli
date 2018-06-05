@@ -165,7 +165,6 @@ dist_cdpluginsqobuz_DATA = \
                   src/mediaserver/cdplugins/qobuz/session.py 
 cdpluginsqobuzlibdir = $(pkgdatadir)/cdplugins/qobuz/api
 dist_cdpluginsqobuzlib_DATA = \
-                  src/mediaserver/cdplugins/qobuz/api/easy.py \
                   src/mediaserver/cdplugins/qobuz/api/__init__.py \
                   src/mediaserver/cdplugins/qobuz/api/raw.py
 

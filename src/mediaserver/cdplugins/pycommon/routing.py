@@ -69,7 +69,7 @@ class Plugin(object):
         if path.startswith(self.base_url):
             path = path.split(self.base_url, 1)[1]
 
-        for view_fun, rules in self._rules.iteritems():
+        for view_fun, rules in self._rules.items():
             for rule in rules:
                 if rule.match(path) is not None:
                     return view_fun
@@ -118,7 +118,7 @@ class Plugin(object):
         self._dispatch(path)
 
     def _dispatch(self, path):
-        for view_func, rules in self._rules.iteritems():
+        for view_func, rules in self._rules.items():
             for rule in rules:
                 kwargs = rule.match(path)
                 if kwargs is not None:
