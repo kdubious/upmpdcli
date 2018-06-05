@@ -255,13 +255,13 @@ class Session(object):
         return self._map_request('/'.join(['featured', group, content_type]), ret=content_type)
 
     def get_moods(self):
-        return map(_parse_moods, self.request('GET', 'moods').json())
+        return list(map(_parse_moods, self.request('GET', 'moods').json()))
 
     def get_mood_playlists(self, mood_id):
         return self._map_request('/'.join(['moods', mood_id, 'playlists']), ret='playlists')
 
     def get_genres(self):
-        return map(_parse_genres, self.request('GET', 'genres').json())
+        return list(map(_parse_genres, self.request('GET', 'genres').json()))
 
     def get_genre_items(self, genre_id, content_type):
         return self._map_request('/'.join(['genres', genre_id, content_type]), ret=content_type)
