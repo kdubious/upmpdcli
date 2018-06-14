@@ -169,21 +169,17 @@ def direntry(id, pid, title, arturi=None, artist=None, upnpclass=None):
     return ret
 
 # Get user and password from service, from the main configuration
-# file, or possibly from the ohcredentials scratchpad. In the main
-# file, the entries are like:
+# file, or possibly from the ohcredentials scratchpad. In both files,
+# the entries are like:
 #    qobuzuser=xxx
 #    qobuzpass=yyy
-# In the ohcreds file, they are like:
-#    [qobuz]
-#    u=xxx
-#    p=yyy
 def getserviceuserpass(upconfig, servicename):
     username = upconfig.get(servicename + 'user')
     password = upconfig.get(servicename + 'pass')
     if not username or not password:
         altconf = conftree.ConfSimple('/var/cache/upmpdcli/ohcreds/screds')
-        username = altconf.get('u', servicename)
-        password = altconf.get('p', servicename)
+        username = altconf.get(servicename + 'user')
+        password = altconf.get(servicename + 'pass')
     return username, password
 
 def uplog(s):

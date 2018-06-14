@@ -296,8 +296,8 @@ public:
             return false;
         }
         for (const auto& cred : creds) {
-            credsconf.set("u", cred.second.user, cred.second.servicename);
-            credsconf.set("p", cred.second.password, cred.second.servicename);
+            credsconf.set(cred.second.servicename + "user", cred.second.user);
+            credsconf.set(cred.second.servicename + "pass", cred.second.password);
         }
         chmod(credsfile.c_str(), 0600);
         return true;
