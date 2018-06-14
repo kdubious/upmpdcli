@@ -29,11 +29,14 @@
 #include <utility>
 #include <vector>
 #include <regex>
+#include <sstream>
 
 #include "conftree.h"
 #include "main.hxx"
+#include "smallut.h"
 #include "pathut.h"
 #include "execmd.h"
+#include "sysvshm.h"
 #include "mediaserver/cdplugins/cmdtalk.h"
 
 #include "libupnpp/log.hxx"
@@ -45,6 +48,10 @@
 
 using namespace std;
 using namespace std::placeholders;
+
+const size_t ohcreds_segsize{3000};
+const int ohcreds_segid{923102018};
+const char *ohcreds_segpath = "/etc/upmpdcli.conf";
 
 static const string sTpCredentials("urn:av-openhome-org:service:Credentials:1");
 static const string sIdCredentials("urn:av-openhome-org:serviceId:Credentials");
@@ -288,18 +295,50 @@ public:
     }
 
     bool save() {
-        string credsfile = path_cat(cachedir, "screds");
-        ConfSimple credsconf(credsfile.c_str());
-        if (!credsconf.ok()) {
-            LOGERR("OHCredentials: error opening " << credsfile <<
-                   " errno " << errno << endl);
-            return false;
+        bool saveohcredentials = true;
+        string val;
+        if (g_config && g_config->get("saveohcredentials", val)) {
+            saveohcredentials = stringToBool(val);
         }
-        for (const auto& cred : creds) {
-            credsconf.set(cred.second.servicename + "user", cred.second.user);
-            credsconf.set(cred.second.servicename + "pass", cred.second.password);
+        // We share the creds with the media server process because it
+        // needs them for url translation If saveohcredentials is
+        // true, we use a file, which can also be used by the regular
+        // media server plugin, for possible later access without
+        // ohcredentials. If it's false, we use a shared mem segment,
+        // and the user/pass would have to be set in
+        // /etc/upmpdcli.conf for the regular plugin to work.
+        if (saveohcredentials) {
+            string credsfile = path_cat(cachedir, "screds");
+            ConfSimple credsconf(credsfile.c_str());
+            if (!credsconf.ok()) {
+                LOGERR("OHCredentials: error opening " << credsfile <<
+                       " errno " << errno << endl);
+                return false;
+            }
+            for (const auto& cred : creds) {
+                credsconf.set(cred.second.servicename + "user", cred.second.user);
+                credsconf.set(cred.second.servicename + "pass", cred.second.password);
+            }
+            chmod(credsfile.c_str(), 0600);
+        } else {
+            string data;
+            ConfSimple credsconf(data);
+            for (const auto& cred : creds) {
+                credsconf.set(cred.second.servicename + "user", cred.second.user);
+                credsconf.set(cred.second.servicename + "pass", cred.second.password);
+            }
+            LockableShmSeg seg(ohcreds_segpath, ohcreds_segid, ohcreds_segsize, true);
+            if (!seg.ok()) {
+                LOGERR("OHCredentials: shared memory segment allocate/attach failed\n");
+                return false;
+            }
+            LockableShmSeg::Accessor access(seg);
+            char *cp = (char *)(access.getseg());
+            ostringstream strm;
+            credsconf.write(strm);
+            strcpy(cp, strm.str().c_str());
+            LOGDEB1("OHCredentials: shm seg content: [" << cp << "]\n");
         }
-        chmod(credsfile.c_str(), 0600);
         return true;
     }
     

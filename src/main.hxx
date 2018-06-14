@@ -48,4 +48,8 @@ typedef struct ohProductDesc {
 } ohProductDesc_t;
 
 
+extern const size_t ohcreds_segsize;
+extern const char *ohcreds_segpath;
+extern const int ohcreds_segid;
+
 #endif /* _MAIN_H_X_INCLUDED_ */

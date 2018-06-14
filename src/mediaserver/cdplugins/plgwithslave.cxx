@@ -31,6 +31,8 @@
 #include "cmdtalk.h"
 #include "pathut.h"
 #include "smallut.h"
+#include "conftree.h"
+#include "sysvshm.h"
 #include "main.hxx"
 
 using namespace std;
@@ -238,13 +240,41 @@ bool PlgWithSlave::maybeStartMHD(CDPluginServices *cdsrv)
 bool PlgWithSlave::Internal::maybeStartCmd()
 {
     if (cmd.running()) {
+        LOGDEB1("PlgWithSlave::maybeStartCmd: already running\n");
         return true;
     }
     if (!maybeStartMHD(this->plg->m_services)) {
+        LOGDEB1("PlgWithSlave::maybeStartCmd: maybeStartMHD failed\n");
         return false;
     }
     int port = CDPluginServices::microhttpport();
-    return startPluginCmd(cmd, plg->m_name, upnphost, port, pathprefix);
+    if (!startPluginCmd(cmd, plg->m_name, upnphost, port, pathprefix)) {
+        LOGDEB1("PlgWithSlave::maybeStartCmd: startPluginCmd failed\n");
+        return false;
+    }
+
+    // If the creds have been set in shared mem, login at once, else
+    // the plugin will try later from file config data
+    LockableShmSeg seg(ohcreds_segpath, ohcreds_segid, ohcreds_segsize);
+    if (seg.ok()) {
+        LockableShmSeg::Accessor access(seg);
+        char *cp = (char *)(access.getseg());
+        string data(cp);
+        LOGDEB1("PlgWithSlave::maybeStartCmd: segment content [" << data << "]\n");
+        ConfSimple credsconf(data, true);
+        string user, password;
+        if (credsconf.get(plg->m_name + "user", user) &&
+            credsconf.get(plg->m_name + "pass", password)) {
+            unordered_map<string,string> res;
+            if (!cmd.callproc("login", {{"user", user}, {"password", password}}, res)) {
+                LOGINF("PlgWithSlave::maybeStartCmd: tried login but failed for " <<
+                       plg->m_name);
+            }
+        }
+    } else {
+        LOGDEB0("PlgWithSlave::maybeStartCmd: shm attach failed (probably ok)\n");
+    }
+    return true;
 }
 
 bool PlgWithSlave::startInit()

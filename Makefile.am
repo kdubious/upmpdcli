@@ -32,7 +32,8 @@ endif
 # include directives for files which expect to live in the same
 # directory as log.h
 BUILT_SOURCES = src/conftree-fixed.cpp src/execmd-fixed.cpp \
-              src/mediaserver/cdplugins/cmdtalk-fixed.cpp src/netcon-fixed.cpp
+              src/mediaserver/cdplugins/cmdtalk-fixed.cpp \
+              src/netcon-fixed.cpp src/sysvshm-fixed.cpp
 src/conftree-fixed.cpp : $(top_srcdir)/src/conftree.cpp
 	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
 		$(top_srcdir)/src/conftree.cpp > src/conftree-fixed.cpp
@@ -42,6 +43,9 @@ src/execmd-fixed.cpp : $(top_srcdir)/src/execmd.cpp
 src/netcon-fixed.cpp : $(top_srcdir)/src/netcon.cpp
 	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
 		$(top_srcdir)/src/netcon.cpp > src/netcon-fixed.cpp
+src/sysvshm-fixed.cpp : $(top_srcdir)/src/sysvshm.cpp
+	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
+		$(top_srcdir)/src/sysvshm.cpp > src/sysvshm-fixed.cpp
 src/mediaserver/cdplugins/cmdtalk-fixed.cpp : \
 		$(top_srcdir)/src/mediaserver/cdplugins/cmdtalk.cpp
 	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
@@ -110,6 +114,8 @@ upmpdcli_SOURCES = \
      src/renderctl.hxx \
      src/smallut.cpp \
      src/smallut.h \
+     src/sysvshm-fixed.cpp \
+     src/sysvshm.h \
      src/upmpd.cxx \
      src/upmpd.hxx \
      src/upmpdutils.cxx \
@@ -200,7 +206,7 @@ EXTRA_DIST = \
     src/conftree.cpp \
     src/execmd.cpp \
     src/mediaserver/cdplugins/cmdtalk.cpp \
-    src/netcon.cpp autogen.sh \
+    src/netcon.cpp src/sysvshm.cpp autogen.sh \
     systemd/upmpdcli.service \
     uprclbottle.tar.gz \
     web.tar.gz

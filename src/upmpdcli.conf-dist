@@ -81,6 +81,15 @@
 # Kazoo).</descr></var>
 #lumincompat = 0
 
+# <var name="saveohcredentials" type="bool"><brief>Save the streaming
+# services login parameters to disk.</brief><descr>This allows sharing the
+# password with the upmpdcli media server streaming service proxy, if you
+# are also using it. Avoids having to enter the password in the regular
+# configuration file. Depending on your situation, you may see this as a
+# security risk. The default is true, because I don't see this as a real
+# issue in the general case.</descr></var
+# saveohcredentials = 1
+
 # <var name="checkcontentformat" type="bool" values="1"><brief>Check that
 # input format is supported.</brief><descr>Extract the protocolinfo
 # information from the input metadata and check it against our supported
