@@ -415,6 +415,7 @@ int ConfSimple::i_set(const std::string& nm, const std::string& value,
         // During the initial construction, just append:
         CONFDEB("ConfSimple::i_set: init true: append\n");
         m_order.push_back(ConfLine(ConfLine::CFL_VAR, nm));
+        m_order.back().m_value = value;
         return 1;
     }
 

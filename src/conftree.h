@@ -71,6 +71,7 @@ public:
     enum Kind {CFL_COMMENT, CFL_SK, CFL_VAR, CFL_VARCOMMENT};
     Kind m_kind;
     std::string m_data;
+    std::string m_value;
     std::string m_aux;
     ConfLine(Kind k, const std::string& d, std::string a = std::string())
         : m_kind(k), m_data(d), m_aux(a) {

@@ -72,10 +72,11 @@ using namespace std;
 static const int one = 1;
 static const int zero = 0;
 
+#ifndef LOGSYSERR
 #define LOGSYSERR(who, call, spar)                                \
     LOGERR(who << ": "  << call << "("  << spar << ") errno " <<  \
            errno << " ("  << strerror(errno) << ")\n")
-
+#endif
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
