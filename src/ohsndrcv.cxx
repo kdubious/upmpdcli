@@ -54,6 +54,7 @@ public:
         if (g_config->get("scscriptgracesecs", value)) {
             graceperiodms = atoi(value.c_str()) * 1000;
         }
+        g_config->get("scstreamcodec", streamcodec);
     }
     ~Internal() {
         clear();
@@ -78,6 +79,7 @@ public:
     string iuri;
     string imeta;
     string makeisendercmd;
+    string streamcodec;
     int mpdport;
     bool scalestream{true};
     int graceperiodms{0};
@@ -139,6 +141,11 @@ bool SenderReceiver::start(const string& script, int seekms)
         args.push_back(m->dev->m_friendlyname);
 	if (!m->scalestream)
             args.push_back("-e");
+        if (!m->streamcodec.empty() &&
+            stringicmp(m->streamcodec, "PCM")) {
+            args.push_back("-C");
+            args.push_back(m->streamcodec);
+        }
         m->isender->startExec(m->makeisendercmd, args, false, true);
     } else if (!script.empty()) {
         // External source. ssender should already be zero, we delete

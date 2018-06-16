@@ -462,6 +462,13 @@ uprclautostart = 1
 # Parameters tor the Sender/Receiver mode. Only does anything if
 # scplaymethod is alsa
 
+# <var name="scstreamcodec" type="string" values="PCM FLAC OPUS">
+# <brief>!!Standard Songcast receivers only support PCM!! Codec to use for
+# the network stream.</brief> <descr>Set to empty or PCM to support
+# foreign receivers. Or use FLAC or OPUS for lower network
+# load.</descr></var>
+#scstreamcodec =
+
 # <var name="scsenderpath" type="fn"><brief>Path to starter script</brief>
 # <descr>This is normally scmakempdsender which starts the auxiliary mpd
 # and the sender process. Empty and searched in the PATH by
