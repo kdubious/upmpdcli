@@ -413,27 +413,6 @@ int main(int argc, char *argv[])
         if (g_config->get("scsendermpdport", value))
             sendermpdport = atoi(value.c_str());
 
-        // If a streaming service is enabled, we need a Media
-        // Server. We let a static ContentDirectory method decide this
-        // for us. The way we then implement it depends on the command
-        // line option (see the enum comments near the top of the file):
-        enableMediaServer = ContentDirectory::mediaServerNeeded();
-        switch (arg_msmode) {
-        case MSOnly:
-            inprocessms = true;
-            msonly = true;
-            break;
-        case Combined:
-            inprocessms = true;
-            msonly = false;
-            break;
-        case RdrOnly:
-        case Forked:
-        default:
-            inprocessms = false;
-            msonly = false;
-            break;
-        }
     } else {
         // g_configfilename is empty. Create an empty config anyway
         g_config = new ConfSimple(string(), 1, true);
@@ -441,6 +420,35 @@ int main(int argc, char *argv[])
             cerr << "Could not create empty config\n";
             return 1;
         }
+    }
+
+    if (Logger::getTheLog(logfilename) == 0) {
+        cerr << "Can't initialize log" << endl;
+        return 1;
+    }
+    Logger::getTheLog("")->reopen(logfilename);
+    Logger::getTheLog("")->setLogLevel(Logger::LogLevel(loglevel));
+
+    // If a streaming service is enabled, we need a Media
+    // Server. We let a static ContentDirectory method decide this
+    // for us. The way we then implement it depends on the command
+    // line option (see the enum comments near the top of the file):
+    enableMediaServer = ContentDirectory::mediaServerNeeded();
+    switch (arg_msmode) {
+    case MSOnly:
+        inprocessms = true;
+        msonly = true;
+        break;
+    case Combined:
+        inprocessms = true;
+        msonly = false;
+        break;
+    case RdrOnly:
+    case Forked:
+    default:
+        inprocessms = false;
+        msonly = false;
+        break;
     }
 
     // If neither OH nor AV are enable, run as pure media server. This
@@ -456,12 +464,6 @@ int main(int argc, char *argv[])
         // the "mediaserver" to redirect URLs for ohcredentials/Kazoo
         ;
     }
-
-    if (Logger::getTheLog(logfilename) == 0) {
-        cerr << "Can't initialize log" << endl;
-        return 1;
-    }
-    Logger::getTheLog("")->setLogLevel(Logger::LogLevel(loglevel));
 
     Pidfile pidfile(pidfilename);
 
@@ -534,7 +536,7 @@ int main(int argc, char *argv[])
         // Need to rewrite pid, it may have changed with the daemon call
         pidfile.write_pid();
         if (!logfilename.empty() && logfilename.compare("stderr")) {
-            if (chown(logfilename.c_str(), runas, -1) < 0) {
+            if (chown(logfilename.c_str(), runas, -1) < 0 && errno != ENOENT) {
                 LOGERR("chown("<<logfilename<<") : errno : " << errno << endl);
             }
         }
