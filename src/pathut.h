@@ -120,6 +120,22 @@ extern bool path_isdesc(const std::string& top, const std::string& sub);
 /// Turn absolute path into file:// url
 extern std::string path_pathtofileurl(const std::string& path);
 
+/// URI parser, loosely from rfc2396.txt
+class ParsedUri {
+public:
+    ParsedUri(std::string uri);
+    bool parsed{false};
+    std::string scheme;
+    std::string user;
+    std::string pass;
+    std::string host;
+    std::string port;
+    std::string path;
+    std::string query;
+    std::vector<std::pair<std::string,std::string>> parsedquery;
+    std::string fragment;
+};
+
 #ifdef _WIN32
 /// Convert \ separators to /
 void path_slashize(std::string& s);
