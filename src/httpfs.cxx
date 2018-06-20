@@ -302,13 +302,12 @@ bool initHttpFs(unordered_map<string, VDirContent>& files,
                 if (enableReceiver) {
                     ohDesc += ohDescReceive;
                 }
-                bool lumincompat = configBool(g_config, "lumincompat");
-                if (!lumincompat) {
+                if (!g_lumincompat) {
                     ohDesc += ohDescCreds;
                 }
                 data = regsub1("@OPENHOME@", data, ohDesc);
                 // See comment about ohproduct version in upmpd.cxx
-                if (lumincompat) {
+                if (g_lumincompat) {
                     data = regsub1("Product:2", data, "Product:1");
                 }
             } else {

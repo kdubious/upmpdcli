@@ -159,6 +159,7 @@ string g_datadir(DATADIR "/");
 string g_configfilename;
 ConfSimple *g_config;
 bool g_enableL16 = false;
+bool g_lumincompat = true;
 
 static void onsig(int)
 {
@@ -413,6 +414,7 @@ int main(int argc, char *argv[])
         if (g_config->get("scsendermpdport", value))
             sendermpdport = atoi(value.c_str());
 
+        g_lumincompat = configBool(g_config, "lumincompat", true);
     } else {
         // g_configfilename is empty. Create an empty config anyway
         g_config = new ConfSimple(string(), 1, true);

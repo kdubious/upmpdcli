@@ -23,6 +23,7 @@
 extern std::string g_configfilename;
 extern std::string g_datadir;
 extern bool g_enableL16;
+extern bool g_lumincompat;
 class ConfSimple;
 extern ConfSimple *g_config;
 

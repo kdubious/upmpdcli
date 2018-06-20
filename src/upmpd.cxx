@@ -72,8 +72,7 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
         m_services.push_back(m_ohif);
         m_services.push_back(new OHTime(this));
         m_services.push_back(new OHVolume(this));
-        bool lumincompat = configBool(g_config, "lumincompat");
-        if (!lumincompat) {
+        if (!g_lumincompat) {
             m_services.push_back(new OHCredentials(this, opts.cachedir));
         }
         m_ohpl = new OHPlaylist(this, opts.ohmetasleep);
@@ -118,7 +117,7 @@ UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
         // service of course). I could not find what Lumin does not
         // like when either Product:2 or ohcreds is enabled. Maybe
         // this will go away at some point.
-        m_ohpr = new OHProduct(this, ohProductDesc, lumincompat ? 1 : 2);
+        m_ohpr = new OHProduct(this, ohProductDesc, g_lumincompat ? 1 : 2);
         m_services.push_back(m_ohpr);
     }
 }

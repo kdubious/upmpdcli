@@ -396,11 +396,11 @@ bool ensureconfreadable(const char *fn, const char *user, uid_t uid,
     return true;
 }
 
-bool configBool(ConfSimple *conf, const std::string& nm)
+bool configBool(ConfSimple *conf, const std::string& nm, bool dflt)
 {
     string val;
     if (conf && conf->get(nm, val)) {
         return stringToBool(val);
     }
-    return false;
+    return dflt;
 }
