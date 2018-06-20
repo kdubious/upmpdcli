@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <functional>
+
 #include <string.h>
 #include <fcntl.h>
 #include <upnp/upnp.h>
@@ -34,6 +36,7 @@
 #include "conftree.h"
 #include "sysvshm.h"
 #include "main.hxx"
+#include "streamproxy.h"
 
 using namespace std;
 using namespace std::placeholders;
@@ -90,41 +93,21 @@ public:
     StreamHandle laststream;
 };
 
-// microhttpd daemon handle. There is only one of these, and one port, we find
-// the right plugin by looking at the url path.
-static struct MHD_Daemon *o_mhd;
+// HTTP Proxy/Redirect handler
+static StreamProxy *o_proxy;
 
-// Microhttpd connection handler. We re-build the complete url + query
-// string (&trackid=value), use this to retrieve a service URL
-// (tidal/qobuz...), and redirect to it (HTTP). A previous version
-// handled rtmp streams, and had to read them. Look up the history if
-// you need the code again (the apparition of RTMP streams was
-// apparently linked to the use of a different API key).
-static int answer_to_connection(void *cls, struct MHD_Connection *connection, 
-                                const char *url, 
-                                const char *method, const char *version, 
-                                const char *upload_data, 
-                                size_t *upload_data_size, void **con_cls)
+StreamProxy::UrlTransReturn translateurl(
+    CDPluginServices *cdsrv,
+    std::string& url,
+    const std::unordered_map<std::string, std::string>& querymap)
 {
-    static int aptr;
-    if (&aptr != *con_cls) {
-        /* do not respond on first call */
-        *con_cls = &aptr;
-        return MHD_YES;
-    }
+    LOGDEB("PlgWithSlave::translateurl: url " << url << endl);
 
-    LOGDEB("answer_to_connection: url " << url << " method " << method << 
-           " version " << version << endl);
-
-    // The 'plgi' here is just whatever plugin started up the httpd task
-    // We just use it to find the appropriate plugin for this path,
-    // and then dispatch the request.
-    CDPluginServices *cdpsrv = (CDPluginServices*)cls;
     PlgWithSlave *realplg =
-        dynamic_cast<PlgWithSlave*>(cdpsrv->getpluginforpath(url));
+        dynamic_cast<PlgWithSlave*>(cdsrv->getpluginforpath(url));
     if (nullptr == realplg) {
-        LOGERR("answer_to_connection: no plugin for path [" << url << endl);
-        return MHD_NO;
+        LOGERR("PlgWithSlave::translateurl: no plugin for path ["<<url<< endl);
+        return StreamProxy::Error;
     }
 
     // We may need one day to subclass PlgWithSlave to implement a
@@ -142,44 +125,18 @@ static int answer_to_connection(void *cls, struct MHD_Connection *connection,
     // which we pass to them for translation (they will extract the
     // trackid and use it, the rest of the path is bogus).
     // The uprcl module has a real path and no trackid. Handle both cases
-    const char* stid =
-        MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND,
-                                    "trackId");
-    if (stid && *stid) {
-        path += string("?version=1&trackId=") + stid;
+    const auto it = querymap.find("trackId");
+    if (it != querymap.end() && !it->second.empty()) {
+        path += string("?version=1&trackId=") + it->second;
     }
 
     // Translate to Tidal/Qobuz etc real temporary URL
-    string media_url = realplg->get_media_url(path);
-    if (media_url.empty()) {
+    url = realplg->get_media_url(path);
+    if (url.empty()) {
         LOGERR("answer_to_connection: no media_uri for: " << url << endl);
-        return MHD_NO;
+        return StreamProxy::Error;
     }
-
-    if (media_url.find("http") == 0) {
-        static char data[] = "<html><body></body></html>";
-        struct MHD_Response *response =
-            MHD_create_response_from_buffer(strlen(data), data,
-                                            MHD_RESPMEM_PERSISTENT);
-        if (response == NULL) {
-            LOGERR("answer_to_connection: could not create response" << endl);
-            return MHD_NO;
-        }
-        MHD_add_response_header (response, "Location", media_url.c_str());
-        int ret = MHD_queue_response(connection, 302, response);
-        MHD_destroy_response(response);
-        return ret;
-    } else {
-        LOGERR("PlgWithSlave: got non-http URL !: " << media_url << endl);
-        LOGERR("PlgWithSlave:   the code for handling these is gone !\n");
-        LOGERR("    will have to fetch it from git history\n");
-        return MHD_NO;
-    } 
-}
-
-static int accept_policy(void *, const struct sockaddr* sa, socklen_t addrlen)
-{
-    return MHD_YES;
+    return StreamProxy::Proxy;
 }
 
 // Static
@@ -209,27 +166,16 @@ bool PlgWithSlave::startPluginCmd(CmdTalk& cmd, const string& appname,
 }
 
 // Static
-bool PlgWithSlave::maybeStartMHD(CDPluginServices *cdsrv)
+bool PlgWithSlave::maybeStartProxy(CDPluginServices *cdsrv)
 {
-    if (nullptr == o_mhd) {
+    if (nullptr == o_proxy) {
         int port = CDPluginServices::microhttpport();
-        // Start the microhttpd daemon. There can be only one, and it
-        // is started with a context handle which points to whatever
-        // plugin got there first. The callback will only use the
-        // handle to get to the plugin services, and retrieve the
-        // appropriate plugin based on the url path prefix.
-        LOGDEB("PlgWithSlave: starting httpd on port "<< port << endl);
-        o_mhd = MHD_start_daemon(
-            MHD_USE_THREAD_PER_CONNECTION,
-            //MHD_USE_SELECT_INTERNALLY, 
-            port, 
-            /* Accept policy callback and arg */
-            accept_policy, NULL, 
-            /* handler and arg */
-            &answer_to_connection, cdsrv,
-            MHD_OPTION_END);
-        if (nullptr == o_mhd) {
-            LOGERR("PlgWithSlave: MHD_start_daemon failed\n");
+        o_proxy = new StreamProxy(
+            port,
+            std::bind(&translateurl, cdsrv, _1, _2));
+            
+        if (nullptr == o_proxy) {
+            LOGERR("PlgWithSlave: Proxy creation failed\n");
             return false;
         }
     }
@@ -243,7 +189,7 @@ bool PlgWithSlave::Internal::maybeStartCmd()
         LOGDEB1("PlgWithSlave::maybeStartCmd: already running\n");
         return true;
     }
-    if (!maybeStartMHD(this->plg->m_services)) {
+    if (!maybeStartProxy(this->plg->m_services)) {
         LOGDEB1("PlgWithSlave::maybeStartCmd: maybeStartMHD failed\n");
         return false;
     }

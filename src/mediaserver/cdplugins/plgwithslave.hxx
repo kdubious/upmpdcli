@@ -55,7 +55,7 @@ public:
     static bool startPluginCmd(CmdTalk& cmd, const std::string& appname,
                                const std::string& host, unsigned int port,
                                const std::string& pathprefix);
-    static bool maybeStartMHD(CDPluginServices *cdsrv);
+    static bool maybeStartProxy(CDPluginServices *cdsrv);
 
     class Internal;
 private:

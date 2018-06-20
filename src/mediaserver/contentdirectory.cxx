@@ -258,7 +258,7 @@ void ContentDirectory::Internal::maybeStartSomePlugins(bool enabled)
     // daemon in this case, as we'll need it before any plugin is
     // created.
     if (!enabled) {
-        PlgWithSlave::maybeStartMHD(this->service);
+        PlgWithSlave::maybeStartProxy(this->service);
     }
     for (auto& entry : rootdir) {
         string app = appForId(entry.id);

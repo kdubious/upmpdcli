@@ -1,5 +1,6 @@
 AM_CPPFLAGS = -DDEBUG -g -Wall \
             $(upnpp_CFLAGS) \
+            -I$(includedir)/libupnpp \
             $(libmpdclient_CFLAGS) \
             $(libmicrohttpd_CFLAGS) \
             $(jsoncpp_CFLAGS) \
@@ -73,8 +74,12 @@ upmpdcli_SOURCES = \
      src/mediaserver/cdplugins/cdplugin.hxx \
      src/mediaserver/cdplugins/cmdtalk-fixed.cpp \
      src/mediaserver/cdplugins/cmdtalk.h \
+     src/mediaserver/cdplugins/curlfetch.cpp \
+     src/mediaserver/cdplugins/curlfetch.h \
      src/mediaserver/cdplugins/plgwithslave.cxx \
      src/mediaserver/cdplugins/plgwithslave.hxx \
+     src/mediaserver/cdplugins/streamproxy.cpp \
+     src/mediaserver/cdplugins/streamproxy.h \
      src/mediaserver/contentdirectory.cxx \
      src/mediaserver/contentdirectory.hxx \
      src/mediaserver/mediaserver.cxx \
