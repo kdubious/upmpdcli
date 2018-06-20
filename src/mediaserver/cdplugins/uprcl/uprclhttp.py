@@ -20,6 +20,7 @@ from __future__ import print_function
 import os
 import time
 import bottle
+import mutagen
 
 from upmplgutils import uplog
 from uprclutils import embedded_open
@@ -76,9 +77,14 @@ class Streamer(object):
             bottle.response.set_header("Content-type", ctype)
             bottle.response.set_header("Content-Length", size)
             return f
-        uplog("Streaming: %s" % os.path.join(self.root,filepath))
-        return bottle.static_file(filepath, root=self.root)
-
+        fullpath = os.path.join(self.root, filepath)
+        uplog("Streaming: %s " % fullpath)
+        mutf = mutagen.File(fullpath)
+        if mutf:
+            return bottle.static_file(filepath, root=self.root,
+                                      mimetype=mutf.mime[0])
+        else:
+            return bottle.static_file(filepath, root=self.root)
     
 
 # Bottle handle both the streaming and control requests.
