@@ -123,7 +123,6 @@ string showSenders(int ops)
     return out.str();
 }
 
-#ifdef HAVE_WITHSTATUS_IN_LINN
 void parseToOutput(bool ok, const vector<string>& reasons, string& out)
 {
     ostringstream oss;
@@ -146,7 +145,6 @@ void parseToOutput(bool ok, const vector<string>& reasons, string& out)
     out = oss.str();
     LOGDEB("out: " << out << endl);
 }
-#endif
 
 int dosomething(int opflags, const vector<string>& args, string& out)
 {
