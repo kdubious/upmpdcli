@@ -39,8 +39,9 @@ public:
     StreamProxy(int listenport, UrlTransFunc urltrans);
     ~StreamProxy();
 
-    void abortAll();
-
+    // Debug and experiments: kill connections after ms mS
+    void setKillAfterMs(int ms);
+    
     class Internal;
 private:
     std::unique_ptr<Internal> m;

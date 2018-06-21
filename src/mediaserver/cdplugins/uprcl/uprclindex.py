@@ -40,6 +40,7 @@ def _initconfdir(confdir, topdirs):
     f.write("idxabsmlen=0\n")
     f.write("loglevel=2\n")
     f.write("noaspell=1\n")
+    f.write("nomd5types = rclaudio rclimg\n")
     f.write("testmodifusemtime=1\n")
     f.close()
 

@@ -58,6 +58,8 @@ CLEANFILES = $(BUILT_SOURCES)
 upmpdcli_SOURCES = \
      src/avtransport.cxx \
      src/avtransport.hxx \
+     src/chrono.cpp \
+     src/chrono.h \
      src/closefrom.cpp \
      src/closefrom.h \
      src/conf_post.h \

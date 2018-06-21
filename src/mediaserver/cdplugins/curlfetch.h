@@ -29,6 +29,8 @@ public:
     CurlFetch(const std::string& url);
     ~CurlFetch();
 
+    const std::string& url();
+    
     void setTimeout(int secs);
     
     /// Start the transfer to the output queue.
@@ -43,7 +45,10 @@ public:
     // Check if the curl thread is done and retrieve the results if it
     // is. This does not wait, it returns false if the transfer is
     // still running.
-    bool curlDone(int *curlcode, long *http_code);
+    bool curlDone(int *curlcode, int *http_code);
+
+    /// Reset after transfer done, for retrying for exemple.
+    void reset();
 
     // Callbacks
 
