@@ -45,10 +45,16 @@ os.close(1)
 fd = os.open("/dev/null", os.O_WRONLY)
 # print("UPRCL-APP: got fd %d for /dev/null" % fd, file=sys.stderr)
 
+# The normal system exit gets stuck on waiting for the bottle
+# thread. We have nothing to really cleanup, so set up forced exit
+# handler
+def doexit(val):
+    os._exit(val)
+    
 # Func name to method mapper
 dispatcher = cmdtalkplugin.Dispatch()
 # Pipe message handler
-msgproc = cmdtalkplugin.Processor(dispatcher, outfile=_outfile)
+msgproc = cmdtalkplugin.Processor(dispatcher, outfile=_outfile, exitfunc=doexit)
 
 @dispatcher.record('trackuri')
 def trackuri(a):

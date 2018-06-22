@@ -37,8 +37,10 @@ class Dispatch:
         return func(params)
     
 class Processor:
-    def __init__(self, dispatcher, outfile=sys.stdout, infile=sys.stdin):
-        self.em = cmdtalk.CmdTalk(outfile=outfile, infile=infile)
+    def __init__(self, dispatcher, outfile=sys.stdout, infile=sys.stdin,
+                 exitfunc=None):
+        self.em = cmdtalk.CmdTalk(outfile=outfile, infile=infile,
+                                  exitfunc=exitfunc)
         self.dispatcher = dispatcher
         
     def log(self, s, doexit = 0, exitvalue = 1):

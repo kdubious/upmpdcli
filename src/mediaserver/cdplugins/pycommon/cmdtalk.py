@@ -51,7 +51,7 @@ else:
 # method to use the args and produce return data.
 class CmdTalk:
 
-    def __init__(self, outfile=sys.stdout, infile=sys.stdin):
+    def __init__(self, outfile=sys.stdout, infile=sys.stdin, exitfunc=None):
         try:
             self.myname = os.path.basename(sys.argv[0])
         except:
@@ -59,6 +59,7 @@ class CmdTalk:
 
         self.outfile = outfile
         self.infile = infile
+        self.exitfunc = exitfunc
         self.fields = {}
         
         if sys.platform == "win32":
@@ -74,6 +75,8 @@ class CmdTalk:
     def log(self, s, doexit = 0, exitvalue = 1):
         print("CMDTALK: %s: %s" % (self.myname, s), file=self.errfout)
         if doexit:
+            if self.exitfunc:
+                self.exitfunc(exitvalue)
             sys.exit(exitvalue)
 
     def breakwrite(self, outfile, data):
@@ -107,6 +110,8 @@ class CmdTalk:
             inf = self.infile
         s = inf.readline()
         if s == b'':
+            if self.exitfunc:
+                self.exitfunc(0)
             sys.exit(0)
 
         s = s.rstrip(b'\n')
