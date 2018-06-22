@@ -26,7 +26,6 @@
 #include <string.h>
 #include <fcntl.h>
 #include <upnp/upnp.h>
-#include <microhttpd.h>
 #include <json/json.h>
 #include <libupnpp/log.hxx>
 
@@ -75,19 +74,29 @@ public:
     Internal(PlgWithSlave *_plg, const string& hst,
              int prt, const string& pp)
         : plg(_plg), cmd(read_timeout), upnphost(hst),
-          upnpport(prt), pathprefix(pp), laststream(this) { }
+          upnpport(prt), pathprefix(pp), laststream(this) {
 
+        string val;
+        if (g_config->get("plgproxymethod", val) && !val.compare("proxy")) {
+            doingproxy = true;
+        }
+    }
+
+    bool doproxy() {
+        return doingproxy;
+    }
     bool maybeStartCmd();
 
     PlgWithSlave *plg;
     CmdTalk cmd;
-    // Upnp Host and port. This would only be used to generate URLs *if*
-    // we were using the libupnp miniserver. We currently use
+    // Upnp Host and port. This would only be used to generate URLs
+    // *if* we were using the libupnp miniserver. We currently use
     // microhttp because it can do redirects
     string upnphost;
     int upnpport;
     // path prefix (this is used by upmpdcli that gets it for us).
     string pathprefix;
+    bool doingproxy{false};
     
     // Cached uri translation
     StreamHandle laststream;
@@ -110,14 +119,6 @@ StreamProxy::UrlTransReturn translateurl(
         return StreamProxy::Error;
     }
 
-    // We may need one day to subclass PlgWithSlave to implement a
-    // plugin-specific method. For now, existing plugins have
-    // compatible python code, and we can keep one c++ method.
-    // get_media_url() would also need changing because it is in
-    // Internal: either make it generic or move to subclass.
-    //return realplg->answer_to_connection(connection, url, method, version,
-    //                               upload_data, upload_data_size, con_cls);
-
     string path(url);
 
     // The streaming services plugins set a trackId parameter in the
@@ -136,7 +137,7 @@ StreamProxy::UrlTransReturn translateurl(
         LOGERR("answer_to_connection: no media_uri for: " << url << endl);
         return StreamProxy::Error;
     }
-    return StreamProxy::Proxy;
+    return realplg->doproxy() ? StreamProxy::Proxy : StreamProxy::Redirect;
 }
 
 // Static
@@ -280,6 +281,11 @@ PlgWithSlave::PlgWithSlave(const string& name, CDPluginServices *services)
 PlgWithSlave::~PlgWithSlave()
 {
     delete m;
+}
+
+bool PlgWithSlave::doproxy()
+{
+    return m->doproxy();
 }
 
 static void catstring(string& dest, const string& s2)

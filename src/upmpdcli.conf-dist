@@ -299,6 +299,13 @@
 # URL when actually streaming). The default is 49149.</descr></var>
 #plgmicrohttpport = 49149
 
+# <var name="plgproxymethod" type="string" values="proxy redirect">
+# <brief>Decide if we proxy (copy: fetch/serve), or redirect the streaming
+# services streams.</brief><descr>Using redirect is much more efficient,
+# but the proxy has a facility to retry when a stream is dropped by the
+# service, which seems to happen esp. with Qobuz.</descr></var>
+#plgproxymethod = redirect
+
 # <grouptitle>Tidal streaming service parameters</grouptitle>
 
 # <var name="tidaluser" type="string"><brief>Tidal user name.</brief>

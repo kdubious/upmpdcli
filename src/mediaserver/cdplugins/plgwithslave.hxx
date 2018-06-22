@@ -26,11 +26,19 @@ class CmdTalk;
 
 // Interface to a content plugin implemented through a Python subprocess,
 // e.g. the Tidal, Qobuz and Gmusic interfaces.
+//
+// Note that we may have to subclass this for different services one
+// day. For now, all services use compatible cmdtalk methods
+// (esp. get_media_url()), so that all the customisation is on the
+// Python side.
 class PlgWithSlave : public CDPlugin {
 public:
     PlgWithSlave(const std::string& name, CDPluginServices *services);
     virtual ~PlgWithSlave();
 
+    // Proxy the streams if return is true, else redirect
+    virtual bool doproxy();
+    
     // Returns totalmatches
     virtual int browse(
 	const std::string& objid, int stidx, int cnt,
