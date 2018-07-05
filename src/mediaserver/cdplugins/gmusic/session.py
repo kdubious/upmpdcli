@@ -96,15 +96,23 @@ class Session(object):
         self._get_user_library()
         data = self.api.get_all_user_playlist_contents()
         #self.dmpdata("user_playlist_content", data)
-        trkl = [item['tracks']
-                for item in data if item['id'] == playlist_id]
-        if not trkl:
+        entries = []
+        for item in data:
+            if item['id'] == playlist_id:
+                entries = item['tracks']
+                break
+        if not entries:
             return []
-        try:
-            return [self.lib_tracks[track['trackId']] for track in trkl[0]]
-        except:
-            return []
-        
+        tracks = []
+        for entry in entries:
+            if entry['deleted']:
+                continue
+            if entry['source'] == u'1':
+                tracks.append(self.lib_tracks[entry['trackId']])
+            else:
+                tracks.append(_parse_track(entry['track']) )
+        return tracks
+
     def create_station_for_genre(self, genre_id):
         id = self.api.create_station("station"+genre_id, genre_id=genre_id)
         return id
