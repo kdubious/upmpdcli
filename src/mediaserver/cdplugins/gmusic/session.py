@@ -95,7 +95,6 @@ class Session(object):
     def get_user_playlist_tracks(self, playlist_id):
         self._get_user_library()
         data = self.api.get_all_user_playlist_contents()
-        #self.dmpdata("user_playlist_content", data)
         entries = []
         for item in data:
             if item['id'] == playlist_id:
@@ -103,13 +102,14 @@ class Session(object):
                 break
         if not entries:
             return []
+        #self.dmpdata("user_playlist_content", entries)
         tracks = []
         for entry in entries:
             if entry['deleted']:
                 continue
             if entry['source'] == u'1':
                 tracks.append(self.lib_tracks[entry['trackId']])
-            else:
+            elif 'track' in entry:
                 tracks.append(_parse_track(entry['track']) )
         return tracks
 
@@ -280,6 +280,30 @@ def _parse_situation_station(data):
     return Playlist(id=data['seed']['curatedStationId'], name=data['name'])
 
 
+# 'id' source when initiated from playlist data:
+#
+# The previous version used the 'id' entry from the track data if set,
+# else 'nid'. This only worked for source=='1' entries, pointing to
+# user library data.
+# 
+# The initial version for parsing non-user-lib playlist entries (which
+# have an embedded track record) used 'trackId' from the playlist
+# wrapper if set, else 'storeId' from the embedded track entry:
+#
+#  {
+#     'trackid' : 'somevalue',
+#     'track': {
+#         'storeId': 'usuallysamevalue',
+#         ...
+#     },
+#
+# The merged version, for non-user entries, discards the data from the
+# playlist wrapper, and uses trackId or storeId from the embedded
+# track object. (trackId is usually not set inside the track record
+# and track['storeId'] appears to be the same as the wrapper trackId)
+#
+# Note that there is also an 'id' entry in the playlist wrapper, which
+# was never tried.
 def _parse_track(data, album=None):
     artist_name = entryOrUnknown(data, 'artist')
     albartist_name = entryOrUnknown(data, 'albumArtist', None)
@@ -296,8 +320,19 @@ def _parse_track(data, album=None):
         alb_tt = entryOrUnknown(data, 'album')
         album = Album(id=albid, name=alb_tt, image=alb_art, artist=artist)
 
+    if 'id' in data:
+        trackid = data['id']
+    elif 'trackId' in data:
+        trackid = data['trackId']
+    elif 'storeId' in data:
+        trackid = data['storeId']
+    elif 'nid' in data:
+        trackid = data['nid']
+    else:
+        trackid = ''
+
     kwargs = {
-        'id': data['id'] if 'id' in data else data['nid'],
+        'id': trackid,
         'name': data['title'],
         'duration': int(data['durationMillis'])/1000,
         'track_num': data['trackNumber'],
