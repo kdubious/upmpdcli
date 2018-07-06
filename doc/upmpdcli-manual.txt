@@ -689,9 +689,15 @@ version on Ubuntu Trusty is too old). Older Python versions *will* crash.
 You will need a valid subscription for most functions.
 
 I'm a little lost in the different google authentication/sign-in methods,
-but if you are using two way authentication, there is apparently
-link:https://www.lesbonscomptes.com/upmpdcli/github-issues/upmpdcli-html/issue-87.html[a
-way to make things work, using an app password].
+but anyway:
+
+- If you are using two way authentication, you will need to 
+link:https://www.lesbonscomptes.com/upmpdcli/github-issues/upmpdcli-html/issue-87.html[create
+and use an app password].
+- The interface needs an actual Android Device Id from a registered device
+  to fetch audio streams (but not to browse). The software will try to get
+  one from the list of registered devices, but if this does not work, you
+  may have to set it explicitely in the configuration.
 
 The configuration parameters are described in the
 <<gmusicuser,configuration section>>

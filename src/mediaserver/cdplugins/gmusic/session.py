@@ -39,21 +39,35 @@ class Session(object):
         
     def dmpdata(self, who, data):
         uplog("%s: %s" % (who, json.dumps(data, indent=4)))
-        
+
+    # Look for an Android device id in the registered devices.
+    def find_device_id(self, data):
+        for entry in data:
+            if "type" in entry and entry["type"] == u"ANDROID":
+                # Get rid of 0x
+                id = entry["id"][2:]
+                uplog("Using deviceid %s" % id)
+                return id
+        return None
+    
     def login(self, username, password, deviceid=None):
         self.api = Mobileclient(debug_logging=False)
 
         if deviceid is None:
             logged_in = self.api.login(username, password,
                                        Mobileclient.FROM_MAC_ADDRESS)
+            if logged_in:
+                # Try to re-login with a valid deviceid
+                data = self.api.get_registered_devices()
+                #self.dmpdata("registered devices", data)
+                deviceid = self.find_device_id(data)
+                if deviceid:
+                    logged_in = self.login(username, password, deviceid)
         else:
             logged_in = self.api.login(username, password, deviceid)
 
-        #print("Logged in: %s" % logged_in)
-        #data = self.api.get_registered_devices()
-        #print("registered: %s" % data)
-        #isauth = self.api.is_authenticated()
-        #print("Auth ok: %s" % isauth)
+        isauth = self.api.is_authenticated()
+        #uplog("login: Logged in: %s. Auth ok: %s" % (logged_in, isauth))
         return logged_in
 
     def _get_user_library(self):
@@ -219,10 +233,10 @@ class Session(object):
         ret = {"albums" : [], "toptracks" : [], "related" : []} 
         # Happens,some library tracks have no artistId entry
         if artist_id is None or artist_id == 'None':
-            print("get_artist_albums: artist_id is None", file=sys.stderr)
+            uplog("get_artist_albums: artist_id is None")
             return ret
         else:
-            print("get_artist_albums: artist_id %s" % artist_id, file=sys.stderr)
+            uplog("get_artist_albums: artist_id %s" % artist_id)
 
         maxrel = 20 if doRelated else 0
         maxtop = 0 if doRelated else 10

@@ -347,9 +347,11 @@
 #gmusicquality = med
 # <var name="gmusicdeviceid" type="string"> <brief>Google Music device
 # id.</brief> <descr>Your system MAC address will be used by default, but
-# this will count against the maximum count of registered devices for this
-# account.  You can set the gmusicdeviceid value to the device ID from a
-# phone or tablet on which you also use Google Play Music.</descr></var>
+# it seems that this does not work any more and that an Android deviceid is
+# needed. upmpdcli will try to get one from the list of registered
+# devices. If this does not work, you will need to set the gmusicdeviceid
+# value to the device ID from a phone or tablet on which you also use
+# Google Play Music (look up "Android deviceid" for help).</descr></var>
 #gmusicdeviceid =
 
 # <grouptitle>Local Media Server parameters</grouptitle>
