@@ -17,7 +17,6 @@
 
 #include "streamproxy.h"
 #include "netfetch.h"
-#include "curlfetch.h"
 #include "log.h"
 #include "smallut.h"
 #include "chrono.h"
@@ -33,7 +32,11 @@ using namespace std;
 
 class ContentReader {
 public:
-    ContentReader(NetFetch *fetcher, int cfd);
+    ContentReader(std::unique_ptr<NetFetch> ftchr, int cfd)
+        : fetcher(std::move(ftchr)), connfd(cfd) {
+        
+    }
+
     ~ContentReader() {
         LOGDEB1("ContentReader::~ContentReader\n");
         // This should not be necessary but see comments in
@@ -51,10 +54,6 @@ public:
     Chrono chron;
 };
 
-ContentReader::ContentReader(NetFetch *f, int cfd)
-    : fetcher(std::unique_ptr<NetFetch>(f)), connfd(cfd)
-{
-}
 
 ssize_t ContentReader::contentRead(uint64_t pos, char *obuf, size_t max)
 {
@@ -311,9 +310,13 @@ int StreamProxy::Internal::answerConn(
         unordered_map<string,string>querydata;
         MHD_get_connection_values(mhdconn, MHD_GET_ARGUMENT_KIND,
                                   &mapvalues_cb, &querydata);
-        
+
+        // Request the method (redirect or proxy), and the fetcher if
+        // we are proxying.
         string url(_url);
-        UrlTransReturn ret = urltrans(url, querydata);
+        std::unique_ptr<NetFetch> fetcher;
+        UrlTransReturn ret = urltrans(url, querydata, fetcher);
+        
         if (ret == Error) {
             return MHD_NO;
         } else if (ret == Redirect) {
@@ -329,8 +332,9 @@ int StreamProxy::Internal::answerConn(
             return ret;
         }
 
-        // Create/Start the fetch transaction, and wait for the headers.
-        LOGDEB0("StreamProxy::answerConn: starting fetch for " << url << endl);
+        // The connection fd thing is strictly for debug/diag: faking
+        // a connection loss so that the client side can exercise the
+        // retry code.
         int cfd{-1};
         const union MHD_ConnectionInfo *cinf =
             MHD_get_connection_info(mhdconn, MHD_CONNECTION_INFO_CONNECTION_FD);
@@ -339,13 +343,17 @@ int StreamProxy::Internal::answerConn(
         } else {
             cfd = cinf->connect_fd;
         }
-        auto reader = new ContentReader(new CurlFetch(url), cfd);
+
+        // Create/Start the fetch transaction, and wait for the headers.
+        LOGDEB0("StreamProxy::answerConn: starting fetch for " << url << endl);
+        auto reader = new ContentReader(std::move(fetcher), cfd);
         if (killafterms > 0) {
             reader->killafterms = killafterms;
             killafterms = -1;
         }
         reader->fetcher->start(&reader->queue, offset);
         *con_cls = reader;
+
         LOGDEB1("StreamProxy::answerConn: returning after 1st call\n");
         return MHD_YES;
         // End first call

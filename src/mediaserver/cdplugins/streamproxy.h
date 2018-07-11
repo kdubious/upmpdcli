@@ -23,6 +23,8 @@
 #include <string>
 #include <unordered_map>
 
+class NetFetch;
+
 /// HTTP proxy for UPnP audio transfers
 ///
 /// Uses microhttpd for the server part and libcurl for talking to the
@@ -30,11 +32,20 @@
 ///
 class StreamProxy {
 public:
+
+    /** The fetch method deciding function
+     * @param[in,out] url The original URL from the client, changed in place.
+     * @param queryparams The HTTP query parameters (?nm=value;..)
+     * @param[out] fetcher if we are proxying, the fetcher object used 
+     *   to get the data. Ownership is transferred to us.
+     * @return one of Error/Proxy/Redirect, dictating how the client request 
+     *      is to be satisfied (or not)
+     */
     enum UrlTransReturn {Error, Proxy, Redirect};
     typedef std::function<UrlTransReturn
                           (std::string& url,
-                           const std::unordered_map<std::string, std::string>&)>
-    UrlTransFunc;
+        const std::unordered_map<std::string, std::string>& queryparams,
+        std::unique_ptr<NetFetch>& fetcher)> UrlTransFunc;
 
     StreamProxy(int listenport, UrlTransFunc urltrans);
     ~StreamProxy();
