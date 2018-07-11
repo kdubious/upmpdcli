@@ -1,3 +1,19 @@
+/* Copyright (C) 2017-2018 J.F.Dockes
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the
+ *   Free Software Foundation, Inc.,
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
 #ifndef _CURLFETCH_H_INCLUDED_
 #define _CURLFETCH_H_INCLUDED_
 
@@ -10,6 +26,7 @@
 
 #include "bufxchange.h"
 #include "abuffer.h"
+#include "netfetch.h"
 
 //
 // Wrapper for a libcurl transfer. This uses the curl_easy interface
@@ -24,7 +41,7 @@
 // The end of transfer is signalled by pushing an empty buffer on the queue
 //
 // All methods are supposedly thread-safe
-class CurlFetch {
+class CurlFetch : public NetFetch {
 public:
     CurlFetch(const std::string& url);
     ~CurlFetch();
@@ -45,7 +62,7 @@ public:
     // Check if the curl thread is done and retrieve the results if it
     // is. This does not wait, it returns false if the transfer is
     // still running.
-    bool curlDone(int *curlcode, int *http_code);
+    bool fetchDone(FetchStatus *code, int *http_code) override;
 
     /// Reset after transfer done, for retrying for exemple.
     void reset();

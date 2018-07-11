@@ -168,23 +168,34 @@ void  CurlFetch::reset()
     m->outqueue->reset();
 }
 
-bool CurlFetch::curlDone(int *curlcode, int *http_code)
+bool CurlFetch::fetchDone(FetchStatus *code, int *http_code)
 {
-    LOGDEB1("CurlFetch::curlDone: running: " << m->curlrunning() <<
+    LOGDEB1("CurlFetch::fetchDone: running: " << m->curlrunning() <<
            " curldone " << m->curldone << endl);
     unique_lock<mutex> lock(m->curlmutex);
     if (!m->curldone) {
         return false;
     }
-    LOGDEB1("CurlFetch::curlDone: curlcode " << m->curl_code << " httpcode " <<
+    LOGDEB1("CurlFetch::fetchDone: curlcode " << m->curl_code << " httpcode " <<
            m->curl_http_code << endl);
-    if (curlcode) {
-        *curlcode = int(m->curl_code);
+    if (code) {
+        switch (m->curl_code) {
+        case CURLE_PARTIAL_FILE:
+        case CURLE_RECV_ERROR:
+            *code = NetFetch::FETCH_RETRYABLE;
+            break;
+        case CURLE_OK:
+            *code = NetFetch::FETCH_OK;
+            break;
+        default:
+            *code = NetFetch::FETCH_FATAL;
+            break;
+        }
     }
     if (http_code) {
         *http_code = m->curl_http_code;
     }
-    LOGDEB1("CurlTRans::curlDone: done\n");
+    LOGDEB1("CurlTRans::fetchDone: done\n");
     return true;
 }
 
