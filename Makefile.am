@@ -78,6 +78,8 @@ upmpdcli_SOURCES = \
      src/mediaserver/cdplugins/cmdtalk.h \
      src/mediaserver/cdplugins/curlfetch.cpp \
      src/mediaserver/cdplugins/curlfetch.h \
+     src/mediaserver/cdplugins/netfetch.cpp \
+     src/mediaserver/cdplugins/netfetch.h \
      src/mediaserver/cdplugins/plgwithslave.cxx \
      src/mediaserver/cdplugins/plgwithslave.hxx \
      src/mediaserver/cdplugins/streamproxy.cpp \
@@ -127,8 +129,14 @@ upmpdcli_SOURCES = \
      src/upmpd.hxx \
      src/upmpdutils.cxx \
      src/upmpdutils.hxx
-                           
+
 upmpdcli_LDADD = $(UPMPDCLI_LIBS)
+
+if ENABLESPOTIFY
+upmpdcli_SOURCES += src/mediaserver/cdplugins/spotify/spotiproxy.cpp \
+     src/mediaserver/cdplugins/spotify/spotiproxy.h 
+AM_CXXFLAGS += -DENABLE_SPOTIFY
+endif
 
 scctl_SOURCES = \
     scctl_src/scctl.cpp \
@@ -186,6 +194,20 @@ dist_cdpluginsgmusic_DATA = \
                   src/mediaserver/cdplugins/gmusic/gmusic-app.py \
                   src/mediaserver/cdplugins/gmusic/session.py 
 
+cdpluginsspotifydir = $(pkgdatadir)/cdplugins/spotify
+dist_cdpluginsspotify_DATA = \
+                  src/mediaserver/cdplugins/spotify/spotify-app.py \
+                  src/mediaserver/cdplugins/spotify/session.py
+
+
+cdpluginsspotifylibdir = $(pkgdatadir)/cdplugins/spotify/spotipy
+dist_cdpluginsspotifylib_DATA = \
+                  src/mediaserver/cdplugins/spotify/spotipy/__init__.py \
+                  src/mediaserver/cdplugins/spotify/spotipy/client.py \
+                  src/mediaserver/cdplugins/spotify/spotipy/oauth2.py \
+                  src/mediaserver/cdplugins/spotify/spotipy/util.py
+
+
 cdpluginsuprcldir = $(pkgdatadir)/cdplugins/uprcl
 dist_cdpluginsuprcl_DATA = \
                  src/mediaserver/cdplugins/uprcl/rclconfig-fields \
@@ -214,6 +236,8 @@ EXTRA_DIST = \
     src/execmd.cpp \
     src/mediaserver/cdplugins/cmdtalk.cpp \
     src/netcon.cpp src/sysvshm.cpp autogen.sh \
+    src/mediaserver/cdplugins/spotify/spotiproxy.cpp \
+    src/mediaserver/cdplugins/spotify/spotiproxy.h \
     systemd/upmpdcli.service \
     uprclbottle.tar.gz \
     web.tar.gz
@@ -248,6 +272,7 @@ install-data-hook: web.tar.gz rdpl2stream.tar.gz uprclbottle.tar.gz
 	(cd $(DESTDIR)/$(cdpluginstidaldir); chmod a+x tidal-app.py) 
 	(cd $(DESTDIR)/$(cdpluginsqobuzdir); chmod a+x qobuz-app.py) 
 	(cd $(DESTDIR)/$(cdpluginsgmusicdir); chmod a+x gmusic-app.py) 
+	(cd $(DESTDIR)/$(cdpluginsspotifydir); chmod a+x spotify-app.py) 
 	(cd $(DESTDIR)/$(cdpluginsuprcldir); chmod a+x uprcl-app.py) 
 	(cd $(DESTDIR)/$(radioscriptsdir);chmod a+rx . *)
         

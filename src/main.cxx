@@ -154,6 +154,7 @@ ohProductDesc_t ohProductDesc = {
 static UpnpDevice *dev;
 
 string g_datadir(DATADIR "/");
+string g_cachedir("/var/cache/upmpdcli");
 
 // Global
 string g_configfilename;
@@ -499,7 +500,8 @@ int main(int argc, char *argv[])
 	if (opts.cachedir.empty())
             opts.cachedir = path_cat(path_tildexpand("~") , "/.cache/upmpdcli");
     }
-
+    g_cachedir = opts.cachedir;
+    
     string& mcfn = opts.cachefn;
     // no cache access needed or desirable for a pure media server
     if (!msonly && ohmetapersist) {

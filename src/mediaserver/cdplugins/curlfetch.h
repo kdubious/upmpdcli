@@ -46,18 +46,14 @@ public:
     CurlFetch(const std::string& url);
     ~CurlFetch();
 
-    const std::string& url();
-    
-    void setTimeout(int secs);
-    
     /// Start the transfer to the output queue.
-    bool start(BufXChange<ABuffer*> *queue, uint64_t offset = 0);
+    bool start(BufXChange<ABuffer*> *queue, uint64_t offset = 0) override;
 
     // Wait for HTTP headers. This allows, e.g. doing stuff depending
     // on content-type before proceeding with the actual data transfer
-    bool waitForHeaders(int maxSecs = 0);
+    bool waitForHeaders(int maxSecs = 0) override;
     // Retrieve header value (after a successful waitForHeaders).
-    bool headerValue(const std::string& nm, std::string& val);
+    bool headerValue(const std::string& nm, std::string& val) override;
 
     // Check if the curl thread is done and retrieve the results if it
     // is. This does not wait, it returns false if the transfer is
@@ -65,21 +61,8 @@ public:
     bool fetchDone(FetchStatus *code, int *http_code) override;
 
     /// Reset after transfer done, for retrying for exemple.
-    void reset();
+    bool reset() override;
 
-    // Callbacks
-
-    // A function to create the first buffer (typically for prepending
-    // a wav header to a raw pcm stream. If set this is called from
-    // the first curl write callback, before processing the curl data,
-    // so this happens at a point where the client may have had a look
-    // at the headers).
-    void setBuf1GenCB(std::function<bool(std::string& buf,void*,int)>);
-    // Called after curl_easy_perform returns
-    void setEOFetchCB(std::function<void(bool ok, u_int64_t count)> eofcb);
-    // Called every time we get new data from curl
-    void setFetchBytesCB(std::function<void(u_int64_t count)> fbcb);
-    
     class Internal;
 private:
     std::unique_ptr<Internal> m;

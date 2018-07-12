@@ -18,6 +18,8 @@
 #ifndef _MEDIAFETCH_H_INCLUDED_
 #define _MEDIAFETCH_H_INCLUDED_
 
+#include <functional>
+
 #include "bufxchange.h"
 #include "abuffer.h"
 
@@ -32,10 +34,18 @@
 // All methods are supposedly thread-safe
 class NetFetch {
 public:
-    NetFetch() {}
+    NetFetch(const std::string& u)
+        : _url(u) {
+    }
     virtual ~NetFetch() {}
 
-    virtual void setTimeout(int secs) = 0;
+    virtual const std::string& url() {
+        return _url;
+    }
+    
+    virtual void setTimeout(int secs) {
+        timeoutsecs = secs;
+    }
     
     /// Start the transfer to the output queue.
     virtual bool start(BufXChange<ABuffer*> *queue, uint64_t offset = 0) = 0;
@@ -56,7 +66,11 @@ public:
     virtual bool fetchDone(FetchStatus *code, int *http_code) = 0;
 
     /// Reset after transfer done, for retrying for exemple.
-    virtual void reset() = 0;
+    virtual bool reset() = 0;
+
+    u_int64_t datacount() {
+        return fetch_data_count;
+    }
 
     // Callbacks
 
@@ -65,14 +79,30 @@ public:
     // the first curl write callback, before processing the curl data,
     // so this happens at a point where the client may have had a look
     // at the headers).
-    virtual void setBuf1GenCB(std::function<bool(std::string& buf,void*,int)>) {
+    virtual void setBuf1GenCB(std::function<bool(
+                                  std::string& buf, void*, int)> f) {
+        buf1cb = f;
     }
     // Called when the network transfer is done
-    void setEOFetchCB(std::function<void(bool ok, u_int64_t count)>) {
+    void setEOFetchCB(std::function<void(bool ok, u_int64_t count)> f) {
+        eofcb = f;
     }
     // Called every time we get new data from the remote
-    void setFetchBytesCB(std::function<void(u_int64_t count)>) {
+    void setFetchBytesCB(std::function<void(u_int64_t count)> f) {
+        fbcb = f;
     }
+
+protected:
+    size_t databufToQ(const void *contents, size_t bcnt);
+        
+    std::string _url;
+    uint64_t startoffset;
+    int timeoutsecs{0};
+    u_int64_t fetch_data_count{0};
+    BufXChange<ABuffer*> *outqueue{nullptr};
+    std::function<bool(std::string&, void *, int)> buf1cb;
+    std::function<void(u_int64_t)> fbcb;
+    std::function<void(bool, u_int64_t)> eofcb;
 };
 
 #endif /* _MEDIAFETCH_H_INCLUDED_ */

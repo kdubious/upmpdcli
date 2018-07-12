@@ -48,6 +48,11 @@ if test X$enableQT = Xyes ; then
   AC_SUBST(QMAKE)
 fi
 
+AC_ARG_ENABLE(spotify, AC_HELP_STRING([--enable-spotify],
+              [Enable spotify streaminf module. Needs libspotify]),
+              enableSpotify=$enableval, enableSpotify="no")
+AM_CONDITIONAL(ENABLESPOTIFY, [test X$enableSpotify = Xyes])
+
 # The 3 following checks for libthreadutil libixml and libupnp are normally
 # unnecessary and even problematic. upmpdcli does not use them directly,
 # and they should be used automatically because libupnpp is linked with them.
@@ -72,6 +77,11 @@ PKG_CHECK_MODULES([libmicrohttpd], [libmicrohttpd], [],
 PKG_CHECK_MODULES([jsoncpp], [jsoncpp], [], [AC_MSG_ERROR([jsoncpp not found])])
 
 UPMPDCLI_LIBS="$LIBS $upnpp_LIBS $libmpdclient_LIBS $libmicrohttpd_LIBS $jsoncpp_LIBS"
+
+if test X$enableSpotify = Xyes; then
+   UPMPDCLI_LIBS="-lspotify -lFLAC $UPMPDCLI_LIBS"
+fi
+
 echo "UPMPDCLI_LIBS=$UPMPDCLI_LIBS"
 
 LIBS=""

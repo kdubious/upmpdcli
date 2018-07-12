@@ -8,9 +8,14 @@ version value exclusively for bug fixes. This contains minor functional
 changes, so it can't be 1.2.
 
 - Support the OpenHome Credentials service. This allows accessing Qobuz and
-  Tidal from Kazoo and Lumin, using their internal service directory
+  Tidal from Kazoo, using their internal service directory
   browser (instead of going through the upmpdcli media server). This allows
-  managing favourites and other specific service functions.
+  managing favourites and other specific service functions. In theory, this
+  should work with Lumin too, but it does not for some unknown
+  reason. Actually, the presence of this feature prevents the renderer to
+  from being used with Lumin at all, so that a 'lumincompat' was added to
+  the configuration to allow using upmpdcli with Lumin (and without the
+  Credentials support). 
 - Support Radio Paradise FLAC channel. This is special for a radio because
   it uses a sequence of audio URLs instead of a single stream. Have a look
   at the distributed 'upmpdcli.conf' file for the radio definition to use
@@ -18,6 +23,12 @@ changes, so it can't be 1.2.
   during an upgrade). The appropriate script is now installed to
   '/usr/share/upmpdcli/radio_scripts' (along with a small number of art and
   metadata scripts for other stations).
+- Improve function with Google Play Music. Esp. fix bugs in playlist
+  handling.
+- Add proxy mode to the Media Server. The default is still to redirect mpd
+  to the actual music stream.
+- All Python code has hopefully been made compatible with Python3 (still
+  using Python2 by default).
 
 See the
 link:https://www.lesbonscomptes.com/upmpdcli/upmpdcli-manual.html[Upmpdcli

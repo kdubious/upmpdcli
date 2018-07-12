@@ -114,19 +114,10 @@ def trackuri(a):
     maybelogin()
 
     msgproc.log("trackuri: [%s]" % a)
-    trackid = trackid_from_urlpath(pathprefix, a)
-
-    media_url = session.get_media_url(trackid, formatid)
-    if not media_url:
-        media_url = ""
-        
-    #msgproc.log("%s" % media_url)
-    if formatid == 5:
-        mime = "audio/mpeg"
-        kbs = "320"
-    else:
-        mime = "application/flac"
-        kbs = "1410"
+    # we use the trackid as "url". The spotify proxy module will manage
+    media_url = trackid_from_urlpath(pathprefix, a)
+    mime = "application/flac"
+    kbs = "1410"
     return {'media_url' : media_url, 'mimetype' : mime, 'kbs' : kbs}
 
 
