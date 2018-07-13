@@ -608,6 +608,7 @@ bool SpotiFetch::reset()
         LOGERR("SpotiFetch::start: getSpotiProxy returned null\n");
         return false;
     }
+    spp->waitForEndOfPlay();
     spp->stop();
     m->encoderneedinit = true;
     return true;
@@ -638,7 +639,8 @@ bool SpotiFetch::start(BufXChange<ABuffer*> *queue, uint64_t offset)
     }
     spp->stop();
     if (outqueue) {
-        outqueue->setTerminate();
+        outqueue->waitIdle();
+        outqueue->reset();
     }
     outqueue = queue;
 
@@ -676,7 +678,7 @@ bool SpotiFetch::headerValue(const std::string& nm, std::string& val)
         val = "audio/flac";
         LOGDEB("SpotiFetch::headerValue: content-type: " << val << "\n");
         return true;
-    } else if (!stringlowercmp("content-length", nm)) {
+    } else if (0 && !stringlowercmp("content-length", nm)) {
         uint64_t bytes = (spp->durationMs() / 10) * 441 * 4;
         ulltodecstr(bytes, val);
         LOGDEB("SpotiFetch::headerValue: content-length: " << val << "\n");
