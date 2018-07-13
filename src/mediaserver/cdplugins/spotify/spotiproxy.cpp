@@ -102,7 +102,7 @@ public:
             registerError(sperror);
             return;
         }
-        sp_session_login(sp, user.c_str(), pass.c_str(), 0, NULL);
+        sp_session_login(sp, user.c_str(), pass.c_str(), 1, NULL);
         wait_for("Login", [] (SpotiProxy::Internal *o) {return o->logged_in;});
         if (logged_in) {
             LOGDEB("Spotify: " << user << " logged in ok\n");

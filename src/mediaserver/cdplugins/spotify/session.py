@@ -21,16 +21,15 @@ import json
 import datetime
 import time
 import os
-from upmplgmodels import Artist, Album, Track, Playlist, SearchResult, \
-     Category, Genre
-from upmplgutils import uplog
 
 import spotipy
 import spotipy.util as spotutil
 
-SPOTIPY_CLIENT_ID = '5b4e1f241a734668aaddf170017d9244'
-SPOTIPY_CLIENT_SECRET = '9bd49518f7974f8ebb6f965ae641022b'
-SPOTIPY_REDIRECT_URI = 'https://www.lesbonscomptes.com/spotify/'
+from upmplgmodels import Artist, Album, Track, Playlist, SearchResult, \
+     Category, Genre
+from upmplgutils import uplog
+
+import upmspotid
 
 class Session(object):
     def __init__(self):
@@ -42,25 +41,62 @@ class Session(object):
 
     def login(self, user, cachepath):
         self.user = user
-        scope = None
+        scope = upmspotid.SCOPE
         sp_oauth = spotipy.oauth2.SpotifyOAuth(
-            SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI, 
-            scope=scope, cache_path=cachepath)
+            upmspotid.CLIENT_ID, upmspotid.CLIENT_SECRET,
+            upmspotid.REDIRECT_URI, scope=upmspotid.SCOPE, cache_path=cachepath)
         token_info = sp_oauth.get_cached_token()
         if token_info:
             uplog("token_info: %s" % token_info)
+            uplog("token expires at %s" % datetime.datetime.fromtimestamp(
+                token_info['expires_at']).strftime('%Y-%m-%d %H:%M:%S'))
             self.api = spotipy.Spotify(auth=token_info['access_token'])
             data = self.api.user(self.user)
             #dmpdata("User basic info", data)
             return True
         return False
     
-    def top_tracks(self):
+    def recent_tracks(self):
         if not self.api:
             uplog("Not logged in")
             return []
+        data = self.api.current_user_recently_played()
+        #self.dmpdata('user_recently_played', data)
+        return [_parse_track(i['track']) for i in data['items']]
+
+    def favourite_tracks(self):
+        if not self.api:
+            uplog("Not logged in")
+            return []
+        data = self.api.current_user_top_tracks(limit=50, offset=0)
+        return [_parse_track(t) for t in data['items']]
+        
+    def favourite_albums(self):
+        if not self.api:
+            uplog("Not logged in")
+            return []
+        data = self.api.current_user_saved_albums()
+        #self.dmpdata('favourite_albums', data)
+        try:
+            return [_parse_album(item['album']) for item in data['items']]
+        except:
+            uplog("favourite_albums: _parse_albums failed")
+            pass
         return []
 
+    def favourite_artists(self):
+        if not self.api:
+            uplog("Not logged in")
+            return []
+        data = self.api.current_user_followed_artists()
+        #self.dmpdata('favourite_artists', data)
+        return [_parse_artist(item) for item in data['artists']['items']]
+
+    def get_artist_albums(self, id):
+        data = self.api.artist_albums(id, limit=50)
+        #self.dmpdata('get_artist_albums', data)
+        return [_parse_album(item) for item in data['items']]
+        
     def new_releases(self):
         if not self.api:
             uplog("Not logged in")
@@ -68,9 +104,7 @@ class Session(object):
         data = self.api.new_releases()
         #self.dmpdata('new_releases', data)
         try:
-            albums = [_parse_album(alb) for alb in data['albums']['items']]
-            if albums:
-                return [alb for alb in albums if alb.available]
+            return [_parse_album(alb) for alb in data['albums']['items']]
         except:
             uplog("new_releases: _parse_albums failed")
             pass
@@ -109,29 +143,30 @@ def _parse_album(json_obj, artist=None, artists=None):
             pass
     return Album(**kwargs)
 
-def _parse_track(json_obj, albumarg = None):
+def _parse_track(data, albumarg = None):
     artist = Artist()
-    if 'artists' in json_obj:
-        artist = _parse_artist(json_obj['artists'][0])
+    if 'artists' in data:
+        artist = _parse_artist(data['artists'][0])
     elif albumarg and albumarg.artist:
         artist = albumarg.artist
 
     available = True
     duration = 0
-    if 'duration_ms' in json_obj:
-        duration = str(int(json_obj['duration_ms'])//1000)
+    if 'duration_ms' in data:
+        duration = str(int(data['duration_ms'])//1000)
     kwargs = {
-        'id': json_obj['id'],
-        'name': json_obj['name'],
+        'id': data['id'],
+        'name': data['name'],
         'duration': duration,
-        'track_num': json_obj['track_number'],
-        'disc_num': json_obj['disc_number'],
+        'track_num': data['track_number'],
+        'disc_num': data['disc_number'],
         'artist': artist,
         'available': available
     }
     if albumarg:
         kwargs['album'] = albumarg
-
+    elif 'album' in data:
+        kwargs['album'] = _parse_album(data['album'])
     return Track(**kwargs)
 
 

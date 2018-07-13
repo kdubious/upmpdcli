@@ -197,7 +197,8 @@ dist_cdpluginsgmusic_DATA = \
 cdpluginsspotifydir = $(pkgdatadir)/cdplugins/spotify
 dist_cdpluginsspotify_DATA = \
                   src/mediaserver/cdplugins/spotify/spotify-app.py \
-                  src/mediaserver/cdplugins/spotify/session.py
+                  src/mediaserver/cdplugins/spotify/session.py \
+                  src/mediaserver/cdplugins/spotify/upmspotid.py
 
 
 cdpluginsspotifylibdir = $(pkgdatadir)/cdplugins/spotify/spotipy

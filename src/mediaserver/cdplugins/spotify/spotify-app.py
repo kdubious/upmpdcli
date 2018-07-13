@@ -187,20 +187,25 @@ def browse(a):
 def root():
     #add_directory('Discover Catalog', whats_new)
     #add_directory('Discover Genres', root_genres)
-    #add_directory('Your Library', my_music)
+    add_directory('Your Library', my_music)
     add_directory('New Releases', new_releases)
 
 @plugin.route('/my_music')
 def my_music():
-    #add_directory('Recently Played', recently_played)
-    #add_directory('Favorite Songs', favourite_tracks)
-    #add_directory('Albums', favourite_albums)
-    #add_directory('Artists', favourite_artists)
+    add_directory('Recently Played', recently_played)
+    add_directory('Songs', favourite_tracks)
+    add_directory('Albums', favourite_albums)
+    add_directory('Artists', favourite_artists)
     pass
 
 @plugin.route('/album/<album_id>')
 def album_view(album_id):
     track_list(session.get_album_tracks(album_id))
+
+@plugin.route('/artist/<artist_id>')
+def artist_view(artist_id):
+    albums = session.get_artist_albums(artist_id) 
+    view(albums, urls_from_id(album_view, albums))
 
 @plugin.route('/new_releases')
 def new_releases():
@@ -213,7 +218,17 @@ def recently_played():
 
 @plugin.route('/favourite_tracks')
 def favourite_tracks():
-    track_list(session.top_tracks())
+    track_list(session.favourite_tracks())
+
+@plugin.route('/favourite_albums')
+def favourite_albums():
+    items = session.favourite_albums()
+    view(items, urls_from_id(album_view, items))
+
+@plugin.route('/favourite_artists')
+def favourite_artists():
+    items = session.favourite_artists()
+    view(items, urls_from_id(artist_view, items))
 
 @dispatcher.record('search')
 def search(a):
