@@ -23,7 +23,6 @@
 #include <mutex>
 
 #include <libspotify/api.h>
-#include <FLAC/stream_encoder.h>
 
 #include "log.h"
 #include "smallut.h"
@@ -479,15 +478,89 @@ const string& SpotiProxy::getReason()
 
 ////////// NetFetch wrapper ////////////////////////////////////////////
 
-// Forward decl
-static FLAC__StreamEncoderWriteStatus writeCallback(
-    const FLAC__StreamEncoder *encoder,
-    const FLAC__byte buffer[],
-    size_t bytes,
-    unsigned samples,
-    unsigned current_frame,
-    void *client_data);
+inline int inttoichar4(unsigned char *cdb, unsigned int addr)
+{
+    cdb[3] = (addr & 0xff000000) >> 24;
+    cdb[2] = (addr & 0x00ff0000) >> 16;
+    cdb[1] = (addr & 0x0000ff00) >> 8;
+    cdb[0] =  addr & 0x000000ff;
+    return 4;
+}
 
+inline int inttoichar2(unsigned char *cdb, unsigned int cnt)
+{
+    cdb[1] = (cnt & 0x0000ff00) >> 8;
+    cdb[0] =  cnt & 0x000000ff;
+    return 2;
+}
+
+
+#if 0
+// For reference: definition of a wav header
+// Les valeurs en commentaires sont donnees pour du son 44100/16/2
+struct wav_header {
+    /*0 */char  riff[4];     /* = 'RIFF' */
+    /*4 */int32 rifflen;     /* longueur des infos qui suivent= datalen+36 */
+    /*8 */char  wave[4];     /* = 'WAVE' */
+
+    /*12*/char  fmt[4];      /* = 'fmt ' */
+    /*16*/int32 fmtlen;      /* = 16 */
+    /*20*/int16 formtag;     /* = 1 : PCM */
+    /*22*/int16 nchan;       /* = 2 : nombre de canaux */
+    /*24*/int32 sampspersec; /* = 44100 : Nbr d'echantillons par seconde */
+    /*28*/int32 avgbytpersec;/* = 176400 : Nbr moyen octets par seconde */
+    /*32*/int16 blockalign;  /* = 4 : nombre d'octets par echantillon */
+    /*34*/int16 bitspersamp; /* = 16 : bits par echantillon */
+
+    /*36*/char  data[4];     /* = 'data' */
+    /*40*/int32 datalen;     /* Nombre d'octets de son qui suivent */
+    /*44*/char data[];
+};
+#endif /* if 0 */
+
+#define WAVHSIZE 44
+#define RIFFTOWAVCNT 36
+
+// Format header. Note the use of intel format integers. Input buffer must 
+// be of size >= 44
+int makewavheader(char *buf, int maxsize, int freq, int bits, 
+                  int chans, unsigned int databytecnt)
+{
+    if (maxsize < WAVHSIZE)
+        return -1;
+
+    unsigned char *cp = (unsigned char *)buf;
+    memcpy(cp, "RIFF", 4);
+    cp += 4;
+    inttoichar4(cp, databytecnt + RIFFTOWAVCNT);
+    cp += 4;
+    memcpy(cp, "WAVE", 4);
+    cp += 4;
+
+    memcpy(cp, "fmt ", 4);
+    cp += 4;
+    inttoichar4(cp, 16);
+    cp += 4;
+    inttoichar2(cp, 1);
+    cp += 2;
+    inttoichar2(cp, chans);
+    cp += 2;
+    inttoichar4(cp, freq);
+    cp += 4;
+    inttoichar4(cp, freq * chans * (bits / 8));
+    cp += 4;
+    inttoichar2(cp, chans * bits / 8);
+    cp += 2;
+    inttoichar2(cp, bits);
+    cp += 2;
+
+    memcpy(cp, "data", 4);
+    cp += 4;
+    inttoichar4(cp, databytecnt);
+    cp += 4;
+
+    return WAVHSIZE;
+}
 
 class SpotiFetch::Internal {
     static const int SAMPLES_BUF_SIZE = 16 * 1024;
@@ -495,133 +568,66 @@ public:
 
     Internal(SpotiFetch *parent)
         : p(parent) {
-        encoder = FLAC__stream_encoder_new();
-        if (nullptr == encoder) {
-            LOGERR("FlacEncoder: Failed to construct stream encoder\n");
-            return;
+        spp = SpotiProxy::getSpotiProxy();
+        if (nullptr == spp) {
+            LOGERR("SpotiFetch::start: getSpotiProxy returned null\n");
         }
     }
 
     ~Internal() {
         LOGDEB1("SpotiFetch::~SpotiFetch\n");
-        SpotiProxy *spp = SpotiProxy::getSpotiProxy();
-        if (nullptr == spp) {
-            LOGERR("SpotiFetch::~SpotiFetch: getSpotiProxy returned null\n");
-        } else {
+        if (spp) {
             spp->stop();
         }
-        if (encoder)
-            FLAC__stream_encoder_delete(encoder);
     }
     
 
-    // Write callback receiving data from Spotify (2/16/44100). We
-    // send to Flac which in turns calls flacWriteCB()
+    // Write callback receiving data from Spotify.
     //
     // !! Hard-coded 2 channels of 16 bits samples. May have to change !!
-    //
     int framesink(const void *frames, int num_frames, int channels, int rate) {
         LOGDEB1("SpotiFefch::framesink. num_frames " << num_frames <<
                 " channels " << channels << " rate " << rate << endl);
-        if (nullptr == encoder) {
-            LOGERR("SpotiFetch::framesink: no encoder??\n");
-            return -1;
-        }
 
-        // This can't be done in the constructor because init() will
-        // write a 4 headers byte to the queue, which is only
-        // initialized on start
-
+        // Need samplerate, so can only be done on first data call
         if (encoderneedinit) {
             encoderneedinit = false;
-            FLAC__bool ok = true;
-            ok &= FLAC__stream_encoder_set_compression_level(encoder, 0);
-            ok &= FLAC__stream_encoder_set_channels(encoder, 2);
-            ok &= FLAC__stream_encoder_set_bits_per_sample(encoder, 16);
-            ok &= FLAC__stream_encoder_set_sample_rate(encoder, 44100);
-            if (!ok) {
-                LOGERR("framesink: failed to set params for stream encoder\n");
-                FLAC__stream_encoder_delete(encoder);
-                encoder = nullptr;
-                return -1;
-            }
-
-            FLAC__StreamEncoderInitStatus init_status =
-                FLAC__stream_encoder_init_stream(
-                    encoder, writeCallback, nullptr, nullptr, nullptr, this);
-            if (init_status != FLAC__STREAM_ENCODER_INIT_STATUS_OK) {
-                LOGERR("framesink: failed to init stream encoder: "
-                       << FLAC__StreamEncoderInitStatusString[init_status]
-                       << endl);
-                FLAC__stream_encoder_delete(encoder);
-                encoder = nullptr;
-                return -1;
-            }
+            // This may have been computed by headerValue, but can't
+            // be sure, so redo it
+            uint64_t bytes =
+            ((m->spp->durationMs() - m->initseekmsecs) / 10) * 441 * 4 + 44;
+            char buf[100];
+            unsigned int bytes = (spp->durationMs() / 10) * 441 * 4;
+            int cnt =
+                makewavheader(buf, 100, rate, 16, channels, bytes);
+            p->databufToQ(buf, cnt);
         }
         
         // A call with num_frames == 0 signals the end of stream
         if (num_frames == 0) {
-            // Flush data
-            FLAC__stream_encoder_finish(encoder);
             // Enqueue empty buffer.
-            p->databufToQ(samplesBuf, 0);
+            p->databufToQ(frames, 0);
             return 0;
         }
         
-        int samples_left = 2 * num_frames;
-        int16_t *smpp = (int16_t*)frames;
-        while (samples_left > 0) {
-            int samples = MIN(samples_left, SAMPLES_BUF_SIZE);
-            // FLAC expects 32 bits signed integers
-            for (int i = 0; i < samples; i++) {
-                samplesBuf[i] = *smpp++;
-            }
-            if (!FLAC__stream_encoder_process_interleaved(
-                    encoder, samplesBuf, samples / 2)) {
-                LOGERR("FLAC__stream_encoder_process_interleaved failed!\n");
-                return 0;
-            }
-            samples_left -= samples;
-        }
+        p->databufToQ(frames, num_frames * channels * 2);
         return num_frames;
     }
 
-    // Flac data receiver: send to queue
-    FLAC__StreamEncoderWriteStatus flacWriteCB(
-        const FLAC__byte buffer[],
-        size_t bytes, unsigned samples, unsigned current_frame) {
-        p->databufToQ(buffer, bytes);
-        return FLAC__STREAM_ENCODER_WRITE_STATUS_OK;
-    }
-
-    FLAC__StreamEncoder *encoder{nullptr};
     bool encoderneedinit{true};
-    FLAC__int32 samplesBuf[SAMPLES_BUF_SIZE];
     SpotiFetch *p;
+    SpotiProxy *spp{nullptr};
+    int initseekmsecs{0};
 };
 
 bool SpotiFetch::reset()
 {
     LOGDEB("SpotiFetch::reset\n");
-    SpotiProxy *spp = SpotiProxy::getSpotiProxy();
-    if (nullptr == spp) {
-        LOGERR("SpotiFetch::start: getSpotiProxy returned null\n");
-        return false;
-    }
-    spp->waitForEndOfPlay();
-    spp->stop();
+    m->spp->waitForEndOfPlay();
+    m->spp->stop();
     m->encoderneedinit = true;
     return true;
 }
-
-static FLAC__StreamEncoderWriteStatus writeCallback(
-    const FLAC__StreamEncoder *encoder, const FLAC__byte buffer[],
-    size_t bytes, unsigned samples, unsigned current_frame, void *client_data)
-{
-    SpotiFetch::Internal *o = (SpotiFetch::Internal *)client_data;
-    return o->flacWriteCB(buffer, bytes, samples, current_frame);
-}
-
 
 SpotiFetch:: SpotiFetch(const std::string& url)
     : NetFetch(url), m(new Internal(this)) {}
@@ -630,56 +636,49 @@ SpotiFetch::~SpotiFetch() {}
 
 bool SpotiFetch::start(BufXChange<ABuffer*> *queue, uint64_t offset)
 {
-    LOGDEB("SpotiFetch::start. queue " << queue << " queue name " <<
+    LOGDEB("SpotiFetch::start. offset " << offset << " queue " <<
+
            (queue? queue->getname() : "null") << endl);
-    SpotiProxy *spp = SpotiProxy::getSpotiProxy();
-    if (nullptr == spp) {
-        LOGERR("SpotiFetch::start: getSpotiProxy returned null\n");
-        return false;
-    }
-    spp->stop();
+    m->spp->stop();
     if (outqueue) {
         outqueue->waitIdle();
         outqueue->reset();
     }
     outqueue = queue;
 
-    // For now lets say that rate is always 44100... Offset is used
-    // with curl for byte-precise retrying of an interrupted
-    // transfer. Well, we can't do it.
-    int seekmsecs = offset / 44100;
+    // For now lets say that rate is always 44100... One of the uses
+    // of offset is for byte-precise retrying of an interrupted
+    // transfer. Well, we can't do it at all.
+    //
+    // Even for time seeking, We only get the rate with the first
+    // data, so if we wanted to get it right with 41/48k, we'd have
+    // to call startPlay, get 1 buffer with the rate, then stop, then
+    // startPlay again with the right offset. Complicated.
+    m->initseekmsecs = ((offset/4) / 441) * 10;
     SpotiProxy::AudioSink sink =
         std::bind(&Internal::framesink, m.get(), _1, _2, _3, _4);
     // Note that the 'Uri' we get passed is actually just a trackId
-    return spp->startPlay(_url, sink, seekmsecs);
+    return m->spp->startPlay(_url, sink, m->initseekmsecs);
 }
 
 
 bool SpotiFetch::waitForHeaders(int maxSecs)
 {
-    SpotiProxy *spp = SpotiProxy::getSpotiProxy();
-    if (nullptr == spp) {
-        LOGERR("SpotiFetch::start: getSpotiProxy returned null\n");
-        return false;
-    }
     // There is nothing to wait for, we're good after start
-    LOGDEB("SpotiFetch::waitForHeaders: returning " << spp->isPlaying() <<endl);
-    return spp->isPlaying();
+    LOGDEB("SpotiFetch::waitForHeaders: returning " << m->spp->isPlaying() <<
+           endl);
+    return m->spp->isPlaying();
 }
 
 bool SpotiFetch::headerValue(const std::string& nm, std::string& val)
 {
-    SpotiProxy *spp = SpotiProxy::getSpotiProxy();
-    if (nullptr == spp) {
-        LOGERR("SpotiFetch::start: getSpotiProxy returned null\n");
-        return false;
-    }
     if (!stringlowercmp("content-type", nm)) {
-        val = "audio/flac";
+        val = "audio/wav";
         LOGDEB("SpotiFetch::headerValue: content-type: " << val << "\n");
         return true;
-    } else if (0 && !stringlowercmp("content-length", nm)) {
-        uint64_t bytes = (spp->durationMs() / 10) * 441 * 4;
+    } else if (!stringlowercmp("content-length", nm)) {
+        uint64_t bytes =
+            ((m->spp->durationMs() - m->initseekmsecs) / 10) * 441 * 4 + 44;
         ulltodecstr(bytes, val);
         LOGDEB("SpotiFetch::headerValue: content-length: " << val << "\n");
         return true;
@@ -689,11 +688,6 @@ bool SpotiFetch::headerValue(const std::string& nm, std::string& val)
 
 bool SpotiFetch::fetchDone(FetchStatus *code, int *http_code)
 {
-    SpotiProxy *spp = SpotiProxy::getSpotiProxy();
-    if (nullptr == spp) {
-        LOGERR("SpotiFetch::start: getSpotiProxy returned null\n");
-        return false;
-    }
-    LOGDEB("SpotiFetch::fetchDone: returning " << !spp->isPlaying() << endl);
-    return !spp->isPlaying();
+    LOGDEB("SpotiFetch::fetchDone: returning " << !m->spp->isPlaying() << endl);
+    return !m->spp->isPlaying();
 }
