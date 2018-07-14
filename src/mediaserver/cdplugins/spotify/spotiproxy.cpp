@@ -140,17 +140,23 @@ public:
     }        
 
     void unloadTrack() {
-        LOGDEB1("unloadTrack: getting lock\n");
-        unique_lock<mutex> lock(spmutex);
-	if (sp && curtrack) {
-            sp_track_release(curtrack);
+        sp_track *ct = nullptr;
+        {
+            LOGDEB("unloadTrack: getting lock\n");
+            unique_lock<mutex> lock(spmutex);
+            LOGDEB("unloadTrack: got lock\n");
+            ct = curtrack;
+            reason.clear();
+            sperror = SP_ERROR_OK;
+            curtrack = nullptr;
+            track_playing = false;
+            track_duration = 0;
+        }
+        if (sp && ct) {
+            sp_track_release(ct);
             sp_session_player_unload(sp);
-	}
-        reason.clear();
-        sperror = SP_ERROR_OK;
-        curtrack = nullptr;
-        track_playing = false;
-        track_duration = 0;
+        }
+        LOGDEB("unloadTrack: done\n");
     }
     
     ~Internal() {
@@ -271,6 +277,7 @@ static int music_delivery(sp_session *sess, const sp_audioformat *format,
         // we continue receiving silence buffers). Can't count on the
         // user thread to do it (e.g when called through SpotiFetch,
         // nobody calls waitForEndOfPlay()).
+        LOGDEB("music_delivery: calling unloadTrack\n");
         theSPP->unloadTrack();
 #endif
         theSPP->sink(frames, 0, format->channels, format->sample_rate);
@@ -462,7 +469,9 @@ int SpotiProxy::durationMs()
 
 void SpotiProxy::stop()
 {
+    LOGDEB("SpotiProxy:stop()\n");
     m->unloadTrack();
+    LOGDEB("SpotiProxy:stop(): done\n");
 }
 
 bool SpotiProxy::loginOk()
@@ -572,52 +581,143 @@ public:
         if (nullptr == spp) {
             LOGERR("SpotiFetch::start: getSpotiProxy returned null\n");
         }
+        _sink = std::bind(&Internal::framesink, this, _1, _2, _3, _4);
+
     }
 
     ~Internal() {
-        LOGDEB1("SpotiFetch::~SpotiFetch\n");
+        LOGDEB("SpotiFetch::~SpotiFetch: clen " << _contentlen <<
+               " total sent " << _totalsent << endl);
         if (spp) {
             spp->stop();
         }
     }
     
-
     // Write callback receiving data from Spotify.
     //
     // !! Hard-coded 2 channels of 16 bits samples. May have to change !!
-    int framesink(const void *frames, int num_frames, int channels, int rate) {
-        LOGDEB1("SpotiFefch::framesink. num_frames " << num_frames <<
-                " channels " << channels << " rate " << rate << endl);
+    int framesink(const void *frames, int num_frames, int chans, int rate) {
+        LOGDEB1("SpotiFefch::framesink. dryrun " << _dryrun << " num_frames " <<
+                num_frames<< " channels " << chans << " rate " << rate << endl);
 
-        // Need samplerate, so can only be done on first data call
-        if (encoderneedinit) {
-            encoderneedinit = false;
-            // This may have been computed by headerValue, but can't
-            // be sure, so redo it
-            uint64_t bytes =
-            ((m->spp->durationMs() - m->initseekmsecs) / 10) * 441 * 4 + 44;
-            char buf[100];
-            unsigned int bytes = (spp->durationMs() / 10) * 441 * 4;
-            int cnt =
-                makewavheader(buf, 100, rate, 16, channels, bytes);
-            p->databufToQ(buf, cnt);
-        }
         
+        // Need samplerate, so can only be done on first data call
+        if (_streamneedinit) {
+            {unique_lock<mutex> lock(_mutex);
+                // First pass, compute what's needed, discard data
+                LOGDEB("SpotiFetch: sample rate " << rate << " chans " <<
+                       chans << endl);
+                _samplerate = rate;
+                _channels = chans;
+                _streamneedinit = false;
+                // We fake a slightly longer song. This is ok with
+                // mpd, but the actual transfer will be shorter than
+                // what the wav header and content-length say, which
+                // may be an issue with some renderers, and will
+                // not work at all with, e.g. wget or curl.
+                //
+                // Adding silence in this case, would break gapless
+                // with mpd, so we don't do it. This might be a
+                // settable option.
+                //
+                // In the case where 200 mS is < actual diff, the long
+                // transfer will be truncated to content-length by mhd
+                // anyway, only the header will be wrong in this case.
+                int totalms = spp->durationMs() + 300;
+                _contentlen = 44 +
+                    ((totalms - _initseekmsecs) / 10) *
+                    (rate/100) * 2 * chans;
+                LOGDEB("framesink: contentlen: " << _contentlen << endl);
+                _dryruncv.notify_all();
+                if (!_dryrun) {
+                    _cv.notify_all();
+                }
+            }
+            if (!_dryrun) {
+                char buf[100];
+                LOGDEB("Sending wav header\n");
+                int cnt = makewavheader(
+                    buf, 100, rate, 16, chans, _contentlen - 44);
+                _totalsent += cnt;
+                p->databufToQ(buf, cnt);
+            }
+        }
+
+        if (_dryrun) {
+            return num_frames;
+        }
+
         // A call with num_frames == 0 signals the end of stream
         if (num_frames == 0) {
+            LOGDEB("SpotiFetch: 0 buf, EOS clen " << _contentlen <<
+                   " total sent " << _totalsent << endl);
             // Enqueue empty buffer.
             p->databufToQ(frames, 0);
             return 0;
         }
-        
-        p->databufToQ(frames, num_frames * channels * 2);
+
+        int bytes = num_frames * chans * 2;
+        _totalsent += bytes;
+        p->databufToQ(frames, bytes);
         return num_frames;
     }
 
-    bool encoderneedinit{true};
+    bool dodryrun(const string& url) {
+        _dryrun = true;
+        if (!spp->startPlay(url, _sink, 0)) {
+            LOGERR("dodryrun: startplay failed\n");
+            _dryrun = false;
+            _streamneedinit = true;
+            return false;
+        }
+        bool ret = waitForHeadersInternal(0, true);
+        spp->stop();
+        _streamneedinit = true;
+        return ret;
+    }
+
+    bool waitForHeadersInternal(int maxSecs, bool isfordry) {
+        unique_lock<mutex> lock(_mutex);
+        LOGDEB("waitForHeaders: rate " << _samplerate << " isfordry " <<
+               isfordry << " dryrun " << _dryrun << "\n");
+        while (_samplerate == 0 || (!isfordry && _dryrun)) {
+            LOGDEB("waitForHeaders: waiting for sample rate. rate " <<
+                   _samplerate << " isfordry " << isfordry << " dryrun " <<
+                   _dryrun << "\n");
+            if (isfordry) {
+                _dryruncv.wait(lock);
+            } else {
+                _cv.wait(lock);
+            }
+        }
+        LOGDEB("SpotiFetch::waitForHeaders: isfordry " << isfordry <<
+               " dryrun " << _dryrun<<" returning "<< spp->isPlaying() << endl);
+        return spp->isPlaying();
+    }
+    void resetStreamFields() {
+        _dryrun = false;
+        _streamneedinit = true;
+        _initseekmsecs = 0;
+        _samplerate = 0;
+        _channels = 0;
+        _contentlen = 0;
+        _totalsent = 0;
+    }
     SpotiFetch *p;
     SpotiProxy *spp{nullptr};
-    int initseekmsecs{0};
+    SpotiProxy::AudioSink _sink;
+
+    bool _dryrun{false};
+    bool _streamneedinit{true};
+    int _initseekmsecs{0};
+    int _samplerate{0};
+    int _channels{0};
+    uint64_t _contentlen{0};
+    uint64_t _totalsent{0};
+
+    condition_variable _cv;
+    condition_variable _dryruncv;
+    mutex _mutex;
 };
 
 bool SpotiFetch::reset()
@@ -625,7 +725,7 @@ bool SpotiFetch::reset()
     LOGDEB("SpotiFetch::reset\n");
     m->spp->waitForEndOfPlay();
     m->spp->stop();
-    m->encoderneedinit = true;
+    m->resetStreamFields();
     return true;
 }
 
@@ -637,7 +737,6 @@ SpotiFetch::~SpotiFetch() {}
 bool SpotiFetch::start(BufXChange<ABuffer*> *queue, uint64_t offset)
 {
     LOGDEB("SpotiFetch::start. offset " << offset << " queue " <<
-
            (queue? queue->getname() : "null") << endl);
     m->spp->stop();
     if (outqueue) {
@@ -646,28 +745,31 @@ bool SpotiFetch::start(BufXChange<ABuffer*> *queue, uint64_t offset)
     }
     outqueue = queue;
 
-    // For now lets say that rate is always 44100... One of the uses
-    // of offset is for byte-precise retrying of an interrupted
-    // transfer. Well, we can't do it at all.
-    //
-    // Even for time seeking, We only get the rate with the first
-    // data, so if we wanted to get it right with 41/48k, we'd have
-    // to call startPlay, get 1 buffer with the rate, then stop, then
-    // startPlay again with the right offset. Complicated.
-    m->initseekmsecs = ((offset/4) / 441) * 10;
-    SpotiProxy::AudioSink sink =
-        std::bind(&Internal::framesink, m.get(), _1, _2, _3, _4);
-    // Note that the 'Uri' we get passed is actually just a trackId
-    return m->spp->startPlay(_url, sink, m->initseekmsecs);
-}
+    m->resetStreamFields();
+    
+    uint64_t v = 0;
+    if (offset) {
+        m->dodryrun(_url);
+        if (m->_samplerate == 0 || m->_channels == 0) {
+            LOGERR("SpotiFetch::start: rate or chans 0 after dryrun\n");
+            return false;
+        }
+        v = (10 * offset) / (m->_channels * 2 * (m->_samplerate/100));
+    }
 
+    LOGDEB("SpotiFetch::start: initseekmsecs: " << v << endl);
+    m->_initseekmsecs = v;
+    m->_dryrun = false;
+    // Reset samplerate so that the external waitForHeaders will only
+    // return after we get the first frame and the actual contentlen
+    // is computed (and samplerate set again).
+    m->_samplerate = 0;
+    return m->spp->startPlay(_url, m->_sink, m->_initseekmsecs);
+}
 
 bool SpotiFetch::waitForHeaders(int maxSecs)
 {
-    // There is nothing to wait for, we're good after start
-    LOGDEB("SpotiFetch::waitForHeaders: returning " << m->spp->isPlaying() <<
-           endl);
-    return m->spp->isPlaying();
+    return m->waitForHeadersInternal(maxSecs, false);
 }
 
 bool SpotiFetch::headerValue(const std::string& nm, std::string& val)
@@ -677,9 +779,7 @@ bool SpotiFetch::headerValue(const std::string& nm, std::string& val)
         LOGDEB("SpotiFetch::headerValue: content-type: " << val << "\n");
         return true;
     } else if (!stringlowercmp("content-length", nm)) {
-        uint64_t bytes =
-            ((m->spp->durationMs() - m->initseekmsecs) / 10) * 441 * 4 + 44;
-        ulltodecstr(bytes, val);
+        ulltodecstr(m->_contentlen, val);
         LOGDEB("SpotiFetch::headerValue: content-length: " << val << "\n");
         return true;
     }
@@ -688,6 +788,7 @@ bool SpotiFetch::headerValue(const std::string& nm, std::string& val)
 
 bool SpotiFetch::fetchDone(FetchStatus *code, int *http_code)
 {
-    LOGDEB("SpotiFetch::fetchDone: returning " << !m->spp->isPlaying() << endl);
-    return !m->spp->isPlaying();
+    bool ret= !m->spp->isPlaying();
+    LOGDEB("SpotiFetch::fetchDone: returning " << ret << endl);
+    return ret;
 }
