@@ -142,21 +142,24 @@ public:
     void unloadTrack() {
         sp_track *ct = nullptr;
         {
-            LOGDEB("unloadTrack: getting lock\n");
+            LOGDEB0("unloadTrack\n");
             unique_lock<mutex> lock(spmutex);
-            LOGDEB("unloadTrack: got lock\n");
+            LOGDEB1("unloadTrack: got lock\n");
             ct = curtrack;
             reason.clear();
             sperror = SP_ERROR_OK;
             curtrack = nullptr;
             track_playing = false;
             track_duration = 0;
+            if (ct) {
+                spcv.notify_all();
+            }
         }
         if (sp && ct) {
             sp_track_release(ct);
             sp_session_player_unload(sp);
         }
-        LOGDEB("unloadTrack: done\n");
+        LOGDEB1("unloadTrack: done\n");
     }
     
     ~Internal() {
@@ -240,7 +243,7 @@ static int music_delivery(sp_session *sess, const sp_audioformat *format,
     const char *me = "music_delivery";
     static int counter;
     if ((counter++ %100) == 0) {
-        LOGDEB1("music_delivery: " << num_frames << " frames " <<
+        LOGDEB1(me << ": " << num_frames << " frames " <<
                 " samplerate " << format->sample_rate << " channels " <<
                 format->channels << endl);
     }
@@ -259,7 +262,7 @@ static int music_delivery(sp_session *sess, const sp_audioformat *format,
         // from process_events()). So wake-up the main thread ourself.
         // This is weird of course, I don't understand why it's
         // needed.
-        LOGDEB(me << ": got silence buffer\n");
+        LOGDEB0(me << ": got silence buffer\n");
         // Silence buffer: end of real track
 #if 0
         {
@@ -277,7 +280,7 @@ static int music_delivery(sp_session *sess, const sp_audioformat *format,
         // we continue receiving silence buffers). Can't count on the
         // user thread to do it (e.g when called through SpotiFetch,
         // nobody calls waitForEndOfPlay()).
-        LOGDEB("music_delivery: calling unloadTrack\n");
+        LOGDEB1(me << ": calling unloadTrack\n");
         theSPP->unloadTrack();
 #endif
         theSPP->sink(frames, 0, format->channels, format->sample_rate);
@@ -313,7 +316,7 @@ static void get_audio_buffer_stats(sp_session *sess,
 static void end_of_track(sp_session *sess)
 {
     const char *me = "end_of_track";
-    LOGDEB1(me << "\n");
+    LOGDEB(me << "\n");
     if (nullptr == theSPP) {
         LOGERR(me << " no SPP ??\n");
         // ??
@@ -335,13 +338,7 @@ static void play_token_lost(sp_session *sess)
         // ??
         return;
     }
-    unique_lock<mutex> lock(theSPP->spmutex);
-
-    if (nullptr != theSPP->curtrack) {
-        sp_session_player_unload(theSPP->sp);
-        theSPP->curtrack = nullptr;
-    }
-    theSPP->spcv.notify_all();
+    theSPP->unloadTrack();
 }
 
 static void notify_main_thread(sp_session *sess)
@@ -436,19 +433,20 @@ bool SpotiProxy::startPlay(const string& trackid, AudioSink sink,
     }
 
     theSPP->track_duration = sp_track_duration(m->curtrack);
-    LOGDEB("SpotiProxy::startPlay: NOW PLAYING "<< sp_track_name(m->curtrack) <<
-           " duration " << theSPP->track_duration << endl);
     sp_session_player_load(m->sp, m->curtrack);
     if (seekmsecs) {
         sp_session_player_seek(m->sp, seekmsecs);
     }
     sp_session_player_play(m->sp, 1);
     m->track_playing = true;
+    LOGDEB("SpotiProxy::startPlay: NOW PLAYING "<< sp_track_name(m->curtrack) <<
+           ". Duration: " << theSPP->track_duration << endl);
     return true;
 }
 
 bool SpotiProxy::waitForEndOfPlay()
 {
+    LOGDEB0("SpotiProxy::waitForEndOfPlay\n");
     if (!m->wait_for("waitForEndOfPlay", [](SpotiProxy::Internal *o) {
                 return o->track_playing == false;})) {
         LOGERR("playTrackId: error waiting for end of track play\n");
@@ -471,7 +469,6 @@ void SpotiProxy::stop()
 {
     LOGDEB("SpotiProxy:stop()\n");
     m->unloadTrack();
-    LOGDEB("SpotiProxy:stop(): done\n");
 }
 
 bool SpotiProxy::loginOk()
@@ -605,7 +602,7 @@ public:
         if (_streamneedinit) {
             {unique_lock<mutex> lock(_mutex);
                 // First pass, compute what's needed, discard data
-                LOGDEB("SpotiFetch: sample rate " << rate << " chans " <<
+                LOGDEB0("SpotiFetch: sample rate " << rate << " chans " <<
                        chans << endl);
                 _samplerate = rate;
                 _channels = chans;
@@ -627,7 +624,7 @@ public:
                 _contentlen = 44 +
                     ((totalms - _initseekmsecs) / 10) *
                     (rate/100) * 2 * chans;
-                LOGDEB("framesink: contentlen: " << _contentlen << endl);
+                LOGDEB0("framesink: contentlen: " << _contentlen << endl);
                 _dryruncv.notify_all();
                 if (!_dryrun) {
                     _cv.notify_all();
@@ -635,7 +632,7 @@ public:
             }
             if (!_dryrun) {
                 char buf[100];
-                LOGDEB("Sending wav header\n");
+                LOGDEB1("Sending wav header\n");
                 int cnt = makewavheader(
                     buf, 100, rate, 16, chans, _contentlen - 44);
                 _totalsent += cnt;
@@ -649,8 +646,8 @@ public:
 
         // A call with num_frames == 0 signals the end of stream
         if (num_frames == 0) {
-            LOGDEB("SpotiFetch: 0 buf, EOS clen " << _contentlen <<
-                   " total sent " << _totalsent << endl);
+            LOGDEB("SpotiFetch: empty buf: EOS. clen: " << _contentlen <<
+                   " total sent: " << _totalsent << endl);
             // Enqueue empty buffer.
             p->databufToQ(frames, 0);
             return 0;
@@ -678,10 +675,10 @@ public:
 
     bool waitForHeadersInternal(int maxSecs, bool isfordry) {
         unique_lock<mutex> lock(_mutex);
-        LOGDEB("waitForHeaders: rate " << _samplerate << " isfordry " <<
+        LOGDEB0("waitForHeaders: rate " << _samplerate << " isfordry " <<
                isfordry << " dryrun " << _dryrun << "\n");
         while (_samplerate == 0 || (!isfordry && _dryrun)) {
-            LOGDEB("waitForHeaders: waiting for sample rate. rate " <<
+            LOGDEB1("waitForHeaders: waiting for sample rate. rate " <<
                    _samplerate << " isfordry " << isfordry << " dryrun " <<
                    _dryrun << "\n");
             if (isfordry) {
@@ -690,7 +687,7 @@ public:
                 _cv.wait(lock);
             }
         }
-        LOGDEB("SpotiFetch::waitForHeaders: isfordry " << isfordry <<
+        LOGDEB0("SpotiFetch::waitForHeaders: isfordry " << isfordry <<
                " dryrun " << _dryrun<<" returning "<< spp->isPlaying() << endl);
         return spp->isPlaying();
     }
@@ -736,7 +733,7 @@ SpotiFetch::~SpotiFetch() {}
 
 bool SpotiFetch::start(BufXChange<ABuffer*> *queue, uint64_t offset)
 {
-    LOGDEB("SpotiFetch::start. offset " << offset << " queue " <<
+    LOGDEB("SpotiFetch::start: Offset: " << offset << " queue " <<
            (queue? queue->getname() : "null") << endl);
     m->spp->stop();
     if (outqueue) {
@@ -757,7 +754,7 @@ bool SpotiFetch::start(BufXChange<ABuffer*> *queue, uint64_t offset)
         v = (10 * offset) / (m->_channels * 2 * (m->_samplerate/100));
     }
 
-    LOGDEB("SpotiFetch::start: initseekmsecs: " << v << endl);
+    LOGDEB("SpotiFetch::start: seek secs: " << v/1000 << endl);
     m->_initseekmsecs = v;
     m->_dryrun = false;
     // Reset samplerate so that the external waitForHeaders will only
@@ -776,11 +773,11 @@ bool SpotiFetch::headerValue(const std::string& nm, std::string& val)
 {
     if (!stringlowercmp("content-type", nm)) {
         val = "audio/wav";
-        LOGDEB("SpotiFetch::headerValue: content-type: " << val << "\n");
+        LOGDEB1("SpotiFetch::headerValue: content-type: " << val << "\n");
         return true;
     } else if (!stringlowercmp("content-length", nm)) {
         ulltodecstr(m->_contentlen, val);
-        LOGDEB("SpotiFetch::headerValue: content-length: " << val << "\n");
+        LOGDEB0("SpotiFetch::headerValue: content-length: " << val << "\n");
         return true;
     }
     return false;
@@ -789,6 +786,6 @@ bool SpotiFetch::headerValue(const std::string& nm, std::string& val)
 bool SpotiFetch::fetchDone(FetchStatus *code, int *http_code)
 {
     bool ret= !m->spp->isPlaying();
-    LOGDEB("SpotiFetch::fetchDone: returning " << ret << endl);
+    LOGDEB0("SpotiFetch::fetchDone: returning " << ret << endl);
     return ret;
 }
