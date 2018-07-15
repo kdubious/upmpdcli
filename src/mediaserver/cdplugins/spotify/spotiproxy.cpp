@@ -57,6 +57,10 @@ const vector<uint8_t> g_appkey {
 
 static SpotiProxy *theSpotiProxy;
 static SpotiProxy::Internal *theSPP;
+// Lock for the spotiproxy object itself. Because the libspotify
+// methods are not reentrant, most SpotiProxy methods take this
+// exclusive lock.
+static mutex objmutex;
 
 static int g_notify_do;
 static sp_session_callbacks session_callbacks;
@@ -108,6 +112,8 @@ public:
         } else {
             LOGERR("Spotify: " << user << " log in failed\n");
         }
+        // Max cache size 50 MB
+        sp_session_set_cache_size(sp, 50);
     }
 
     // Wait for a state change, tested by a function parameter.
@@ -140,25 +146,19 @@ public:
     }        
 
     void unloadTrack() {
-        sp_track *ct = nullptr;
-        {
-            LOGDEB0("unloadTrack\n");
-            unique_lock<mutex> lock(spmutex);
-            LOGDEB1("unloadTrack: got lock\n");
-            ct = curtrack;
-            reason.clear();
-            sperror = SP_ERROR_OK;
-            curtrack = nullptr;
-            track_playing = false;
-            track_duration = 0;
-            if (ct) {
-                spcv.notify_all();
-            }
-        }
-        if (sp && ct) {
-            sp_track_release(ct);
+        LOGDEB0("unloadTrack\n");
+        unique_lock<mutex> lock(spmutex);
+        LOGDEB1("unloadTrack: got lock\n");
+        reason.clear();
+        sperror = SP_ERROR_OK;
+        track_playing = false;
+        track_duration = 0;
+        if (sp && curtrack) {
+            sp_track_release(curtrack);
             sp_session_player_unload(sp);
         }
+        curtrack = nullptr;
+        spcv.notify_all();
         LOGDEB1("unloadTrack: done\n");
     }
     
@@ -181,12 +181,17 @@ public:
     string confdir;
     sp_session *sp{nullptr};
     bool logged_in{false};
+
+    // sync for waiting for libspotify events.
     condition_variable spcv;
     mutex spmutex;
+
+    
     string reason;
     sp_error sperror{SP_ERROR_OK};
     sp_track *curtrack{nullptr};
     bool track_playing{false};
+    bool sent_0buf{false};
     int track_duration{0};
     AudioSink sink{nullptr};
 };
@@ -235,8 +240,6 @@ static void metadata_updated(sp_session *sess)
     theSPP->spcv.notify_all();
 }
 
-#include <fcntl.h>
-
 static int music_delivery(sp_session *sess, const sp_audioformat *format,
                           const void *frames, int num_frames)
 {
@@ -256,34 +259,21 @@ static int music_delivery(sp_session *sess, const sp_audioformat *format,
         return -1;
     }
     if (num_frames > 4096) {
-        // ?? It seems that notify_main_thread() is not called when it
-        // should at the end of track, so process_events() is not
-        // either, nor end_of_track() (called from the main thread, so
-        // from process_events()). So wake-up the main thread ourself.
-        // This is weird of course, I don't understand why it's
-        // needed.
-        LOGDEB0(me << ": got silence buffer\n");
+        // Declare eot when we see a silence buffer Not too sure why
+        // these silence buffers are generated before the
+        // notify_main_thread/end_of_track is called. At some point,
+        // we called unload from here (see the git hist). It happens
+        // that notify_main thread is not called at all after we get a
+        // silence buffer (probable libspotify bug ? Just do it here
+        // for safety.
+        LOGDEB(me << ": got silence buffer\n");
         // Silence buffer: end of real track
-#if 0
-        {
-            unique_lock<mutex> lock(theSPP->spmutex);
-            theSPP->track_playing = false;
-            theSPP->track_duration = 0;
-            theSPP->spcv.notify_all();
+        if (!theSPP->sent_0buf) {
+            theSPP->sent_0buf = true;
+            theSPP->sink(frames, 0, format->channels, format->sample_rate);
         }
-#else
-        // It seems a bit reckless to call unloadtrack from here,
-        // because it calls back into libspotify to release and unload
-        // the track. But does not seem to cause a problem. The
-        // alternative would be to start an auxiliary thread just for
-        // monitoring the play state and calling player_unload() (else
-        // we continue receiving silence buffers). Can't count on the
-        // user thread to do it (e.g when called through SpotiFetch,
-        // nobody calls waitForEndOfPlay()).
-        LOGDEB1(me << ": calling unloadTrack\n");
-        theSPP->unloadTrack();
-#endif
-        theSPP->sink(frames, 0, format->channels, format->sample_rate);
+        g_notify_do = true;
+        theSPP->spcv.notify_all();
         return num_frames;
     }
 
@@ -306,7 +296,6 @@ static void get_audio_buffer_stats(sp_session *sess,
         // ??
         return;
     }
-    unique_lock<mutex> lock(theSPP->spmutex);
 
     stats->samples = 0;
     stats->stutter = 0;
@@ -338,20 +327,19 @@ static void play_token_lost(sp_session *sess)
         // ??
         return;
     }
-    theSPP->unloadTrack();
+    sp_session_player_play(theSPP->sp, 0);
 }
 
 static void notify_main_thread(sp_session *sess)
 {
     const char *me = "notify_main_thread";
-    LOGDEB1(me << "\n");
+    LOGDEB(me << "\n");
     if (nullptr == theSPP) {
         LOGERR(me << " no SPP ??\n");
         // ??
         return;
     }
     unique_lock<mutex> lock(theSPP->spmutex);
-
     g_notify_do = 1;
     theSPP->spcv.notify_all();
 }
@@ -371,6 +359,7 @@ SpotiProxy *SpotiProxy::getSpotiProxy(
     const string& u, const string& p, const string& cached, const string& confd)
 {
     LOGDEB1("getSpotiProxy\n");
+    unique_lock<mutex> lock(objmutex);
     if (theSpotiProxy) {
         LOGDEB1("getSpotiProxy: already created\n");
         if ((u.empty() && p.empty()) ||
@@ -413,6 +402,7 @@ bool SpotiProxy::startPlay(const string& trackid, AudioSink sink,
 {
     LOGDEB("SpotiProxy::startPlay: id " << trackid << " at " <<
            seekmsecs / 1000 << " S\n");
+    unique_lock<mutex> lock(objmutex);
     string trackref("spotify:track:");
     trackref += trackid;
     sp_link *link = sp_link_create_from_string(trackref.c_str());
@@ -425,7 +415,7 @@ bool SpotiProxy::startPlay(const string& trackid, AudioSink sink,
     sp_link_release(link);
 
     m->sink = sink;
-    
+
     if (!m->wait_for("startPlay", [](SpotiProxy::Internal *o) {
                 return sp_track_error(o->curtrack) == SP_ERROR_OK;})) {
         LOGERR("playTrackId: error waiting for track metadata ready\n");
@@ -439,6 +429,7 @@ bool SpotiProxy::startPlay(const string& trackid, AudioSink sink,
     }
     sp_session_player_play(m->sp, 1);
     m->track_playing = true;
+    m->sent_0buf = false;
     LOGDEB("SpotiProxy::startPlay: NOW PLAYING "<< sp_track_name(m->curtrack) <<
            ". Duration: " << theSPP->track_duration << endl);
     return true;
@@ -446,7 +437,8 @@ bool SpotiProxy::startPlay(const string& trackid, AudioSink sink,
 
 bool SpotiProxy::waitForEndOfPlay()
 {
-    LOGDEB0("SpotiProxy::waitForEndOfPlay\n");
+    LOGDEB("SpotiProxy::waitForEndOfPlay\n");
+    unique_lock<mutex> lock(objmutex);
     if (!m->wait_for("waitForEndOfPlay", [](SpotiProxy::Internal *o) {
                 return o->track_playing == false;})) {
         LOGERR("playTrackId: error waiting for end of track play\n");
@@ -468,6 +460,7 @@ int SpotiProxy::durationMs()
 void SpotiProxy::stop()
 {
     LOGDEB("SpotiProxy:stop()\n");
+    unique_lock<mutex> lock(objmutex);
     m->unloadTrack();
 }
 
@@ -574,6 +567,7 @@ public:
 
     Internal(SpotiFetch *parent)
         : p(parent) {
+        LOGDEB("SpotiFetch::SpotiFetch:\n");
         spp = SpotiProxy::getSpotiProxy();
         if (nullptr == spp) {
             LOGERR("SpotiFetch::start: getSpotiProxy returned null\n");
@@ -602,7 +596,7 @@ public:
         if (_streamneedinit) {
             {unique_lock<mutex> lock(_mutex);
                 // First pass, compute what's needed, discard data
-                LOGDEB0("SpotiFetch: sample rate " << rate << " chans " <<
+                LOGDEB("SpotiFetch: sample rate " << rate << " chans " <<
                        chans << endl);
                 _samplerate = rate;
                 _channels = chans;
@@ -648,6 +642,23 @@ public:
         if (num_frames == 0) {
             LOGDEB("SpotiFetch: empty buf: EOS. clen: " << _contentlen <<
                    " total sent: " << _totalsent << endl);
+
+            // Padding with a silence buffer avoids curl errors, but
+            // it creates a gap. OTOH curl errors often cause the last
+            // buffer to be dropped so that gapless is broken too (in
+            // a different way). No good solution here. Avoiding curl
+            // (and wav header) errors is probably better all in all).
+            size_t resid = _contentlen - _totalsent;
+            if (resid > 0 && resid < 500000) {
+                LOGDEB("SpotiFetch: padding track with " << resid <<
+                       " bytes (" << (resid*10)/(2*chans*rate/100) << " mS)\n");
+                char *buf = (char *)malloc(resid);
+                if (buf) {
+                    memset(buf, 0, resid);
+                    p->databufToQ(buf, resid);
+                }
+            }
+
             // Enqueue empty buffer.
             p->databufToQ(frames, 0);
             return 0;
@@ -735,14 +746,14 @@ bool SpotiFetch::start(BufXChange<ABuffer*> *queue, uint64_t offset)
 {
     LOGDEB("SpotiFetch::start: Offset: " << offset << " queue " <<
            (queue? queue->getname() : "null") << endl);
-    m->spp->stop();
+
+    // Flush current queue if any
     if (outqueue) {
         outqueue->waitIdle();
-        outqueue->reset();
     }
     outqueue = queue;
 
-    m->resetStreamFields();
+    reset();
     
     uint64_t v = 0;
     if (offset) {
@@ -752,10 +763,13 @@ bool SpotiFetch::start(BufXChange<ABuffer*> *queue, uint64_t offset)
             return false;
         }
         v = (10 * offset) / (m->_channels * 2 * (m->_samplerate/100));
+        if (v > uint64_t(m->spp->durationMs())) {
+            v = MAX(0, m->spp->durationMs() - 10);
+        }
     }
-
     LOGDEB("SpotiFetch::start: seek secs: " << v/1000 << endl);
     m->_initseekmsecs = v;
+    
     m->_dryrun = false;
     // Reset samplerate so that the external waitForHeaders will only
     // return after we get the first frame and the actual contentlen
