@@ -115,30 +115,125 @@ class Session(object):
         album = _parse_album(data)
         return [_parse_track(t, album) for t in data['tracks']['items']]
 
-def _parse_album(json_obj, artist=None, artists=None):
-    #uplog("_parse_album: %s" % json_obj)
-    if artist is None and 'artists' in json_obj:
-        artist = _parse_artist(json_obj['artists'][0])
+    def user_playlist_tracks(self, userid, plid):
+        data = self.api.user_playlist_tracks(userid, plid)
+        self.dmpdata('playlist_tracks', data)
+        return [_parse_track(item['track']) for item in data['items']]
+        
+    def _search1(self, query, tp):
+        uplog("_search1: query [%s] tp [%s]" % (query, tp))
+
+        # Limit is max count we return, slice unit query size
+        limit = 150
+        slice = 50
+        if tp == 'artist':
+            limit = 20
+            slice = 20
+        elif tp == 'album' or tp == 'playlist':
+            limit = 50
+            slice = 50
+        offset = 0
+        all = []
+        while offset < limit:
+            uplog("_search1: call api.search, offset %d" % offset)
+            data = self.api.search(query, type=tp, offset=offset, limit=slice)
+            ncnt = 0
+            ndata = []
+            try:
+                if tp == 'artist':
+                    ncnt = len(data['artists']['items'])
+                    ndata = [_parse_artist(i) for i in data['artists']['items']]
+                elif tp == 'album':
+                    ncnt = len(data['albums']['items'])
+                    ndata = [_parse_album(i) for i in data['albums']['items']]
+                    ndata = [alb for alb in ndata if alb.available]
+                elif tp == 'playlist':
+                    #uplog("PLAYLISTS: %s" % json.dumps(data, indent=4))
+                    ncnt = len(data['playlists']['items'])
+                    ndata = [_parse_playlist(i) for i in \
+                             data['playlists']['items']]
+                elif tp == 'track':
+                    ncnt = len(data['tracks']['items'])
+                    ndata = [_parse_track(i) for i in data['tracks']['items']]
+            except Exception as err:
+                uplog("_search1: exception while parsing result: %s" % err)
+                break
+            all.extend(ndata)
+            #uplog("Got %d more (slice %d)" % (ncnt, slice))
+            if ncnt < slice:
+                break
+            offset += slice
+
+        if tp == 'artist':
+            return SearchResult(artists=all)
+        elif tp == 'album':
+            return SearchResult(albums=all)
+        elif tp == 'playlist':
+            return SearchResult(playlists=all)
+        elif tp == 'track':
+            return SearchResult(tracks=all)
+
+    def search(self, query, tp):
+        if tp:
+            return self._search1(query, tp)
+        else:
+            cplt = SearchResult()
+            res = self._search1(query, 'artist')
+            cplt.artists = res.artists
+            res = self._search1(query, 'album')
+            cplt.albums = res.albums
+            res = self._search1(query, 'track')
+            cplt.tracks = res.tracks
+            res = self._search1(query, 'playlist')
+            cplt.playlists = res.playlists
+            return cplt
+
+
+
+def _parse_playlist(data, artist=None, artists=None):
+    display_name = None
+    id = None
+    if 'display_name' in data['owner'] and data['owner']['display_name']:
+        display_name = data['owner']['display_name']
+    elif 'id' in data['owner']:
+        display_name = data['owner']['id']
+    uplog("_parse_playlist: name: %s User: %s" % (data['name'], display_name))
+
+    artist = Artist(id=id, name=display_name)        
+
+    kwargs = {
+        'id': data['id'],
+        'userid': data['owner']['id'],
+        'artist': artist,
+        'name': data['name'],
+        'num_tracks': data['tracks']['total'],
+    }
+    return Playlist(**kwargs)
+
+def _parse_album(data, artist=None, artists=None):
+    #uplog("_parse_album: %s" % data)
+    if artist is None and 'artists' in data:
+        artist = _parse_artist(data['artists'][0])
     available = True
     #if not available:
-    #    uplog("Album not streamable: %s " % json_obj['title'])
+    #    uplog("Album not streamable: %s " % data['title'])
     kwargs = {
-        'id': json_obj['id'],
-        'name': json_obj['name'],
-        #'num_tracks': json_obj.get('tracks_count'),
-        #'duration': json_obj.get('duration'),
+        'id': data['id'],
+        'name': data['name'],
+        #'num_tracks': data.get('tracks_count'),
+        #'duration': data.get('duration'),
         'artist': artist,
         'available': available,
         #'artists': artists,
     }
 
-    if 'images' in json_obj:
-        kwargs['image'] = json_obj['images'][0]['url']
+    if 'images' in data:
+        kwargs['image'] = data['images'][0]['url']
         
-    if 'releaseDate' in json_obj:
+    if 'releaseDate' in data:
         try:
             # Keep this as a string else we fail to json-reserialize it later
-            kwargs['release_date'] = json_obj['releaseDate']
+            kwargs['release_date'] = data['releaseDate']
         except ValueError:
             pass
     return Album(**kwargs)
@@ -170,6 +265,6 @@ def _parse_track(data, albumarg = None):
     return Track(**kwargs)
 
 
-def _parse_artist(json_obj):
-    artist = Artist(id=json_obj['id'], name=json_obj['name'])
+def _parse_artist(data):
+    artist = Artist(id=data['id'], name=data['name'])
     return artist

@@ -48,10 +48,13 @@ class Playlist(Model):
     # Using the proper playlistContainer type this confuses e.g. Kazoo
     #upnpclass = "object.container.playlistContainer"
     name = None
+    # We create a bogus artist with the playlist owner name when available
+    artist = None
     description = None
     num_tracks = -1
     duration = -1
-
+    # For spotify: wants an userid to retrieve a playlist's tracks
+    userid = None
 
 class Track(Model):
     upnpclass = "object.item.audioItem.musicTrack"

@@ -185,11 +185,10 @@ def browse(a):
 
 @plugin.route('/')
 def root():
-    #add_directory('Discover Catalog', whats_new)
-    #add_directory('Discover Genres', root_genres)
     add_directory('Your Library', my_music)
-    add_directory('New Releases', new_releases)
-
+    add_directory('Browse New Releases', new_releases)
+#    add_directory('Browse Genres and Moods', genres_and_moods)
+    
 @plugin.route('/my_music')
 def my_music():
     add_directory('Recently Played', recently_played)
@@ -201,6 +200,10 @@ def my_music():
 @plugin.route('/album/<album_id>')
 def album_view(album_id):
     track_list(session.get_album_tracks(album_id))
+
+@plugin.route('/playlist/<playlist_id>/<user_id>')
+def playlist_view(playlist_id, user_id):
+    track_list(session.user_playlist_tracks(user_id, playlist_id))
 
 @plugin.route('/artist/<artist_id>')
 def artist_view(artist_id):
@@ -253,9 +256,7 @@ def search(a):
         msgproc.log('Unknown objkind \'%s\'' % objkind)
         objkind = 'track'
 
-    # type may be 'tracks', 'albums', 'artists' or 'playlists'
-    qkind = objkind + "s" if objkind else None
-    searchresults = session.search(value, qkind)
+    searchresults = session.search(value, objkind)
 
     if objkind is None or objkind == 'artist':
         view(searchresults.artists,
@@ -272,7 +273,10 @@ def search(a):
             # Fallthrough to view playlists
     if objkind is None or objkind == 'playlist':
         view(searchresults.playlists,
-             urls_from_id(playlist_view, searchresults.playlists), end=False)
+             [plugin.url_for(playlist_view,
+                             playlist_id=p.id,
+                             user_id=p.userid) for p in
+              searchresults.playlists], end=False)
     if objkind is None or objkind == 'track':
         track_list(searchresults.tracks)
 
