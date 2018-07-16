@@ -585,8 +585,6 @@ public:
     }
     
     // Write callback receiving data from Spotify.
-    //
-    // !! Hard-coded 2 channels of 16 bits samples. May have to change !!
     int framesink(const void *frames, int num_frames, int chans, int rate) {
         LOGDEB1("SpotiFefch::framesink. dryrun " << _dryrun << " num_frames " <<
                 num_frames<< " channels " << chans << " rate " << rate << endl);
@@ -614,9 +612,9 @@ public:
                 // In the case where 200 mS is < actual diff, the long
                 // transfer will be truncated to content-length by mhd
                 // anyway, only the header will be wrong in this case.
-                int totalms = spp->durationMs() + 300;
+                _durationms = spp->durationMs() + 300;
                 _contentlen = 44 +
-                    ((totalms - _initseekmsecs) / 10) *
+                    ((_durationms - _initseekmsecs) / 10) *
                     (rate/100) * 2 * chans;
                 LOGDEB0("framesink: contentlen: " << _contentlen << endl);
                 _dryruncv.notify_all();
@@ -626,7 +624,8 @@ public:
             }
             if (!_dryrun) {
                 char buf[100];
-                LOGDEB1("Sending wav header\n");
+                LOGDEB("Sending wav header. content-length " << _contentlen <<
+                       "\n");
                 int cnt = makewavheader(
                     buf, 100, rate, 16, chans, _contentlen - 44);
                 _totalsent += cnt;
@@ -649,7 +648,7 @@ public:
             // a different way). No good solution here. Avoiding curl
             // (and wav header) errors is probably better all in all).
             size_t resid = _contentlen - _totalsent;
-            if (resid > 0 && resid < 500000) {
+            if (resid > 0 && resid < 5000000) {
                 LOGDEB("SpotiFetch: padding track with " << resid <<
                        " bytes (" << (resid*10)/(2*chans*rate/100) << " mS)\n");
                 char *buf = (char *)malloc(resid);
@@ -665,6 +664,12 @@ public:
         }
 
         int bytes = num_frames * chans * 2;
+        if (_totalsent + bytes > _contentlen) {
+            bytes = _contentlen - _totalsent;
+            if (bytes <= 0) {
+                return num_frames;
+            }
+        }
         _totalsent += bytes;
         p->databufToQ(frames, bytes);
         return num_frames;
@@ -686,7 +691,7 @@ public:
 
     bool waitForHeadersInternal(int maxSecs, bool isfordry) {
         unique_lock<mutex> lock(_mutex);
-        LOGDEB0("waitForHeaders: rate " << _samplerate << " isfordry " <<
+        LOGDEB("waitForHeaders: rate " << _samplerate << " isfordry " <<
                isfordry << " dryrun " << _dryrun << "\n");
         while (_samplerate == 0 || (!isfordry && _dryrun)) {
             LOGDEB1("waitForHeaders: waiting for sample rate. rate " <<
@@ -698,13 +703,14 @@ public:
                 _cv.wait(lock);
             }
         }
-        LOGDEB0("SpotiFetch::waitForHeaders: isfordry " << isfordry <<
+        LOGDEB("SpotiFetch::waitForHeaders: isfordry " << isfordry <<
                " dryrun " << _dryrun<<" returning "<< spp->isPlaying() << endl);
         return spp->isPlaying();
     }
     void resetStreamFields() {
         _dryrun = false;
         _streamneedinit = true;
+        _durationms = 0;
         _initseekmsecs = 0;
         _samplerate = 0;
         _channels = 0;
@@ -720,6 +726,7 @@ public:
     int _initseekmsecs{0};
     int _samplerate{0};
     int _channels{0};
+    int _durationms{0};
     uint64_t _contentlen{0};
     uint64_t _totalsent{0};
 
@@ -731,8 +738,9 @@ public:
 bool SpotiFetch::reset()
 {
     LOGDEB("SpotiFetch::reset\n");
-    m->spp->waitForEndOfPlay();
     m->spp->stop();
+    m->spp->waitForEndOfPlay();
+
     m->resetStreamFields();
     return true;
 }
@@ -761,13 +769,18 @@ bool SpotiFetch::start(BufXChange<ABuffer*> *queue, uint64_t offset)
         if (m->_samplerate == 0 || m->_channels == 0) {
             LOGERR("SpotiFetch::start: rate or chans 0 after dryrun\n");
             return false;
+        } else {
+            LOGDEB("SpotiFetch::start: after dryrun rate " << m->_samplerate <<
+                   " chans " << m->_channels << endl);
         }
         v = (10 * offset) / (m->_channels * 2 * (m->_samplerate/100));
-        if (v > uint64_t(m->spp->durationMs())) {
-            v = MAX(0, m->spp->durationMs() - 10);
+        LOGDEB("SpotiFetch::start: computed seek ms: " << v << " duration " <<
+               m->_durationms << endl);
+        if (v > uint64_t(m->_durationms)) {
+            v = m->_durationms;
         }
     }
-    LOGDEB("SpotiFetch::start: seek secs: " << v/1000 << endl);
+    LOGDEB("SpotiFetch::start: seek msecs: " << v << endl);
     m->_initseekmsecs = v;
     
     m->_dryrun = false;
@@ -791,7 +804,7 @@ bool SpotiFetch::headerValue(const std::string& nm, std::string& val)
         return true;
     } else if (!stringlowercmp("content-length", nm)) {
         ulltodecstr(m->_contentlen, val);
-        LOGDEB0("SpotiFetch::headerValue: content-length: " << val << "\n");
+        LOGDEB("SpotiFetch::headerValue: content-length: " << val << "\n");
         return true;
     }
     return false;
@@ -800,6 +813,12 @@ bool SpotiFetch::headerValue(const std::string& nm, std::string& val)
 bool SpotiFetch::fetchDone(FetchStatus *code, int *http_code)
 {
     bool ret= !m->spp->isPlaying();
+    if (ret && code) {
+        *code = m->spp->getReason().empty() ? FETCH_OK : FETCH_FATAL;
+    }
+    if (http_code) {
+        *http_code = 0;
+    }
     LOGDEB0("SpotiFetch::fetchDone: returning " << ret << endl);
     return ret;
 }
