@@ -77,7 +77,7 @@
 # (0/1).</brief><descr>For some unknown reason, Lumin 1.10 can't discover
 # upmpdcli when the OpenHome Credentials service is enabled. Setting this
 # allows upmpdcli to work with Lumin, at the cost of losing the use of the
-# Credentials service (which enables logging in to Qobuz or Tidal inside
+# Credentials service (normally used for logging in to Qobuz or Tidal inside
 # Kazoo).</descr></var>
 #lumincompat = 0
 
