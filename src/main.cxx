@@ -160,7 +160,7 @@ string g_cachedir("/var/cache/upmpdcli");
 string g_configfilename;
 ConfSimple *g_config;
 bool g_enableL16 = false;
-bool g_lumincompat = true;
+bool g_lumincompat = false;
 
 static void onsig(int)
 {
@@ -415,7 +415,7 @@ int main(int argc, char *argv[])
         if (g_config->get("scsendermpdport", value))
             sendermpdport = atoi(value.c_str());
 
-        g_lumincompat = configBool(g_config, "lumincompat", true);
+        g_lumincompat = configBool(g_config, "lumincompat", false);
     } else {
         // g_configfilename is empty. Create an empty config anyway
         g_config = new ConfSimple(string(), 1, true);
