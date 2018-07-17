@@ -186,8 +186,9 @@ def browse(a):
 @plugin.route('/')
 def root():
     add_directory('Your Library', my_music)
-    add_directory('Browse New Releases', new_releases)
-#    add_directory('Browse Genres and Moods', genres_and_moods)
+    add_directory('New Releases', new_releases)
+    add_directory('Featured Playlists', featured_playlists)
+    add_directory('Genres and Moods', genres_and_moods)
     
 @plugin.route('/my_music')
 def my_music():
@@ -195,8 +196,8 @@ def my_music():
     add_directory('Songs', favourite_tracks)
     add_directory('Albums', favourite_albums)
     add_directory('Artists', favourite_artists)
-    pass
-
+    add_directory('Playlists', my_playlists)
+    
 @plugin.route('/album/<album_id>')
 def album_view(album_id):
     track_list(session.get_album_tracks(album_id))
@@ -205,9 +206,17 @@ def album_view(album_id):
 def playlist_view(playlist_id, user_id):
     track_list(session.user_playlist_tracks(user_id, playlist_id))
 
+@plugin.route('/category/<category_id>')
+def category_view(category_id):
+    playlists = session.get_category_playlists(category_id)
+    view(playlists,
+         [plugin.url_for(playlist_view, playlist_id=p.id, user_id=p.userid)
+          for p in playlists], end=False)
+
 @plugin.route('/artist/<artist_id>')
 def artist_view(artist_id):
-    albums = session.get_artist_albums(artist_id) 
+    # Might want to add a 'related artists' list?
+    albums = session.get_artist_albums(artist_id)
     view(albums, urls_from_id(album_view, albums))
 
 @plugin.route('/new_releases')
@@ -227,6 +236,26 @@ def favourite_tracks():
 def favourite_albums():
     items = session.favourite_albums()
     view(items, urls_from_id(album_view, items))
+
+@plugin.route('/featured_playlists')
+def featured_playlists():
+    items = session.featured_playlists()
+    view(items,
+         [plugin.url_for(playlist_view,
+                         playlist_id=p.id,
+                         user_id=p.userid) for p in items], end=False)
+@plugin.route('/genres_and_moods')
+def genres_and_moods():
+    items = session.get_categories()
+    view(items, urls_from_id(category_view, items))
+    
+@plugin.route('/my_playlists')
+def my_playlists():
+    items = session.my_playlists()
+    view(items,
+         [plugin.url_for(playlist_view,
+                         playlist_id=p.id,
+                         user_id=p.userid) for p in items], end=False)
 
 @plugin.route('/favourite_artists')
 def favourite_artists():

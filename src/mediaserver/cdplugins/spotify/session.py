@@ -45,16 +45,8 @@ class Session(object):
         sp_oauth = spotipy.oauth2.SpotifyOAuth(
             upmspotid.CLIENT_ID, upmspotid.CLIENT_SECRET,
             upmspotid.REDIRECT_URI, scope=upmspotid.SCOPE, cache_path=cachepath)
-        token_info = sp_oauth.get_cached_token()
-        if token_info:
-            uplog("token_info: %s" % token_info)
-            uplog("token expires at %s" % datetime.datetime.fromtimestamp(
-                token_info['expires_at']).strftime('%Y-%m-%d %H:%M:%S'))
-            self.api = spotipy.Spotify(auth=token_info['access_token'])
-            data = self.api.user(self.user)
-            #dmpdata("User basic info", data)
-            return True
-        return False
+        self.api = spotipy.Spotify(auth=sp_oauth)
+        return True
     
     def recent_tracks(self):
         if not self.api:
@@ -68,7 +60,7 @@ class Session(object):
         if not self.api:
             uplog("Not logged in")
             return []
-        data = self.api.current_user_top_tracks(limit=50, offset=0)
+        data = self.api.current_user_saved_tracks(limit=50, offset=0)
         return [_parse_track(t) for t in data['items']]
         
     def favourite_albums(self):
@@ -84,6 +76,32 @@ class Session(object):
             pass
         return []
 
+    def my_playlists(self):
+        if not self.api:
+            uplog("Not logged in")
+            return []
+        data = self.api.current_user_playlists()
+        #self.dmpdata('user_playlists', data)
+        try:
+            return [_parse_playlist(item) for item in data['items']]
+        except:
+            uplog("my_playlists: _parse_playlist failed")
+            pass
+        return []
+
+    def featured_playlists(self):
+        if not self.api:
+            uplog("Not logged in")
+            return []
+        data = self.api.featured_playlists()
+        #self.dmpdata('featured_playlists', data)
+        try:
+            return [_parse_playlist(item) for item in data['playlists']['items']]
+        except:
+            uplog("featured_playlists: _parse_playlist failed")
+            pass
+        return []
+
     def favourite_artists(self):
         if not self.api:
             uplog("Not logged in")
@@ -92,6 +110,17 @@ class Session(object):
         #self.dmpdata('favourite_artists', data)
         return [_parse_artist(item) for item in data['artists']['items']]
 
+    def get_categories(self):
+        data = self.api.categories(limit=50)
+        #self.dmpdata('get_categories', data)
+        return [Category(id=item['id'],name=item['name'])
+                for item in data['categories']['items']]
+
+    def get_category_playlists(self, catgid):
+        data = self.api.category_playlists(catgid)
+        #self.dmpdata('category_playlists', data)
+        return [_parse_playlist(item) for item in data['playlists']['items']]
+    
     def get_artist_albums(self, id):
         data = self.api.artist_albums(id, limit=50)
         #self.dmpdata('get_artist_albums', data)
@@ -117,7 +146,7 @@ class Session(object):
 
     def user_playlist_tracks(self, userid, plid):
         data = self.api.user_playlist_tracks(userid, plid)
-        self.dmpdata('playlist_tracks', data)
+        #self.dmpdata('playlist_tracks', data)
         return [_parse_track(item['track']) for item in data['items']]
         
     def _search1(self, query, tp):
@@ -197,7 +226,7 @@ def _parse_playlist(data, artist=None, artists=None):
         display_name = data['owner']['display_name']
     elif 'id' in data['owner']:
         display_name = data['owner']['id']
-    uplog("_parse_playlist: name: %s User: %s" % (data['name'], display_name))
+    #uplog("_parse_playlist: name: %s User: %s" % (data['name'], display_name))
 
     artist = Artist(id=id, name=display_name)        
 
