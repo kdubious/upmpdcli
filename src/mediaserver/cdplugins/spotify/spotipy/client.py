@@ -6,6 +6,7 @@ import sys
 import requests
 import json
 import time
+import datetime
 
 import six
 
@@ -57,14 +58,14 @@ class Spotify(object):
         """
         Create a Spotify API object.
 
-        :param auth: An authorization token (optional)
+        :param auth: A SpotifyOAuth object (optional)
         :param requests_session:
             A Requests session object or a truthy value to create one.
             A falsy value disables sessions.
             It should generally be a good idea to keep sessions enabled
             for performance reasons (connection pooling).
         :param client_credentials_manager:
-            SpotifyClientCredentials object
+            SpotifyClientCredentials object (optional)
         :param proxies:
             Definition of proxies (optional)
         :param requests_timeout:
@@ -87,7 +88,12 @@ class Spotify(object):
 
     def _auth_headers(self):
         if self._auth:
-            return {'Authorization': 'Bearer {0}'.format(self._auth)}
+            token_info = self._auth.get_cached_token()
+            #print("token_info: %s" % token_info, file=sys.stderr)
+            #print("token expires at %s" % datetime.datetime.fromtimestamp(
+            #    token_info['expires_at']).strftime('%Y-%m-%d %H:%M:%S'),
+            #      file=sys.stderr)
+            return {'Authorization': 'Bearer {0}'.format(token_info['access_token'])}
         elif self.client_credentials_manager:
             token = self.client_credentials_manager.get_access_token()
             return {'Authorization': 'Bearer {0}'.format(token)}
