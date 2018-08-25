@@ -87,7 +87,7 @@
 # are also using it. Avoids having to enter the password in the regular
 # configuration file. Depending on your situation, you may see this as a
 # security risk. The default is true, because I don't see this as a real
-# issue in the general case.</descr></var
+# issue in the general case.</descr></var>
 # saveohcredentials = 1
 
 # <var name="checkcontentformat" type="bool" values="1"><brief>Check that
@@ -353,6 +353,15 @@
 # value to the device ID from a phone or tablet on which you also use
 # Google Play Music (look up "Android deviceid" for help).</descr></var>
 #gmusicdeviceid =
+
+# <grouptitle>Spotify streaming service parameters</grouptitle>
+
+# <var name="spotifyuser" type="string"><brief>Spotify user name.</brief>
+# <descr>Your Spotify login name.</descr></var>
+#spotifyuser = me@some.place
+# <var name="spotifypass" type="string"><brief>Spotify password.</brief>
+# <descr>The password for your Spotify account.</descr></var>
+#spotifypass = agoodpassword
 
 # <grouptitle>Local Media Server parameters</grouptitle>
 
