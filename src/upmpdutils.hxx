@@ -55,6 +55,7 @@ public:
     int64_t size{0};
     int bitrate{0};
     int samplefreq{0};
+    int bitsPerSample{0};
     int channels{0};
     
     int mpdid{0};

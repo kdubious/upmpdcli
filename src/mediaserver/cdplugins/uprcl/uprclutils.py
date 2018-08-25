@@ -65,6 +65,7 @@ upnp2rclfields = {
     'upnp:genre' : 'genre',
     'duration' : 'duration', #should be res:
     'res:bitrate' : 'bitrate',
+    'res:bitsPerSample' : 'bits_per_sample',
     'res:channels' : 'channels',
     'res:mime' : 'mtype',
     'res:samplefreq' : 'sample_rate',

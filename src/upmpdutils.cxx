@@ -188,6 +188,9 @@ string UpSong::didl() const
         if (samplefreq) {
 	    ss << " sampleFrequency=\"" << SoapHelp::i2s(samplefreq)    << "\"";
         }
+        if (bitsPerSample) {
+	    ss << " bitsPerSample=\"" << SoapHelp::i2s(bitsPerSample)   << "\"";
+        }            
         if (channels) {
             ss << " nrAudioChannels=\"" << SoapHelp::i2s(channels)      << "\"";
         }

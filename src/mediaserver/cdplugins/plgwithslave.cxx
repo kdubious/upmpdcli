@@ -358,6 +358,10 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
             if (!ss.empty()) {
                 song.samplefreq = atoi(ss.c_str());
             }
+            ss = decoded[i].get("res:bitsPerSample", "").asString();
+            if (!ss.empty()) {
+                song.bitsPerSample = atoi(ss.c_str());
+            }
             ss = decoded[i].get("res:channels", "").asString();
             if (!ss.empty()) {
                 song.channels = atoi(ss.c_str());
