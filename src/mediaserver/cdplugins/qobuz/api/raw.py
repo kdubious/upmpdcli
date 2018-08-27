@@ -32,7 +32,8 @@ socket.timeout = 5
 class RawApi(object):
 
     def __init__(self):
-        self.appid = b'285473059'  # XBMC
+        self.appid = '285473059'  # XBMC
+        self.bappid = self.appid.encode('ASCII')
         self.version = '0.2'
         self.baseUrl = 'http://www.qobuz.com/api.json/'
 
@@ -82,13 +83,13 @@ class RawApi(object):
         s3b = b'Bg8HAA5XAFBYV15UAlVVBAZYCw0MVwcKUVRaVlpWUQ8='
         s3s = binascii.a2b_base64(s3b)
         a = cycle(self.appid)
-        b = itzip(s3s, cycle(self.appid))
+        b = itzip(s3s, cycle(self.bappid))
         if PY3:
             self.s4 = b''.join((x ^ y).to_bytes(1, byteorder='big')
-                               for (x, y) in itzip(s3s, cycle(self.appid)))
+                               for (x, y) in itzip(s3s, cycle(self.bappid)))
         else:
             self.s4 = b''.join(chr(ord(x) ^ ord(y))
-                               for (x, y) in itzip(s3s, cycle(self.appid)))
+                               for (x, y) in itzip(s3s, cycle(self.bappid)))
 
     def _api_request(self, params, uri, **opt):
         '''Qobuz API HTTP get request
@@ -114,7 +115,6 @@ class RawApi(object):
             Error: [200]
             Error: Bad Request [400]
         '''
-        info(self, 'uri: {}, params: {}', uri, str(params))
         self.statTotalRequest += 1
         self.error = ''
         self.status_code = None
@@ -129,6 +129,8 @@ class RawApi(object):
         _copy_params = copy.deepcopy(params)
         if 'password' in _copy_params:
             _copy_params['password'] = '***'
+        info(self, 'URI {} POST PARAMS: {} HEADERS: {}', uri,
+             str(_copy_params), str(headers))
         '''END / DEBUG'''
         r = None
         try:
