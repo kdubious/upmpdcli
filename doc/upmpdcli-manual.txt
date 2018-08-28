@@ -746,10 +746,18 @@ The configuration parameters are described in the
 [[upmpdcli.spotifynotes]]
 === Using Spotify through the Upmpdcli Media Server
 
-Spotify is the only service which does not use regular (but
-short-lived) HTTP URLs for accessing the streams, but rather a non standard
-transfer protocol, implemented in a specific library.
+You will need a premium account, the free ones do not work for this.
 
+Spotify is the only service which does not use regular (short-lived) HTTP
+URLs for accessing the streams, but rather a non standard transfer
+protocol, implemented in a specific library.
+
+The library itself is not installed with upmpdcli, you need to install it
+separately. Currently, the easiest way to obtain it is from
+the link:https://github.com/mopidy/libspotify-deb[Mopidy repository]. You
+can use the 'deb' packages on a Debian-derived system, else copy the
+dynamic object for your architecture to /usr/lib.
+  
 The authentication method is also more complicated than for the others, and
 will have you jump through a few hoops in addition to setting the password
 in the configuration file.
@@ -897,9 +905,12 @@ additional dependancies:
 
 - --enable-confgui: build the configuration editor GUI. This will need
 the Qt development packages
-- --enable-spotify: build the module for streaming Spotify. This will need
-  the libspotify library. Currently, the easiest way to obtain it is from
-  the link:https://github.com/mopidy/libspotify-deb[Mopidy repository]
+- --enable-spotify: build the Spotify access module. This does not create a
+  build dependancy, because the interface include file is bundled, and the
+  library itself is dynamically opened at run time, not linked. Of course,
+  the library will need to be installed on the target machine for the
+  Spotify access to work. Currently, the easiest way to obtain it is from
+  the link:https://github.com/mopidy/libspotify-deb[Mopidy repository].
   
 Once the source is extracted, the procedure is standard:
 

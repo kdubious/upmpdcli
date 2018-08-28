@@ -23,7 +23,7 @@
 
 #include <mutex>
 
-#include <libspotify/api.h>
+#include "../spotify/libspotify/api.h"
 
 #include "log.h"
 #include "smallut.h"
@@ -243,7 +243,7 @@ public:
 	badnames += #NM + string(" ");					\
     }
 
-static vector<string> lib_suffixes{".so", ".so.12", ".so.11"};
+static vector<string> lib_suffixes{".so.12", ".so"};
 
 bool SpotiProxy::Internal::init_spotify_api()
 {
