@@ -49,7 +49,7 @@ if test X$enableQT = Xyes ; then
 fi
 
 AC_ARG_ENABLE(spotify, AC_HELP_STRING([--enable-spotify],
-              [Enable spotify streaminf module. Needs libspotify]),
+              [Enable spotify streaming module. Needs libspotify]),
               enableSpotify=$enableval, enableSpotify="no")
 AM_CONDITIONAL(ENABLESPOTIFY, [test X$enableSpotify = Xyes])
 
@@ -79,7 +79,7 @@ PKG_CHECK_MODULES([jsoncpp], [jsoncpp], [], [AC_MSG_ERROR([jsoncpp not found])])
 UPMPDCLI_LIBS="$LIBS $upnpp_LIBS $libmpdclient_LIBS $libmicrohttpd_LIBS $jsoncpp_LIBS"
 
 if test X$enableSpotify = Xyes; then
-   UPMPDCLI_LIBS="-lspotify -lFLAC $UPMPDCLI_LIBS"
+   UPMPDCLI_LIBS="$UPMPDCLI_LIBS -ldl "
 fi
 
 echo "UPMPDCLI_LIBS=$UPMPDCLI_LIBS"

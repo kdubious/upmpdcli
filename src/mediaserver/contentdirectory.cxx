@@ -517,25 +517,6 @@ int ContentDirectory::getupnpport(CDPlugin *)
     return m->port;
 }
 
-
-bool ContentDirectory::setfileops(CDPlugin *plg, const std::string& path,
-                                  UPnPProvider::VirtualDir::FileOps ops)
-{
-    VirtualDir *dir = VirtualDir::getVirtualDir();
-    if (dir == nullptr) {
-        LOGERR("ContentDirectory::setfileops: getVirtualDir() failed\n");
-        return false;
-    }
-    string prefix = getpathprefix(plg);
-    if (path.find(prefix) != 0) {
-        LOGERR("ContentDirectory::setfileops: dir path should begin with: " <<
-               prefix);
-        return false;
-    }
-        
-    dir->addVDir(path, ops);
-    return true;
-}
 std::string ContentDirectory::getfname()
 {
     return m->msdev->getfname();

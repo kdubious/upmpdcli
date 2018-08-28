@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <dlfcn.h>
 
 #include <mutex>
 
@@ -55,6 +56,35 @@ const vector<uint8_t> g_appkey {
 0x9B,0x03,0x9D,0x93,0xB7,0x5F,0x3C,0xA4,0x36,0xE1,0xF3,0x07,0x4D,0xEA,0x01,0x1D,
 0x3D};
 
+
+// We dlopen libspotify to avoid a hard link dependancy. The entry
+// points are resolved into the following struct, which just exists
+// for tidyness.
+struct SpotifyAPI {
+    const char* (*sp_error_message)(sp_error error);
+    sp_track * (*sp_link_as_track)(sp_link *link);
+    sp_link * (*sp_link_create_from_string)(const char *link);
+    sp_error (*sp_link_release)(sp_link *link);
+    sp_error (*sp_session_create)(const sp_session_config *, sp_session **sess);
+    sp_error (*sp_session_login)(sp_session *, const char *, const char *,
+                                 bool, const char *);
+    sp_error (*sp_session_logout)(sp_session *session);
+    sp_error (*sp_session_player_load)(sp_session *session, sp_track *track);
+    sp_error (*sp_session_player_play)(sp_session *session, bool play);
+    sp_error (*sp_session_player_seek)(sp_session *session, int offset);
+    sp_error (*sp_session_player_unload)(sp_session *session);
+    sp_error (*sp_session_process_events)(sp_session *session, int *next_timeo);
+    sp_error (*sp_session_set_cache_size)(sp_session *session, size_t size);
+    sp_error (*sp_link_add_ref)(sp_link *link);
+    int (*sp_track_duration)(sp_track *track);
+    sp_error (*sp_track_add_ref)(sp_track *track);
+    sp_error (*sp_track_error)(sp_track *track);
+    const char * (*sp_track_name)(sp_track *track);
+    sp_error (*sp_track_release)(sp_track *track);
+};
+static SpotifyAPI api;
+
+
 static SpotiProxy *theSpotiProxy;
 static SpotiProxy::Internal *theSPP;
 // Lock for the spotiproxy object itself. Because the libspotify
@@ -79,7 +109,8 @@ static void play_token_lost(sp_session *sess);
 class SpotiProxy::Internal {
 public:
 
-    /* The constructor logs us in */
+    /* The constructor logs us in, so that "logged_in" is also a general
+     * health test. */
     Internal(const string& u, const string& p,
              const string& cd, const string& sd)
         : user(u), pass(p), cachedir(cd), confdir(sd) {
@@ -100,12 +131,17 @@ public:
         spconfig.cache_location = cachedir.c_str();
         spconfig.settings_location = confdir.c_str();
 
-        sperror = sp_session_create(&spconfig, &sp);
+        if (!init_spotify_api()) {
+            cerr << "Error loading spotify library: " << reason << endl; 
+            LOGERR("Error loading spotify library: " << reason << endl);
+            return;
+        }
+        sperror = api.sp_session_create(&spconfig, &sp);
         if (SP_ERROR_OK != sperror) {
             registerError(sperror);
             return;
         }
-        sp_session_login(sp, user.c_str(), pass.c_str(), 1, NULL);
+        api.sp_session_login(sp, user.c_str(), pass.c_str(), 1, NULL);
         wait_for("Login", [] (SpotiProxy::Internal *o) {return o->logged_in;});
         if (logged_in) {
             LOGDEB("Spotify: " << user << " logged in ok\n");
@@ -113,7 +149,7 @@ public:
             LOGERR("Spotify: " << user << " log in failed\n");
         }
         // Max cache size 50 MB
-        sp_session_set_cache_size(sp, 50);
+        api.sp_session_set_cache_size(sp, 50);
     }
 
     // Wait for a state change, tested by a function parameter.
@@ -138,7 +174,7 @@ public:
             do {
                 g_notify_do = 0;
                 LOGDEB1(who << " Calling process_events\n");
-                sp_session_process_events(sp, &next_timeout);
+                api.sp_session_process_events(sp, &next_timeout);
                 LOGDEB1(who << " After process_event, next_timeout " <<
                         next_timeout << " notify_do " << g_notify_do << endl);
             } while (next_timeout == 0);
@@ -154,8 +190,8 @@ public:
         track_playing = false;
         track_duration = 0;
         if (sp && curtrack) {
-            sp_track_release(curtrack);
-            sp_session_player_unload(sp);
+            api.sp_track_release(curtrack);
+            api.sp_session_player_unload(sp);
         }
         curtrack = nullptr;
         spcv.notify_all();
@@ -163,17 +199,23 @@ public:
     }
     
     ~Internal() {
-        unloadTrack();
-        if (sp && logged_in) {
-            LOGDEB("Logging out\n");
-            sp_session_logout(sp);
+        if (libhandle) {
+            unloadTrack();
+            if (sp && logged_in) {
+                LOGDEB("Logging out\n");
+                api.sp_session_logout(sp);
+            }
+            dlclose(libhandle);
         }
     }
 
     void registerError(sp_error error) {
-        reason += string(sp_error_message(error)) + " ";
+        reason += string(api.sp_error_message(error)) + " ";
         sperror = error;
     }
+    bool init_spotify_api();
+
+    void  *libhandle{nullptr};
 
     string user;
     string pass;
@@ -195,6 +237,68 @@ public:
     int track_duration{0};
     AudioSink sink{nullptr};
 };
+
+#define NMTOPTR(NM, TP)                                                 \
+    if ((api.NM = TP dlsym(libhandle, #NM)) == 0) {                     \
+	badnames += #NM + string(" ");					\
+    }
+
+static vector<string> lib_suffixes{".so", ".so.12", ".so.11"};
+
+bool SpotiProxy::Internal::init_spotify_api()
+{
+    reason = "Could not open shared library ";
+    string libbase("libspotify");
+    for (const auto suff : lib_suffixes) {
+        string lib = libbase + suff;
+        reason += string("[") + lib + "] ";
+        if ((libhandle = dlopen(lib.c_str(), RTLD_LAZY)) != 0) {
+            reason.erase();
+            goto found;
+        }
+    }
+    
+ found:
+    if (nullptr == libhandle) {
+        reason += string(" : ") + dlerror();
+        return false;
+    }
+
+    string badnames;
+    
+    NMTOPTR(sp_error_message, (const char* (*)(sp_error error)));
+    NMTOPTR(sp_link_as_track, (sp_track * (*)(sp_link *link)));
+    NMTOPTR(sp_link_create_from_string, (sp_link * (*)(const char *link)));
+    NMTOPTR(sp_link_release, (sp_error (*)(sp_link *link)));
+    NMTOPTR(sp_session_create, (sp_error (*)(const sp_session_config *config,
+                                             sp_session **sess)));;
+    NMTOPTR(sp_session_login, (sp_error (*)(
+        sp_session *session, const char *username, const char *password,
+        bool remember_me, const char *blob)));
+    NMTOPTR(sp_session_logout, (sp_error (*)(sp_session *session)));
+    NMTOPTR(sp_session_player_load, (sp_error (*)(sp_session *session,
+                                                  sp_track *track)));
+    NMTOPTR(sp_session_player_play, (sp_error (*)(sp_session *session,
+                                                  bool play)));
+    NMTOPTR(sp_session_player_seek, (sp_error (*)(sp_session *session,
+                                                  int offset)));
+    NMTOPTR(sp_session_player_unload, (sp_error (*)(sp_session *session)));
+    NMTOPTR(sp_session_process_events, (sp_error (*)(sp_session *session,
+                                                     int *next_timeout)));
+    NMTOPTR(sp_session_set_cache_size, (sp_error (*)(sp_session *session,
+                                                     size_t size)));
+    NMTOPTR(sp_link_add_ref, (sp_error (*)(sp_link *link)));
+    NMTOPTR(sp_track_duration, (int (*)(sp_track *track)));
+    NMTOPTR(sp_track_add_ref, (sp_error (*)(sp_track *track)));
+    NMTOPTR(sp_track_error, (sp_error (*)(sp_track *track)));
+    NMTOPTR(sp_track_name, (const char * (*)(sp_track *track)));
+    NMTOPTR(sp_track_release, (sp_error (*)(sp_track *track)));
+    if (!badnames.empty()) {
+	reason = string("init_libspotify: symbols not found:") + badnames;
+	return false;
+    }
+    return true;
+}
 
 class Cleaner {
 public:
@@ -327,7 +431,7 @@ static void play_token_lost(sp_session *sess)
         // ??
         return;
     }
-    sp_session_player_play(theSPP->sp, 0);
+    api.sp_session_player_play(theSPP->sp, 0);
 }
 
 static void notify_main_thread(sp_session *sess)
@@ -389,7 +493,7 @@ SpotiProxy::SpotiProxy(const string& user, const string& password,
 SpotiProxy::~SpotiProxy() {}
 
 bool SpotiProxy::playTrack(const string& trackid, AudioSink sink,
-                             int seekmsecs)
+                           int seekmsecs)
 {
     if (!startPlay(trackid, sink, seekmsecs)) {
         return false;
@@ -403,34 +507,39 @@ bool SpotiProxy::startPlay(const string& trackid, AudioSink sink,
     LOGDEB("SpotiProxy::startPlay: id " << trackid << " at " <<
            seekmsecs / 1000 << " S\n");
     unique_lock<mutex> lock(objmutex);
+    if (!m || !m->logged_in) {
+        LOGERR("SpotiProxy::startPlay: init failed.\n");
+        return false;
+    }
     string trackref("spotify:track:");
     trackref += trackid;
-    sp_link *link = sp_link_create_from_string(trackref.c_str());
+    sp_link *link = api.sp_link_create_from_string(trackref.c_str());
     if (!link) {
         LOGERR("SpotiProxy:startPlay: link creation failed\n");
         return false;
     }
-    m->curtrack = sp_link_as_track(link);
-    sp_track_add_ref(m->curtrack);
-    sp_link_release(link);
+    m->curtrack = api.sp_link_as_track(link);
+    api.sp_track_add_ref(m->curtrack);
+    api.sp_link_release(link);
 
     m->sink = sink;
 
     if (!m->wait_for("startPlay", [](SpotiProxy::Internal *o) {
-                return sp_track_error(o->curtrack) == SP_ERROR_OK;})) {
+                return api.sp_track_error(o->curtrack) == SP_ERROR_OK;})) {
         LOGERR("playTrackId: error waiting for track metadata ready\n");
         return false;
     }
 
-    theSPP->track_duration = sp_track_duration(m->curtrack);
-    sp_session_player_load(m->sp, m->curtrack);
+    theSPP->track_duration = api.sp_track_duration(m->curtrack);
+    api.sp_session_player_load(m->sp, m->curtrack);
     if (seekmsecs) {
-        sp_session_player_seek(m->sp, seekmsecs);
+        api.sp_session_player_seek(m->sp, seekmsecs);
     }
-    sp_session_player_play(m->sp, 1);
+    api.sp_session_player_play(m->sp, 1);
     m->track_playing = true;
     m->sent_0buf = false;
-    LOGDEB("SpotiProxy::startPlay: NOW PLAYING "<< sp_track_name(m->curtrack) <<
+    LOGDEB("SpotiProxy::startPlay: NOW PLAYING "<<
+           api.sp_track_name(m->curtrack) <<
            ". Duration: " << theSPP->track_duration << endl);
     return true;
 }
@@ -439,6 +548,10 @@ bool SpotiProxy::waitForEndOfPlay()
 {
     LOGDEB("SpotiProxy::waitForEndOfPlay\n");
     unique_lock<mutex> lock(objmutex);
+    if (!m || !m->logged_in) {
+        LOGERR("SpotiProxy::waitForEndOfPlay: init failed.\n");
+        return false;
+    }
     if (!m->wait_for("waitForEndOfPlay", [](SpotiProxy::Internal *o) {
                 return o->track_playing == false;})) {
         LOGERR("playTrackId: error waiting for end of track play\n");
@@ -449,11 +562,19 @@ bool SpotiProxy::waitForEndOfPlay()
 
 bool SpotiProxy::isPlaying()
 {
+    if (!m || !m->logged_in) {
+        LOGERR("SpotiProxy::isPlaying: init failed.\n");
+        return false;
+    }
     return m->track_playing;
 }
 
 int SpotiProxy::durationMs()
 {
+    if (!m || !m->logged_in) {
+        LOGERR("SpotiProxy::durationMs: init failed.\n");
+        return 0;
+    }
     return m->track_duration;
 }
 
@@ -461,17 +582,22 @@ void SpotiProxy::stop()
 {
     LOGDEB("SpotiProxy:stop()\n");
     unique_lock<mutex> lock(objmutex);
+    if (!m || !m->logged_in) {
+        LOGERR("SpotiProxy::stop: init failed.\n");
+        return;
+    }
     m->unloadTrack();
 }
 
 bool SpotiProxy::loginOk()
 {
-    return m->logged_in;
+    return m && m->logged_in;
 }
 
 const string& SpotiProxy::getReason()
 {
-    return m->reason;
+    static string nobuild("Constructor failed");
+    return m ? m->reason : nobuild;
 }
 
 
@@ -613,7 +739,7 @@ public:
                 // transfer will be truncated to content-length by mhd
                 // anyway, only the header will be wrong in this case.
                 _durationms = spp->durationMs() + 300;
-                _contentlen = 44 +
+                _contentlen = (_noheader? 0 : 44) +
                     ((_durationms - _initseekmsecs) / 10) *
                     (rate/100) * 2 * chans;
                 LOGDEB0("framesink: contentlen: " << _contentlen << endl);
@@ -622,7 +748,7 @@ public:
                     _cv.notify_all();
                 }
             }
-            if (!_dryrun) {
+            if (!_dryrun && !_noheader) {
                 char buf[100];
                 LOGDEB("Sending wav header. content-length " << _contentlen <<
                        "\n");
@@ -712,6 +838,7 @@ public:
         _streamneedinit = true;
         _durationms = 0;
         _initseekmsecs = 0;
+        _noheader = false;
         _samplerate = 0;
         _channels = 0;
         _contentlen = 0;
@@ -724,6 +851,9 @@ public:
     bool _dryrun{false};
     bool _streamneedinit{true};
     int _initseekmsecs{0};
+    // This is for the case where the offset is non-zero (most often
+    // 44 in practise), but small enough that _initseekmsecs is 0.
+    bool _noheader{false};
     int _samplerate{0};
     int _channels{0};
     int _durationms{0};
@@ -788,6 +918,9 @@ bool SpotiFetch::start(BufXChange<ABuffer*> *queue, uint64_t offset)
     // return after we get the first frame and the actual contentlen
     // is computed (and samplerate set again).
     m->_samplerate = 0;
+    if (offset) {
+        m->_noheader = true;
+    }
     return m->spp->startPlay(_url, m->_sink, m->_initseekmsecs);
 }
 

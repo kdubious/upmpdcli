@@ -23,7 +23,7 @@
 
 class CDPluginServices;
 
-/// Interface to media server modules
+/// Interface to Content Directory plugins
 ///
 /// The main operations, Browse and Search, return content as UpSong
 /// structures. At the very minimum, id, parentid, iscontainer and
@@ -36,23 +36,11 @@ class CDPluginServices;
 /// (tracks), and only one is mandatory: uri.
 ///
 /// The item uri will be used by the renderer for fetching the data to
-/// be played. Three types can be used:
-/// - A direct URL, usable by the renderer for fetching the data from
-///   wherever it is (for example a radio stream HTTP URL).
-/// - A vdir URL: this should have a host/port part matching the media
-///   server host/port (which can be obtained through the environment
-///   interface). Data will be fetched by libupnp using the vdir
-///   interface. This is simple but limited: the libupnp HTTP server
-///   does not emit "accept-range" headers, meaning that most CPs will
-///   not try range requests, and that seeking will not work. No
-///   redirects are possible. The URL path part should begin with the
-///   pathprefix, which is how the request will be routed to the
-///   appropriate plugin.
-/// - A libmicrohttpd URL. A plugin may start a microhttpd instance,
-///   and receive the connections directly. The host/port will be
-///   obtained from the configuration. The advantage is that redirects
-///   and range requests are possible, but it is a bit more
-///   complicated as some libmicrohttpd knowledge is required.
+/// be played. All current implementations set URIs which point either
+/// to themselves (uprcl, the implementation for local files, uses a
+/// Python server to stream the files), or to a microhttpd instance
+/// running inside upmpdcli, with code responsible for either
+/// redirecting the client or proxying the data.
 class CDPlugin {
 public:
     CDPlugin(const std::string& name, CDPluginServices *services)
@@ -114,7 +102,8 @@ public:
     CDPluginServices *m_services;
 };
 
-/// Service/Environment interface for media server modules
+/// Service/Environment interface for media server modules. This is
+/// implemented by the ContentDirectory class.
 class CDPluginServices {
 public:
     /// Returns the plugin to which belongs the parameter path, based
@@ -146,10 +135,6 @@ public:
     /// the "uprclhostport" configuration variable).
     virtual std::string getupnpaddr(CDPlugin *) = 0;
     virtual int getupnpport(CDPlugin *) = 0;
-    /// Add a virtual directory and set file operation interface. path
-    /// must be equal or begin with the pathprefix. Not used at all at present.
-    virtual bool setfileops(CDPlugin *, const std::string& path,
-                            UPnPProvider::VirtualDir::FileOps ops)= 0;
 
     /// Main configuration file access.
     static bool config_get(const std::string& nm, std::string& val);
