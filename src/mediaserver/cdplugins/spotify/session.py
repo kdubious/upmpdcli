@@ -61,7 +61,8 @@ class Session(object):
             uplog("Not logged in")
             return []
         data = self.api.current_user_saved_tracks(limit=50, offset=0)
-        return [_parse_track(t) for t in data['items']]
+        self.dmpdata('favourite_tracks', data)
+        return [_parse_track(item['track']) for item in data['items']]
         
     def favourite_albums(self):
         if not self.api:
