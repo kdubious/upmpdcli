@@ -188,7 +188,7 @@ are probably not relevant to you. In each section, the most important
 parameters are presented first, and you probably will never need to bother
 with the bottom of the list.
 
-The <<UPMPDCLI-CONFIG-GUI,upmpdcli-config graphical tool» can help you edit
+The <<UPMPDCLI-CONFIG-GUI,upmpdcli-config graphical tool>> can help you edit
 the configuration file, it can present the same information as this manual,
 directly linked with the controls used to modify the parameters.
 
