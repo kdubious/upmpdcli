@@ -2,20 +2,22 @@
 
 == upmpdcli 1.3.0
 
-Despite the middle version number jump, this version does not contain major
-changes. I am just going back to the classic method of using the last
-version value exclusively for bug fixes. This contains minor functional
-changes, so it can't be 1.2.
+NOTE: Using this release with Lumin needs explicitely setting lumincompat=1
+in the configuration file, which disables the OpenHome Credentials service
+(this is not the default).
 
+- Support Spotify, through a new Media Server module. This needs a premium
+  Spotify account. The setup is slightly more complicated than for the
+  other services, see the
+  link:https://www.lesbonscomptes.com/upmpdcli/upmpdcli-manual.html#upmpdcli.spotifynotes[upmpdcli manual]
 - Support the OpenHome Credentials service. This allows accessing Qobuz and
-  Tidal from Kazoo, using their internal service directory
-  browser (instead of going through the upmpdcli media server). This allows
-  managing favourites and other specific service functions. In theory, this
-  should work with Lumin too, but it does not for some unknown
-  reason. Actually, the presence of this feature prevents the renderer to
-  from being used with Lumin at all, so that a 'lumincompat' was added to
-  the configuration to allow using upmpdcli with Lumin (and without the
-  Credentials support). 
+  Tidal from Kazoo, using their internal service directory browser (instead
+  of going through the upmpdcli media server). This allows managing
+  favourites and other specific service functions. In theory, this should
+  work with Lumin too, but it does not, and the presence of this feature
+  prevents the renderer from being detected by Lumin at all, so that a
+  'lumincompat' was added to the configuration to allow using upmpdcli with
+  Lumin (with the Credentials support disabled).
 - Support Radio Paradise FLAC channel. This is special for a radio because
   it uses a sequence of audio URLs instead of a single stream. Have a look
   at the distributed 'upmpdcli.conf' file for the radio definition to use
@@ -23,12 +25,14 @@ changes, so it can't be 1.2.
   during an upgrade). The appropriate script is now installed to
   '/usr/share/upmpdcli/radio_scripts' (along with a small number of art and
   metadata scripts for other stations).
+- Port all Python code to Python3 (while retaining Python2
+  compatibility). All Media Server plugins are run by Python3 by default.
 - Improve function with Google Play Music. Esp. fix bugs in playlist
   handling.
-- Add proxy mode to the Media Server. The default is still to redirect mpd
-  to the actual music stream.
-- All Python code has hopefully been made compatible with Python3 (still
-  using Python2 by default).
+- Add proxy mode to the Media Server. This may improve function in
+  case the service is a bit flaky by providing retries. The default is
+  still to redirect mpd to the actual music stream, except for Spotify
+  (which needs local decoding).
 
 See the
 link:https://www.lesbonscomptes.com/upmpdcli/upmpdcli-manual.html[Upmpdcli
