@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-#
 # Copyright (C) 2017 J.F.Dockes
 #
 # This program is free software: you can redistribute it and/or modify
