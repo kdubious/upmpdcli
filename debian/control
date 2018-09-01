@@ -6,7 +6,8 @@ Maintainer: Jean-Francois Dockes <jf@dockes.org>
 # not directly needed for building upmpdcli
 Build-Depends: debhelper (>= 9.0.0), dh-python, dh-systemd, dh-autoreconf,
                autotools-dev, python, pkg-config,
-               libmpdclient-dev, libmicrohttpd-dev, 
+               libmpdclient-dev, libmicrohttpd-dev,
+               libspotify12,
                libupnpp4-dev, libupnp6-dev, libjsoncpp-dev,
                libexpat1-dev, libcurl-dev,
                qt5-default, qt5-qmake, qtbase5-dev
@@ -64,6 +65,15 @@ Section: contrib/sound
 Depends: python, python-requests, upmpdcli, ${python:Depends}, ${misc:Depends}
 Description: upmpdcli Google Play Music plugin
  upmpdcli-gmusic allows upmpdcli to proxy access to the Google Play Music
+ streaming service.
+
+Package: upmpdcli-spotify
+Architecture: all
+Section: contrib/sound
+Depends: python, python-requests, libspotify12, upmpdcli,
+         ${python:Depends}, ${misc:Depends}
+Description: upmpdcli Spotify plugin
+ upmpdcli-spotify allows upmpdcli to proxy access to the Spotify
  streaming service.
 
 Package: upmpdcli-uprcl

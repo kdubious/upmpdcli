@@ -22,6 +22,7 @@
 #include <vector>
 #include <sstream>
 #include <functional>
+#include <memory>
 
 #include <string.h>
 #include <fcntl.h>
@@ -36,6 +37,12 @@
 #include "sysvshm.h"
 #include "main.hxx"
 #include "streamproxy.h"
+#include "netfetch.h"
+#include "curlfetch.h"
+
+#ifdef ENABLE_SPOTIFY
+#include "spotify/spotiproxy.h"
+#endif
 
 using namespace std;
 using namespace std::placeholders;
@@ -80,6 +87,14 @@ public:
         if (g_config->get("plgproxymethod", val) && !val.compare("proxy")) {
             doingproxy = true;
         }
+#ifdef ENABLE_SPOTIFY
+        if (!plg->getname().compare("spotify")) {
+            g_config->get("spotifyuser", user);
+            g_config->get("spotifypass", password);
+            string cachedir = path_cat(g_cachedir, "spotify");
+            SpotiProxy::setParams(user, password, cachedir, cachedir);
+        }
+#endif
     }
 
     bool doproxy() {
@@ -97,6 +112,12 @@ public:
     // path prefix (this is used by upmpdcli that gets it for us).
     string pathprefix;
     bool doingproxy{false};
+
+    // This is only used by spotify (also needs login in the c++
+    // streamer in addition to python). We could create a derived
+    // class, but seems simpler this way.
+    string user;
+    string password;
     
     // Cached uri translation
     StreamHandle laststream;
@@ -108,7 +129,9 @@ static StreamProxy *o_proxy;
 StreamProxy::UrlTransReturn translateurl(
     CDPluginServices *cdsrv,
     std::string& url,
-    const std::unordered_map<std::string, std::string>& querymap)
+    const std::unordered_map<std::string, std::string>& querymap,
+    std::unique_ptr<NetFetch>& fetcher
+    )
 {
     LOGDEB("PlgWithSlave::translateurl: url " << url << endl);
 
@@ -137,7 +160,21 @@ StreamProxy::UrlTransReturn translateurl(
         LOGERR("answer_to_connection: no media_uri for: " << url << endl);
         return StreamProxy::Error;
     }
-    return realplg->doproxy() ? StreamProxy::Proxy : StreamProxy::Redirect;
+    StreamProxy::UrlTransReturn method = realplg->doproxy() ?
+        StreamProxy::Proxy : StreamProxy::Redirect;
+    if (method == StreamProxy::Proxy) {
+        if (!realplg->getname().compare("spotify")) {
+#ifdef ENABLE_SPOTIFY
+            fetcher = std::move(std::unique_ptr<NetFetch>(new SpotiFetch(url)));
+#else
+            LOGERR("Spotify URL but Spotify not supported by build\n");
+            return StreamProxy::Error;
+#endif
+        } else {
+            fetcher = std::move(std::unique_ptr<NetFetch>(new CurlFetch(url)));
+        }
+    }
+    return method;
 }
 
 // Static
@@ -173,7 +210,7 @@ bool PlgWithSlave::maybeStartProxy(CDPluginServices *cdsrv)
         int port = CDPluginServices::microhttpport();
         o_proxy = new StreamProxy(
             port,
-            std::bind(&translateurl, cdsrv, _1, _2));
+            std::bind(&translateurl, cdsrv, _1, _2, _3));
             
         if (nullptr == o_proxy) {
             LOGERR("PlgWithSlave: Proxy creation failed\n");

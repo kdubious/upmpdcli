@@ -544,8 +544,8 @@ the Receivers can be out of sync by several seconds.
 === Streaming Services and UPnP
 
 Streaming services like Qobuz or Tidal give access to a huge catalog of
-music through a WEB interface which is also usable by programs other than
-their own applications.
+music through a WEB programming interface which is also usable by programs
+other than their own applications.
 
 The only thing that they have in common with UPnP is that the use of HTTP
 to retrieve the audio stream. However, given the importance of these
@@ -588,9 +588,11 @@ framework, and knowing which way you are using will avoid confusion:
 === Accessing Streaming Services through the upmpdcli Media Server
   
 The Media Server function in Upmpdcli (1.2.0 and later) gives access to
-external streaming services: Qobuz, Tidal, and Google Music at the moment.
+external streaming services: Qobuz, Tidal, and Google Music at the
+moment. Spotify has been added in release 1.3.0.
 
-You will need a valid account on any service that you want to use.
+You will need a valid account on any service that you want to use (for
+Spotify, this means a premium account, the free ones will not work).
 
 When the function is activated, *upmpdcli* creates a separate auxiliary Media
 Server, with the sole purpose of presenting the streaming server
@@ -599,7 +601,8 @@ parameters are present in the configuration file. The Media Server name is
 the +friendlyname+ for the Upmpdcli instance, with _-mediaserver_ appended.
 
 Streaming is not limited to the local Upmpdcli Renderer, and the Media
-Server will happily send music to other Renderers.
+Server will happily send music to other Renderers (within the limitations
+set by the service).
 
 Two conditions must be true for the Media Server to appear with an entry
 for a streaming service:
@@ -610,29 +613,63 @@ for a streaming service:
    file (e.g +qobuzuser+).
 
 Some other parameters (e.g. a password) may be needed for the access to
-work.
+work, depending on the specific service.
 
 NOTE: The streaming services passwords are stored in the upmpdcli
 configuration file ('/etc/upmpdcli.conf'). The installer does not
 make this file r/w by owner only. This will be fixed, but for now, you
 should probably do it after setting the password:
 +chmod&#160;600&#160;/etc/upmpdcli.conf+ Actually, it would quite probably
-be a good idea not to use the same account for your mail and music uses.
+be a good idea not to use the same account for your mail and music
+uses. Especially, for Google Music you can and should use an
+application-specific password.
 
 NOTE: I have no reason to believe that upmpdcli is technically mis-using
 the streaming services in any way, but it is definitely not approved by any
 of them, and you are using it under your own responsibility.
 
-==== Notes on the Tidal interface
+[[UPMPDCLI-MS-STR-CRED]]
+=== Accessing the streaming services with OpenHome from Kazoo
+
+This only works for Qobuz and Tidal, and only with upmpdcli versions 1.3.0
+and later. The corresponding media server module must be installed
+(upmpdcli-qobuz and/or upmpdcli-tidal), but no other configuration should
+be necessary on the renderer.
+
+This should also work with Lumin, but it does not currently, the reason is
+unknown. When feature is active, it actually prevents Lumin from
+discovering upmpdcli at all, so there is a configuration variable to
+disable it: '+lumincompat+'. Set to 1 to use upmpdcli v1.3.0 with Lumin.
+
+Upmpdcli uses the *openssl* command to perform the cryptography work. This
+was not made a hard dependancy, so you should check that it is installed.
+
+The media service icons will appear in the Control Point interface, and the
+service will be accessible after entering the login and password.
+
+NOTE: the user name and password will be stored on the renderer in an
+insecure way, meaning that if someone steals the machine or obtains root
+access, there is nothing to prevent them from getting the credentials.
+
+Of course Kazoo or Lumin can also access the services through the media
+server interface (after configuring upmpdcli, see the
+xref:UPMPDCLI-MS-STR-MS[previous section]).
+
+For reference, this method is *not* usable with *Upplay*
+
+The notes which follow relate to accessing the services through the
+Upmpdcli Media Server.
+
+=== Using Tidal through the Upmpdcli Media Server
 
 [NOTE]
 ===================================
-There seems to be problems when streaming Tidal lossless/FLAC streams,
-with the default MPD configuration. A preliminary and rather superficial
-enquiry seems to indicate that this is caused by too much buffering by
-MPD. Adding the following parameters to the MPD configuration file
-(/etc/mpd.conf) reduces the pre-fetch period from 20 S to 10 S and seems to
-fix the issues for me:
+There seems to sometimes be problems when streaming Tidal lossless/FLAC
+streams, with the default MPD configuration. A preliminary and rather
+superficial enquiry seems to indicate that this is caused by too much
+buffering by MPD. Adding the following parameters to the MPD configuration
+file (/etc/mpd.conf) reduces the pre-fetch period and seems to fix the
+issues for me (YMMV...):
 
     audio_buffer_size "2048"
     buffer_before_play "20%"
@@ -652,13 +689,16 @@ It only works with a valid Tidal subscription.
 The configuration parameters are described in the
 <<tidaluser,configuration section>>
 
-==== Notes on the Qobuz interface
+[[upmpdcli.qobuznotes]]
+=== Using Qobuz through the Upmpdcli Media Server
 
 This is based on the service API from the
 link:https://github.com/tidalf/plugin.audio.qobuz[Kodi add-on], by Joachim
 Basmaison and Cyril Leclerc, with the upper-level code adapted from the
 Tidal add-on. The WEB API is not officially supported by Qobuz, and may
-just stop to work one day.
+just stop to work one day. On the other hand, Qobuz is the only service to
+actually publish the documentation for their API, so it is quite likely to
+remain available.
 
 NOTE: the Qobuz search does not allow searching a specific field (like the
 artist name or song title). All objects matching a query in any field are
@@ -671,7 +711,7 @@ The configuration parameters are described in the
 <<qobuzuser,configuration section>>
 
 [[upmpdcli.googlemusicnotes]]
-==== Notes on the Google Music interface
+=== Using Google Music through the Upmpdcli Media Server
 
 This is based on the
 link:https://github.com/simon-weber/gmusicapi[gmusicapi] Python package by
@@ -703,34 +743,34 @@ The configuration parameters are described in the
 <<gmusicuser,configuration section>>
 
 
-[[UPMPDCLI-MS-STR-CRED]]
-=== Accessing the streaming services with OpenHome from Kazoo
+[[upmpdcli.spotifynotes]]
+=== Using Spotify through the Upmpdcli Media Server
 
-This only works for Qobuz and Tidal, and only with upmpdcli versions 1.3.0
-and later. The corresponding media server module must be installed
-(upmpdcli-qobuz and/or upmpdcli-tidal), but no other configuration should
-be necessary on the renderer.
+You will need a premium account, the free ones do not work for this.
 
-This should also work with Lumin, but it does not currently, the reason is
-unknown. When feature is active, it actually prevents Lumin from
-discovering upmpdcli at all, so there is a configuration variable to
-disable it: '+lumincompat+'. Set to 1 to use upmpdcli v1.3.0 with Lumin.
+Spotify is the only service which does not use regular (short-lived) HTTP
+URLs for accessing the streams, but rather a non standard transfer
+protocol, implemented in a specific library.
 
-Upmpdcli uses the *openssl* command to perform the cryptography work. This
-was not made a hard dependancy, so you should check that it is installed.
+The library itself is not installed with upmpdcli, you need to install it
+separately. Currently, the easiest way to obtain it is from
+the link:https://github.com/mopidy/libspotify-deb[Mopidy repository]. You
+can use the 'deb' packages on a Debian-derived system, else copy the
+dynamic object for your architecture to /usr/lib.
+  
+The authentication method is also more complicated than for the others, and
+will have you jump through a few hoops in addition to setting the password
+in the configuration file.
 
-The media service icons will appear in the Control Point interface, and the
-service will be accessible after entering the login and password.
+The upmpdcli interface is based on a slightly modified version of the
+link:https://spotipy.readthedocs.io/en/latest/[Spotipy Python package] and
+the old libspotify library.
 
-NOTE: the user name and password will be stored on the renderer in an
-insecure way, meaning that if someone steals the machine or obtains root
-access, there is nothing to prevent them from getting the credentials.
+You will need to set some configuration parameters, which are described in the
+<<spotifyuser,configuration section>> and then obtain an oauth2
+authorization token: follow the instructions in the <<SPOTIFY-AUTH,Spotify
+authorization annex>>.
 
-Of course Kazoo or Lumin can also access the services through the media
-server interface (after configuring upmpdcli, see the
-xref:UPMPDCLI-MS-STR-MS[previous section]).
-
-For reference, this method is *not* usable with *Upplay*
 
 [[UPRCL]]
 == Upmpdcli local Media Server: uprcl
@@ -860,13 +900,24 @@ or download the release tar files from the the
 link:https://www.lesbonscomptes.com/upmpdcli/downloads.html[upmpdcli
 download page]
 
-Once the source is extracted, the procedure is standard and there are
-currently no specific configure options:
+Two specific configure options are defined. Each needs the installation of
+additional dependancies:
+
+- --enable-confgui: build the configuration editor GUI. This will need
+the Qt development packages
+- --enable-spotify: build the Spotify access module. This does not create a
+  build dependancy, because the interface include file is bundled, and the
+  library itself is dynamically opened at run time, not linked. Of course,
+  the library will need to be installed on the target machine for the
+  Spotify access to work. Currently, the easiest way to obtain it is from
+  the link:https://github.com/mopidy/libspotify-deb[Mopidy repository].
+  
+Once the source is extracted, the procedure is standard:
 
     # Only for git source
     sh autogen.sh 
 
-    ./configure --prefix=/usr --sysconfdir=/etc
+    ./configure --prefix=/usr --sysconfdir=/etc [other options]
     make
     sudo make install
 
@@ -1013,6 +1064,47 @@ files and the sc2mpd (git) source tree.
     tar xzf ../../sc2mpd_1.1.1.orig-openhome.tar.gz
     cd ..
     debuild
+
+
+[[SPOTIFY-AUTH]]
+== Annex: setting up Spotify access authorization
+
+Upmpdcli uses a hybrid approach for accessing Spotify: it uses the newer
+WEB API for browsing the catalog, and the old libspotify library for
+streaming.
+
+As a consequence, two sets of authorization parameters must be specified:
+the library uses a classical user name + password pair, to be set in the
+<<spotifyuser,configuration file>>.
+
+The WEB API uses a more modern (and more ennoying) oauth2
+authentification/authorization method. This needs to go through a WEB
+browser. You will need to execute the following steps to set things up:
+
+- Download the
+  link:http://www.lesbonscomptes.com/upmpdcli/files/upmpdcli-spotify-authinit.zip[zip
+  file for the helper script]. Right-click the link and use `Save link as`.
+- Unzip the file on any Linux machine with a web browser. This will create
+  a 'upmpdcli-spotify-authinit' directory. The chosen machine can be the
+  host where upmpdcli runs, or not: any Linux machine with a browser will do.
+- Check that the python-requests package is available on the chosen host, or
+  install it.
+- Run the helper script inside the unzipped directory. Replace 'username'
+  with your Spotify user id.
+  
+    ./spotiauthinit.py username
+
+- The script will start a Web browser, and you will be asked to log in to
+  Spotify and authorize upmpdcli to access your data.
+- At the end of the web interaction, you will be redirected to a
+  non-existing page (am error will be displayed in the browser). Copy the
+  link address from the address bar, and paste it to the spotiauthinit.py
+  input line (you will have been prompted to do this by the script).
+- The script will then store the authorization token in a file named
+  '/tmp/spotipy-<username>-token', which you will need to copy to the host
+  where upmpdcli run, and move it to a file named
+  '/var/cache/upmpdcli/spotify/token'
+
 
 [[SC2MPD-INSTALL]]
 == Annex: Songcast installation walkthrough

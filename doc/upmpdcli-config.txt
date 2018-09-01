@@ -68,8 +68,17 @@ version 1.3: enable Lumin compatibility mode (lose ohcredentials)
 (0/1). For some unknown reason, Lumin 1.10 can't discover
 upmpdcli when the OpenHome Credentials service is enabled. Setting this
 allows upmpdcli to work with Lumin, at the cost of losing the use of the
-Credentials service (which enables logging in to Qobuz or Tidal inside
+Credentials service (normally used for logging in to Qobuz or Tidal inside
 Kazoo).
+
+[[saveohcredentials]]
+saveohcredentials:: Save the streaming
+services login parameters to disk. This allows sharing the
+password with the upmpdcli media server streaming service proxy, if you
+are also using it. Avoids having to enter the password in the regular
+configuration file. Depending on your situation, you may see this as a
+security risk. The default is true, because I don't see this as a real
+issue in the general case.
 
 [[checkcontentformat]]
 checkcontentformat:: Check that
@@ -283,6 +292,12 @@ URLs for tracks streamed from these services point to a local microhttpd
 server running on this port (it uses redirection to the actual service
 URL when actually streaming). The default is 49149.
 
+[[plgproxymethod]]
+plgproxymethod:: Decide if we proxy (copy: fetch/serve), or redirect the streaming
+services streams. Using redirect is much more efficient,
+but the proxy has a facility to retry when a stream is dropped by the
+service, which seems to happen esp. with Qobuz.
+
 === Tidal streaming service parameters 
 
 [[tidaluser]]
@@ -323,9 +338,19 @@ for mp3/160, 'low' for mp3/128.
 [[gmusicdeviceid]]
 gmusicdeviceid:: Google Music device
 id. Your system MAC address will be used by default, but
-this will count against the maximum count of registered devices for this
-account.  You can set the gmusicdeviceid value to the device ID from a
-phone or tablet on which you also use Google Play Music.
+it seems that this does not work any more and that an Android deviceid is
+needed. upmpdcli will try to get one from the list of registered
+devices. If this does not work, you will need to set the gmusicdeviceid
+value to the device ID from a phone or tablet on which you also use
+Google Play Music (look up "Android deviceid" for help).
+
+=== Spotify streaming service parameters 
+
+[[spotifyuser]]
+spotifyuser:: Spotify user name. Your Spotify login name.
+
+[[spotifypass]]
+spotifypass:: Spotify password. The password for your Spotify account.
 
 === Local Media Server parameters 
 
@@ -431,6 +456,12 @@ the file when a Sender is set for the service. Useful for preserving the
 sender information between restarts.
 
 === Songcast Sender parameters 
+
+[[scstreamcodec]]
+scstreamcodec:: !!Standard Songcast receivers only support PCM!! Codec to use for
+the network stream. Set to empty or PCM to support
+foreign receivers. Or use FLAC or OPUS for lower network
+load.
 
 [[scsenderpath]]
 scsenderpath:: Path to starter script This is normally scmakempdsender which starts the auxiliary mpd
