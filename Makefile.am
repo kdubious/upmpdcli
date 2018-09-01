@@ -73,6 +73,8 @@ upmpdcli_SOURCES = \
      src/httpfs.hxx \
      src/main.cxx \
      src/main.hxx \
+     src/mediaserver/cdplugins/abuffer.h \
+     src/mediaserver/cdplugins/bufxchange.h \
      src/mediaserver/cdplugins/cdplugin.hxx \
      src/mediaserver/cdplugins/cmdtalk-fixed.cpp \
      src/mediaserver/cdplugins/cmdtalk.h \
