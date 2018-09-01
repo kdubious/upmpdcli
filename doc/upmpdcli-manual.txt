@@ -905,12 +905,14 @@ additional dependancies:
 
 - --enable-confgui: build the configuration editor GUI. This will need
 the Qt development packages
-- --enable-spotify: build the Spotify access module. This does not create a
-  build dependancy, because the interface include file is bundled, and the
-  library itself is dynamically opened at run time, not linked. Of course,
-  the library will need to be installed on the target machine for the
-  Spotify access to work. Currently, the easiest way to obtain it is from
-  the link:https://github.com/mopidy/libspotify-deb[Mopidy repository].
+- -disable-spotify: do not include build the Spotify access module. This
+  used to be disabled by default, but is now enabled because it does not
+  create a build dependancy, as the interface include file is bundled,
+  and the library itself is dynamically opened at run time, not linked. Of
+  course, the library will need to be installed on the target machine for
+  the Spotify access to work. Currently, the easiest way to obtain it is
+  from the link:https://github.com/mopidy/libspotify-deb[Mopidy
+  repository].
   
 Once the source is extracted, the procedure is standard:
 
