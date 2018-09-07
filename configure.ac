@@ -1,4 +1,4 @@
-AC_INIT([upmpdcli], [1.3.0], [jfd@lesbonscomptes.com],
+AC_INIT([upmpdcli], [1.3.1], [jfd@lesbonscomptes.com],
              [upmpdcli], [http://www.lesbonscomptes.com/upmpdcli])
 AC_PREREQ([2.53])
 AC_CONFIG_MACRO_DIRS([m4])
