@@ -253,13 +253,21 @@ static string appForId(const string& id)
 
 void ContentDirectory::Internal::maybeStartSomePlugins(bool enabled)
 {
-    // If enabled is not set, no service is locally enabled, we are
-    // working for ohcredentials. Explicitely start the microhttpd
-    // daemon in this case, as we'll need it before any plugin is
-    // created.
-    if (!enabled) {
-        PlgWithSlave::maybeStartProxy(this->service);
-    }
+    // If enabled is false, no service is locally enabled, we are
+    // working for ohcredentials. In the previous version, we
+    // explicitely started the microhttpd daemon in this case (only as
+    // we'll need it before any plugin is created.
+    //
+    // The problem was that, if we do have plugins enabled (and not
+    // autostarted) but the first access is through OHCredentials, the
+    // microhttp server will not be running and the connection from
+    // the renderer will fail. Could not find a way to fix this. We'd
+    // need to trigger the proxy start from the credentials service
+    // (in the other process!) on first access. So just always run the
+    // Proxy. Only inconvenient is that it opens one more port. 
+    // This is rather messy.
+    PlgWithSlave::maybeStartProxy(this->service);
+    
     for (auto& entry : rootdir) {
         string app = appForId(entry.id);
         string sas;
