@@ -16,8 +16,6 @@
  * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define LOGGER_LOCAL_LOGINC 6
-
 #include "ohcredentials.hxx"
 
 #include <upnp/upnp.h>
