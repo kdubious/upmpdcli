@@ -37,7 +37,6 @@
 #include "renderctl.hxx"
 #include "upmpdutils.hxx"
 #include "execmd.h"
-#include "httpfs.hxx"
 #include "ohsndrcv.hxx"
 #include "protocolinfo.hxx"
 #include "ohcredentials.hxx"

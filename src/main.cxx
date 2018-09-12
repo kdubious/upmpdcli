@@ -43,7 +43,6 @@
 #include "upmpd.hxx"
 #include "mediaserver/mediaserver.hxx"
 #include "mediaserver/contentdirectory.hxx"
-#include "httpfs.hxx"
 #include "upmpdutils.hxx"
 #include "pathut.h"
 #include "readfile.h"
@@ -149,6 +148,14 @@ ohProductDesc_t ohProductDesc = {
         "",                                         // url
         ""                                          // imageUri
     }
+};
+
+// Ad-hoc struct to hold the input identification parameters for the device(s)
+struct UDevIds {
+    std::string fname;
+    std::string uuid;
+    std::string fnameMS;
+    std::string uuidMS;
 };
 
 // Static for cleanup in sig handler.
