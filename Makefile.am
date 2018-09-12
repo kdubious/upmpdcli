@@ -69,8 +69,6 @@ upmpdcli_SOURCES = \
      src/conman.hxx \
      src/execmd-fixed.cpp \
      src/execmd.h \
-     src/httpfs.cxx \
-     src/httpfs.hxx \
      src/main.cxx \
      src/main.hxx \
      src/mediaserver/cdplugins/abuffer.h \
@@ -154,6 +152,7 @@ dist_pkgdata_DATA = src/description.xml src/AVTransport.xml \
                   src/OHTime.xml \
                   src/OHVolume.xml src/OHPlaylist.xml src/OHReceiver.xml \
                   src/OHRadio.xml src/mediaserver/ContentDirectory.xml \
+                  src/mediaserver/MS-description.xml \
                   src/protocolinfo.txt src/presentation.html \
                   src/upmpdcli.conf-dist 
 

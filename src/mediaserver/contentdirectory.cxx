@@ -101,7 +101,8 @@ static const string
 sIdContentDirectory("urn:upnp-org:serviceId:ContentDirectory");
 
 ContentDirectory::ContentDirectory(MediaServer *dev, bool enabled)
-    : UpnpService(sTpContentDirectory, sIdContentDirectory, dev),
+    : UpnpService(sTpContentDirectory, sIdContentDirectory,
+                  "ContentDirectory.xml", dev),
       m(new Internal(this, dev))
 {
     dev->addActionMapping(

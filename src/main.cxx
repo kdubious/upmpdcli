@@ -46,6 +46,7 @@
 #include "httpfs.hxx"
 #include "upmpdutils.hxx"
 #include "pathut.h"
+#include "readfile.h"
 
 using namespace std;
 using namespace UPnPP;
@@ -151,7 +152,7 @@ ohProductDesc_t ohProductDesc = {
 };
 
 // Static for cleanup in sig handler.
-static UpnpDevice *dev;
+static vector<UpnpDevice *> devs;
 
 string g_datadir(DATADIR "/");
 string g_cachedir("/var/cache/upmpdcli");
@@ -165,7 +166,9 @@ bool g_lumincompat = false;
 static void onsig(int)
 {
     LOGDEB("Got sig" << endl);
-    dev->shouldExit();
+    for (auto& dev : devs) {
+        dev->shouldExit();
+    }
 }
 
 static const int catchedSigs[] = {SIGINT, SIGQUIT, SIGTERM};
@@ -690,15 +693,8 @@ int main(int argc, char *argv[])
         pidfilename = pidfilename + "-ms";
     }
 
-    // Initialize the data we serve through HTTP (device and service
-    // descriptions, icons, presentation page, etc.)
-    unordered_map<string, VDirContent> files;
-    if (!initHttpFs(files, g_datadir, ids, enableAV, enableOH,
-                    !senderpath.empty(), inprocessms, msonly,
-                    iconpath, presentationhtml)) {
-        exit(1);
-    }
-
+    opts.iconpath = iconpath;
+    opts.presentationhtml = presentationhtml;
     if (ownqueue)
         opts.options |= UpMpd::upmpdOwnQueue;
     if (enableOH)
@@ -737,45 +733,44 @@ int main(int argc, char *argv[])
     UpMpd *mediarenderer{nullptr};
     if (!msonly) {
         mediarenderer = new UpMpd(string("uuid:") + ids.uuid, ids.fname,
-                                  ohProductDesc, files, mpdclip, opts);
+                                  ohProductDesc, mpdclip, opts);
     }
 
     MediaServer *mediaserver = nullptr;
-    unordered_map<string, VDirContent> emptyfiles =
-        unordered_map<string, VDirContent>();
-    unordered_map<string, VDirContent> *msfiles = &emptyfiles;
+    
+    setupsigs();
     
     if (inprocessms) {
-        if (msonly) {
-            msfiles = &files;
-        }
-	// Create the Media Server embedded device object. There needs
-	// be no reference to the root object because there can be
-	// only one (libupnp restriction)
+	// Create the Media Server device.
 	mediaserver = new MediaServer(string("uuid:") + ids.uuidMS, ids.fnameMS,
-                                      enableMediaServer, *msfiles);
+                                      enableMediaServer);
+        devs.push_back(mediaserver);
+        LOGDEB("Media server event loop" << endl);
+        if (enableMediaServer) {
+            mediaserver->startloop();
+        }
     } else if (enableMediaServer) {
         startMsOnlyProcess();
     }
-    
-    // And forever generate state change events.
-    LOGDEB("Entering event loop" << endl);
-    setupsigs();
-    if (msonly) {
-        assert(nullptr != mediaserver);
-        dev = mediaserver;
-        LOGDEB("Media server event loop" << endl);
-        if (enableMediaServer) {
-            mediaserver->eventloop();
-        } else {
-            pause();
-        }
-    } else {
+    if (!msonly) {
         LOGDEB("Renderer event loop" << endl);
         assert(nullptr != mediarenderer);
-        dev = mediarenderer;
-        mediarenderer->eventloop();
+        devs.push_back(mediarenderer);
+        mediarenderer->startloop();
     }
+    pause();
     LOGDEB("Event loop returned" << endl);
     return 0;
+}
+
+// Read file from datadir
+bool readLibFile(const std::string& name, std::string& contents)
+{
+    string path = path_cat(g_datadir, name);
+    string reason;
+    if (!file_to_string(path, contents, &reason)) {
+        LOGERR("readLibFile: error reading " << name << " : " << reason << endl);
+        return false;
+    }
+    return true;
 }

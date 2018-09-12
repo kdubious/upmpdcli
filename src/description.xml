@@ -1,10 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root xmlns="urn:schemas-upnp-org:device-1-0">
-  <specVersion>
-    <major>1</major>
-    <minor>0</minor>
-  </specVersion>
-  <device>
     <deviceType>urn:schemas-upnp-org:device:MediaRenderer:1</deviceType>
     <friendlyName>@FRIENDLYNAME@</friendlyName>
     <manufacturer>JF Light Industries</manufacturer>
@@ -14,16 +7,3 @@
     <modelNumber>1.0</modelNumber>
     <modelURL>https://opensourceprojects.eu/p/upmpdcli/code/</modelURL>
     <serialNumber>42</serialNumber>
-    <UDN>uuid:@UUID@</UDN>
-    @ICONLIST@
-    <serviceList>
-      @UPNPAV@
-      @OPENHOME@
-    </serviceList>
-    @PRESENTATION@
-  </device>
-  <devicelist>
-  @MEDIASERVER@
-  </devicelist>
-</root>
-                                                    

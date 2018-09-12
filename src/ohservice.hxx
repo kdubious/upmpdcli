@@ -31,8 +31,9 @@ using namespace UPnPP;
 // variable and event management code.
 class OHService : public UPnPProvider::UpnpService {
 public:
-    OHService(const std::string& servtp, const std::string &servid, UpMpd *dev)
-        : UpnpService(servtp, servid, dev), m_dev(dev) {
+    OHService(const std::string& servtp, const std::string &servid,
+              const std::string& xmlfn, UpMpd *dev)
+        : UpnpService(servtp, servid, xmlfn, dev), m_dev(dev) {
     }
     virtual ~OHService() { }
 

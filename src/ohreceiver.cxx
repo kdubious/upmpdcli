@@ -44,7 +44,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Receiver:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Receiver");
 
 OHReceiver::OHReceiver(UpMpd *dev, const OHReceiverParams& parms)
-    : OHService(sTpProduct, sIdProduct, dev), m_active(false),
+    : OHService(sTpProduct, sIdProduct, "OHReceiver.xml", dev), m_active(false),
       m_httpport(parms.httpport), m_sc2mpdpath(parms.sc2mpdpath), m_pm(parms.pm)
 {
     dev->addActionMapping(this, "Play", 

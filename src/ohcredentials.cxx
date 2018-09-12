@@ -350,7 +350,8 @@ public:
 
 
 OHCredentials::OHCredentials(UpMpd *dev, const string& cachedir)
-    : OHService(sTpCredentials, sIdCredentials, dev), m(new Internal(cachedir))
+    : OHService(sTpCredentials, sIdCredentials, "OHCredentials.xml", dev),
+      m(new Internal(cachedir))
 {
     dev->addActionMapping(
         this, "Set",

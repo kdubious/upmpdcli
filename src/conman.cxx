@@ -39,7 +39,7 @@ static const string sTpCM("urn:schemas-upnp-org:service:ConnectionManager:1");
 static const string sIdCM("urn:upnp-org:serviceId:ConnectionManager");
 
 UpMpdConMan::UpMpdConMan(UpnpDevice *dev)
-    : UpnpService(sTpCM, sIdCM, dev)
+    : UpnpService(sTpCM, sIdCM, "ConnectionManager.xml", dev)
 {
     dev->addActionMapping(this,"GetCurrentConnectionIDs", 
                           bind(&UpMpdConMan::getCurrentConnectionIDs, 

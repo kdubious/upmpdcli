@@ -17,15 +17,30 @@
 
 #include "mediaserver.hxx"
 
+#include "main.hxx"
 #include "conman.hxx"
 #include "contentdirectory.hxx"
 
 using namespace std;
 
+bool MediaServer::readLibFile(const std::string& name,
+                              std::string& contents)
+{
+    if (name.empty()) {
+        if (!::readLibFile("MS-description.xml", contents)) {
+            return false;
+        }
+        contents = regsub1("@UUIDMEDIA@", contents, getDeviceId());
+        contents = regsub1("@FRIENDLYNAMEMEDIA@", contents, m_fname);
+        return true;
+    } else {
+        return ::readLibFile(name, contents);
+    }
+}
+
 MediaServer::MediaServer(
-    const string& deviceid, const string& friendlyname, bool enabled, 
-    const std::unordered_map<std::string, VDirContent>& files)
-    : UpnpDevice(deviceid, files), m_UDN(deviceid), m_fname(friendlyname)
+    const string& deviceid, const string& friendlyname, bool enabled)
+    : UpnpDevice(deviceid), m_UDN(deviceid), m_fname(friendlyname)
 {
     m_cd = new ContentDirectory(this, enabled);
     m_cm = new UpMpdConMan(this);

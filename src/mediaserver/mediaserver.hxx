@@ -32,13 +32,12 @@ public:
     // track url translations for ohcredentials. We need to force
     // starting some stuff in this case.
     MediaServer(const std::string& deviceid, const std::string& friendlyname,
-                bool enabled,
-                const std::unordered_map<std::string, VDirContent>& files =
-                std::unordered_map<std::string, VDirContent>()
-        );
+                bool enabled);
 
     ~MediaServer();
 
+    virtual bool readLibFile(const std::string& name,
+                             std::string& contents);
     const std::string& getUDN() {return m_UDN;}
     const std::string& getfname() {return m_fname;}
     

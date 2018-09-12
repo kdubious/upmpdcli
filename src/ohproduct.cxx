@@ -63,7 +63,8 @@ static const string SndRcvPLName("PL-to-Songcast");
 static const string SndRcvRDName("RD-to-Songcast");
 
 OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc, int version)
-    : OHService(sTpProduct + SoapHelp::i2s(version), sIdProduct, dev),
+    : OHService(sTpProduct + SoapHelp::i2s(version), sIdProduct, "OHProduct.xml",
+                dev),
       m_ohProductDesc(ohProductDesc), m_sourceIndex(0), m_standby(false)
 {
     // Playlist must stay first.

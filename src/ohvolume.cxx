@@ -42,7 +42,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Volume:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Volume");
 
 OHVolume::OHVolume(UpMpd *dev)
-    : OHService(sTpProduct, sIdProduct, dev)
+    : OHService(sTpProduct, sIdProduct, "OHVolume.xml", dev)
 {
     dev->addActionMapping(this,"Characteristics", 
                           bind(&OHVolume::characteristics, this, _1, _2));
