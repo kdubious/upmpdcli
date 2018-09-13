@@ -737,33 +737,32 @@ int main(int argc, char *argv[])
     if (!enableAV)
         opts.options |= UpMpd::upmpdNoAV;
 
+    setupsigs();
+
     UpMpd *mediarenderer{nullptr};
     if (!msonly) {
         mediarenderer = new UpMpd(string("uuid:") + ids.uuid, ids.fname,
                                   ohProductDesc, mpdclip, opts);
+        devs.push_back(mediarenderer);
     }
 
-    MediaServer *mediaserver = nullptr;
-    
-    setupsigs();
+    MediaServer *mediaserver{nullptr};
     
     if (inprocessms) {
 	// Create the Media Server device.
-	mediaserver = new MediaServer(string("uuid:") + ids.uuidMS, ids.fnameMS,
-                                      enableMediaServer);
+	mediaserver = new MediaServer(mediarenderer, string("uuid:") +
+                                      ids.uuidMS,ids.fnameMS, enableMediaServer);
         devs.push_back(mediaserver);
         LOGDEB("Media server event loop" << endl);
-        if (enableMediaServer) {
-            mediaserver->startloop();
-        }
     } else if (enableMediaServer) {
         startMsOnlyProcess();
     }
     if (!msonly) {
         LOGDEB("Renderer event loop" << endl);
-        assert(nullptr != mediarenderer);
-        devs.push_back(mediarenderer);
         mediarenderer->startloop();
+    }
+    if (inprocessms && enableMediaServer) {
+        mediaserver->startloop();
     }
     pause();
     LOGDEB("Event loop returned" << endl);

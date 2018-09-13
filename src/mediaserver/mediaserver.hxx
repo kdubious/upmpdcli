@@ -31,8 +31,9 @@ public:
     // started because we are only using the infrastructure to perform
     // track url translations for ohcredentials. We need to force
     // starting some stuff in this case.
-    MediaServer(const std::string& deviceid, const std::string& friendlyname,
-                bool enabled);
+    // If root is not null, build as embedded device
+    MediaServer(UpnpDevice *root, const std::string& deviceid,
+                const std::string& friendlyname, bool enabled);
 
     ~MediaServer();
 

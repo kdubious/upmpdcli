@@ -23,8 +23,7 @@
 
 using namespace std;
 
-bool MediaServer::readLibFile(const std::string& name,
-                              std::string& contents)
+bool MediaServer::readLibFile(const string& name, string& contents)
 {
     if (name.empty()) {
         if (!::readLibFile("MS-description.xml", contents)) {
@@ -38,9 +37,9 @@ bool MediaServer::readLibFile(const std::string& name,
     }
 }
 
-MediaServer::MediaServer(
-    const string& deviceid, const string& friendlyname, bool enabled)
-    : UpnpDevice(deviceid), m_UDN(deviceid), m_fname(friendlyname)
+MediaServer::MediaServer(UpnpDevice *root, const string& deviceid,
+                         const string& friendlyname, bool enabled)
+    : UpnpDevice(root, deviceid), m_UDN(deviceid), m_fname(friendlyname)
 {
     m_cd = new ContentDirectory(this, enabled);
     m_cm = new UpMpdConMan(this);
