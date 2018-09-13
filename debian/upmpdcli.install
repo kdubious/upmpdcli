@@ -1,5 +1,6 @@
 usr/bin/upmpdcli
 usr/bin/scctl
+usr/share/upmpdcli/OHCredentials.xml
 usr/share/upmpdcli/OHInfo.xml
 usr/share/upmpdcli/protocolinfo.txt
 usr/share/upmpdcli/presentation.html
