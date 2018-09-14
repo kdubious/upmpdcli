@@ -81,8 +81,8 @@ static const char usage[] =
     "-P upport    \t specify port number to be used for UPnP\n"
     "-O 0|1\t decide if we run and export the OpenHome services\n"
     "-v      \tprint version info\n"
-    "-m <0|1|2|3> media server mode "
-    "(default, forked|only renderer|only media|combined)\n"
+    "-m <0|1|2|3|4> media server mode "
+    "(default, forked|only renderer|only media|combined/embedded|combined/multidev)\n"
     "\n"
     ;
 
@@ -95,18 +95,20 @@ static const char usage[] =
 // control points are confused by embedded devices.
 // 
 // - -m 0, default, Forked: this is for the main process, which will
-//   implement a Media Renderer device, and, if needed, fork/exec the
-//   Media Server (with option -m 2)
+//    implement a Media Renderer device, and, if needed, fork/exec the
+//    Media Server (with option -m 2)
 // - -m 1, RdrOnly: for the main instance: be a Renderer, do not start the
-//   Media Server even if the configuration indicates it is needed
-//   (this is not used in normal situations, just edit the config
-//   instead!)
+//    Media Server even if the configuration indicates it is needed
+//    (this is not used in normal situations, just edit the config
+//    instead!)
 // - -m 2, MSOnly Media Server only, this is for the process forked/execed
-//   by a main Renderer process, or a standalone Media Server.
+//    by a main Renderer process, or a standalone Media Server.
 // - -m 3, Combined: for the main process: implement the Media Server
-//   as an embedded device. This works just fine with, for example,
-//   upplay, but confuses most of the other Control Points.
-enum MSMode {Forked, RdrOnly, MSOnly, Combined};
+//    as an embedded device. This works just fine with, for example,
+//    upplay, but confuses most of the other Control Points.
+// - -m 4, Combined: for the main process: implement the Media Server
+//    as a separate root device. Only works with a modified libupnp.
+enum MSMode {Forked, RdrOnly, MSOnly, CombinedEmbedded, CombinedMultiDev};
 
 static void
 versionInfo(FILE *fp)
@@ -257,8 +259,9 @@ int main(int argc, char *argv[])
     unsigned short upport = 0;
     string upnpip;
     int msm = 0;
-    bool inprocessms = false;
-    bool msonly = false;
+    bool inprocessms{false};
+    bool msonly{false};
+    bool msroot{false};
     
     const char *cp;
     if ((cp = getenv("UPMPD_HOST")))
@@ -318,7 +321,7 @@ int main(int argc, char *argv[])
     b1: argc--; argv++;
     }
 
-    if (argc != 0 || msm < 0 || msm > 3) {
+    if (argc != 0 || msm < 0 || msm > 4) {
         Usage();
     }
     MSMode arg_msmode = MSMode(msm);
@@ -452,9 +455,15 @@ int main(int argc, char *argv[])
         inprocessms = true;
         msonly = true;
         break;
-    case Combined:
+    case CombinedEmbedded:
         inprocessms = true;
         msonly = false;
+        msroot = false;
+        break;
+    case CombinedMultiDev:
+        inprocessms = true;
+        msonly = false;
+        msroot = true;
         break;
     case RdrOnly:
     case Forked:
@@ -749,8 +758,11 @@ int main(int argc, char *argv[])
     MediaServer *mediaserver{nullptr};
     
     if (inprocessms) {
-	// Create the Media Server device.
-	mediaserver = new MediaServer(mediarenderer, string("uuid:") +
+	// Create the Media Server device. If msonly is set, both
+	// branches do the same thing and create a root device
+	// (mediarenderer is null).
+        // The multidev modified libupnp is needed for using 2 root devices
+        mediaserver = new MediaServer(msroot?nullptr:mediarenderer, string("uuid:") +
                                       ids.uuidMS,ids.fnameMS, enableMediaServer);
         devs.push_back(mediaserver);
         LOGDEB("Media server event loop" << endl);
