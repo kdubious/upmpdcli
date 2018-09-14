@@ -701,7 +701,10 @@ void NetconData::cancelReceive()
 {
     if (m_wkfds[1] >= 0) {
         LOGDEB2("NetconData::cancelReceive: writing to " << m_wkfds[1] << endl);
-        ::write(m_wkfds[1], "!", 1);
+        // We can't do a thing about the ::write return value, the
+        // following nonsense is for cancelling warnings
+        int ret = ::write(m_wkfds[1], "!", 1);
+        ret = ret;
     }
 }
 
@@ -750,7 +753,10 @@ int NetconData::receive(char *buf, int cnt, int timeo)
         
         if (cancellable && FD_ISSET(m_wkfds[0], &rd)) {
             char b[100];
-            read(m_wkfds[0], b, 100);
+            // We can't do a thing about the return value, the
+            // following nonsense is for cancelling warnings
+            int ret = ::read(m_wkfds[0], b, 100);
+            ret = ret;
             return Cancelled;
         }
 
