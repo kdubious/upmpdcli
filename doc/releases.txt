@@ -1,6 +1,6 @@
 = Upmpdcli release notes
 
-== upmpdcli 1.3.0
+== upmpdcli 1.3.2
 
 NOTE: Using this release with Lumin needs explicitely setting lumincompat=1
 in the configuration file, which disables the OpenHome Credentials service
