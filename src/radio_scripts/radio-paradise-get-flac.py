@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Checked to run with either Python 2 or 3
 #
 # Copyright (C) 2017-2018 J.F.Dockes
@@ -38,6 +38,8 @@ import requests
 import json
 import sys
 import os
+
+PY3 = sys.version > '3'
 
 tmpname = '/tmp/up-rp-pldata.json'
 
@@ -146,5 +148,7 @@ else:
         reload -= 2
     out['reload'] = reload
 
-debug("%s" % makebytes(json.dumps(out)))
-print("%s" % makebytes(json.dumps(out)))
+if PY3:
+    sys.stdout.buffer.write(makebytes(json.dumps(out)))
+else:
+    print("%s" % makebytes(json.dumps(out)))
