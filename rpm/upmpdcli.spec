@@ -1,6 +1,6 @@
 Summary:        UPnP Media Renderer front-end to MPD, the Music Player Daemon
 Name:           upmpdcli
-Version:        1.3.1
+Version:        1.3.2
 Release:        1%{?dist}
 Group:          Applications/Multimedia
 License:        GPLv2+
@@ -69,6 +69,8 @@ install -D -m644 systemd/upmpdcli.service \
 %systemd_postun_with_restart upmpdcli.service 
 
 %changelog
+* Sat Sep 15 2018 J.F. Dockes <jf@dockes.org> - 1.3.2
+- Support OpenHome Credentials for direct Qobuz/Tidal access from kazoo
 * Tue Jan 03 2017 J.F. Dockes <jf@dockes.org> - 1.2.12
 - Fix bug in content directory browse interface (for Kazoo).
 * Mon Dec 26 2016 J.F. Dockes <jf@dockes.org> - 1.2.11

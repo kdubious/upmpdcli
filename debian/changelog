@@ -1,10 +1,10 @@
-upmpdcli (1.3.1-3~ppaPPAVERS~SERIES1) SERIES; urgency=low
+upmpdcli (1.3.2-1~ppaPPAVERS~SERIES1) SERIES; urgency=low
 
   * Fix minor bug in ohcredentials use
   * Package did not install OHCredentials.xml
-  * 3: fix deps in control file
+  * Fix deps in control file
   
- -- Jean-Francois Dockes <jf@dockes.org>  Thu, 13 Sep 2018 09:42:00 +0200
+ -- Jean-Francois Dockes <jf@dockes.org>  Sat, 15 Sep 2018 09:40:00 +0200
 
 upmpdcli (1.3.0-1~ppaPPAVERS~SERIES1) SERIES; urgency=low
 
