@@ -20,6 +20,7 @@
 from __future__ import print_function
 
 import sys
+import ssl
 
 PY3 = sys.version > '3'
 if PY3:
@@ -29,7 +30,15 @@ if PY3:
     from urllib.error import URLError as URLError
     from http.client import BadStatusLine as BadStatusLine
     from urllib.request import build_opener as urlBuild_opener
-    from urllib.request import HTTPSHandler    
+    from urllib.request import HTTPSHandler
+    if sys.version_info < (3,5):
+        def my_ssl_create_unverified_context():
+            ssl_ctx = ssl.create_default_context()
+            ssl_ctx.check_hostname = False
+            ssl_ctx.verify_mode = ssl.CERT_NONE
+            return ssl_ctx
+    else:
+        my_ssl_create_unverified_context = ssl._create_unverified_context
 else:
     from urllib2 import Request as UrlRequest
     from urllib2 import HTTPError as HTTPError
@@ -38,7 +47,6 @@ else:
     from urllib2 import HTTPSHandler
     class BadStatusLine:
         pass
-import ssl
 
 from lib.common import USER_AGENT, Logger
 from lib.DummyMMSHandler import DummyMMSHandler
@@ -95,7 +103,7 @@ class StreamDecoder:
         try:
             opener = urlBuild_opener(
                 DummyMMSHandler(),
-                HTTPSHandler(context = ssl._create_unverified_context()))
+                HTTPSHandler(context = my_ssl_create_unverified_context()))
             f = opener.open(req, timeout=float(self.url_timeout))
         except HTTPError as e:
             self.log.warn('HTTP Error for %s: %s' % (url, e))
@@ -115,7 +123,8 @@ class StreamDecoder:
             else:
                 return None
         except Exception as e:
-            self.log.warn('%s: for %s: Error %s: %s' % (type(e), url, e))
+            print('%s: for %s: %s' % (type(e), url, e),file=sys.stderr)
+            self.log.warn('%s: for %s: %s' % (type(e), url, e))
             return None
 
         metadata = f.info()
