@@ -1,3 +1,9 @@
+upmpdcli (1.3.3-1~ppaPPAVERS~SERIES1) SERIES; urgency=low
+
+  * Fix radio not working on jessie because of python3 version issue
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Thu, 20 Sep 2018 11:00:00 +0200
+
 upmpdcli (1.3.2-2~ppaPPAVERS~SERIES1) SERIES; urgency=low
 
   * Fix minor bug in ohcredentials use
