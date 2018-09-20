@@ -1,5 +1,10 @@
 = Upmpdcli release notes
 
+== upmpdcli 1.3.3
+
+- Fix the radio source on systems with Python3 version older than 3.5
+  (e.g. Debian Jessie)
+  
 == upmpdcli 1.3.2
 
 NOTE: Using this release with Lumin needs explicitely setting lumincompat=1
