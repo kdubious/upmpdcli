@@ -79,7 +79,7 @@ class Session(object):
             data = self.api.get_all_songs()
             #self.dmpdata("all_songs", data)
         else:
-            data = self.api.get_all_songs(updated_after=datetime.fromtimestamp(self.lib_updatetime))
+            data = self.api.get_all_songs(updated_after=datetime.datetime.fromtimestamp(self.lib_updatetime))
             #self.dmpdata("all_songs_since_update", data)
         self.lib_updatetime = now
         tracks = [_parse_track(t) for t in data]
@@ -97,8 +97,6 @@ class Session(object):
             # should have a special library-local get_album_tracks
             self.lib_albums[track.album.name] = track.album
             self.lib_artists[track.artist.id] = track.artist
-        data = self.api.get_all_user_playlist_contents()
-        self.lib_playlists = dict([(pl['id'], pl) for pl in data])
             
     def get_user_albums(self):
         self._get_user_library()
@@ -115,6 +113,10 @@ class Session(object):
 
     def get_user_playlist_tracks(self, playlist_id):
         self._get_user_library()
+        # Only load the playlists one time for performance purposes
+        if len(self.lib_playlists) == 0:
+            data = self.api.get_all_user_playlist_contents()
+            self.lib_playlists = dict([(pl['id'], pl) for pl in data])
         tracks = []
         if playlist_id in self.lib_playlists:
             for entry in self.lib_playlists[playlist_id]['tracks']:
