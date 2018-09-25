@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 #
 # A lot of code copied from the Kodi Tidal addon which is:
 # Copyright (C) 2014 Thomas Amland
