@@ -113,7 +113,12 @@ class Session(object):
 
     def get_user_playlist_tracks(self, playlist_id):
         self._get_user_library()
-        # Only load the playlists one time for performance purposes
+        # Unfortunately gmusic does not offer incremental updates for
+        # playlists.  This means we must download all playlist data any
+        # time we want an update.  Playlists include track information
+        # for gmusic songs, so if a user has a lot of playlists this
+        # can take some time.
+        # For now, we only load the playlists one time for performance purposes
         if len(self.lib_playlists) == 0:
             data = self.api.get_all_user_playlist_contents()
             self.lib_playlists = dict([(pl['id'], pl) for pl in data])
