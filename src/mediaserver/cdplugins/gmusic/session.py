@@ -32,6 +32,7 @@ class Session(object):
         self.lib_albums = {}
         self.lib_artists = {}
         self.lib_tracks = {}
+        self.lib_playlists = {}
         self.lib_updatetime = 0
         self.sitdata = []
         self.sitbyid = {}
@@ -74,11 +75,15 @@ class Session(object):
         now = time.time()
         if now - self.lib_updatetime < 300:
             return
-        data = self.api.get_all_songs()
-        #self.dmpdata("all_songs", data)
+        if self.lib_updatetime == 0:
+            data = self.api.get_all_songs()
+            #self.dmpdata("all_songs", data)
+        else:
+            data = self.api.get_all_songs(updated_after=datetime.fromtimestamp(self.lib_updatetime))
+            #self.dmpdata("all_songs_since_update", data)
         self.lib_updatetime = now
         tracks = [_parse_track(t) for t in data]
-        self.lib_tracks = dict([(t.id, t) for t in tracks])
+        self.lib_tracks.update(dict([(t.id, t) for t in tracks]))
         for track in tracks:
             # We would like to use the album id here, but gmusic
             # associates the tracks with any compilations after
@@ -92,6 +97,8 @@ class Session(object):
             # should have a special library-local get_album_tracks
             self.lib_albums[track.album.name] = track.album
             self.lib_artists[track.artist.id] = track.artist
+        data = self.api.get_all_user_playlist_contents()
+        self.lib_playlists = dict([(pl['id'], pl) for pl in data])
             
     def get_user_albums(self):
         self._get_user_library()
@@ -108,23 +115,15 @@ class Session(object):
 
     def get_user_playlist_tracks(self, playlist_id):
         self._get_user_library()
-        data = self.api.get_all_user_playlist_contents()
-        entries = []
-        for item in data:
-            if item['id'] == playlist_id:
-                entries = item['tracks']
-                break
-        if not entries:
-            return []
-        #self.dmpdata("user_playlist_content", entries)
         tracks = []
-        for entry in entries:
-            if entry['deleted']:
-                continue
-            if entry['source'] == u'1':
-                tracks.append(self.lib_tracks[entry['trackId']])
-            elif 'track' in entry:
-                tracks.append(_parse_track(entry['track']) )
+        if playlist_id in self.lib_playlists:
+            for entry in self.lib_playlists[playlist_id]['tracks']:
+                if entry['deleted']:
+                    continue
+                if entry['source'] == u'1':
+                    tracks.append(self.lib_tracks[entry['trackId']])
+                elif 'track' in entry:
+                    tracks.append(_parse_track(entry['track']) )
         return tracks
 
     def create_station_for_genre(self, genre_id):
