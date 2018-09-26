@@ -41,7 +41,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Info:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Info");
 
 OHInfo::OHInfo(UpMpd *dev)
-    : OHService(sTpProduct, sIdProduct, dev), m_ohpl(0)
+    : OHService(sTpProduct, sIdProduct, "OHInfo.xml", dev), m_ohpl(0)
 {
     dev->addActionMapping(this, "Counters", 
                           bind(&OHInfo::counters, this, _1, _2));

@@ -111,7 +111,7 @@ struct RadioMeta {
 static vector<RadioMeta> o_radios;
 
 OHRadio::OHRadio(UpMpd *dev)
-    : OHService(sTpProduct, sIdProduct, dev)
+    : OHService(sTpProduct, sIdProduct, "OHRadio.xml", dev)
 {
     // Need Python for the radiopl playlist-to-audio-url script
     string pypath;

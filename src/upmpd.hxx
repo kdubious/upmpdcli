@@ -83,6 +83,8 @@ public:
         std::string  cachedir;
         std::string  cachefn;
         std::string  radioconf;
+        std::string  iconpath;
+        std::string  presentationhtml;
         unsigned int ohmetasleep;
         int schttpport;
         std::string scplaymethod;
@@ -93,9 +95,11 @@ public:
     };
     UpMpd(const std::string& deviceid, const std::string& friendlyname,
           ohProductDesc_t& ohProductDesc,
-          const std::unordered_map<std::string, VDirContent>& files,
           MPDCli *mpdcli, Options opts);
     ~UpMpd();
+
+    virtual bool readLibFile(const std::string& name,
+                             std::string& contents);
 
     const MpdStatus& getMpdStatus();
     const MpdStatus& getMpdStatusNoUpdate() {
@@ -130,6 +134,7 @@ private:
     MPDCli *m_mpdcli;
     const MpdStatus *m_mpds;
     unsigned int m_options;
+    Options m_allopts;
     std::string m_mcachefn;
     UpMpdRenderCtl *m_rdctl;
     UpMpdAVTransport *m_avt;

@@ -53,6 +53,7 @@
 
 #include "mpdcli.hxx"
 #include "smallut.h"
+#include "pathut.h"
 #include "conftree.h"
 
 using namespace std;

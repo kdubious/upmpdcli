@@ -28,6 +28,9 @@ namespace UPnPClient {
     class UPnPDirObject;
 };
 
+// Read file from datadir
+bool readLibFile(const std::string& name, std::string& contents);
+
 // This was originally purely a translation of data from mpd. Extended
 // to general purpose track/container descriptor
 class UpSong {

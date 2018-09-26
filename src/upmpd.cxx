@@ -22,6 +22,7 @@
 #include "libupnpp/upnpplib.hxx"        // for LibUPnP
 #include "libupnpp/control/cdircontent.hxx"
 
+#include "main.hxx"
 #include "smallut.h"
 #include "avtransport.hxx"
 #include "conman.hxx"
@@ -36,23 +37,83 @@
 #include "renderctl.hxx"
 #include "upmpdutils.hxx"
 #include "execmd.h"
-#include "httpfs.hxx"
 #include "ohsndrcv.hxx"
 #include "protocolinfo.hxx"
 #include "ohcredentials.hxx"
+#include "readfile.h"
 
 using namespace std;
 using namespace std::placeholders;
 using namespace UPnPP;
 
+static const string iconDesc(
+    "<iconList>"
+    "  <icon>"
+    "    <mimetype>image/png</mimetype>"
+    "    <width>64</width>"
+    "    <height>64</height>"
+    "    <depth>32</depth>"
+    "    <url>@PATH@</url>"
+    "  </icon>"
+    "</iconList>"
+    );
+static const string presDesc(
+    "<presentationURL>@PATH@</presentationURL>"
+    );
+
+bool UpMpd::readLibFile(const string& name, string& contents)
+{
+    if (!name.empty()) {
+        return ::readLibFile(name, contents);
+    }
+    
+    // Empty name: requesting device description
+    if (!::readLibFile("description.xml", contents)) {
+        return false;
+    }
+    contents = regsub1("@UUID@", contents, getDeviceId());
+    contents = regsub1("@FRIENDLYNAME@", contents, m_friendlyname);
+    string reason, path;
+    if (!m_allopts.iconpath.empty()) {
+        string icondata;
+        if (!file_to_string(m_allopts.iconpath, icondata, &reason)) {
+            if (m_allopts.iconpath.compare("/usr/share/upmpdcli/icon.png")) {
+                LOGERR("Failed reading " << m_allopts.iconpath << " : " <<
+                       reason << endl);
+            } else {
+                LOGDEB("Failed reading "<< m_allopts.iconpath << " : " <<
+                       reason << endl);
+            }
+        }
+        if (!icondata.empty()) {
+            addVFile("icon.png", icondata, "image/png", path);
+            contents += regsub1("@PATH@", iconDesc, path);
+        }
+    }
+
+    if (!m_allopts.presentationhtml.empty()) {
+        string presdata;
+        if (!file_to_string(m_allopts.presentationhtml, presdata, &reason)) {
+            LOGERR("Failed reading " << m_allopts.presentationhtml << " : " <<
+                   reason << endl);
+        }
+        if (!presdata.empty()) {
+            addVFile("presentation.html", presdata, "text/html", path);
+            contents += regsub1("@PATH@", presDesc, path);
+        }
+    }        
+    return true;
+}
+
+
 // Note: if we ever need this to work without cxx11, there is this:
 // http://www.tutok.sk/fastgl/callback.html
 UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
              ohProductDesc_t& ohProductDesc,
-             const unordered_map<string, VDirContent>& files,
              MPDCli *mpdcli, Options opts)
-    : UpnpDevice(deviceid, files), m_mpdcli(mpdcli), m_mpds(0),
+    : UpnpDevice(deviceid), m_mpdcli(mpdcli), m_mpds(0),
       m_options(opts.options),
+      m_allopts(opts),
       m_mcachefn(opts.cachefn),
       m_rdctl(0), m_avt(0), m_ohpr(0), m_ohpl(0), m_ohrd(0), m_ohrcv(0),
       m_sndrcv(0), m_friendlyname(friendlyname)

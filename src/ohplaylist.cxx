@@ -51,7 +51,7 @@ static const string sIdProduct("urn:av-openhome-org:serviceId:Playlist");
 
 // Playlist is the default oh service, so it's active when starting up
 OHPlaylist::OHPlaylist(UpMpd *dev, unsigned int cssleep)
-    : OHService(sTpProduct, sIdProduct, dev),
+    : OHService(sTpProduct, sIdProduct, "OHPlaylist.xml", dev),
       m_active(true), m_cachedirty(false), m_mpdqvers(-1)
 {
     dev->addActionMapping(this, "Play", 

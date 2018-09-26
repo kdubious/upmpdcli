@@ -44,7 +44,8 @@ static const string sIdTransport("urn:upnp-org:serviceId:AVTransport");
 static const string sTpTransport("urn:schemas-upnp-org:service:AVTransport:1");
 
 UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev, bool noev)
-    : UpnpService(sTpTransport, sIdTransport, dev, noev), m_dev(dev), m_ohp(0)
+    : UpnpService(sTpTransport, sIdTransport, "AVTransport.xml", dev, noev),
+      m_dev(dev), m_ohp(0)
 {
     m_dev->addActionMapping(this,"SetAVTransportURI", 
                             bind(&UpMpdAVTransport::setAVTransportURI, 

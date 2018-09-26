@@ -40,7 +40,7 @@ static const string sTpProduct("urn:av-openhome-org:service:Time:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Time");
 
 OHTime::OHTime(UpMpd *dev)
-    : OHService(sTpProduct, sIdProduct, dev)
+    : OHService(sTpProduct, sIdProduct, "OHTime.xml", dev)
 {
     dev->addActionMapping(this, "Time", bind(&OHTime::ohtime, this, _1, _2));
 }
