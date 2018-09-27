@@ -14,6 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
 
+import sys
+PY3 = sys.version > '3'
+
 import re
 from recoll import recoll
 

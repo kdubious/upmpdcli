@@ -348,13 +348,25 @@ class Folders(object):
         lpath = []
         while True:
             fathidx = self._dirvec[diridx][".."][0]
+            found = False
             for nm, ids in self._dirvec[fathidx].items():
                 if ids[0] == diridx:
                     lpath.append(nm)
+                    found = True
                     break
-                diridx = fathidx
-                if diridx == 0:
-                    break
+            # End for
+            if not found:
+                uplog("uprclfolders: pwd failed for %s \
+                (father not found), returning /" % objid)
+                return "/"
+            if len(lpath) > 200:
+                uplog("uprclfolders: pwd failed for %s \
+                (looping), returning /" % objid)
+                return "/"
+                
+            diridx = fathidx
+            if diridx == 0:
+                break
 
         if not lpath:
             path = "/"
