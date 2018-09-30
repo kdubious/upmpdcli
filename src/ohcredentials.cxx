@@ -142,7 +142,7 @@ struct ServiceCreds {
     // server gateway module, from which we only use a separate method
     // which logs-in and returns the auth data (token, etc.)
     bool maybeStartCmd() {
-        LOGDEB("ServiceCreds: " << servicename << " maybeStartCmd()\n");
+        LOGDEB1("ServiceCreds: " << servicename << " maybeStartCmd()\n");
         if (nullptr == cmd) {
             cmd = new CmdTalk(30);
         }
@@ -267,7 +267,7 @@ public:
             LOGERR("OHCredentials: could not read public key\n");
             return;
         }
-
+        tryLoad();
         LOGDEB1("OHCredentials: my public key:\n" << pubkey << endl);
     }
 
@@ -293,18 +293,15 @@ public:
     }
 
     bool save() {
-        bool saveohcredentials = true;
-        string val;
-        if (g_config && g_config->get("saveohcredentials", val)) {
-            saveohcredentials = stringToBool(val);
-        }
+        bool saveohcredentials = doingsavetofile();
         // We share the creds with the media server process because it
         // needs them for url translation If saveohcredentials is
         // true, we use a file, which can also be used by the regular
         // media server plugin, for possible later access without
-        // ohcredentials. If it's false, we use a shared mem segment,
-        // and the user/pass would have to be set in
-        // /etc/upmpdcli.conf for the regular plugin to work.
+        // ohcredentials (e.g. with another non-kazoo CP). If it's
+        // false, we use a shared mem segment, and the user/pass would
+        // have to be set in /etc/upmpdcli.conf for the media server
+        // plugin to work.
         if (saveohcredentials) {
             string credsfile = path_cat(cachedir, "screds");
             ConfSimple credsconf(credsfile.c_str());
@@ -313,31 +310,80 @@ public:
                        " errno " << errno << endl);
                 return false;
             }
-            for (const auto& cred : creds) {
-                credsconf.set(cred.second.servicename + "user", cred.second.user);
-                credsconf.set(cred.second.servicename + "pass", cred.second.password);
-            }
+            saveToConfTree(credsconf);
             chmod(credsfile.c_str(), 0600);
         } else {
             string data;
             ConfSimple credsconf(data);
-            for (const auto& cred : creds) {
-                credsconf.set(cred.second.servicename + "user", cred.second.user);
-                credsconf.set(cred.second.servicename + "pass", cred.second.password);
-            }
-            LockableShmSeg seg(ohcreds_segpath, ohcreds_segid, ohcreds_segsize, true);
+            saveToConfTree(credsconf);
+            LockableShmSeg seg(ohcreds_segpath, ohcreds_segid, ohcreds_segsize,
+                               true);
             if (!seg.ok()) {
-                LOGERR("OHCredentials: shared memory segment allocate/attach failed\n");
+                LOGERR("OHCredentials: shared memory segment allocate/attach "
+                       "failed\n");
                 return false;
             }
             LockableShmSeg::Accessor access(seg);
             char *cp = (char *)(access.getseg());
             ostringstream strm;
             credsconf.write(strm);
-            strcpy(cp, strm.str().c_str());
+            if (strm.str().size() >= ohcreds_segsize - 1) {
+                LOGERR("OHCredentials: creds size " << strm.str().size() <<
+                       "won't fit in SHM segment\n");
+                return false;
+            }
+            strncpy(cp, strm.str().c_str(), ohcreds_segsize);
             LOGDEB1("OHCredentials: shm seg content: [" << cp << "]\n");
         }
         return true;
+    }
+
+    //// This could be a private part if we were not all friends here /////
+    
+    bool doingsavetofile() {
+        bool saveohcredentials = true;
+        string val;
+        if (g_config && g_config->get("saveohcredentials", val)) {
+            saveohcredentials = stringToBool(val);
+        }
+        return saveohcredentials;
+    }        
+
+    void saveToConfTree(ConfSimple& credsconf) {
+        for (const auto& cred : creds) {
+            const string& shortid = cred.second.servicename;
+            credsconf.set(shortid + "user", cred.second.user);
+            credsconf.set(shortid + "pass", cred.second.password);
+            // Saving the encrypted version is redundant, but it
+            // avoids having to run encrypt on load.
+            credsconf.set(shortid + "epass", cred.second.encryptedpass);
+        }
+    }
+
+    // Try to load from configuration file at startup. Avoids having
+    // to enter the password on the CP if it was previously saved.
+    void tryLoad() {
+        if (!doingsavetofile()) {
+            return;
+        }
+        string credsfile = path_cat(cachedir, "screds");
+        ConfSimple credsconf(credsfile.c_str(), 1);
+        if (!credsconf.ok()) {
+            LOGDEB("OHCredentials: error opening for read (probably not an "
+                   "error)" << credsfile << " errno " << errno << endl);
+            return;
+        }
+        for (const auto& service : idmap) {
+            const string& id = service.first;
+            const string& shortid = service.second;
+            string user, pass, epass;
+            if (credsconf.get(shortid + "user", user) && 
+                credsconf.get(shortid + "pass", pass) && 
+                credsconf.get(shortid + "epass", epass)) {
+                LOGDEB("OHCreds: using saved creds for " << id << endl);
+                creds[id] = ServiceCreds(shortid, user, pass, epass);
+            }
+        }
     }
     
     ExecCmd cmd;
