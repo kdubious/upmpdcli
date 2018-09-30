@@ -46,7 +46,7 @@ class Processor:
         self.em.log(s, doexit, exitvalue)
         
     def process(self, params):
-        self.em.log("pCmdTalkProcessor.process: [%s]" % params)
+        # self.em.log("pCmdTalkProcessor.process: [%s]" % params)
         if not prcnmkey in params:
             raise Exception('%s not in args' % prcnmkey)
         
