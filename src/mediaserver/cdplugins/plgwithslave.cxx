@@ -92,6 +92,9 @@ public:
             g_config->get("spotifyuser", user);
             g_config->get("spotifypass", password);
             string cachedir = path_cat(g_cachedir, "spotify");
+            // Make sure doingproxy is set, independantly of the
+            // config variable, which is only useful for Qobuz et al
+            doingproxy = true;
             SpotiProxy::setParams(user, password, cachedir, cachedir);
         }
 #endif
