@@ -118,7 +118,8 @@ CurlFetch::Internal::~Internal()
 
 bool CurlFetch::start(BufXChange<ABuffer*> *queue, uint64_t offset)
 {
-    LOGDEB1("CurlFetch::start\n");
+    LOGDEB0("CurlFetch::start: offset: " << offset << " " << std::hex <<
+            offset << std::dec << "\n");
     if (nullptr == queue) {
         LOGERR("CurlFetch::start: called with nullptr\n");
         return false;
@@ -168,12 +169,14 @@ bool CurlFetch::fetchDone(FetchStatus *code, int *http_code)
     if (!m->curldone) {
         return false;
     }
-    LOGDEB1("CurlFetch::fetchDone: curlcode " << m->curl_code << " httpcode " <<
+    LOGDEB0("CurlFetch::fetchDone: curlcode " << m->curl_code << " httpcode " <<
            m->curl_http_code << endl);
     if (code) {
         switch (m->curl_code) {
         case CURLE_PARTIAL_FILE:
         case CURLE_RECV_ERROR:
+        case CURLE_SEND_ERROR:
+            LOGDEB("CurlFetch::fetchDone: retryable\n");
             *code = NetFetch::FETCH_RETRYABLE;
             break;
         case CURLE_OK:
@@ -420,7 +423,8 @@ void CurlFetch::Internal::curlWorkerFunc()
         //curl_easy_setopt(curl, CURLOPT_HTTP_TRANSFER_DECODING, 1L);
     }
     
-    LOGDEB1("CurlFetch::curlWorker: fetching " << url << endl);
+    LOGDEB0("CurlFetch::curlWorker: fetching " << p->_url << " timeout " <<
+            p->timeoutsecs << " seconds\n");
     curl_easy_setopt(curl, CURLOPT_URL, p->_url.c_str());
     if (p->startoffset) {
         char range[32];
