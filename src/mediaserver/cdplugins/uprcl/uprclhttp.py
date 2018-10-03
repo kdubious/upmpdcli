@@ -116,4 +116,4 @@ def runbottle(host='0.0.0.0', port=9278, pthstr='', pathprefix=''):
         streamer = Streamer(l[1])
         bottle.route(rt, 'GET', streamer)
 
-    bottle.run(server='paste', host=host, port=port)
+    bottle.run(server='waitress', host=host, port=port)
