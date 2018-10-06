@@ -89,6 +89,10 @@ class Spotify(object):
     def _auth_headers(self):
         if self._auth:
             token_info = self._auth.get_cached_token()
+            if not token_info:
+                print("SPOTIFY:_AUTH_HEADERS: TOKEN INFO IS NOT SET",
+                      file=sys.stderr)
+                return {}
             #print("token_info: %s" % token_info, file=sys.stderr)
             #print("token expires at %s" % datetime.datetime.fromtimestamp(
             #    token_info['expires_at']).strftime('%Y-%m-%d %H:%M:%S'),

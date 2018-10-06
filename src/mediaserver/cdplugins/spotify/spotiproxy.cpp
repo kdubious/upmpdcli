@@ -473,12 +473,13 @@ SpotiProxy *SpotiProxy::getSpotiProxy(
             return nullptr;
         }
     } else {
-        string user(u.empty() ? o_user : u);
-        string pass(p.empty() ? o_password : p);
-        LOGDEB("getSpotiProxy: creating for user " << user <<"\n");
-        theSpotiProxy = new SpotiProxy(user, pass,  
-                                       cached.empty() ? o_cachedir : cached,
-                                       confd.empty() ? o_settingsdir : confd);
+        string user{u.empty() ? o_user : u};
+        string pass{p.empty() ? o_password : p};
+        string cachedir{cached.empty() ? o_cachedir : cached};
+        string confdir{confd.empty() ? o_settingsdir : confd};
+        LOGDEB("getSpotiProxy: creating for user " << user <<
+               " cachedir " << cachedir << " confdir " <<confdir<<"\n");
+        theSpotiProxy = new SpotiProxy(user, pass, cachedir, confdir);
         return theSpotiProxy;
     }
 }

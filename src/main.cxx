@@ -493,9 +493,13 @@ int main(int argc, char *argv[])
     // uid (later). First part follows
     uid_t runas(0);
     gid_t runasg(0);
+    struct passwd *pass = getpwnam(upmpdcliuser.c_str());
+    if (pass) {
+        runas = pass->pw_uid;
+        runasg = pass->pw_gid;
+    }
     if (geteuid() == 0) {
-        struct passwd *pass = getpwnam(upmpdcliuser.c_str());
-        if (pass == 0) {
+        if (runas == 0) {
             LOGFAT("upmpdcli won't run as root and user " << upmpdcliuser << 
                    " does not exist " << endl);
             return 1;
@@ -513,6 +517,20 @@ int main(int argc, char *argv[])
             LOGFAT("Can't write pidfile: " << pidfile.getreason() << endl);
             return 1;
         }
+	if (opts.cachedir.empty())
+            opts.cachedir = "/var/cache/upmpdcli";
+    } else if (runas == geteuid()) {
+        // Already running as upmpdcli user. There are actually 2
+        // possibilities: either we were initially started as
+        // upmpdcli, and we should be using ~upmpdcli/.cache as work
+        // directory, or we were exec'd by a master process started as
+        // root, and we should be using /var/cache/upmpdcli. We have
+        // no way to decide actually, another command line option
+        // would be needed. For now, behave as if exec'd by a master
+        // process, because this is what happens if the default
+        // package was installed. One way to fix this if this if it is
+        // wrong is to set cachedir in the configuration file
+        // (opts.cachedir will be non-empty then).
 	if (opts.cachedir.empty())
             opts.cachedir = "/var/cache/upmpdcli";
     } else {
