@@ -404,7 +404,7 @@ void CurlFetch::Internal::curlWorkerFunc()
         curl_easy_setopt(curl, CURLOPT_SOCKOPTFUNCTION, curl_sockopt_cb);
         curl_easy_setopt(curl, CURLOPT_SOCKOPTDATA, this);
 
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 15);
         // Speedlimit is in bytes/S. 32Kbits/S
         curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 4L);
         curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 60);
