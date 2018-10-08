@@ -262,13 +262,21 @@ public:
             }
         }
 
-        vector<string> acmd{"openssl", "pkey", "-in", keyfile, "-pubout"};
+        // It seems that some CPs (e.g. bubble upnp, but not kazoo)
+        // expect the key in pkcs#1 format, but the default openssl
+        // pkey format is pkcs#12. Explanations about the formats:
+        // https://stackoverflow.com/questions/18039401/how-can-i-transform
+        //-between-the-two-styles-of-public-key-format-one-begin-rsa#29707204
+        //  So use the openssl rsa command with the appropriate option
+        //  instead of openssl pkey
+        // vector<string> acmd{"openssl", "pkey", "-in", keyfile, "-pubout"};
+        vector<string> acmd{"openssl","rsa","-in",keyfile, "-RSAPublicKey_out"};
         if (!cmd.backtick(acmd, pubkey)) {
             LOGERR("OHCredentials: could not read public key\n");
             return;
         }
-        tryLoad();
         LOGDEB1("OHCredentials: my public key:\n" << pubkey << endl);
+        tryLoad();
     }
 
     bool decrypt(const string& in, string& out) {
@@ -647,7 +655,7 @@ int OHCredentials::actGetIds(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHCredentials::actGetPublicKey(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    LOGDEB("OHCredentials::actGetPublicKey: " << endl);
+    LOGDEB("OHCredentials::actGetPublicKey: pubkey: " << m->pubkey << endl);
     data.addarg("PublicKey", m->pubkey);
     return m->pubkey.empty() ? UPNP_E_INTERNAL_ERROR : UPNP_E_SUCCESS;
 }
