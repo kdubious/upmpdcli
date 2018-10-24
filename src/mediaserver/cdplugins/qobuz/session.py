@@ -45,15 +45,42 @@ class Session(object):
         uplog("get_media_url got: %s" % url)
         return url['url'] if url and 'url' in url else None
 
+
+    def loopget(self, max, getter, getterka, parser):
+        slice = 20
+        offset = 0
+        all = []
+        while max == 0 or offset < max:
+            getterka['limit'] = slice
+            getterka['offset'] = offset
+            jsdata = getter(**getterka)
+            try:
+                ndata = parser(jsdata)
+                #uplog("loopget: %s" % json.dumps(ndata, indent=4))
+            except Exception as err:
+                uplog("loopget: exception while parsing: %s" % err)
+                break
+            all.extend(ndata)
+            uplog("GOT %d more (slice %d)" % (len(ndata), slice))
+            if len(ndata) < slice:
+                break
+            offset += slice
+            
+        return all
+        
+
     def get_album_tracks(self, albid):
         data = self.api.album_get(album_id = albid)
         album = _parse_album(data)
         return [_parse_track(t, album) for t in data['tracks']['items']]
 
+
     def get_playlist_tracks(self, plid):
-        data = self.api.playlist_get(playlist_id = plid, extra = 'tracks')
-        #uplog("PLAYLIST: %s" % json.dumps(data, indent=4))
-        return [_parse_track(t) for t in data['tracks']['items']]
+        return self.loopget(
+            1000, self.api.playlist_get,
+            {'playlist_id' : plid, 'extra' : 'tracks'},
+            lambda jsdata : [_parse_track(t) for t in jsdata['tracks']['items']]
+            )
 
     def get_artist_albums(self, artid):
         data = self.api.artist_get(artist_id=artid, extra='albums')
@@ -281,61 +308,33 @@ class Favorites(object):
         self.session = session
 
     def artists(self):
-        offset = 0
-        artists = []
-        slice = 45
-        while True:
-            r = self.session.api.favorite_getUserFavorites(
-                user_id = self.session.user.id,
-                type = 'artists', offset=offset, limit=slice)
-            #uplog("%s" % r)
-            arts = [_parse_artist(item) for item in r['artists']['items']]
-            artists += arts
-            uplog("Favourite artists: got %d at offs %d"% (len(arts), offset))
-            offset += len(arts)
-            if len(arts) != slice:
-                break
-
-        return artists
+        return self.session.loopget(
+            0, self.session.api.favorite_getUserFavorites,
+            {'user_id' : self.session.user.id, 'type' : 'artists'},
+            lambda r : [_parse_artist(item) for item in r['artists']['items']]
+            )
 
     def albums(self):
-        offset = 0
-        albums = []
-        slice = 45
-        while True:
-            r = self.session.api.favorite_getUserFavorites(
-                user_id = self.session.user.id,
-                type = 'albums', offset = offset, limit=slice)
-            #uplog("%s" % r)
-            albs = [_parse_album(item) for item in r['albums']['items']]
-            albums += albs
-            uplog("Favourite albums: got %d at offset %d"% (len(albs), offset))
-            offset += len(albs)
-            if len(albs) != slice:
-                break
-
-        return [alb for alb in albums if alb.available]
+        result = self.session.loopget(
+            0, self.session.api.favorite_getUserFavorites,
+            {'user_id' : self.session.user.id, 'type' : 'albums'},
+            lambda r : [_parse_album(item) for item in r['albums']['items']]
+            )
+        return [alb for alb in result if alb.available]
 
     def playlists(self):
-        r = self.session.api.playlist_getUserPlaylists()
-        return [_parse_playlist(item) for item in r['playlists']['items']]
+        return self.session.loopget(
+            0, self.session.api.playlist_getUserPlaylists,
+            {'user_id' : self.session.user.id},
+         lambda r : [_parse_playlist(item) for item in r['playlists']['items']]
+            )
 
     def tracks(self):
-        offset = 0
-        result = []
-        slice = 45
-        while True:
-            r = self.session.api.favorite_getUserFavorites(
-                user_id = self.session.user.id,
-                type = 'tracks', offset=offset, limit=slice)
-            #uplog("%s" % r)
-            res = [_parse_track(item) for item in r['tracks']['items']]
-            result += res
-            uplog("Favourite tracks: got %d at offs %d"% (len(res), offset))
-            offset += len(res)
-            if len(res) != slice:
-                break
-
+        result = self.session.loopget(
+            0, self.session.api.favorite_getUserFavorites,
+            {'user_id' : self.session.user.id, 'type' : 'tracks'},
+            lambda r : [_parse_track(item) for item in r['tracks']['items']]
+            )
         return [trk for trk in result if trk.available]
 
 
