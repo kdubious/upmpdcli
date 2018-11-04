@@ -1309,7 +1309,8 @@ station).
 
 The 'radio_scripts' directory has two examples of radio metadata scripts, a
 simple one ('fip-meta.py'), and a quite complicated one
-('radio-paradise-get-flac.py').
+('radio-paradise-get-flac.py'). Both need the Python3 'requests' package to
+be installed.
 
 
 [[COMMAND-ENVIRON]]

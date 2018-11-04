@@ -1,8 +1,8 @@
-upmpdcli (1.3.3-1~ppaPPAVERS~SERIES1) SERIES; urgency=low
+upmpdcli (1.4.0-1~ppaPPAVERS~SERIES1) SERIES; urgency=low
 
-  * Fix radio not working on jessie because of python3 version issue
+  * Master branch. Changelog tbd
   
- -- Jean-Francois Dockes <jf@dockes.org>  Thu, 20 Sep 2018 11:00:00 +0200
+ -- Jean-Francois Dockes <jf@dockes.org>  Sun, 04 Nov 2018 11:00:00 +0100
 
 upmpdcli (1.3.2-2~ppaPPAVERS~SERIES1) SERIES; urgency=low
 

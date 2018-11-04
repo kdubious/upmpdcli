@@ -15,7 +15,8 @@ Homepage: http://www.lesbonscomptes.com/upmpdcli
 
 Package: upmpdcli
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, adduser, python3, ${python:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, adduser, python3,
+         ${python:Depends}, python3-requests
 Section: contrib/sound
 Description: UPnP Media Renderer front-end to MPD, the Music Player Daemon
  upmpdcli acts as an UPnP Media Renderer on the front-end so that you can
