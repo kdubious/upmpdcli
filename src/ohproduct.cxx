@@ -115,7 +115,7 @@ OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc, int version)
             "  </Source>\n";
     }
     csxml += string("</SourceList>\n");
-    LOGDEB("OHProduct::OHProduct: sources: " << csxml << endl);
+    LOGDEB0("OHProduct::OHProduct: sources: " << csxml << endl);
 
     g_config->get("onstandby", m_standbycmd);
     if (!m_standbycmd.empty()) {

@@ -302,14 +302,21 @@ public:
 
     bool save() {
         bool saveohcredentials = doingsavetofile();
-        // We share the creds with the media server process because it
-        // needs them for url translation If saveohcredentials is
-        // true, we use a file, which can also be used by the regular
-        // media server plugin, for possible later access without
-        // ohcredentials (e.g. with another non-kazoo CP). If it's
-        // false, we use a shared mem segment, and the user/pass would
-        // have to be set in /etc/upmpdcli.conf for the media server
-        // plugin to work.
+        // The media server process needs the credentials for
+        // translating the permanent URL into the actual media stream
+        // ones. We can use either a shared memory segment or a file
+        // for this purpose.
+        //
+        // Using a file offers less security (the creds are available
+        // to anyone with physical access to the device), but they can
+        // then also be used by the regular Media Server plugin,
+        // allowing access by a non-ohcredentials CP (e.g. upplay)
+        // without having to set them in upmpdcli.conf. In other
+        // words, the Credentials service utility is extended to
+        // regular CPs.
+        // 
+        // The choice between shmem/file is decided by the
+        // saveohcredentials configuration variable
         if (saveohcredentials) {
             string credsfile = path_cat(cachedir, "screds");
             ConfSimple credsconf(credsfile.c_str());

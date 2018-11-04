@@ -56,6 +56,7 @@ public:
     bool removeondelete{true};
     bool ok{false};
     bool mycreation{false};
+    int lasterrno;
 };
 
 void ShmSeg::setremove(bool onoff)
@@ -77,6 +78,10 @@ bool ShmSeg::ok()
 {
     return m->ok;
 }
+int ShmSeg::geterrno()
+{
+    return m->lasterrno;
+}
 
 ShmSeg::ShmSeg(key_t ky, size_t size, bool create, int perms)
     : m(new Internal)
@@ -96,23 +101,32 @@ ShmSeg::ShmSeg(key_t ky, size_t size, bool create, int perms)
     } else {
         perms = 0;
     }
+    m->lasterrno = 0;
     if ((m->shmid = shmget(m->key, size, flags|perms)) >= 0) {
         if (create) {
             m->mycreation = true;
         }
     } else {
+        m->lasterrno = errno;
         if (errno != EEXIST) {
-            LOGSYSERR("ShmSeg::ShmSeg", "shmget", size);
+            // Don't log a possibly trivial error, let the caller do it if
+            // needed.
+            // LOGSYSERR("ShmSeg::ShmSeg", "shmget", size);
             return;
         }
+        // If the segment already existed, let's attach it
+        m->lasterrno = 0;
         if ((m->shmid = shmget(m->key, size, 0)) < 0) {
+            m->lasterrno = errno;
             LOGSYSERR("ShmSeg::ShmSeg", "shmget", size);
             return;
         }
     }
     m->bytes = size;
     // Attach it
+    m->lasterrno = 0;
     if ((m->seg = shmat(m->shmid, 0, 0)) == (void *)-1) {
+        m->lasterrno = errno;
         LOGSYSERR("ShmSeg::ShmSeg", "shmat", m->shmid);
         shmctl(m->shmid, IPC_RMID, 0);
         return;
@@ -120,7 +134,8 @@ ShmSeg::ShmSeg(key_t ky, size_t size, bool create, int perms)
     m->ok = true;
 }
 
-ShmSeg::ShmSeg(const char*pathname, int proj_id, size_t size, bool create, int perms)
+ShmSeg::ShmSeg(const char*pathname, int proj_id, size_t size, bool create,
+               int perms)
     : ShmSeg(ftok(pathname, proj_id), size, create, perms)
 {
 }

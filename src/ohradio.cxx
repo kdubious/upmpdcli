@@ -177,9 +177,9 @@ static void getRadiosFromConf(ConfSimple* conf)
             if (!uri.empty() || !metaScript.empty()) {
                 o_radios.push_back(RadioMeta(title, uri, artUri, artScript,
                                              metaScript, preferScript));
-                LOGDEB("OHRadio::readRadios:RADIO: [" << title << "] uri ["
-                       << uri << "] artUri [" << artUri << "] metaScript [" <<
-                       metaScript << "] preferScript " << preferScript << endl);
+                LOGDEB1("OHRadio::readRadios:RADIO: [" << title << "] uri ["
+                        << uri << "] artUri [" << artUri << "] metaScript [" <<
+                        metaScript << "] preferScript " << preferScript << endl);
             }
         }
     }

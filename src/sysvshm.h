@@ -27,14 +27,16 @@
 class ShmSeg {
 public:
     ShmSeg(key_t ky, size_t size, bool create = false, int perms = 0600);
-    ShmSeg(const char*pathname, int proj_id, size_t size,  bool create = false, int perms = 0600);
+    ShmSeg(const char*pathname, int proj_id, size_t size,  bool create = false,
+           int perms = 0600);
     ShmSeg(int size) : ShmSeg(IPC_PRIVATE, size) {}
     virtual ~ShmSeg();
     virtual void setremove(bool onoff = true);
     virtual void *getseg();
     virtual size_t getsize();
     virtual bool ok();
-
+    virtual int geterrno();
+    
     class Internal;
 protected:
     Internal *m;

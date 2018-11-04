@@ -247,19 +247,21 @@ bool PlgWithSlave::Internal::maybeStartCmd()
         LockableShmSeg::Accessor access(seg);
         char *cp = (char *)(access.getseg());
         string data(cp);
-        LOGDEB1("PlgWithSlave::maybeStartCmd: segment content [" << data << "]\n");
+        LOGDEB1("PlgWithSlave::maybeStartCmd: segment content [" << data <<
+                "]\n");
         ConfSimple credsconf(data, true);
         string user, password;
         if (credsconf.get(plg->m_name + "user", user) &&
             credsconf.get(plg->m_name + "pass", password)) {
             unordered_map<string,string> res;
-            if (!cmd.callproc("login", {{"user", user}, {"password", password}}, res)) {
-                LOGINF("PlgWithSlave::maybeStartCmd: tried login but failed for " <<
-                       plg->m_name);
+            if (!cmd.callproc("login", {{"user", user}, {"password", password}},
+                              res)) {
+                LOGINF("PlgWithSlave::maybeStartCmd: tried login but failed for "
+                       << plg->m_name);
             }
         }
     } else {
-        LOGDEB0("PlgWithSlave::maybeStartCmd: shm attach failed (probably ok)\n");
+        LOGDEB0("PlgWithSlave::maybeStartCmd: shm attach error (probably ok)\n");
     }
     return true;
 }
