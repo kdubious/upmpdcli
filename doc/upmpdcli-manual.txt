@@ -752,19 +752,23 @@ Spotify is the only service which does not use regular (short-lived) HTTP
 URLs for accessing the streams, but rather a non standard transfer
 protocol, implemented in a specific library.
 
-The library itself is not installed with upmpdcli, you need to install it
-separately. Currently, the easiest way to obtain it is from
-the link:https://github.com/mopidy/libspotify-deb[Mopidy repository]. You
-can use the 'deb' packages on a Debian-derived system, else copy the
-dynamic object for your architecture to /usr/lib.
-  
+The upmpdcli interface is based on a slightly modified version of the
+link:https://spotipy.readthedocs.io/en/latest/[Spotipy Python package] and
+the old `libspotify` library.
+
+The `libspotify` library is not distributed or installed with upmpdcli, you
+need to install it separately. Currently, the easiest way to obtain it is
+from the link:https://github.com/mopidy/libspotify-deb[Mopidy
+repository]. You can use the 'deb' packages on a Debian-derived system,
+else copy the dynamic object for your architecture to /usr/lib.
+
+NOTE: Using this module is contrary to the current Spotify terms of
+service, and you use the (supposedly deprecated) library under your
+own responsability.
+
 The authentication method is also more complicated than for the others, and
 will have you jump through a few hoops in addition to setting the password
 in the configuration file.
-
-The upmpdcli interface is based on a slightly modified version of the
-link:https://spotipy.readthedocs.io/en/latest/[Spotipy Python package] and
-the old libspotify library.
 
 You will need to set some configuration parameters, which are described in the
 <<spotifyuser,configuration section>> and then obtain an oauth2
@@ -1090,7 +1094,7 @@ browser. You will need to execute the following steps to set things up:
   a 'upmpdcli-spotify-authinit' directory. The chosen machine can be the
   host where upmpdcli runs, or not: any Linux machine with a browser will do.
 - Check that the python-requests package is available on the chosen host, or
-  install it.
+  install it (or python3-requests for newer upmpdcli versions).
 - Run the helper script inside the unzipped directory. Replace 'username'
   with your Spotify user id.
   
@@ -1099,7 +1103,7 @@ browser. You will need to execute the following steps to set things up:
 - The script will start a Web browser, and you will be asked to log in to
   Spotify and authorize upmpdcli to access your data.
 - At the end of the web interaction, you will be redirected to a
-  non-existing page (am error will be displayed in the browser). Copy the
+  non-existing page (an error will be displayed in the browser). Copy the
   link address from the address bar, and paste it to the spotiauthinit.py
   input line (you will have been prompted to do this by the script).
 - The script will then store the authorization token in a file named

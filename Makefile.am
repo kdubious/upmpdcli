@@ -240,7 +240,6 @@ EXTRA_DIST = \
     src/netcon.cpp src/sysvshm.cpp autogen.sh \
     src/mediaserver/cdplugins/spotify/spotiproxy.cpp \
     src/mediaserver/cdplugins/spotify/spotiproxy.h \
-    src/mediaserver/cdplugins/spotify/libspotify/api.h \
     systemd/upmpdcli.service \
     uprclbottle.tar.gz \
     web.tar.gz
