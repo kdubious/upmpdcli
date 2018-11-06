@@ -182,13 +182,13 @@ ConfParamW *ConfTabsW::addParam(
         break;
     case CFPT_STRL:
         cp = new ConfParamSLW(varname, this, lnk, label, tooltip);
+        break;
     case CFPT_DNL:
         cp = new ConfParamDNLW(varname, this, lnk, label, tooltip);
         break;
     case CFPT_CSTRL:
         cp = new ConfParamCSLW(varname, this, lnk, label, tooltip, *sl);
         break;
-
     }
     panel->addWidget(cp);
     m_params.push_back(cp);
