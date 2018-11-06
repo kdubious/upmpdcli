@@ -23,8 +23,6 @@
 
 #include <mutex>
 
-#include "../spotify/libspotify/api.h"
-
 #include "log.h"
 #include "smallut.h"
 
@@ -56,6 +54,74 @@ const vector<uint8_t> g_appkey {
 0x9B,0x03,0x9D,0x93,0xB7,0x5F,0x3C,0xA4,0x36,0xE1,0xF3,0x07,0x4D,0xEA,0x01,0x1D,
 0x3D};
 
+/********** 
+ * Minimal definitions derived from spotify api.h
+ * The lib API is not going to change, and having them here avoids 
+ * distributing the full file. 
+ * This way, we don't need any significant bits from libspotify for building 
+ * upmpdcli, and the decision to use it or not can be delayed until 
+ * install/run time.
+ *****************/
+#define SPOTIFY_API_VERSION 12
+typedef void sp_track;
+typedef int sp_error;
+#define SP_ERROR_OK 0
+typedef enum sp_sampletype {xx=0} sp_sampletype;
+typedef void sp_link;
+typedef void sp_session;
+typedef void sp_audio_buffer_stats;
+
+typedef struct sp_audioformat {
+  sp_sampletype sample_type;
+  int sample_rate;
+  int channels;
+} sp_audioformat;
+
+typedef struct sp_session_callbacks {
+    void (*logged_in)(sp_session *session, sp_error error);
+    void *ph1;
+    void (*metadata_updated)(sp_session *session);
+    void *ph2;
+    void *ph3;
+    void (*notify_main_thread)(sp_session *session);
+    int (*music_delivery)(sp_session *session, const sp_audioformat *format,
+                          const void *frames, int num_frames);
+    void (*play_token_lost)(sp_session *session);
+    void (*log_message)(sp_session *session, const char *data);
+    void (*end_of_track)(sp_session *session);
+    void *ph4;
+    void *ph5;
+    void *ph6;
+    void *ph7;
+    void *ph8;
+    void *ph9;
+    void *ph10;
+    void *ph11;
+    void *ph12;
+    void *ph13;
+    void *ph14;
+} sp_session_callbacks;
+
+typedef struct sp_session_config {
+    int api_version;
+    const char *cache_location;
+    const char *settings_location;
+    const void *application_key;
+    size_t application_key_size;
+    const char *user_agent;
+    const sp_session_callbacks *callbacks;
+    void *userdata;
+    bool b1;
+    bool b2;
+    bool b3;
+    const char *c1;
+    const char *c2;
+    const char *c3;
+    const char *c4;
+    const char *c5;
+    const char *c6;
+} sp_session_config;
+/********** End API definitions *****************/
 
 // We dlopen libspotify to avoid a hard link dependancy. The entry
 // points are resolved into the following struct, which just exists
@@ -124,12 +190,12 @@ public:
 	session_callbacks.end_of_track = end_of_track,
 
         spconfig.api_version = SPOTIFY_API_VERSION;
+        spconfig.cache_location = cachedir.c_str();
+        spconfig.settings_location = confdir.c_str();
         spconfig.application_key = &g_appkey[0];
         spconfig.application_key_size = g_appkey.size();
         spconfig.user_agent = "upmpdcli-spotiproxy";
         spconfig.callbacks = &session_callbacks;
-        spconfig.cache_location = cachedir.c_str();
-        spconfig.settings_location = confdir.c_str();
 
         if (!init_spotify_api()) {
             cerr << "Error loading spotify library: " << reason << endl; 
