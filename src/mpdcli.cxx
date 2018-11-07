@@ -668,8 +668,10 @@ bool MPDCli::single(bool on)
     return true;
 }
 
-bool MPDCli::send_tag(const char *cid, int tag, const string& data)
+bool MPDCli::send_tag(const char *cid, int tag, const string& _data)
 {
+    string data;
+    neutchars(_data, data, "\r\n", ' ');
     if (!mpd_send_command(M_CONN, "addtagid", cid, 
                           mpd_tag_name(mpd_tag_type(tag)),
                           data.c_str(), NULL)) {
@@ -678,7 +680,8 @@ bool MPDCli::send_tag(const char *cid, int tag, const string& data)
     }
 
     if (!mpd_response_finish(M_CONN)) {
-        LOGERR("MPDCli::send_tag: mpd_response_finish failed\n");
+        LOGERR("MPDCli::send_tag: mpd_response_finish failed for tag " << tag <<
+               " data [" << data << "]\n");
         showError("MPDCli::send_tag");
         return false;
     }
