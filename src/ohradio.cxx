@@ -602,7 +602,7 @@ string OHRadio::metaForId(unsigned int id)
     return meta;
 }
 
-// Report the uri and metadata for a given channel id.
+// Report the metadata for a given channel id.
 int OHRadio::ohread(const SoapIncoming& sc, SoapOutgoing& data)
 {
     int id;
@@ -620,7 +620,7 @@ int OHRadio::ohread(const SoapIncoming& sc, SoapOutgoing& data)
 }
 
 // Given a space separated list of track Id's, report their associated
-// uri and metadata in the following xml form:
+// metadata in the following xml form:
 //
 //  <TrackList>
 //    <Entry>
