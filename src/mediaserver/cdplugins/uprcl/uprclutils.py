@@ -404,6 +404,8 @@ def stringToStrings(str):
 # approach, only works on Linux though (maybe bsd too ?)
 def findmyip():
     data = subprocess.check_output(["ip", "addr"])
+    if PY3:
+        data = data.decode('utf-8')
     l = data.split()
     ips = []
     chosenip = ""
@@ -414,7 +416,7 @@ def findmyip():
             if ipmask.find('127.') == 0:
                 continue
             return ipmask.split('/')[0]
-            
+    return '127.0.0.1'
 
 # Open embedded image. Returns mtype, size, f
 def embedded_open(path):
