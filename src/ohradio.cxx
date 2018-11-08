@@ -34,6 +34,7 @@
 #include "libupnpp/soaphelp.hxx"
 #include "libupnpp/upnpavutils.hxx"
 
+#include "main.hxx"
 #include "mpdcli.hxx"
 #include "upmpd.hxx"
 #include "smallut.h"
@@ -50,6 +51,8 @@ using namespace std::placeholders;
 
 static const string sTpProduct("urn:av-openhome-org:service:Radio:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Radio");
+
+static const string cstr_sturlkey("ohradio.url");
 
 static string find_script(const string& icmd)
 {
@@ -123,6 +126,21 @@ OHRadio::OHRadio(UpMpd *dev)
         LOGINF("OHRadio: readRadios() failed, radio service will not work\n");
         return;
     }
+
+    // Try to restore the current preset channel if this was memorized.
+    string refstr;
+    if (g_state && g_state->get(cstr_sturlkey, refstr)) {
+        for (unsigned int i = 0; i < o_radios.size(); i++) {
+            string sms = stringsToString(o_radios[i].metaScript);
+            const string& uri = o_radios[i].uri;
+            if ((!uri.empty() && !uri.compare(refstr)) ||
+                (uri.empty() && !sms.compare(refstr))) {
+                m_id = i;
+                break;
+            }
+        }
+    }
+    
     m_ok = true;
     
     dev->addActionMapping(this, "Channel",
@@ -546,6 +564,15 @@ int OHRadio::setId(const SoapIncoming& sc, SoapOutgoing& data)
     }
     iStop();
     m_id = id;
+
+    // Memorize the current radio (for restart).  We use either the
+    // static uri or the metaScript to identify the radio
+    if (g_state) {
+        string refstr = o_radios[m_id].uri.empty() ?
+            stringsToString(o_radios[m_id].metaScript) : o_radios[m_id].uri;
+        g_state->set(cstr_sturlkey, refstr);
+    }
+    
     maybeWakeUp(true);
     return UPNP_E_SUCCESS;
 }

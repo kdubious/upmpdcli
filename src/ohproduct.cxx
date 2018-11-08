@@ -50,6 +50,8 @@ static void listScripts(vector<pair<string, string> >& sources);
 static const string sTpProduct("urn:av-openhome-org:service:Product:");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Product");
 
+static const string cstr_stsrcnmkey("ohproduct.sourceName");
+
 static string csxml("<SourceList>\n");
 static string csattrs("Info Time Volume");
 
@@ -63,8 +65,8 @@ static const string SndRcvPLName("PL-to-Songcast");
 static const string SndRcvRDName("RD-to-Songcast");
 
 OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc, int version)
-    : OHService(sTpProduct + SoapHelp::i2s(version), sIdProduct, "OHProduct.xml",
-                dev),
+    : OHService(sTpProduct + SoapHelp::i2s(version), sIdProduct,
+                "OHProduct.xml", dev),
       m_ohProductDesc(ohProductDesc), m_sourceIndex(0), m_standby(false)
 {
     // Playlist must stay first.
@@ -153,6 +155,18 @@ OHProduct::OHProduct(UpMpd *dev, ohProductDesc_t& ohProductDesc, int version)
                           bind(&OHProduct::attributes, this, _1, _2));
     dev->addActionMapping(this, "SourceXmlChangeCount", 
                           bind(&OHProduct::sourceXMLChangeCount, this, _1, _2));
+
+    if (g_state) {
+        string savedsrc;
+        if (!g_state->get(cstr_stsrcnmkey, savedsrc)) {
+            savedsrc = "Playlist";
+        }
+        if (savedsrc.compare("Playlist")) {
+            if (iSetSourceIndexByName(savedsrc) != UPNP_E_SUCCESS) {
+                g_state->set(cstr_stsrcnmkey, "Playlist");
+            }
+        }
+    }
 }
 
 OHProduct::~OHProduct()
@@ -342,6 +356,9 @@ int OHProduct::iSetSourceIndex(int sindex)
     }
     m_sourceIndex = sindex;
 
+    if (g_state) {
+        g_state->set(cstr_stsrcnmkey, newnm);
+    }
     m_dev->loopWakeup();
 
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;

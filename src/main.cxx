@@ -169,6 +169,7 @@ string g_cachedir("/var/cache/upmpdcli");
 // Global
 string g_configfilename;
 ConfSimple *g_config;
+ConfSimple *g_state;
 bool g_enableL16 = false;
 bool g_lumincompat = false;
 
@@ -537,32 +538,25 @@ int main(int argc, char *argv[])
 	if (opts.cachedir.empty())
             opts.cachedir = path_cat(path_tildexpand("~") , "/.cache/upmpdcli");
     }
+
     g_cachedir = opts.cachedir;
+    if (!path_makepath(opts.cachedir, 0755)) {
+        LOGERR("makepath("<< opts.cachedir << ") : errno : " << errno << endl);
+        cerr << "Can't create " << opts.cachedir << endl;
+        return 1;
+    }
+
+    string statefn = path_cat(opts.cachedir, "/upmstate");
+    g_state = new ConfSimple(statefn.c_str());
     
-    string& mcfn = opts.cachefn;
-    // no cache access needed or desirable for a pure media server
+    opts.cachefn.clear();
     if (!msonly && ohmetapersist) {
         opts.cachefn = path_cat(opts.cachedir, "/metacache");
-        if (!path_makepath(opts.cachedir, 0755)) {
-            LOGERR("makepath("<< opts.cachedir << ") : errno : " <<
-                   errno << endl);
+        int fd;
+        if ((fd = open(opts.cachefn.c_str(), O_CREAT|O_RDWR, 0644)) < 0) {
+            LOGERR("creat("<< opts.cachefn << ") : errno : " << errno << endl);
         } else {
-            int fd;
-            if ((fd = open(mcfn.c_str(), O_CREAT|O_RDWR, 0644)) < 0) {
-                LOGERR("creat("<< mcfn << ") : errno : " << errno << endl);
-            } else {
-                close(fd);
-                if (geteuid() == 0) {
-                    if (chown(mcfn.c_str(), runas, -1) != 0) {
-                        LOGERR("chown("<< mcfn << ") : errno : " <<
-                               errno << endl);
-                    }
-                    if (chown(opts.cachedir.c_str(), runas, -1) != 0) {
-                        LOGERR("chown("<< opts.cachedir << ") : errno : " <<
-                               errno << endl);
-                    }
-                }
-            }
+            close(fd);
         }
     }
     
@@ -574,11 +568,24 @@ int main(int argc, char *argv[])
     }
 
     if (geteuid() == 0) {
-        // Need to rewrite pid, it may have changed with the daemon call
+        // Need to rewrite pid, it may have changed with the daemon call. Also
+        // adjust file ownership and access.
         pidfile.write_pid();
         if (!logfilename.empty() && logfilename.compare("stderr")) {
             if (chown(logfilename.c_str(), runas, -1) < 0 && errno != ENOENT) {
                 LOGERR("chown("<<logfilename<<") : errno : " << errno << endl);
+            }
+        }
+        if (chown(opts.cachedir.c_str(), runas, -1) != 0) {
+            LOGERR("chown("<< opts.cachedir << ") : errno : " << errno << endl);
+        }
+        if (chown(statefn.c_str(), runas, -1) != 0) {
+            LOGERR("chown("<< statefn << ") : errno : " << errno << endl);
+        }
+        if (!opts.cachefn.empty()) {
+            if (chown(opts.cachefn.c_str(), runas, -1) != 0) {
+                LOGERR("chown("<< opts.cachefn << ") : errno : " <<
+                       errno << endl);
             }
         }
         if (!g_configfilename.empty()) {

@@ -26,7 +26,11 @@ extern std::string g_cachedir;
 extern bool g_enableL16;
 extern bool g_lumincompat;
 class ConfSimple;
+// The global static configuration data
 extern ConfSimple *g_config;
+// A scratchpad for modules to record state information across restart
+// (e.g. Source, Radio channel).
+extern ConfSimple *g_state;
 
 // Start media server upmpdcli process (-m 2). This can be called
 // either from main() if some streaming services plugins are active
