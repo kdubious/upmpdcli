@@ -1,29 +1,29 @@
 /* Copyright (C) 2014 J.F.Dockes
- *	 This program is free software; you can redistribute it and/or modify
- *	 it under the terms of the GNU Lesser General Public License as published by
- *	 the Free Software Foundation; either version 2.1 of the License, or
- *	 (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
  *
- *	 This program is distributed in the hope that it will be useful,
- *	 but WITHOUT ANY WARRANTY; without even the implied warranty of
- *	 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *	 GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
  *
- *	 You should have received a copy of the GNU Lesser General Public License
- *	 along with this program; if not, write to the
- *	 Free Software Foundation, Inc.,
- *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the
+ * Free Software Foundation, Inc.,
+ * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 #include "ohmetacache.hxx"
 
-#include <errno.h>                      // for errno
-#include <stdio.h>                      // for rename
-#include <string.h>                     // for strchr
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
-#include <iostream>                     // for basic_ostream, operator<<, etc
-#include <utility>                      // for pair
+#include <iostream>
+#include <utility>
 
 #include "libupnpp/log.h"
 #include "libupnpp/workqueue.h"
@@ -53,16 +53,16 @@ static string encode(const string& in)
     string out;
     const char *cp = in.c_str();
     for (string::size_type i = 0; i < in.size(); i++) {
-	unsigned int c;
-	const char *h = "0123456789ABCDEF";
-	c = cp[i];
-	if (c == '%' || c == '=' || c == '\n' || c == '\r') {
-	    out += '%';
-	    out += h[(c >> 4) & 0xf];
-	    out += h[c & 0xf];
-	} else {
-	    out += char(c);
-	}
+        unsigned int c;
+        const char *h = "0123456789ABCDEF";
+        c = cp[i];
+        if (c == '%' || c == '=' || c == '\n' || c == '\r') {
+            out += '%';
+            out += h[(c >> 4) & 0xf];
+            out += h[c & 0xf];
+        } else {
+            out += char(c);
+        }
     }
     return out;
 }
@@ -85,12 +85,12 @@ static string decode(const string &in)
         return in;
     string::size_type i = 0;
     for (; i < in.size() - 2; i++) {
-	if (cp[i] == '%') {
+        if (cp[i] == '%') {
             int d1 = h2d(cp[++i]);
             int d2 = h2d(cp[++i]);
             if (d1 != -1 && d2 != -1)
                 out += (d1 << 4) + d2;
-	} else {
+        } else {
             out += cp[i];
         }
     }
@@ -127,8 +127,8 @@ static void *dmcacheSaveWorker(void *)
                " entries to " << tsk->m_fn << endl);
 
         string tfn = tsk->m_fn + "-";
-      	ofstream output(tfn, ios::out | ios::trunc);
-	if (!output.is_open()) {
+        ofstream output(tfn, ios::out | ios::trunc);
+        if (!output.is_open()) {
             LOGERR("dmcacheSave: could not open " << tfn 
                    << " for writing" << endl);
             delete tsk;
@@ -138,7 +138,7 @@ static void *dmcacheSaveWorker(void *)
         for (mcache_type::const_iterator it = tsk->m_cache.begin();
              it != tsk->m_cache.end(); it++) {
             output << encode(it->first) << '=' << encode(it->second) << '\n';
-	    if (!output.good()) {
+            if (!output.good()) {
                 LOGERR("dmcacheSave: write error while saving to " << 
                        tfn << endl);
                 break;
@@ -183,7 +183,7 @@ bool dmcacheRestore(const string& fn, mcache_type& cache)
 
     char cline[LL];
     for (;;) {
-	input.getline(cline, LL-1, '\n');
+        input.getline(cline, LL-1, '\n');
         if (input.eof())
             break;
         if (!input.good()) {
