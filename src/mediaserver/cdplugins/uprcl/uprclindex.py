@@ -25,56 +25,67 @@ import copy
 
 from upmplgutils import uplog
 
-def _initconfdir(confdir, topdirs):
-    if os.path.exists(confdir):
-        raise Exception("_initconfdir: exists already: %s" % confdir)
-    os.mkdir(confdir)
+
+def _maybeinitconfdir(confdir, topdirs):
+    if not os.path.isdir(confdir):
+        if os.path.exists(confdir):
+            raise Exception("Exists and not directory: %s" % confdir)
+        os.mkdir(confdir)
+        
     datadir = os.path.dirname(__file__)
     uplog("datadir: %s" % datadir)
-    shutil.copyfile(os.path.join(datadir, "rclconfig-fields"),
-                    os.path.join(confdir, "fields"))
-    f = open(os.path.join(confdir, "recoll.conf"), "w")
-    f.write("topdirs=%s\n" % topdirs)
-    f.write("idxabsmlen=0\n")
-    f.write("loglevel=2\n")
-    f.write("noaspell=1\n")
-    f.write("nomd5types = rclaudio rclimg\n")
-    f.write("testmodifusemtime=1\n")
-    f.close()
+
+    path = os.path.join(confdir, "fields")
+    if not os.path.exists(path):
+        shutil.copyfile(os.path.join(datadir, "rclconfig-fields"), path)
+
+    path = os.path.join(confdir, "recoll.conf")
+    if not os.path.exists(path):
+        f = open(path, "w")
+        f.write("topdirs=%s\n" % topdirs)
+        f.write("idxabsmlen=0\n")
+        f.write("loglevel=2\n")
+        f.write("noaspell=1\n")
+        f.write("nomd5types = rclaudio rclimg\n")
+        f.write("testmodifusemtime=1\n")
+        f.close()
 
     # Only very recent Recoll versions have support for wavpack (only
-    # config data is missing, rclaudio processes the files all
+    # the config data is missing, rclaudio processes the files all
     # right). Make sure that we have what's needed.
-    f = open(os.path.join(confdir, "mimemap"), "w")
-    f.write(".ape = audio/ape\n")
-    f.write(".mpc = audio/x-musepack\n")
-    f.write(".wv = audio/x-wavpack\n")
-    f.close()
-    f = open(os.path.join(confdir, "mimeconf"), "w")
-    f.write("[index]\n")
-    f.write("audio/ape = execm rclaudio\n")
-    f.write("audio/x-musepack = execm rclaudio\n")
-    f.write("audio/x-wavpack = execm rclaudio\n")
-    f.close()
+    path = os.path.join(confdir, "mimemap")
+    if not os.path.exists(path):
+        f = open(path, "w")
+        f.write(".ape = audio/ape\n")
+        f.write(".mpc = audio/x-musepack\n")
+        f.write(".wv = audio/x-wavpack\n")
+        f.close()
+    path = os.path.join(confdir, "mimeconf")
+    if not os.path.exists(path):
+        f = open(path, "w")
+        f.write("[index]\n")
+        f.write("audio/ape = execm rclaudio\n")
+        f.write("audio/x-musepack = execm rclaudio\n")
+        f.write("audio/x-wavpack = execm rclaudio\n")
+        f.close()
+
 
 _idxproc = None
 _lastidxstatus = None
+
 
 def runindexer(confdir, topdirs):
     global _idxproc, _lastidxstatus
     if _idxproc is not None:
         raise Exception("uprclrunindexer: already running")
 
-    if not os.path.isdir(confdir):
-        if os.path.exists(confdir):
-            raise Exception("Exists and not directory: %s" % confdir)
-        _initconfdir(confdir, topdirs)
-    else:
-        cf = conftree.ConfSimple(os.path.join(confdir, "recoll.conf"),
-                                 readonly = False)
-        td = cf.get("topdirs", '')
-        if td != topdirs:
-            cf.set("topdirs", topdirs)
+    _maybeinitconfdir(confdir, topdirs)
+
+    cf = conftree.ConfSimple(os.path.join(confdir, "recoll.conf"),
+                             readonly = False)
+    td = cf.get("topdirs", '')
+    if td != topdirs:
+        cf.set("topdirs", topdirs)
 
     env = copy.deepcopy(os.environ)
     env["HOME"] = confdir

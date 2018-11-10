@@ -94,9 +94,18 @@ class Tagged(object):
             self._conn = sqlite3.connect(':memory:', check_same_thread=False)
 
 
-    # Create the db. Each tag table has 2 columns: <tagname>_id and
-    # value. The join column in the main tracks table is also named
-    # <tagname>_id
+    # Create an empty db.
+    #
+    # There is then one table for each tag (Artist, Genre, Date,
+    # etc.).  Each tag table has 2 columns: <tagname>_id and value.
+    # 
+    # The tracks table is the "main" table, and has a record for each
+    # track, with a title column, and one join column for each tag, 
+    # also named <tagname>_id, and an album join column (album_id).
+    #
+    # The Albums table is special because it is built according to,
+    # and stores, the file system location (the album title is not
+    # enough to group tracks, there could be many albums with the same title).
     def _createsqdb(self):
         c = self._conn.cursor()
         try:
