@@ -24,6 +24,7 @@ else:
     from urllib import quote as urlquote
     
 import os
+import traceback
 import glob
 import subprocess
 import mutagen
@@ -73,6 +74,9 @@ upnp2rclfields = {
     'tt' : 'title',
     'upnp:originalTrackNumber' : 'tracknumber',
     }
+
+def _httpurl(httphp, path, query=''):
+    return "http://%s%s%s" % (httphp, urlquote(path), query)
 
 def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     """
@@ -140,7 +144,7 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     if 'tt' not in li:
         li['tt'] = os.path.basename(path.decode('UTF-8', errors = 'replace'))
     path = os.path.join(pathprefix.encode('ascii'), path)
-    li['uri'] = "http://%s%s" % (httphp, urlquote(path))
+    li['uri'] = _httpurl(httphp, path)
     #uplog("rcldoctoentry: uri: %s" % li['uri'])
 
     # The album art uri is precooked with httphp and prefix
@@ -183,16 +187,16 @@ def embdimgurl(doc, httphp, pathprefix):
         return None
     path = doc.getbinurl()
     path = path[7:]
-    path = urlquote(os.path.join(pathprefix.encode('ascii'), path+ext))
-    path +=  "?embed=1"
-    return "http://%s%s" % (httphp, path)
+    path = os.path.join(pathprefix.encode('utf-8'), path+ext)
+    query =  "?embed=1"
+    return _httpurl(httphp, path, query)
 
 def printable(s):
-    return s.decode('utf-8', errors='replace') if s else ""
-
-def _httpurl(path, httphp, pathprefix):
-    return "http://%s%s" % (httphp, urlquote(path))
-    
+    if type(s) != type(u''):
+        return s.decode('utf-8', errors='replace') if s else ""
+    else:
+        return s
+   
 # Find cover art for doc.
 #
 # We return a special uri if the file has embedded image data, else an
@@ -201,9 +205,17 @@ def _httpurl(path, httphp, pathprefix):
 # one result.
 _foldercache = {}
 _artexts = (b'.jpg', b'.png')
-_artnames = ('folder', 'cover')
+_artnames = (b'cover', b'folder')
+
+_artfilenames = []
+for base in _artnames:
+    for ext in _artexts:
+        _artfilenames.append(base + ext)
+
 def docarturi(doc, httphp, pathprefix):
     global _foldercache, _artnames
+
+    bpp = pathprefix.encode('utf-8')
 
     if doc.embdimg:
         arturi = embdimgurl(doc, httphp, pathprefix)
@@ -215,8 +227,7 @@ def docarturi(doc, httphp, pathprefix):
     path,ext = os.path.splitext(docpath(doc))
     for ext in _artexts:
         if os.path.exists(path + ext):
-            return _httpurl(os.path.join(pathprefix.encode('ascii'),
-                                         path+ext), httphp, pathprefix)
+            return _httpurl(httphp, os.path.join(bpp, path+ext))
 
     # If doc is a directory, this returns itself, else the father dir.
     folder = docfolder(doc)
@@ -231,21 +242,20 @@ def docarturi(doc, httphp, pathprefix):
                     fsimple = os.path.basename(f)
                     flowersimple = fsimple.lower()
                 except:
+                    #traceback.print_exc()
                     continue
-                for base in _artnames:
-                    for ext in _artexts:
-                        if flowersimple == base + ext:
-                            artnm = fsimple
-                if artnm:
-                    _foldercache[folder] = _httpurl(
-                        urlquote(os.path.join(pathprefix, folder, artnm)),
-                        httphp, pathprefix)
+                if flowersimple in _artfilenames:
+                    artnm = fsimple
+                    path = os.path.join(bpp, folder, artnm)
+                    _foldercache[folder] = _httpurl(httphp, path)
                     break
         except:
+            #traceback.print_exc()
             pass
 
     arturi = _foldercache[folder]
     if arturi:
+        #uplog("folder %s arturi %s"% (printable(folder), arturi))
         if doc.mtype == 'inode/directory':
             #uplog("docarturi: external: %s->%s" %
             #      (printable(folder), printable(arturi)))
