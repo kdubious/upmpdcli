@@ -107,9 +107,8 @@ def browse(a):
     idpath = objid.replace(g_myprefix, '', 1)
     msgproc.log("browse: idpath: <%s>" % idpath)
 
-
     entries = []
-    nocache = "0"
+    nocache = "1"
     if bflg == 'meta':
         raise Exception("uprcl-app: browse: can't browse meta for now")
     else:
@@ -117,7 +116,6 @@ def browse(a):
             if not uprclinit.ready():
                 entries = [waitentry(objid + 'notready', objid,
                                      uprclinit.g_httphp),]
-                nocache = "1"
             elif not idpath:
                 entries = _rootentries()
             else:
@@ -138,13 +136,12 @@ def search(a):
         raise Exception("bad objid [%s]" % objid)
 
     upnps = a['origsearch']
-    nocache = "0"
+    nocache = "1"
 
     try:
         if not uprclinit.ready():
             entries = [waitentry(objid + 'notready', objid,
                                  uprclinit.g_httphp),]
-            nocache = "1"
         else:
             entries = uprclsearch.search(
                 uprclinit.g_trees['folders'], uprclinit.g_rclconfdir, objid,
