@@ -600,12 +600,23 @@ static string radioDidlMake(const string& title, const string& uri,
     out += SoapHelp::xmlQuote(title);
     out += "</dc:title>\n"
         "<res protocolInfo=\"*:*:*:*\" bitrate=\"6000\">";
-    out += SoapHelp::xmlQuote(uri);
-    out += "</res>\n"
-        "<upnp:albumArtURI>";
-    out += SoapHelp::xmlQuote(artUri);
-    out += "</upnp:albumArtURI>\n"
-        "<upnp:class>object.item.audioItem</upnp:class>\n"
+    if (uri.empty()) {
+        // Kazoo absolutely does not want uri to be empty, else it
+        // does not display anything in the radio list (not even the
+        // entries with uris). So fill up with bogus value. This is
+        // not used anyway because setId/setPlaying use the value from
+        // the radio array or from the metascript
+        out += SoapHelp::xmlQuote("http://www.bogus.com/bogus.mp3");
+    } else {
+        out += SoapHelp::xmlQuote(uri);
+    }
+    out += "</res>\n";
+    if (!artUri.empty()) {
+        out +=  "<upnp:albumArtURI>";
+        out += SoapHelp::xmlQuote(artUri);
+        out += "</upnp:albumArtURI>\n";
+    }
+    out +=  "<upnp:class>object.item.audioItem</upnp:class>\n"
         "</item>\n"
         "</DIDL-Lite>\n";
     return out;
@@ -682,9 +693,7 @@ int OHRadio::readList(const SoapIncoming& sc, SoapOutgoing& data)
             string meta = metaForId(id);
             out += "<Entry><Id>";
             out += *it;
-            out += "</Id><Uri>";
-            out += SoapHelp::xmlQuote(o_radios[id].uri);
-            out += "</Uri><Metadata>";
+            out += "</Id><Metadata>";
             out += SoapHelp::xmlQuote(meta);
             out += "</Metadata></Entry>";
         }
