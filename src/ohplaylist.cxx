@@ -244,19 +244,51 @@ bool OHPlaylist::makeIdArray(string& out)
     return true;
 }
 
+// (private)
+int OHPlaylist::idFromOldId(int oldid)
+{
+    string uri;
+    for (const auto& entry: m_mpdsavedstate.queue) {
+        if (entry.mpdid == oldid) {
+            uri = entry.uri;
+            break;
+        }
+    }
+    if (uri.empty()) {
+        LOGERR("OHPlaylist::idFromOldId: " << oldid << " not found\n");
+        return -1;
+    }
+    vector<UpSong> vdata;
+    if (!m_dev->m_mpdcli->getQueueData(vdata)) {
+        LOGERR("OHPlaylist::idFromUri: getQueueData failed\n");
+        return -1;
+    }
+    for (const auto& entry: vdata) {
+        if (!entry.uri.compare(uri)) {
+            return entry.mpdid;
+        }
+    }
+    LOGERR("OHPlaylist::idFromOldId: uri for " << oldid << " not found\n");
+    return -1;
+}
+
 bool OHPlaylist::makestate(unordered_map<string, string> &st)
 {
-    st.clear();
+    if (m_active) {
+        st.clear();
 
-    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
+        const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
 
-    st["TransportState"] =  mpdstatusToTransportState(mpds.state);
-    st["Repeat"] = SoapHelp::i2s(mpds.rept);
-    st["Shuffle"] = SoapHelp::i2s(mpds.random);
-    st["Id"] = mpds.songid == -1 ? "0" : SoapHelp::i2s(mpds.songid);
-    st["TracksMax"] = SoapHelp::i2s(tracksmax);
-    st["ProtocolInfo"] = Protocolinfo::the()->gettext();
-    makeIdArray(st["IdArray"]);
+        st["TransportState"] =  mpdstatusToTransportState(mpds.state);
+        st["Repeat"] = SoapHelp::i2s(mpds.rept);
+        st["Shuffle"] = SoapHelp::i2s(mpds.random);
+        st["Id"] = mpds.songid == -1 ? "0" : SoapHelp::i2s(mpds.songid);
+        st["TracksMax"] = SoapHelp::i2s(tracksmax);
+        st["ProtocolInfo"] = Protocolinfo::the()->gettext();
+        makeIdArray(st["IdArray"]);
+    } else {
+        st = m_upnpstate;
+    }
 
     return true;
 }
@@ -276,17 +308,20 @@ void OHPlaylist::maybeWakeUp(bool ok)
 
 void OHPlaylist::setActive(bool onoff)
 {
-    m_active = onoff;
-    if (m_active) {
+    if (onoff) {
         m_dev->m_mpdcli->clearQueue();
         m_dev->m_mpdcli->restoreState(m_mpdsavedstate);
         m_dev->m_mpdcli->consume(false);
         m_dev->m_mpdcli->single(false);
         refreshState();
         maybeWakeUp(true);
+        m_active = true;
     } else {
+        m_mpdqvers = -1;
+        makestate(m_upnpstate);
         m_dev->m_mpdcli->saveState(m_mpdsavedstate);
         iStop();
+        m_active = false;
     }
 }
 
@@ -325,6 +360,10 @@ int OHPlaylist::stop(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHPlaylist::next(const SoapIncoming& sc, SoapOutgoing& data)
 {
+    if (!m_active) {
+        LOGERR("OHPlaylist::next: not active\n");
+        return UPNP_E_INTERNAL_ERROR;
+    }
     LOGDEB("OHPlaylist::next" << endl);
     bool ok = m_dev->m_mpdcli->next();
     maybeWakeUp(ok);
@@ -333,6 +372,10 @@ int OHPlaylist::next(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHPlaylist::previous(const SoapIncoming& sc, SoapOutgoing& data)
 {
+    if (!m_active) {
+        LOGERR("OHPlaylist::previous: not active\n");
+        return UPNP_E_INTERNAL_ERROR;
+    }
     LOGDEB("OHPlaylist::previous" << endl);
     bool ok = m_dev->m_mpdcli->previous();
     maybeWakeUp(ok);
@@ -341,6 +384,10 @@ int OHPlaylist::previous(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHPlaylist::setRepeat(const SoapIncoming& sc, SoapOutgoing& data)
 {
+    if (!m_active) {
+        LOGERR("OHPlaylist::setRepeat: not active\n");
+        return UPNP_E_INTERNAL_ERROR;
+    }
     LOGDEB("OHPlaylist::setRepeat" << endl);
     bool onoff;
     bool ok = sc.get("Value", &onoff);
@@ -353,6 +400,10 @@ int OHPlaylist::setRepeat(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHPlaylist::repeat(const SoapIncoming& sc, SoapOutgoing& data)
 {
+    if (!m_active) {
+        LOGERR("OHPlaylist::repeat: not active\n");
+        return UPNP_E_INTERNAL_ERROR;
+    }
     LOGDEB("OHPlaylist::repeat" << endl);
     const MpdStatus &mpds =  m_dev->getMpdStatusNoUpdate();
     data.addarg("Value", mpds.rept? "1" : "0");
@@ -361,6 +412,10 @@ int OHPlaylist::repeat(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHPlaylist::setShuffle(const SoapIncoming& sc, SoapOutgoing& data)
 {
+    if (!m_active) {
+        LOGERR("OHPlaylist::setShuffle: not active\n");
+        return UPNP_E_INTERNAL_ERROR;
+    }
     LOGDEB("OHPlaylist::setShuffle" << endl);
     bool onoff;
     bool ok = sc.get("Value", &onoff);
@@ -375,6 +430,10 @@ int OHPlaylist::setShuffle(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHPlaylist::shuffle(const SoapIncoming& sc, SoapOutgoing& data)
 {
+    if (!m_active) {
+        LOGERR("OHPlaylist::shuffle: not active\n");
+        return UPNP_E_INTERNAL_ERROR;
+    }
     LOGDEB("OHPlaylist::shuffle" << endl);
     const MpdStatus &mpds =  m_dev->getMpdStatusNoUpdate();
     data.addarg("Value", mpds.random ? "1" : "0");
@@ -383,6 +442,10 @@ int OHPlaylist::shuffle(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHPlaylist::seekSecondAbsolute(const SoapIncoming& sc, SoapOutgoing& data)
 {
+    if (!m_active) {
+        LOGERR("OHPlaylist::seekSecond: not active\n");
+        return UPNP_E_INTERNAL_ERROR;
+    }
     LOGDEB("OHPlaylist::seekSecondAbsolute" << endl);
     int seconds;
     bool ok = sc.get("Value", &seconds);
@@ -395,6 +458,10 @@ int OHPlaylist::seekSecondAbsolute(const SoapIncoming& sc, SoapOutgoing& data)
 
 int OHPlaylist::seekSecondRelative(const SoapIncoming& sc, SoapOutgoing& data)
 {
+    if (!m_active) {
+        LOGERR("OHPlaylist::seekSecond: not active\n");
+        return UPNP_E_INTERNAL_ERROR;
+    }
     LOGDEB("OHPlaylist::seekSecondRelative" << endl);
     int seconds;
     bool ok = sc.get("Value", &seconds);
@@ -435,22 +502,24 @@ int OHPlaylist::transportState(const SoapIncoming& sc, SoapOutgoing& data)
 // Skip to track specified by Id
 int OHPlaylist::seekId(const SoapIncoming& sc, SoapOutgoing& data)
 {
+    int id;
+    if (!sc.get("Value", &id)) {
+        LOGERR("OHPlaylist::seekId: no Id\n");
+        return UPNP_E_INVALID_PARAM;
+    }
     LOGDEB("OHPlaylist::seekId" << endl);
     if (!m_active) {
         // If I'm not active, the ids in the playlist are those of
-        // another service (e.g. radio). If I activate myself and
-        // restore the playlist, the mpd ids are going to be different
-        // from what the caller may have in store. This just can't
-        // work as long as we use mpd ids directly.
-        LOGERR("OHPlaylist::seekId: not active" << endl);
-        return UPNP_E_INTERNAL_ERROR;
+        // another service (e.g. radio). After activating myself and
+        // restoring the playlist, the input id needs to be mapped.
+        m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
+        id = idFromOldId(id);
+        if (id < 0) {
+            return UPNP_E_INTERNAL_ERROR;
+        }
     }
-    int id;
-    bool ok = sc.get("Value", &id);
-    if (ok) {
-        ok = m_dev->m_mpdcli->playId(id);
-        maybeWakeUp(ok);
-    }
+    bool ok = m_dev->m_mpdcli->playId(id);
+    maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
@@ -476,11 +545,11 @@ int OHPlaylist::seekIndex(const SoapIncoming& sc, SoapOutgoing& data)
 // Return current Id
 int OHPlaylist::id(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    LOGDEB("OHPlaylist::id" << endl);
     if (!m_active) {
         LOGERR("OHPlaylist::id: not active" << endl);
         return UPNP_E_INTERNAL_ERROR;
     }
+    LOGDEB("OHPlaylist::id" << endl);
 
     const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
     data.addarg("Value", mpds.songid == -1 ? "0" : SoapHelp::i2s(mpds.songid));
@@ -501,21 +570,21 @@ bool OHPlaylist::cacheFind(const string& uri, string& meta)
 // Returns a 800 fault code if the given id is not in the playlist. 
 int OHPlaylist::ohread(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    if (!m_active) {
-        // See comment in seekId()
-        LOGERR("OHPlaylist::read: not active" << endl);
-        return UPNP_E_INTERNAL_ERROR;
-    }
     int id;
     bool ok = sc.get("Id", &id);
+    if (!ok) {
+        LOGERR("OHPlaylist::ohread: no Id in params\n");
+        return UPNP_E_INVALID_PARAM;
+    }
     LOGDEB("OHPlaylist::ohread id " << id << endl);
     UpSong song;
-    if (ok) {
-        ok = m_dev->m_mpdcli->statSong(song, id, true);
-    }
-    if (ok) {
+    string metadata;
+    if (m_active) {
+        if (!m_dev->m_mpdcli->statSong(song, id, true)) {
+            LOGERR("OHPlaylist::ohread: statsong failed for " << id << endl);
+            return UPNP_E_INTERNAL_ERROR;
+        }
         auto cached = m_metacache.find(song.uri);
-        string metadata;
         if (cached != m_metacache.end()) {
             metadata = cached->second;
         } else {
@@ -523,10 +592,22 @@ int OHPlaylist::ohread(const SoapIncoming& sc, SoapOutgoing& data)
             m_metacache[song.uri] = metadata;
             m_cachedirty = true;
         }
-        data.addarg("Uri", song.uri);
-        data.addarg("Metadata", metadata);
+    } else {
+        LOGDEB("OHPlaylist::read: not active: using saved queue\n");
+        for (const auto& entry : m_mpdsavedstate.queue) {
+            if (entry.mpdid == id) {
+                song = entry;
+                metadata = didlmake(song);
+            }
+        }
+        if (metadata.empty()) {
+            LOGDEB("OHPlaylist: id " << id << " not found\n");
+            return UPNP_E_INTERNAL_ERROR;
+        }
     }
-    return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
+    data.addarg("Uri", SoapHelp::xmlQuote(song.uri));
+    data.addarg("Metadata", metadata);
+    return UPNP_E_SUCCESS;
 }
 
 // Given a space separated list of track Id's, report their associated
@@ -543,11 +624,6 @@ int OHPlaylist::ohread(const SoapIncoming& sc, SoapOutgoing& data)
 // Any ids not in the playlist are ignored. 
 int OHPlaylist::readList(const SoapIncoming& sc, SoapOutgoing& data)
 {
-    if (!m_active) {
-        // See comment in seekId()
-        LOGERR("OHPlaylist::readList: not active" << endl);
-        return UPNP_E_INTERNAL_ERROR;
-    }
     string sids;
     bool ok = sc.get("IdList", &sids);
     LOGDEB("OHPlaylist::readList: [" << sids << "]" << endl);
@@ -562,24 +638,38 @@ int OHPlaylist::readList(const SoapIncoming& sc, SoapOutgoing& data)
                 LOGDEB("OHPlaylist::readlist: request for id -1" << endl);
                 continue;
             }
-            UpSong song;
-            if (!m_dev->m_mpdcli->statSong(song, id, true)) {
-                LOGDEB("OHPlaylist::readList:stat failed for " << id << endl);
-                continue;
-            }
-            auto mit = m_metacache.find(song.uri);
             string metadata;
-            if (mit != m_metacache.end()) {
-                //LOGDEB("OHPlaylist::readList: meta for id " << id << " uri "
-                // << song.uri << " found in cache " << endl);
-                metadata = SoapHelp::xmlQuote(mit->second);
+            UpSong song;
+            if (m_active) {
+                if (!m_dev->m_mpdcli->statSong(song, id, true)) {
+                    LOGDEB("OHPlaylist::readList:stat failed for " << id <<endl);
+                    continue;
+                }
+                auto mit = m_metacache.find(song.uri);
+                if (mit != m_metacache.end()) {
+                    LOGDEB1("OHPlaylist::readList: meta for id " << id << " uri "
+                            << song.uri << " found in cache " << endl);
+                    metadata = SoapHelp::xmlQuote(mit->second);
+                } else {
+                    LOGDEB("OHPlaylist::readList: meta for id " << id << " uri "
+                           << song.uri << " not found " << endl);
+                    metadata = didlmake(song);
+                    m_metacache[song.uri] = metadata;
+                    m_cachedirty = true;
+                    metadata = SoapHelp::xmlQuote(metadata);
+                }
             } else {
-                //LOGDEB("OHPlaylist::readList: meta for id " << id << " uri "
-                // << song.uri << " not found " << endl);
-                metadata = didlmake(song);
-                m_metacache[song.uri] = metadata;
-                m_cachedirty = true;
-                metadata = SoapHelp::xmlQuote(metadata);
+                LOGDEB("OHPlaylist::readList: not active: using saved queue\n");
+                for (const auto& entry : m_mpdsavedstate.queue) {
+                    if (entry.mpdid == id) {
+                        song = entry;
+                        metadata = didlmake(song);
+                    }
+                }
+                if (metadata.empty()) {
+                    LOGDEB("OHPlaylist: id " << id << " not found\n");
+                    continue;
+                }
             }
             out += "<Entry><Id>";
             out += SoapHelp::xmlQuote(it->c_str());
@@ -590,7 +680,7 @@ int OHPlaylist::readList(const SoapIncoming& sc, SoapOutgoing& data)
             out += "</Metadata></Entry>";
         }
         out += "</TrackList>";
-        //LOGDEB1("OHPlaylist::readList: out: [" << out << "]" << endl);
+        LOGDEB1("OHPlaylist::readList: out: [" << out << "]" << endl);
         data.addarg("TrackList", out);
     }
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
@@ -642,15 +732,9 @@ int OHPlaylist::insert(const SoapIncoming& sc, SoapOutgoing& data)
     }
         
     if (!m_active) {
-        // See comment in seekId()
-        // It's not clear if special-casing afterId == 0 is a good
-        // idea because it makes the device appear even more
-        // unpredictable. Otoh, it allows Bubble (basic, not DS) to
-        // switch to playlist by just adding tracks.
-        if (afterid == 0 && m_dev->m_ohpr) {
-            m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
-        } else {
-            LOGERR("OHPlaylist::insert: not active" << endl);
+        m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
+        afterid = idFromOldId(afterid);
+        if (afterid < 0) {
             return UPNP_E_INTERNAL_ERROR;
         }
     }
@@ -674,6 +758,7 @@ bool OHPlaylist::insertUri(int afterid, const string& uri,
     LOGDEB1("OHPlaylist::insertUri: " << uri << endl);
     if (!m_active) {
         LOGERR("OHPlaylist::insertUri: not active" << endl);
+        m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
         return false;
     }
 
@@ -698,25 +783,28 @@ bool OHPlaylist::insertUri(int afterid, const string& uri,
 
 int OHPlaylist::deleteId(const SoapIncoming& sc, SoapOutgoing& data)
 {
+    int id;
+    if (!sc.get("Value", &id)) {
+        LOGERR("OHPlaylist::deleteId: no Id param\n");
+        return UPNP_E_INVALID_PARAM;
+    }
     LOGDEB("OHPlaylist::deleteId" << endl);
     if (!m_active) {
-        // See comment in seekId()
-        LOGERR("OHPlaylist::deleteId: not active" << endl);
-        return UPNP_E_INTERNAL_ERROR;
-    }
-    int id;
-    bool ok = sc.get("Value", &id);
-    if (ok) {
-        const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
-        if (mpds.songid == id) {
-            // MPD skips to the next track if the current one is removed,
-            // but I think it's better to stop in this case
-            m_dev->m_mpdcli->stop();
+        m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
+        id = idFromOldId(id);
+        if (id < 0) {
+            return UPNP_E_INTERNAL_ERROR;
         }
-        ok = m_dev->m_mpdcli->deleteId(id);
-        m_mpdqvers = -1;
-        maybeWakeUp(ok);
     }
+    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
+    if (mpds.songid == id) {
+        // MPD skips to the next track if the current one is removed,
+        // but I think it's better to stop in this case
+        m_dev->m_mpdcli->stop();
+    }
+    bool ok = m_dev->m_mpdcli->deleteId(id);
+    m_mpdqvers = -1;
+    maybeWakeUp(ok);
     return ok ? UPNP_E_SUCCESS : UPNP_E_INTERNAL_ERROR;
 }
 
@@ -739,16 +827,31 @@ int OHPlaylist::tracksMax(const SoapIncoming& sc, SoapOutgoing& data)
     return UPNP_E_SUCCESS;
 }
 
+
+bool OHPlaylist::iidArray(string& idarray, int *token)
+{
+    LOGDEB("OHPlaylist::idArray (internal)" << endl);
+    unordered_map<string, string> st;
+    makestate(st);
+    idarray = st["IdArray"];
+    if (token) {
+        if (m_active) {
+            const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
+            LOGDEB("OHPlaylist::idArray: qvers " << mpds.qvers << endl);
+            *token = mpds.qvers;
+        } else {
+            *token = 0;
+        }
+    }
+    return true;
+}
+
+
 // Returns current list of id as array of big endian 32bits integers,
 // base-64-encoded. 
 int OHPlaylist::idArray(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHPlaylist::idArray" << endl);
-    if (!m_active) {
-        // See comment in seekId()
-        LOGERR("OHPlaylist::idArray: not active" << endl);
-        return UPNP_E_INTERNAL_ERROR;
-    }
     string idarray;
     int token;
     if (iidArray(idarray, &token)) {
@@ -759,22 +862,10 @@ int OHPlaylist::idArray(const SoapIncoming& sc, SoapOutgoing& data)
     return UPNP_E_INTERNAL_ERROR;
 }
 
-bool OHPlaylist::iidArray(string& idarray, int *token)
-{
-    LOGDEB("OHPlaylist::idArray (internal)" << endl);
-    if (makeIdArray(idarray)) {
-        const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
-        LOGDEB("OHPlaylist::idArray: qvers " << mpds.qvers << endl);
-        if (token)
-            *token = mpds.qvers;
-        return true;
-    }
-    return false;
-}
 
 bool OHPlaylist::urlMap(unordered_map<int, string>& umap)
 {
-    //LOGDEB1("OHPlaylist::urlMap\n");
+    LOGDEB1("OHPlaylist::urlMap\n");
     string sarray; 
     if (iidArray(sarray, 0)) {
         vector<int> ids;

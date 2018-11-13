@@ -17,12 +17,12 @@
 #ifndef _OHPLAYLIST_H_X_INCLUDED_
 #define _OHPLAYLIST_H_X_INCLUDED_
 
-#include <string>                       // for string
-#include <unordered_map>                // for unordered_map
-#include <vector>                       // for vector
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-#include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
+#include "libupnpp/device/device.hxx"
+#include "libupnpp/soaphelp.hxx"
 
 #include "mpdcli.hxx"
 #include "ohservice.hxx"
@@ -33,24 +33,16 @@ class OHPlaylist : public OHService {
 public:
     OHPlaylist(UpMpd *dev, unsigned int cachesavesleep);
 
+    // These are used by other services (ohreceiver etc.)
     bool cacheFind(const std::string& uri, std:: string& meta);
-
-    // Internal non-soap versions of some of the interface for use by
-    // e.g. ohreceiver
-    bool insertUri(int afterid, const std::string& uri, 
-                   const std::string& metadata, int *newid, bool nocheck);
-    bool ireadList(const std::vector<int>&, std::vector<UpSong>&);
-    bool iidArray(std::string& idarray, int *token);
     bool urlMap(std::unordered_map<int, std::string>& umap);
-
     int iStop();
-    void refreshState();
-
-    // Source active ?
+    // When changing sources
     void setActive(bool onoff);
 
 protected:
     virtual bool makestate(std::unordered_map<std::string, std::string> &st);
+
 private:
     int play(const SoapIncoming& sc, SoapOutgoing& data);
     int pause(const SoapIncoming& sc, SoapOutgoing& data);
@@ -77,11 +69,31 @@ private:
     int idArrayChanged(const SoapIncoming& sc, SoapOutgoing& data);
     int protocolInfo(const SoapIncoming& sc, SoapOutgoing& data);
 
+    // Private internal non-soap versions of some of the interface +
+    // utility methods
     bool makeIdArray(std::string&);
     void maybeWakeUp(bool ok);
+    void refreshState();
+    bool insertUri(int afterid, const std::string& uri, 
+                   const std::string& metadata, int *newid, bool nocheck);
+    bool ireadList(const std::vector<int>&, std::vector<UpSong>&);
+    bool iidArray(std::string& idarray, int *token);
+    // Search the current mpd queue for a given uri and return the
+    // corresponding id. This is used for mapping ids from our
+    // previous active phase to the current ones (which changed when
+    // the tracks were re-inserted on activation). Of course, this
+    // does not work in the case of multiple identical Uris in the
+    // playlist.
+    int idFromOldId(int oldid);
 
     bool m_active;
+    // Mpd state that we save/restore when becoming inactive/active
     MpdState m_mpdsavedstate;
+    // Frozen upnpstate (idarray etc.) which we use when inactive
+    // (because we can't read from the mpd playlist which is used by
+    // someone else. Could largely be rebuilt from m_mpdsavedstate,
+    // but easier this way as we can just/use it in makestate().
+    std::unordered_map<std::string, std::string> m_upnpstate;
     
     // Storage for song metadata, indexed by URL.  This used to be
     // indexed by song id, but this does not survive MPD restarts.
