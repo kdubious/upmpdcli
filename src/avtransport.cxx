@@ -158,6 +158,13 @@ const std::string UpMpdAVTransport::serviceErrString(int error) const
 }
 
 // Translate MPD mode flags to UPnP Play mode
+//
+// This is only meaningful if the CP is only observing the renderer
+// state (e.g. if the renderer is controlled through OHPlaylist). We
+// always reset the modes to false in setAvTransport.
+//
+// Actually, I think that these commands were meant for multi-track
+// players (e.g. CD)
 static string mpdsToPlaymode(const MpdStatus& mpds)
 {
     string playmode = "NORMAL";
@@ -428,6 +435,7 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc,
     m_dev->m_mpdcli->random(false);
     // See comment about single in init
     m_dev->m_mpdcli->single(false);
+    m_dev->m_mpdcli->consume(false);
     
     // curpos == -1 means that the playlist was cleared or we just started. A
     // play will use position 0, so it's actually equivalent to curpos == 0
