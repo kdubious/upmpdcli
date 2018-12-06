@@ -141,11 +141,19 @@
 # file).</descr></var>
 #mpdpassword =
 
+# <var name="mpdtimeoutms" type="int" values="0 30000 1000"><brief>MPD
+# connection timeout in milliseconds.</brief>.<descr>If this is not zero,
+# dialogs with mpd will timeout after the value. This will allow upmpdcli
+# to stay responsive (return errors) if MPD ever becomes
+# stuck.</descr></var>
+#mpdtimeoutms = 2000
+
 # <var name="ownqueue" type="bool" values="1"><brief>Set if we own the MPD
 # queue.</brief>.<descr>If this is set (on by default), we own the MPD
 # queue and will fearlessly clear it. Can also be specified as -q
 # 0|1.</descr></var>
 #ownqueue = 1
+
 
 
 # <grouptitle>Audio control hooks</grouptitle>

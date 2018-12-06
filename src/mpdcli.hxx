@@ -1,18 +1,18 @@
 /* Copyright (C) 2014 J.F.Dockes
- *	 This program is free software; you can redistribute it and/or modify
- *	 it under the terms of the GNU Lesser General Public License as published by
- *	 the Free Software Foundation; either version 2.1 of the License, or
- *	 (at your option) any later version.
+ *       This program is free software; you can redistribute it and/or modify
+ *       it under the terms of the GNU Lesser General Public License as published by
+ *       the Free Software Foundation; either version 2.1 of the License, or
+ *       (at your option) any later version.
  *
- *	 This program is distributed in the hope that it will be useful,
- *	 but WITHOUT ANY WARRANTY; without even the implied warranty of
- *	 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *	 GNU Lesser General Public License for more details.
+ *       This program is distributed in the hope that it will be useful,
+ *       but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *       GNU Lesser General Public License for more details.
  *
- *	 You should have received a copy of the GNU Lesser General Public License
- *	 along with this program; if not, write to the
- *	 Free Software Foundation, Inc.,
- *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *       You should have received a copy of the GNU Lesser General Public License
+ *       along with this program; if not, write to the
+ *       Free Software Foundation, Inc.,
+ *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 #ifndef _MPDCLI_H_X_INCLUDED_
 #define _MPDCLI_H_X_INCLUDED_
@@ -26,6 +26,7 @@
 #include "upmpdutils.hxx"
 
 struct mpd_song;
+struct mpd_connection;
 
 class MpdStatus {
 public:
@@ -74,7 +75,7 @@ class MPDCli {
 public:
     MPDCli(const std::string& host, int port = 6600, const std::string& pss="");
     ~MPDCli();
-    bool ok() {return m_ok && m_conn;}
+    bool ok() {return m_conn != nullptr;}
     bool setVolume(int ivol, bool isMute = false);
     int  getVolume();
     void forceInternalVControl();
@@ -104,8 +105,7 @@ public:
     bool statSong(UpSong& usong, int pos = -1, bool isId = false);
     UpSong& mapSong(UpSong& usong, struct mpd_song *song);
     
-    const MpdStatus& getStatus()
-    {
+    const MpdStatus& getStatus() {
         updStatus();
         return m_stat;
     }
@@ -116,37 +116,38 @@ public:
     bool restoreState(const MpdState& st);
     
 private:
-    void *m_conn;
-    bool m_ok;
+    struct mpd_connection *m_conn{nullptr};
     MpdStatus m_stat;
     // Saved volume while muted.
-    int m_premutevolume;
+    int m_premutevolume{0};
     // Volume that we use when MPD is stopped (does not return a
     // volume in the status)
-    int m_cachedvolume; 
+    int m_cachedvolume{50}; 
     std::string m_host;
     int m_port;
+    int m_timeoutms{2000};
     std::string m_password;
     std::string m_onstart;
     std::string m_onplay;
     std::string m_onpause;
     std::string m_onstop;
-    bool m_externalvolumecontrol;
+    bool m_externalvolumecontrol{false};
     std::vector<std::string> m_onvolumechange;
     std::vector<std::string> m_getexternalvolume;
     regex_t m_tpuexpr;
     // addtagid command only exists for mpd 0.19 and later.
-    bool m_have_addtagid; 
+    bool m_have_addtagid{false};
     // Position and id of last insertion: if the new request is to
     // insert after this id, and the queue did not change, we compute
     // the new position from the last one instead of re-reading the
     // queue for looking up the id position. This saves a huge amount
     // of time.
-    int m_lastinsertid;
-    int m_lastinsertpos;
-    int m_lastinsertqvers;
+    int m_lastinsertid{-1};
+    int m_lastinsertpos{-1};
+    int m_lastinsertqvers{-1};
 
     bool openconn();
+    void closeconn();
     bool updStatus();
     bool getQueueSongs(std::vector<mpd_song*>& songs);
     void freeSongs(std::vector<mpd_song*>& songs);
@@ -156,6 +157,5 @@ private:
     bool send_tag(const char *cid, int tag, const std::string& data);
     bool send_tag_data(int id, const UpSong& meta);
 };
-
 
 #endif /* _MPDCLI_H_X_INCLUDED_ */

@@ -1,18 +1,18 @@
 /* Copyright (C) 2014 J.F.Dockes
- *	 This program is free software; you can redistribute it and/or modify
- *	 it under the terms of the GNU Lesser General Public License as published by
- *	 the Free Software Foundation; either version 2.1 of the License, or
- *	 (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
  *
- *	 This program is distributed in the hope that it will be useful,
- *	 but WITHOUT ANY WARRANTY; without even the implied warranty of
- *	 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *	 GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
  *
- *	 You should have received a copy of the GNU Lesser General Public License
- *	 along with this program; if not, write to the
- *	 Free Software Foundation, Inc.,
- *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the
+ * Free Software Foundation, Inc.,
+ * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 #include "mpdcli.hxx"
 
@@ -39,13 +39,8 @@ struct mpd_status;
 using namespace std;
 using namespace UPnPP;
 
-#define M_CONN ((struct mpd_connection *)m_conn)
-
 MPDCli::MPDCli(const string& host, int port, const string& pass)
-    : m_conn(0), m_ok(false), m_premutevolume(0), m_cachedvolume(50),
-      m_host(host), m_port(port), m_password(pass),
-      m_externalvolumecontrol(false),
-      m_lastinsertid(-1), m_lastinsertpos(-1), m_lastinsertqvers(-1)
+    : m_host(host), m_port(port), m_password(pass)
 {
     regcomp(&m_tpuexpr, "^[[:alpha:]]+://.+", REG_EXTENDED|REG_NOSUB);
     if (!openconn()) {
@@ -62,21 +57,18 @@ MPDCli::MPDCli(const string& host, int port, const string& pass)
     stringToStrings(scratch,  m_onvolumechange);
     g_config->get("getexternalvolume", scratch);
     stringToStrings(scratch, m_getexternalvolume);
-    
-    m_externalvolumecontrol = false;
-    string value;
-    if (g_config->get("externalvolumecontrol", value)) {
-        m_externalvolumecontrol = atoi(value.c_str()) != 0;
+    if (g_config->get("mpdtimeoutms", scratch)) {
+        m_timeoutms = atoi(scratch.c_str());
     }
-
-    m_ok = true;
-    m_ok = updStatus();
+    if (g_config->get("externalvolumecontrol", scratch)) {
+        m_externalvolumecontrol = atoi(scratch.c_str()) != 0;
+    }
+    updStatus();
 }
 
 MPDCli::~MPDCli()
 {
-    if (m_conn) 
-        mpd_connection_free(M_CONN);
+    closeconn();
     regfree(&m_tpuexpr);
 }
 
@@ -96,31 +88,38 @@ bool MPDCli::looksLikeTransportURI(const string& path)
     return (regexec(&m_tpuexpr, path.c_str(), 0, 0, 0) == 0);
 }
 
-bool MPDCli::openconn()
+void MPDCli::closeconn()
 {
     if (m_conn) {
-        mpd_connection_free(M_CONN);
-        m_conn = 0;
+        mpd_connection_free(m_conn);
+        m_conn = nullptr;
     }
-    m_conn = mpd_connection_new(m_host.c_str(), m_port, 0);
-    if (m_conn == NULL) {
-        LOGERR("mpd_connection_new failed. No memory?" << endl);
+}
+
+bool MPDCli::openconn()
+{
+    closeconn();
+    m_conn = mpd_connection_new(m_host.c_str(), m_port, m_timeoutms);
+    if (m_conn == nullptr) {
+        LOGERR("mpd_connection_new failed." << endl);
         return false;
     }
 
-    if (mpd_connection_get_error(M_CONN) != MPD_ERROR_SUCCESS) {
+    if (mpd_connection_get_error(m_conn) != MPD_ERROR_SUCCESS) {
         showError("MPDCli::openconn");
+        closeconn();
         return false;
     }
 
     if(!m_password.empty()) {
-        if (!mpd_run_password(M_CONN, m_password.c_str())) {
+        if (!mpd_run_password(m_conn, m_password.c_str())) {
             LOGERR("Password wrong" << endl);
+            closeconn();
             return false;
         }
     }
 
-    const unsigned int *vers = mpd_connection_get_server_version(M_CONN);
+    const unsigned int *vers = mpd_connection_get_server_version(m_conn);
     m_stat.versmajor = vers[0];
     m_stat.versminor = vers[1];
     m_stat.verspatch = vers[2];
@@ -137,16 +136,16 @@ bool MPDCli::showError(const string& who)
         return false;
     }
 
-    int error = mpd_connection_get_error(M_CONN);
+    int error = mpd_connection_get_error(m_conn);
     if (error == MPD_ERROR_SUCCESS) {
         //LOGDEB("MPDCli::showError: " << who << " success !" << endl);
         return false;
     }
-    LOGERR(who << " failed: " <<  mpd_connection_get_error_message(M_CONN) 
+    LOGERR(who << " failed: " <<  mpd_connection_get_error_message(m_conn) 
            << endl);
     if (error == MPD_ERROR_SERVER) {
         LOGERR(who << " server error: " << 
-               mpd_connection_get_server_error(M_CONN) << endl);
+               mpd_connection_get_server_error(m_conn) << endl);
     }
 
     if (error == MPD_ERROR_CLOSED)
@@ -155,37 +154,46 @@ bool MPDCli::showError(const string& who)
     return false;
 }
 
-#define RETRY_CMD(CMD) {                                \
+#define RETRY_CMD(CMD, ERROR) {                         \
+    if (!ok()) {                                        \
+        return ERROR;                                   \
+    }                                                   \
     for (int i = 0; i < 2; i++) {                       \
         if ((CMD))                                      \
             break;                                      \
         if (i == 1 || !showError(#CMD))                 \
-            return false;                               \
+            return ERROR;                               \
     }                                                   \
     }
 
-#define RETRY_CMD_WITH_SLEEP(CMD) {                     \
+#define RETRY_CMD_WITH_SLEEP(CMD, ERROR) {              \
+    if (!ok()) {                                        \
+        return ERROR;                                   \
+    }                                                   \
     for (int i = 0; i < 2; i++) {                       \
         if ((CMD))                                      \
             break;                                      \
         sleep(1);                                       \
         if (i == 1 || !showError(#CMD))                 \
-            return false;                               \
+            return ERROR;                               \
     }                                                   \
     }
 
 bool MPDCli::updStatus()
 {
-    if (!ok()) {
-        LOGERR("MPDCli::updStatus: bad state" << endl);
+    if (!ok() && !openconn()) {
+        LOGERR("MPDCli::updStatus: no connection" << endl);
         return false;
     }
 
     mpd_status *mpds = 0;
-    mpds = mpd_run_status(M_CONN);
+    mpds = mpd_run_status(m_conn);
     if (mpds == 0) {
-        openconn();
-        mpds = mpd_run_status(M_CONN);
+        if (!openconn()) {
+            LOGERR("MPDCli::updStatus: connection failed\n");
+            return false;
+        }
+        mpds = mpd_run_status(m_conn);
         if (mpds == 0) {
             LOGERR("MPDCli::updStatus: can't get status" << endl);
             showError("MPDCli::updStatus");
@@ -305,22 +313,21 @@ bool MPDCli::checkForCommand(const string& cmdname)
 {
     LOGDEB1("MPDCli::checkForCommand: " << cmdname << endl);
     bool found = false;
-
-    RETRY_CMD(mpd_send_allowed_commands(M_CONN));
+    RETRY_CMD(mpd_send_allowed_commands(m_conn), false);
     struct mpd_pair *rep;
     do {
-        rep = mpd_recv_command_pair(M_CONN);
+        rep = mpd_recv_command_pair(m_conn);
         if (rep) {
             //LOGDEB("MPDCli::checkForCommand: name " <<  rep->name << 
             //       " value " << rep->value << endl);
             found = !cmdname.compare(rep->value);
-            mpd_return_pair(M_CONN, rep);
+            mpd_return_pair(m_conn, rep);
             if (found)
                 break;
         }
     } while (rep);
 
-    if (!mpd_response_finish(M_CONN)) {
+    if (!mpd_response_finish(m_conn)) {
         LOGERR("MPDCli::checkForCommand: mpd_response_finish failed" << endl);
     }
 
@@ -349,6 +356,9 @@ bool MPDCli::saveState(MpdState& st, int seekms)
 bool MPDCli::restoreState(const MpdState& st)
 {
     LOGDEB("MPDCli::restoreState: seekms " << st.status.songelapsedms << endl);
+    if (!ok()) {
+        return false;
+    }
     clearQueue();
     for (unsigned int i = 0; i < st.queue.size(); i++) {
         if (insert(st.queue[i].uri, i, st.queue[i]) < 0) {
@@ -363,7 +373,7 @@ bool MPDCli::restoreState(const MpdState& st)
     m_cachedvolume = st.status.volume;
     //no need to set volume if it is controlled external
     if (!m_externalvolumecontrol)
-        mpd_run_set_volume(M_CONN, st.status.volume);
+        mpd_run_set_volume(m_conn, st.status.volume);
 
     if (st.status.state == MpdStatus::MPDS_PAUSE ||
         st.status.state == MpdStatus::MPDS_PLAY) {
@@ -375,7 +385,7 @@ bool MPDCli::restoreState(const MpdState& st)
         if (st.status.state == MpdStatus::MPDS_PAUSE)
             pause(true);
         if (!m_externalvolumecontrol)
-            mpd_run_set_volume(M_CONN, st.status.volume);
+            mpd_run_set_volume(m_conn, st.status.volume);
     }
     return true;
 }
@@ -384,19 +394,18 @@ bool MPDCli::restoreState(const MpdState& st)
 bool MPDCli::statSong(UpSong& upsong, int pos, bool isid)
 {
     //LOGDEB1("MPDCli::statSong. isid " << isid << " id/pos " << pos << endl);
-    if (!ok())
-        return false;
-
     struct mpd_song *song;
     if (isid == false) {
         if (pos == -1) {
-            RETRY_CMD(song = mpd_run_current_song(M_CONN));
+            RETRY_CMD(song = mpd_run_current_song(m_conn), false);
         } else {
-            RETRY_CMD(song = mpd_run_get_queue_song_pos(M_CONN, 
-                                                        (unsigned int)pos));
+            RETRY_CMD(
+                song = mpd_run_get_queue_song_pos(m_conn, (unsigned int)pos),
+                false);
         }
     } else {
-        RETRY_CMD(song = mpd_run_get_queue_song_id(M_CONN, (unsigned int)pos));
+        RETRY_CMD(song = mpd_run_get_queue_song_id(m_conn, (unsigned int)pos),
+            false);
     }
     if (song == 0) {
         LOGERR("mpd_run_current_song failed" << endl);
@@ -478,9 +487,6 @@ UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
 bool MPDCli::setVolume(int volume, bool isMute)
 {
     LOGDEB("MPDCli::setVolume. extvc " << m_externalvolumecontrol << endl);
-    if (!ok()) {
-        return false;
-    }
 
     // ??MPD does not want to set the volume if not active.??
     // This does not seem to be the case with recent MPD versions
@@ -526,7 +532,7 @@ bool MPDCli::setVolume(int volume, bool isMute)
     
     if (!(m_externalvolumecontrol)) {
         LOGDEB2("MPDCli::setVolume: setting mpd volume " << volume << endl);
-    	RETRY_CMD(mpd_run_set_volume(M_CONN, volume));
+    	RETRY_CMD(mpd_run_set_volume(m_conn, volume), false);
     }
     if (!m_onvolumechange.empty()) {
         ExecCmd ecmd;
@@ -554,18 +560,14 @@ int MPDCli::getVolume()
 bool MPDCli::togglePause()
 {
     LOGDEB("MPDCli::togglePause" << endl);
-    if (!ok())
-        return false;
-    RETRY_CMD(mpd_run_toggle_pause(M_CONN));
+    RETRY_CMD(mpd_run_toggle_pause(m_conn), false);
     return true;
 }
 
 bool MPDCli::pause(bool onoff)
 {
     LOGDEB("MPDCli::pause" << endl);
-    if (!ok())
-        return false;
-    RETRY_CMD(mpd_run_pause(M_CONN, onoff));
+    RETRY_CMD(mpd_run_pause(m_conn, onoff), false);
     return true;
 }
 
@@ -574,15 +576,13 @@ bool MPDCli::play(int pos)
     LOGDEB("MPDCli::play(pos=" << pos << ")" << endl);
     if (!ok())
         return false;
-    if (!m_onstart.empty()) {
-        if (system(m_onstart.c_str())) {
-            LOGERR("MPDCli::play: " << m_onstart << " failed "<< endl);
-        }
+    if (!m_onstart.empty() && system(m_onstart.c_str())) {
+        LOGERR("MPDCli::play: " << m_onstart << " failed "<< endl);
     }
     if (pos >= 0) {
-        RETRY_CMD(mpd_run_play_pos(M_CONN, (unsigned int)pos));
+        RETRY_CMD(mpd_run_play_pos(m_conn, (unsigned int)pos), false);
     } else {
-        RETRY_CMD(mpd_run_play(M_CONN));
+        RETRY_CMD(mpd_run_play(m_conn), false);
     }
     return updStatus();
 }
@@ -592,94 +592,86 @@ bool MPDCli::playId(int id)
     LOGDEB("MPDCli::playId(id=" << id << ")" << endl);
     if (!ok())
         return false;
-    if (!m_onstart.empty()) {
-        if (system(m_onstart.c_str())) {
-            LOGERR("MPDCli::playId: " << m_onstart << " failed "<< endl);
-        }
+    if (!m_onstart.empty() && system(m_onstart.c_str())) {
+        LOGERR("MPDCli::playId: " << m_onstart << " failed "<< endl);
     }
-    RETRY_CMD(mpd_run_play_id(M_CONN, (unsigned int)id));
+    RETRY_CMD(mpd_run_play_id(m_conn, (unsigned int)id), false);
     return updStatus();
 }
+
 bool MPDCli::stop()
 {
     LOGDEB("MPDCli::stop" << endl);
-    if (!ok())
-        return false;
-    RETRY_CMD(mpd_run_stop(M_CONN));
+    RETRY_CMD(mpd_run_stop(m_conn), false);
     return true;
 }
+
 bool MPDCli::seek(int seconds)
 {
     if (!updStatus() || m_stat.songpos < 0)
         return false;
     LOGDEB("MPDCli::seek: pos:"<<m_stat.songpos<<" seconds: "<< seconds<<endl);
-    RETRY_CMD(mpd_run_seek_pos(M_CONN, m_stat.songpos, (unsigned int)seconds));
+    RETRY_CMD(mpd_run_seek_pos(m_conn, m_stat.songpos, (unsigned int)seconds),
+        false);
     return true;
 }
 
 bool MPDCli::next()
 {
     LOGDEB("MPDCli::next" << endl);
-    if (!ok())
-        return false;
-    RETRY_CMD(mpd_run_next(M_CONN));
+    RETRY_CMD(mpd_run_next(m_conn), false);
     return true;
 }
+
 bool MPDCli::previous()
 {
     LOGDEB("MPDCli::previous" << endl);
-    if (!ok())
-        return false;
-    RETRY_CMD(mpd_run_previous(M_CONN));
+    RETRY_CMD(mpd_run_previous(m_conn), false);
     return true;
 }
+
 bool MPDCli::repeat(bool on)
 {
     LOGDEB("MPDCli::repeat:" << on << endl);
-    if (!ok())
-        return false;
-    RETRY_CMD(mpd_run_repeat(M_CONN, on));
+    RETRY_CMD(mpd_run_repeat(m_conn, on), false);
     return true;
 }
 
 bool MPDCli::consume(bool on)
 {
     LOGDEB("MPDCli::consume:" << on << endl);
-    if (!ok())
-        return false;
-
-    RETRY_CMD(mpd_run_consume(M_CONN, on));
+    RETRY_CMD(mpd_run_consume(m_conn, on), false);
     return true;
 }
+
 bool MPDCli::random(bool on)
 {
     LOGDEB("MPDCli::random:" << on << endl);
-    if (!ok())
-        return false;
-    RETRY_CMD(mpd_run_random(M_CONN, on));
+    RETRY_CMD(mpd_run_random(m_conn, on), false);
     return true;
 }
+
 bool MPDCli::single(bool on)
 {
     LOGDEB("MPDCli::single:" << on << endl);
-    if (!ok())
-        return false;
-    RETRY_CMD(mpd_run_single(M_CONN, on));
+    RETRY_CMD(mpd_run_single(m_conn, on), false);
     return true;
 }
 
 bool MPDCli::send_tag(const char *cid, int tag, const string& _data)
 {
+    if (!ok())
+        return false;
     string data;
     neutchars(_data, data, "\r\n", ' ');
-    if (!mpd_send_command(M_CONN, "addtagid", cid, 
+    if (!mpd_send_command(m_conn, "addtagid", cid, 
                           mpd_tag_name(mpd_tag_type(tag)),
                           data.c_str(), NULL)) {
         LOGERR("MPDCli::send_tag: mpd_send_command failed" << endl);
         return false;
     }
 
-    if (!mpd_response_finish(M_CONN)) {
+    if (!mpd_response_finish(m_conn)) {
         LOGERR("MPDCli::send_tag: mpd_response_finish failed for tag " << tag <<
                " data [" << data << "]\n");
         showError("MPDCli::send_tag");
@@ -693,7 +685,7 @@ static const string upmpdcli_comment("client=upmpdcli;");
 bool MPDCli::send_tag_data(int id, const UpSong& meta)
 {
     LOGDEB1("MPDCli::send_tag_data" << endl);
-    if (!m_have_addtagid)
+    if (!m_have_addtagid || !ok())
         return false;
 
     char cid[30];
@@ -715,15 +707,13 @@ bool MPDCli::send_tag_data(int id, const UpSong& meta)
 int MPDCli::insert(const string& uri, int pos, const UpSong& meta)
 {
     LOGDEB("MPDCli::insert at :" << pos << " uri " << uri << endl);
-    if (!ok())
-        return -1;
-
     if (pos == -1) {
         RETRY_CMD((m_lastinsertid = 
-                   mpd_run_add_id(M_CONN, uri.c_str())) != -1);
+                   mpd_run_add_id(m_conn, uri.c_str())) != -1, -1);
     } else {        
-        RETRY_CMD((m_lastinsertid = 
-                  mpd_run_add_id_to(M_CONN, uri.c_str(), (unsigned)pos)) != -1);
+        RETRY_CMD(
+            (m_lastinsertid = 
+             mpd_run_add_id_to(m_conn, uri.c_str(), (unsigned)pos)) != -1, -1);
     }
     
     if (m_have_addtagid)
@@ -738,8 +728,6 @@ int MPDCli::insert(const string& uri, int pos, const UpSong& meta)
 int MPDCli::insertAfterId(const string& uri, int id, const UpSong& meta)
 {
     LOGDEB("MPDCli::insertAfterId: id " << id << " uri " << uri << endl);
-    if (!ok())
-        return -1;
 
     // id == 0 means insert at start
     if (id == 0) {
@@ -772,34 +760,26 @@ int MPDCli::insertAfterId(const string& uri, int id, const UpSong& meta)
 bool MPDCli::clearQueue()
 {
     LOGDEB("MPDCli::clearQueue " << endl);
-    if (!ok())
-        return -1;
-
-    RETRY_CMD(mpd_run_clear(M_CONN));
+    RETRY_CMD(mpd_run_clear(m_conn), false);
     return true;
 }
 
 bool MPDCli::deleteId(int id)
 {
     LOGDEB("MPDCli::deleteId " << id << endl);
-    if (!ok())
-        return -1;
     // It seems that mpd will sometimes get in a funny state, esp.
     // after failed statsongs. The exact mechanism is a mystery, but
     // retrying the failed deletes with a bit of wait seems to help a
     // lot, and this happens seldom enough that this is not a
     // significant performance issue
-    RETRY_CMD_WITH_SLEEP(mpd_run_delete_id(M_CONN, (unsigned)id));
+    RETRY_CMD_WITH_SLEEP(mpd_run_delete_id(m_conn, (unsigned)id), false);
     return true;
 }
 
 bool MPDCli::deletePosRange(unsigned int start, unsigned int end)
 {
     LOGDEB("MPDCli::deletePosRange [" << start << ", " << end << "[" << endl);
-    if (!ok())
-        return -1;
-
-    RETRY_CMD(mpd_run_delete_range(M_CONN, start, end));
+    RETRY_CMD(mpd_run_delete_range(m_conn, start, end), false);
     return true;
 }
 
@@ -808,9 +788,9 @@ bool MPDCli::statId(int id)
 {
     LOGDEB("MPDCli::statId " << id << endl);
     if (!ok())
-        return -1;
+        return false;
 
-    mpd_song *song = mpd_run_get_queue_song_id(M_CONN, (unsigned)id);
+    mpd_song *song = mpd_run_get_queue_song_id(m_conn, (unsigned)id);
     if (song) {
         mpd_song_free(song);
         return true;
@@ -823,14 +803,14 @@ bool MPDCli::getQueueSongs(vector<mpd_song*>& songs)
     //LOGDEB1("MPDCli::getQueueSongs" << endl);
     songs.clear();
 
-    RETRY_CMD(mpd_send_list_queue_meta(M_CONN));
+    RETRY_CMD(mpd_send_list_queue_meta(m_conn), false);
 
     struct mpd_song *song;
-    while ((song = mpd_recv_song(M_CONN)) != NULL) {
+    while ((song = mpd_recv_song(m_conn)) != NULL) {
         songs.push_back(song);
     }
     
-    if (!mpd_response_finish(M_CONN)) {
+    if (!mpd_response_finish(m_conn)) {
         LOGERR("MPDCli::getQueueSongs: mpd_list_queue_meta failed"<< endl);
         return false;
     }
@@ -871,7 +851,6 @@ int MPDCli::curpos()
            << m_stat.songid << endl);
     return m_stat.songpos;
 }
-
 
 
 #ifdef MPDCLI_TEST
