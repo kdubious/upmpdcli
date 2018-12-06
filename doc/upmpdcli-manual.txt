@@ -613,7 +613,7 @@ for a streaming service:
    file (e.g +qobuzuser+).
 
 Some other parameters (e.g. a password) may be needed for the access to
-work, depending on the specific service.
+work, depending on the specific service. See the service-specific notes below.
 
 NOTE: The streaming services passwords are stored in the upmpdcli
 configuration file ('/etc/upmpdcli.conf'). The installer does not
@@ -779,12 +779,12 @@ authorization annex>>.
 [[UPRCL]]
 == Upmpdcli local Media Server: uprcl
 
-The current (2017-04) upmpdcli code base includes a Media Server function
+The current (2018-11) upmpdcli code base includes a Media Server function
 for local music files, analog to MinimServer or ReadyMedia/MiniDLNA. The
 plugin module is named uprcl.
 
 Why yet another Media Server ? MinimServer is great, and free, but not
-open-source. ReadyMedia is nice too, but audio file format support is
+open-source. MiniDLNA is nice too, but audio file format support is
 incomplete (there was a patch for DSD but it was never merged apparently),
 I've always found it a bit clunky (for example: no incremental updates),
 and development does not seem very active.
@@ -805,7 +805,7 @@ Some features:
   metadata and searching. Recoll already had almost everything needed in
   this area, no development needed. It can perform incremental updates and
   file system monitoring.
-- Uses Python sqlite3 (on a memory DB) for the tags tree. 
+- Uses Python Sqlite3 (on a memory DB) for the tags tree. 
 
 Installation and configuration: have a look at the
 xref:uprcluser[configuration variables]
