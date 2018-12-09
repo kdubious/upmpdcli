@@ -54,7 +54,11 @@
 #include "netcon.h"
 #include "closefrom.h"
 #include "smallut.h"
+#ifdef MDU_INCLUDE_LOG
+#include MDU_INCLUDE_LOG
+#else
 #include "log.h"
+#endif
 
 using namespace std;
 

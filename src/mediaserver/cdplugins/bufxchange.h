@@ -24,7 +24,11 @@
 #include <mutex>
 #include <condition_variable>
 
+#ifdef MDU_INCLUDE_LOG
+#include MDU_INCLUDE_LOG
+#else
 #include "log.h"
+#endif
 
 /**
  * A BufferXChange is a synchronized 2 way meeting point for 2 threads

@@ -23,7 +23,7 @@
 
 #include <mutex>
 
-#include "log.h"
+#include "libupnpp/log.h"
 #include "smallut.h"
 
 using namespace std;

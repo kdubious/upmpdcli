@@ -51,7 +51,11 @@
 
 #include <map>
 
+#ifdef MDU_INCLUDE_LOG
+#include MDU_INCLUDE_LOG
+#else
 #include "log.h"
+#endif
 
 using namespace std;
 
@@ -422,9 +426,9 @@ int SelectLoop::doLoop()
         // Wait for something to happen
         vector<struct kevent> events;
         events.resize(nfds);
-        LOGDEB("Netcon::selectloop: kevent(), nfds = " << nfds << "\n");
+        LOGDEB1("Netcon::selectloop: kevent(), nfds = " << nfds << "\n");
         int ret = kevent(m->kq, 0, 0, &events[0], events.size(), &ts);
-        LOGDEB("Netcon::selectloop: nfds " << nfds <<
+        LOGDEB1("Netcon::selectloop: nfds " << nfds <<
                 " kevent returns " << ret << "\n");
         if (ret < 0) {
             LOGSYSERR("Netcon::selectloop", "kevent", "");
@@ -449,7 +453,7 @@ int SelectLoop::doLoop()
             int canread = ev.filter == EVFILT_READ;
             int canwrite = ev.filter == EVFILT_WRITE; 
             bool none = !canread && !canwrite;
-            LOGDEB("Netcon::selectloop: fd " << int(ev.ident) << " "  << 
+            LOGDEB1("Netcon::selectloop: fd " << int(ev.ident) << " "  << 
                     (none ? "blocked" : "can") << " "  << 
                     (canread ? "read" : "") << " "  << 
                     (canwrite ? "write" : "") << "\n");

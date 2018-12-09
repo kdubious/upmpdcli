@@ -1,6 +1,6 @@
 AM_CPPFLAGS = -DDEBUG -g -Wall \
+	    -DMDU_INCLUDE_LOG='<libupnpp/log.h>' \
             $(upnpp_CFLAGS) \
-            -I$(includedir)/libupnpp \
             $(libmpdclient_CFLAGS) \
             $(libmicrohttpd_CFLAGS) \
             $(jsoncpp_CFLAGS) \
@@ -29,30 +29,6 @@ qtconfgui-install:
                 install
 endif
 
-# We import the log facility from libupnpp, which requires fixing
-# include directives for files which expect to live in the same
-# directory as log.h
-BUILT_SOURCES = src/conftree-fixed.cpp src/execmd-fixed.cpp \
-              src/mediaserver/cdplugins/cmdtalk-fixed.cpp \
-              src/netcon-fixed.cpp src/sysvshm-fixed.cpp
-src/conftree-fixed.cpp : $(top_srcdir)/src/conftree.cpp
-	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
-		$(top_srcdir)/src/conftree.cpp > src/conftree-fixed.cpp
-src/execmd-fixed.cpp : $(top_srcdir)/src/execmd.cpp
-	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
-		$(top_srcdir)/src/execmd.cpp > src/execmd-fixed.cpp
-src/netcon-fixed.cpp : $(top_srcdir)/src/netcon.cpp
-	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
-		$(top_srcdir)/src/netcon.cpp > src/netcon-fixed.cpp
-src/sysvshm-fixed.cpp : $(top_srcdir)/src/sysvshm.cpp
-	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
-		$(top_srcdir)/src/sysvshm.cpp > src/sysvshm-fixed.cpp
-src/mediaserver/cdplugins/cmdtalk-fixed.cpp : \
-		$(top_srcdir)/src/mediaserver/cdplugins/cmdtalk.cpp
-	sed -e 's;#include "log.h";#include "libupnpp/log.h";' < \
-		$(top_srcdir)/src/mediaserver/cdplugins/cmdtalk.cpp > \
-		src/mediaserver/cdplugins/cmdtalk-fixed.cpp
-
 CLEANFILES = $(BUILT_SOURCES)
 
 upmpdcli_SOURCES = \
@@ -63,18 +39,18 @@ upmpdcli_SOURCES = \
      src/closefrom.cpp \
      src/closefrom.h \
      src/conf_post.h \
-     src/conftree-fixed.cpp \
+     src/conftree.cpp \
      src/conftree.h \
      src/conman.cxx \
      src/conman.hxx \
-     src/execmd-fixed.cpp \
+     src/execmd.cpp \
      src/execmd.h \
      src/main.cxx \
      src/main.hxx \
      src/mediaserver/cdplugins/abuffer.h \
      src/mediaserver/cdplugins/bufxchange.h \
      src/mediaserver/cdplugins/cdplugin.hxx \
-     src/mediaserver/cdplugins/cmdtalk-fixed.cpp \
+     src/mediaserver/cdplugins/cmdtalk.cpp \
      src/mediaserver/cdplugins/cmdtalk.h \
      src/mediaserver/cdplugins/curlfetch.cpp \
      src/mediaserver/cdplugins/curlfetch.h \
@@ -90,7 +66,7 @@ upmpdcli_SOURCES = \
      src/mediaserver/mediaserver.hxx \
      src/mpdcli.cxx \
      src/mpdcli.hxx \
-     src/netcon-fixed.cpp \
+     src/netcon.cpp \
      src/netcon.h \
      src/ohcredentials.cxx \
      src/ohcredentials.hxx \
@@ -123,12 +99,13 @@ upmpdcli_SOURCES = \
      src/renderctl.hxx \
      src/smallut.cpp \
      src/smallut.h \
-     src/sysvshm-fixed.cpp \
+     src/sysvshm.cpp \
      src/sysvshm.h \
      src/upmpd.cxx \
      src/upmpd.hxx \
      src/upmpdutils.cxx \
-     src/upmpdutils.hxx
+     src/upmpdutils.hxx \
+     src/workqueue.h
 
 upmpdcli_LDADD = $(UPMPDCLI_LIBS)
 
@@ -140,7 +117,7 @@ endif
 
 scctl_SOURCES = \
     scctl_src/scctl.cpp \
-    src/netcon-fixed.cpp \
+    src/netcon.cpp \
     src/smallut.cpp \
     src/upmpdutils.cxx
 
@@ -234,10 +211,7 @@ EXTRA_DIST = \
     cfgui/picoxml.h \
     cfgui/upmpdcli-config.pro \
     rdpl2stream.tar.gz \
-    src/conftree.cpp \
-    src/execmd.cpp \
-    src/mediaserver/cdplugins/cmdtalk.cpp \
-    src/netcon.cpp src/sysvshm.cpp autogen.sh \
+    autogen.sh \
     src/mediaserver/cdplugins/spotify/spotiproxy.cpp \
     src/mediaserver/cdplugins/spotify/spotiproxy.h \
     systemd/upmpdcli.service \

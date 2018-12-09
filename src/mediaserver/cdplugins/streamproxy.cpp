@@ -17,7 +17,11 @@
 
 #include "streamproxy.h"
 #include "netfetch.h"
+#ifdef MDU_INCLUDE_LOG
+#include MDU_INCLUDE_LOG
+#else
 #include "log.h"
+#endif
 #include "smallut.h"
 #include "chrono.h"
 

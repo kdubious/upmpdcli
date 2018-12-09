@@ -16,7 +16,11 @@
  */
 #include "netfetch.h"
 
+#ifdef MDU_INCLUDE_LOG
+#include MDU_INCLUDE_LOG
+#else
 #include "log.h"
+#endif
 
 using namespace std;
 

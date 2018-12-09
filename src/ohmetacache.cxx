@@ -26,7 +26,7 @@
 #include <utility>
 
 #include "libupnpp/log.h"
-#include "libupnpp/workqueue.h"
+#include "workqueue.h"
 
 using namespace std;
 
