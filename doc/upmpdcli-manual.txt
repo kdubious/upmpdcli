@@ -642,7 +642,15 @@ discovering upmpdcli at all, so there is a configuration variable to
 disable it: '+lumincompat+'. Set to 1 to use upmpdcli v1.3.0 with Lumin.
 
 Upmpdcli uses the *openssl* command to perform the cryptography work. This
-was not made a hard dependancy, so you should check that it is installed.
+was not made a hard dependancy, so you should check that it is
+installed. Unfortunately, I was only able to make things work with a fairly
+recent version of OpenSSL (1.1). This is available in Debian Stretch (9.x),
+but not Jessie (8.x) (on which Volumio, for example is based at this
+moment (12-2018)). If you are running Jessie, there is a fairly easy
+workaround available by building a static version of openssl and telling
+upmpdcli what version to use. See <<OHCREDS-OPENSSL, some instructions in
+this annex>>.
+
 
 The media service icons will appear in the Control Point interface, and the
 service will be accessible after entering the login and password.
@@ -1417,3 +1425,39 @@ display a reasonably self-explanatory interface.
 Recent *upmpdcli* packages install the web app as a service named
 *scweb*. The service is not started by default though, you need to edit
 `/etc/default/scweb`.
+
+[[OHCREDS-OPENSSL]]
+== Annex: building openssl for Debian Jessie
+
+The OHCredentials service needs OpenSSL 1.1 but Debian Jessie only has
+1.0. The following recipee builds a static version of the openssl command,
+which is installed with a specific name (upmpdcli-openssl). No libraries
+are installed and the standard command is left undisturbed, so that there
+is no risk of damaging the system.
+
+Note that I am making no claims about the security of the encryption
+provided by this method. This should be fairly sufficient for a Qobuz
+password going around your local network though (except maybe if you think
+that the NSA is interested in your playlists).
+
+----
+sudo apt install git make gcc
+cd 
+git clone https://github.com/openssl/openssl.git
+cd openssl
+git checkout -b origin/OpenSSL_1_1_0-stable
+./config
+make
+cc -o upmpdcli-openssl apps/*.o  libssl.a libcrypto.a -ldl -lpthread
+sudo cp upmpdcli-openssl /usr/bin
+----
+
+
+Then edit '/etc/upmpdcli.conf' and add the following:
+
+    opensslcmd = /usr/bin/upmpdcli-openssl
+
+We chose to copy the command to '/usr/bin', but this could be any
+place. Change the path in '/etc/upmpdcli.conf' in this case.
+
+Restart upmpdcli, and the logins from Kazoo should work.

@@ -244,6 +244,8 @@ class OHCredentials::Internal {
 public:
     
     Internal(const string& cd) {
+        opensslcmd = "openssl";
+        g_config->get("opensslcmd", opensslcmd);
         cachedir = path_cat(cd, "ohcreds");
         if (!path_makepath(cachedir, 0700)) {
             LOGERR("OHCredentials: can't create cache dir " << cachedir <<endl);
@@ -253,7 +255,7 @@ public:
         cmd.putenv("RANDFILE", path_cat(cachedir, "randfile"));
 
         if (!path_exists(keyfile)) {
-            vector<string> acmd{"openssl", "genrsa", "-out", keyfile, "4096"};
+            vector<string> acmd{opensslcmd, "genrsa", "-out", keyfile, "4096"};
             int status = cmd.doexec1(acmd);
             chmod(keyfile.c_str(), 0600);
             if (status != 0) {
@@ -269,8 +271,8 @@ public:
         //-between-the-two-styles-of-public-key-format-one-begin-rsa#29707204
         //  So use the openssl rsa command with the appropriate option
         //  instead of openssl pkey
-        // vector<string> acmd{"openssl", "pkey", "-in", keyfile, "-pubout"};
-        vector<string> acmd{"openssl","rsa","-in",keyfile, "-RSAPublicKey_out"};
+        // vector<string> acmd{opensslcmd, "pkey", "-in", keyfile, "-pubout"};
+        vector<string> acmd{opensslcmd,"rsa","-in",keyfile, "-RSAPublicKey_out"};
         if (!cmd.backtick(acmd, pubkey)) {
             LOGERR("OHCredentials: could not read public key\n");
             return;
@@ -280,7 +282,7 @@ public:
     }
 
     bool decrypt(const string& in, string& out) {
-        vector<string> acmd{"openssl", "pkeyutl", "-inkey",
+        vector<string> acmd{opensslcmd, "pkeyutl", "-inkey",
                 keyfile, "-pkeyopt", "rsa_padding_mode:oaep", "-decrypt"};
         int status = cmd.doexec1(acmd, &in, &out);
         if (status) {
@@ -400,7 +402,7 @@ public:
             }
         }
     }
-    
+    string opensslcmd;
     ExecCmd cmd;
     string cachedir;
     string keyfile;

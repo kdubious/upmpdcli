@@ -80,12 +80,10 @@ configuration file. Depending on your situation, you may see this as a
 security risk. The default is true, because I don't see this as a real
 issue in the general case.
 
-[[checkcontentformat]]
-checkcontentformat:: Check that
-input format is supported. Extract the protocolinfo
-information from the input metadata and check it against our supported
-formats. Set this option to 0 if a control point or media server sends
-good audio data with bad metadata.
+[[opensslcmd]]
+opensslcmd:: Path to the openssl command The OHCredentials service needs openssl 1.1.x or newer.
+Path to the openssl command to use if the system one (in /usr/bin) is too
+old. Not set by default.
 
 [[iconpath]]
 iconpath:: Path to the Renderer icon. The image will be displayed by Control Points which support
