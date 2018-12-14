@@ -90,6 +90,13 @@
 # issue in the general case.</descr></var>
 # saveohcredentials = 1
 
+# <var name="checkcontentformat" type="bool" values="1"><brief>Check that
+# input format is supported.</brief><descr>Extract the protocolinfo
+# information from the input metadata and check it against our supported
+# formats. Set this option to 0 if a control point or media server sends
+# good audio data with bad metadata.</descr></var>
+#checkcontentformat = 1
+
 # <var name="opensslcmd" type="fn"><brief>Path to the openssl command</brief>
 # <descr>The OHCredentials service needs openssl 1.1.x or newer.
 # Path to the openssl command to use if the system one (in /usr/bin) is too
