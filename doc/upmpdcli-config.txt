@@ -80,6 +80,13 @@ configuration file. Depending on your situation, you may see this as a
 security risk. The default is true, because I don't see this as a real
 issue in the general case.
 
+[[checkcontentformat]]
+checkcontentformat:: Check that
+input format is supported. Extract the protocolinfo
+information from the input metadata and check it against our supported
+formats. Set this option to 0 if a control point or media server sends
+good audio data with bad metadata.
+
 [[opensslcmd]]
 opensslcmd:: Path to the openssl command The OHCredentials service needs openssl 1.1.x or newer.
 Path to the openssl command to use if the system one (in /usr/bin) is too
@@ -124,6 +131,13 @@ mpdpassword:: MPD
 password. Password for connecting to MPD (only necessary
 if password access is enabled in the MPD configuration
 file).
+
+[[mpdtimeoutms]]
+mpdtimeoutms:: MPD
+connection timeout in milliseconds. If this is not zero,
+dialogs with mpd will timeout after the value. This will allow upmpdcli
+to stay responsive (return errors) if MPD ever becomes
+stuck.
 
 [[ownqueue]]
 ownqueue:: Set if we own the MPD
