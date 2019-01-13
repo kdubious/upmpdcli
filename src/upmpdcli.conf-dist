@@ -211,6 +211,19 @@
 # the first argument, e.g. /some/script 85.</descr></var>
 #onvolumechange =
 
+# <grouptitle>UPnP/AV tweaking</grouptitle>
+
+# <var name="avtautoplay" type="string">
+# <brief>Automatically fake a Play command when track is set.</brief>
+# <descr>The UPnP/AV SetAVTransportURI, used to set the track to play,
+# normally does not change the current transport state: an explicit Play
+# command is required to start playing if the transport was
+# stopped. Setting this parameter will synthetize a Play command after
+# receiving SetAVTransportURI. This is needed by some control points which
+# do not send the Play command.</descr>
+# </var>
+#avtautoplay = 0
+
 # <grouptitle>OpenHome parameters</grouptitle>
 
 # <var name="ohproductroom" type="string"><brief>The name of the room where

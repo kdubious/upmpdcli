@@ -33,6 +33,7 @@
 #include "upmpd.hxx"
 #include "upmpdutils.hxx"
 #include "smallut.h"
+#include "conftree.h"
 
 // For testing upplay with a dumb renderer.
 // #define NO_SETNEXT
@@ -42,6 +43,8 @@ using namespace std::placeholders;
 
 static const string sIdTransport("urn:upnp-org:serviceId:AVTransport");
 static const string sTpTransport("urn:schemas-upnp-org:service:AVTransport:1");
+
+static bool m_autoplay{false};
 
 UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev, bool noev)
     : UpnpService(sTpTransport, sIdTransport, "AVTransport.xml", dev, noev),
@@ -97,6 +100,10 @@ UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev, bool noev)
     // If no setnext, we'd like to fake stopping at each track but this does not work because mpd goes into PAUSED PLAY at the end of track, not STOP.
 //    m_dev->m_mpdcli->single(true);
 #endif
+    string scratch;
+    if (g_config->get("avtautoplay", scratch)) {
+        m_autoplay = stringToBool(scratch);
+    }
 }
 
 // AVTransport Errors
@@ -480,23 +487,28 @@ int UpMpdAVTransport::setAVTransportURI(const SoapIncoming& sc,
 
     if (!setnext) {
         // Have to tell mpd which track to play, else it will keep on
-        // the previous despite the insertion. The UPnP docs say
-        // that setAVTransportURI should not change the transport
-        // state (pause/stop stay pause/stop) but it seems that some clients
-        // expect that the track will start playing.
-        // Needs to be revisited after seeing more clients. For now try to 
-        // preserve state as per standard.
-        // Audionet: issues a Play
-        // BubbleUpnp: issues a Play
-        // MediaHouse: no setnext, Play
-#if 1 || defined(upmpd_do_restore_play_state_after_add)
-        switch (st) {
-        case MpdStatus::MPDS_PLAY: m_dev->m_mpdcli->play(curpos); break;
-        case MpdStatus::MPDS_PAUSE: m_dev->m_mpdcli->pause(true); break;
-        case MpdStatus::MPDS_STOP: m_dev->m_mpdcli->stop(); break;
-        default: break;
+        // the previous despite the insertion.
+        // The UPnP AVTransport definition document is very clear on
+        // the fact that setAVTransportURI should not change the
+        // transport state (pause/stop stay pause/stop)
+        // However some control points expect that the track will
+        // start playing without having to issue a Play command, which
+        // is why the avtautoplay quirk was added for forcing Play after
+        // insert
+        //  - Audionet: issues a Play
+        //  - BubbleUpnp: issues a Play
+        //  - MediaHouse: no setnext, Play
+        //  - Raumfeld: needs autoplay
+        if (m_autoplay) {
+            m_dev->m_mpdcli->play(curpos);
+        } else {
+            switch (st) {
+            case MpdStatus::MPDS_PLAY: m_dev->m_mpdcli->play(curpos); break;
+            case MpdStatus::MPDS_PAUSE: m_dev->m_mpdcli->pause(true); break;
+            case MpdStatus::MPDS_STOP: m_dev->m_mpdcli->stop(); break;
+            default: break;
+            }
         }
-#endif
         // Clean up old song ids
         if (!(m_dev->m_options & UpMpd::upmpdOwnQueue)) {
             for (auto id : m_songids) {
