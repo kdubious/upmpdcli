@@ -17,10 +17,13 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef _WIN32
+// needed for localtime_r under mingw?
+#define _POSIX_THREAD_SAFE_FUNCTIONS
+#endif
 #include <time.h>
 #include <ctype.h>
 #include <errno.h>
-#include <time.h>
 #include <string.h>
 #include <math.h>
 
