@@ -1,37 +1,70 @@
 = Upmpdcli release notes
 
-== libupnpp 0.17.0
+== 2019-01-15 upmpdcli 1.4.0
 
-== upmpdcli 1.3.8
+- Save the current radio settings across restarts.
+- Add the avtautoplay config variable to accommodate a non-conformant
+  Control Point which does not issue a Play command after SetAVTransportURI.
+- Add mpdtimeoutms variable to configure MPD connections timeouts.
+- Use Python 3 for all scripts
+- gmusic: cache some data locally to improve performance.
+- OHCredentials: use stored authentication data if available to avoid login
+  on CP.
+- Uprcl: use Waitress as WSGI server, instead of Paste.
+- Fix issue in Spotify access when started by root (at boot time).
+- Qobuz: allow longer playlists
+- Use the libupnpp 0.17.0 features. This makes us incompatible with 0.16.
+- Add the capability to run the Media Server in-process (as a separate root
+  device). Needs a very recent libupnp.
+
+== 2019-01-15 libupnpp 0.17.0
+
+- Better support for embedded devices.
+- Support for multiple root devices.
+- Move the description document creation to the library: it is built
+  incrementally as services are added, instead of being passed as a whole
+  by the device. This changes the API.
+- Don't delay searches after the initial one.
+- Work around port allocation bug in some libupnp 1.8 versions.
+
+== 2018-12-13 upmpdcli 1.3.8
 - Add parameter to set the name of the openssl command to use. Helps with
   OHCredentials on jessie where the system command is too old.
 - Small compatibility change for helping Kazoo use our radio list. Better
   Kazoo compatibility (when switching between radio and playlist) still to
   come (not merged).
 
-== upmpdcli 1.3.6
+== 2018-12-14 libupnpp 0.16.2
+- Compatibility with libupnp branch 1.8
+
+== 2018-12-12 upmpdcli 1.3.7
+
+- Allow setting the name of the openssl command used to encrypt the
+  credentials. 
+
+== 2018-10-08 upmpdcli 1.3.6
 
 - Fix issues in the Credentials service which prevented Tidal and Qobuz
   logins to work with BubbleUPnP.
   
-== upmpdcli 1.3.5
+== 2018-10-06 upmpdcli 1.3.5
 
 - Fix bug in the spotify plugin: would not work if upmpdcli was initially
   started by root (before switching to the upmpdcli user), which is the
   default for the packages.
 
-== upmpdcli 1.3.4
+== 2018-10-01 upmpdcli 1.3.4
 
 - Fix bug in the spotify plugin: would not work if plgproxymethod was set
   to redirect (which is the default). The plugin should ignore the value of
   this variable which can only be useful for the other streaming services.
   
-== upmpdcli 1.3.3
+== 2018-09-20 upmpdcli 1.3.3
 
 - Fix the radio source on systems with Python3 version older than 3.5
   (e.g. Debian Jessie)
   
-== upmpdcli 1.3.2
+== 2018-09-15 upmpdcli 1.3.2
 
 NOTE: Using this release with Lumin needs explicitely setting lumincompat=1
 in the configuration file, which disables the OpenHome Credentials service
