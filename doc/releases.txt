@@ -1,5 +1,31 @@
 = Upmpdcli release notes
 
+== libupnpp 0.17.0
+
+== upmpdcli 1.3.8
+- Add parameter to set the name of the openssl command to use. Helps with
+  OHCredentials on jessie where the system command is too old.
+- Small compatibility change for helping Kazoo use our radio list. Better
+  Kazoo compatibility (when switching between radio and playlist) still to
+  come (not merged).
+
+== upmpdcli 1.3.6
+
+- Fix issues in the Credentials service which prevented Tidal and Qobuz
+  logins to work with BubbleUPnP.
+  
+== upmpdcli 1.3.5
+
+- Fix bug in the spotify plugin: would not work if upmpdcli was initially
+  started by root (before switching to the upmpdcli user), which is the
+  default for the packages.
+
+== upmpdcli 1.3.4
+
+- Fix bug in the spotify plugin: would not work if plgproxymethod was set
+  to redirect (which is the default). The plugin should ignore the value of
+  this variable which can only be useful for the other streaming services.
+  
 == upmpdcli 1.3.3
 
 - Fix the radio source on systems with Python3 version older than 3.5
