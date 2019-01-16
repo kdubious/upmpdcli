@@ -1,8 +1,21 @@
 upmpdcli (1.4.0-1~ppaPPAVERS~SERIES1) SERIES; urgency=low
 
-  * Master branch. Changelog tbd
+  * Save the current radio settings across restarts.
+  * Add the avtautoplay config variable to accommodate a non-conformant
+    Control Point which does not issue a Play command after SetAVTransportURI.
+  * Add mpdtimeoutms variable to configure MPD connections timeouts.
+  * Use Python 3 for all scripts
+  * gmusic: cache some data locally to improve performance.
+  * OHCredentials: use stored authentication data if available to avoid login
+    on CP.
+  * Uprcl: use Waitress as WSGI server, instead of Paste.
+  * Fix issue in Spotify access when started by root (at boot time).
+  * Qobuz: allow longer playlists
+  * Use the libupnpp 0.17.0 features. This makes us incompatible with 0.16.
+  * Add the capability to run the Media Server in-process (as a separate root
+    device). Needs a very recent libupnp.
   
- -- Jean-Francois Dockes <jf@dockes.org>  Sun, 04 Nov 2018 11:00:00 +0100
+ -- Jean-Francois Dockes <jf@dockes.org>  Tue, 15 Jan 2019 19:00:00 +0100
 
 upmpdcli (1.3.2-2~ppaPPAVERS~SERIES1) SERIES; urgency=low
 
