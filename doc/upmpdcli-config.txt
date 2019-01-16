@@ -194,6 +194,16 @@ volume. Used when 'externalvolumecontrol' is set.
 Specify the full path to the program, which is called with the volume as
 the first argument, e.g. /some/script 85.
 
+=== UPnP/AV tweaking 
+
+[[avtautoplay]]
+avtautoplay:: Automatically fake a Play command when track is set. The UPnP/AV SetAVTransportURI, used to set the track to play,
+normally does not change the current transport state: an explicit Play
+command is required to start playing if the transport was
+stopped. Setting this parameter will synthetize a Play command after
+receiving SetAVTransportURI. This is needed by some control points which
+do not send the Play command.
+
 === OpenHome parameters 
 
 [[ohproductroom]]
