@@ -285,8 +285,9 @@ void OHRadio::maybeExecMetaScript(RadioMeta& radio, MpdStatus &mpds)
     try {
         istringstream input(data);
         input >> decoded;
-    } catch (std::exception e) {
-        LOGERR("OHRadio::makestate: Json decode failed for [" << data << "]");
+    } catch (std::exception& e) {
+        LOGERR("OHRadio::makestate: Json decode failed: " << e.what() <<
+               " for [" << data << "]\n");
         radio.nextMetaScriptExecTime = time(0) + 10;
         return;
     }
