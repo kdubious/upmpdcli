@@ -21,6 +21,8 @@ def prompt_for_user_token(username, scope=None, client_id = None,
          - redirect_uri - the redirect URI of your app
          - cache_path - path to location to save tokens
 
+         ** CHANGE from the offical version: we return the sp_oauth
+            object itself, as it is now needed to build the Spotipy object 
     '''
 
     if not client_id:
@@ -88,6 +90,6 @@ def prompt_for_user_token(username, scope=None, client_id = None,
         token_info = sp_oauth.get_access_token(code)
     # Auth'ed API request
     if token_info:
-        return token_info['access_token']
+        return sp_oauth
     else:
         return None

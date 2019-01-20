@@ -58,7 +58,9 @@ class Spotify(object):
         """
         Create a Spotify API object.
 
-        :param auth: A SpotifyOAuth object (optional)
+        :param auth: A SpotifyOAuth object (optional). NOTE: DIFFERENCE from the
+             official version: done to allow further active management of the
+             auth token later on (refreshing).
         :param requests_session:
             A Requests session object or a truthy value to create one.
             A falsy value disables sessions.
