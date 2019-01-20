@@ -10,6 +10,7 @@ fatal()
 test -f spotiauthinit.py || fatal "Must run in the spotify directory"
 
 cd ..
+rm -rf /tmp/upmpdcli-spotify-authinit
 cp -rp spotify /tmp/upmpdcli-spotify-authinit
 cd /tmp
 rm -rf upmpdcli-spotify-authinit/__pycache__ \

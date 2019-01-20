@@ -64,7 +64,8 @@ def prompt_for_user_token(username, scope=None, client_id = None,
             User authentication requires interaction with your
             web browser. Once you enter your credentials and
             give authorization, you will be redirected to
-            a url.  Paste that url you were directed to to
+            a url. **Ignore the non-existent url Error**
+            Paste that url you were directed to to
             complete the authorization.
 
         ''')
