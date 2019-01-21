@@ -1,3 +1,9 @@
+upmpdcli (1.4.0-2~ppaPPAVERS~SERIES1) SERIES; urgency=low
+
+  * Add forgotten MS-description.xml file
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Sat, 19 Jan 2019 17:00:00 +0100
+
 upmpdcli (1.4.0-1~ppaPPAVERS~SERIES1) SERIES; urgency=low
 
   * Save the current radio settings across restarts.
