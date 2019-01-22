@@ -68,7 +68,7 @@ public:
     /// Reset after transfer done, for retrying for exemple.
     virtual bool reset() = 0;
 
-    u_int64_t datacount() {
+    uint64_t datacount() {
         return fetch_data_count;
     }
 
@@ -84,11 +84,11 @@ public:
         buf1cb = f;
     }
     // Called when the network transfer is done
-    void setEOFetchCB(std::function<void(bool ok, u_int64_t count)> f) {
+    void setEOFetchCB(std::function<void(bool ok, uint64_t count)> f) {
         eofcb = f;
     }
     // Called every time we get new data from the remote
-    void setFetchBytesCB(std::function<void(u_int64_t count)> f) {
+    void setFetchBytesCB(std::function<void(uint64_t count)> f) {
         fbcb = f;
     }
 
@@ -98,11 +98,11 @@ protected:
     std::string _url;
     uint64_t startoffset;
     int timeoutsecs{0};
-    u_int64_t fetch_data_count{0};
+    uint64_t fetch_data_count{0};
     BufXChange<ABuffer*> *outqueue{nullptr};
     std::function<bool(std::string&, void *, int)> buf1cb;
-    std::function<void(u_int64_t)> fbcb;
-    std::function<void(bool, u_int64_t)> eofcb;
+    std::function<void(uint64_t)> fbcb;
+    std::function<void(bool, uint64_t)> eofcb;
 };
 
 #endif /* _MEDIAFETCH_H_INCLUDED_ */
