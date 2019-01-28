@@ -159,10 +159,7 @@ public:
     void reparse(const std::string& in);
 
     /** Clear all content */
-    void clear() {
-        m_submaps.clear();
-        m_order.clear();
-    }
+    int clear();
 
     /**
      * Get string value for named parameter, from specified subsection (looks 

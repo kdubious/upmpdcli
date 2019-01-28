@@ -507,6 +507,13 @@ int ConfSimple::eraseKey(const string& sk)
     return write();
 }
 
+int ConfSimple::clear()
+{
+    m_submaps.clear();
+    m_order.clear();
+    return write();
+}
+
 // Walk the tree, calling user function at each node
 ConfSimple::WalkerCode
 ConfSimple::sortwalk(WalkerCode(*walker)(void *, const string&, const string&),
@@ -692,6 +699,13 @@ bool ConfSimple::commentsAsXML(ostream& out)
             }
             break;
         }
+        case ConfLine::CFL_SK:
+            out << "<subkey>" << it->m_data << "</subkey>" << endl;
+            break;
+        case ConfLine::CFL_VAR:
+            out << "<varsetting>" << it->m_data << " = " <<
+                it->m_value << "</varsetting>" << endl;
+            break;
         default:
             break;
         }
