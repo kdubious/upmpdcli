@@ -367,6 +367,7 @@ public:
     }        
 
     void saveToConfTree(ConfSimple& credsconf) {
+        credsconf.clear();
         for (const auto& cred : creds) {
             const string& shortid = cred.second.servicename;
             credsconf.set(shortid + "user", cred.second.user);
@@ -493,7 +494,7 @@ int OHCredentials::actSet(const SoapIncoming& sc, SoapOutgoing& data)
     const auto it1 = idmap.find(in_Id);
     if (it1 == idmap.end()) {
         LOGERR("OHCredentials::actSet: bad service id [" << in_Id <<"]\n");
-        return UPNP_E_INVALID_PARAM;
+        return 800;
     }
     string servicename = it1->second;
     string cpass = base64_decode(in_Password);
@@ -514,7 +515,7 @@ int OHCredentials::actSet(const SoapIncoming& sc, SoapOutgoing& data)
     if (m->setEnabled(in_Id, true)) {
         return UPNP_E_SUCCESS;
     } else {
-        return UPNP_E_INVALID_PARAM;
+        return 800;
     }
 }
 
@@ -532,13 +533,21 @@ int OHCredentials::actLogin(const SoapIncoming& sc, SoapOutgoing& data)
     auto it = m->creds.find(in_Id);
     if (it == m->creds.end()) {
         LOGERR("OHCredentials::Login: Id " << in_Id << " not found\n");
-        return UPNP_E_INVALID_PARAM;
+        return 800;
     }
     string token = it->second.login();
     LOGDEB("OHCredentials::Login: got token " << token << endl);
     data.addarg("Token", token);
+
+    // If login failed, erase the probably incorrect data from memory
+    // and disk.
+    if (token.empty()) {
+        m->creds.erase(in_Id);
+        m->save();
+    }
+
     m->seq++;
-    return UPNP_E_SUCCESS;
+    return token.empty() ? 801 : UPNP_E_SUCCESS;
 }
 
 int OHCredentials::actReLogin(const SoapIncoming& sc, SoapOutgoing& data)
@@ -563,10 +572,13 @@ int OHCredentials::actReLogin(const SoapIncoming& sc, SoapOutgoing& data)
     auto it = m->creds.find(in_Id);
     if (it == m->creds.end()) {
         LOGERR("OHCredentials::Login: Id " << in_Id << " not found\n");
-        return UPNP_E_INVALID_PARAM;
+        return 800;
     }
     it->second.logout();
     string token = it->second.login();
+    if (token.empty()) {
+        return 801;
+    }
     data.addarg("NewToken", token);
     m->seq++;
     return UPNP_E_SUCCESS;
@@ -585,13 +597,10 @@ int OHCredentials::actClear(const SoapIncoming& sc, SoapOutgoing& data)
     LOGDEB("OHCredentials::actClear: " << " Id " << in_Id << endl);
     if (idmap.find(in_Id) == idmap.end()) {
         LOGERR("OHCredentials::actClear: bad service id [" << in_Id <<"]\n");
-        return UPNP_E_INVALID_PARAM;
+        return 800;
     }
-    auto it = m->creds.find(in_Id);
-    if (it != m->creds.end()) {
-        m->creds.erase(it);
-        m->seq++;
-    }
+    m->creds.erase(in_Id);
+    m->save();
     return UPNP_E_SUCCESS;
 }
 
@@ -617,7 +626,7 @@ int OHCredentials::actSetEnabled(const SoapIncoming& sc, SoapOutgoing& data)
         m->seq++;
         return UPNP_E_SUCCESS;
     } else {
-        return UPNP_E_INVALID_PARAM;
+        return 800;
     }
 }
 
