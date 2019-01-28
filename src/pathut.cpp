@@ -24,13 +24,19 @@
 #include <stdio.h>
 #include <math.h>
 #include <errno.h>
+#include <dirent.h>
 
 #ifdef _WIN32
-#include "dirent.h"
 #include "safefcntl.h"
 #include "safeunistd.h"
 #include "safewindows.h"
 #include "safesysstat.h"
+#include "transcode.h"
+
+#define STAT _wstat
+#define LSTAT _wstat
+#define STATBUF _stat
+#define ACCESS _waccess
 
 #else // Not windows ->
 #include <fcntl.h>
@@ -39,10 +45,13 @@
 #include <pwd.h>
 #include <sys/file.h>
 #include <sys/stat.h>
-#include <dirent.h>
 #include <sys/statvfs.h>
 #include <sys/types.h>
 
+#define STAT stat
+#define LSTAT lstat
+#define STATBUF stat
+#define ACCESS access
 #endif
 
 #include <cstdlib>
@@ -506,8 +515,9 @@ bool path_makepath(const string& ipath, int mode)
 
 bool path_isdir(const string& path)
 {
-    struct stat st;
-    if (lstat(path.c_str(), &st) < 0) {
+    struct STATBUF st;
+    SYSPATH(path, syspath);
+    if (LSTAT(syspath, &st) < 0) {
         return false;
     }
     if (S_ISDIR(st.st_mode)) {
@@ -518,8 +528,9 @@ bool path_isdir(const string& path)
 
 long long path_filesize(const string& path)
 {
-    struct stat st;
-    if (stat(path.c_str(), &st) < 0) {
+    struct STATBUF st;
+    SYSPATH(path, syspath);
+    if (STAT(syspath, &st) < 0) {
         return -1;
     }
     return (long long)st.st_size;
@@ -531,8 +542,9 @@ int path_fileprops(const std::string path, struct stat *stp, bool follow)
         return -1;
     }
     memset(stp, 0, sizeof(struct stat));
-    struct stat mst;
-    int ret = follow ? stat(path.c_str(), &mst) : lstat(path.c_str(), &mst);
+    struct STATBUF mst;
+    SYSPATH(path, syspath);
+    int ret = follow ? STAT(syspath, &mst) : LSTAT(syspath, &mst);
     if (ret != 0) {
         return ret;
     }
@@ -551,7 +563,13 @@ int path_fileprops(const std::string path, struct stat *stp, bool follow)
 
 bool path_exists(const string& path)
 {
-    return access(path.c_str(), 0) == 0;
+    SYSPATH(path, syspath);
+    return ACCESS(syspath, 0) == 0;
+}
+bool path_readable(const string& path)
+{
+    SYSPATH(path, syspath);
+    return ACCESS(syspath, R_OK) == 0;
 }
 
 // Allowed punctuation in the path part of an URI according to RFC2396
