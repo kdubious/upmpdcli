@@ -45,18 +45,18 @@ msgproc = cmdtalkplugin.Processor(dispatcher)
 
 session = Session()
 
-is_logged_in = False
+_g_loginok = False
 
 def maybelogin(a={}):
     global formatid
     global httphp
     global pathprefix
-    global is_logged_in
+    global _g_loginok
 
     # Do this always
     setidprefix(qobidprefix)
 
-    if is_logged_in:
+    if _g_loginok:
         return True
 
     if "UPMPD_HTTPHOSTPORT" not in os.environ:
@@ -89,7 +89,7 @@ def maybelogin(a={}):
     if not username or not password:
         raise Exception("qobuzuser and/or qobuzpass not set in configuration")
 
-    is_logged_in = session.login(username, password)
+    _g_loginok = session.login(username, password)
 
 
 # This is not used by the media server. It's for use by the OpenHome
@@ -98,6 +98,9 @@ def maybelogin(a={}):
 def login(a):
     maybelogin(a)
     appid, token = session.get_appid_and_token()
+    if token is None:
+        # login failed. cmdtalk does not like None values
+        token = ''
     return {'appid': appid, 'token' : token}
     
     
