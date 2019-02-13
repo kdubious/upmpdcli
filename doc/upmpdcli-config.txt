@@ -342,8 +342,8 @@ qobuzuser:: Qobuz user name. Your Qobuz login name.
 qobuzpass:: Qobuz password. The password for your Qobuz account.
 
 [[qobuzformatid]]
-qobuzformatid:: Qobuz stream quality. 5 for mp3/320, 7 for FLAC if
-your subscription allows it.
+qobuzformatid:: Qobuz stream quality. 5 for mp3/320, 7 for FLAC, and 27 for hi-res (if your subscription
+allows streaming each of the formats).
 
 === Google Music streaming service parameters 
 
