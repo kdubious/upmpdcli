@@ -1,3 +1,9 @@
+upmpdcli (1.4.1-2~ppaPPAVERS~SERIES1) SERIES; urgency=low
+
+  * Fix bug in Spotify plugin
+  
+ -- Jean-Francois Dockes <jf@dockes.org>  Wed, 13 Feb 2019 17:17:00 +0100
+
 upmpdcli (1.4.0-2~ppaPPAVERS~SERIES1) SERIES; urgency=low
 
   * Add forgotten MS-description.xml file

@@ -1,5 +1,9 @@
 = Upmpdcli release notes
 
+== 2019-02-13 upmpdcli 1.4.1
+
+- Fix bug in Spotify plugin
+
 == 2019-01-15 upmpdcli 1.4.0
 
 - Save the current radio settings across restarts.
