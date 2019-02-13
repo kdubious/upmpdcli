@@ -547,10 +547,13 @@ Streaming services like Qobuz or Tidal give access to a huge catalog of
 music through a WEB programming interface which is also usable by programs
 other than their own applications.
 
-The only thing that they have in common with UPnP is that the use of HTTP
-to retrieve the audio stream. However, given the importance of these
-services for music consumers, many UPnP Control Points and Renderers have
-been extended with specific interfaces to the different services.
+The only thing that they have in common with UPnP is that most of them use
+HTTP to retrieve the audio stream (as a short-lived URL). Spotify is an
+exception.
+
+Given the importance of these services for music consumers, many UPnP
+Control Points and Renderers have been extended with specific interfaces to
+the different services.
 
 There are three main ways to integrate the streaming services in an UPnP
 framework, and knowing which way you are using will avoid confusion:
@@ -578,11 +581,11 @@ framework, and knowing which way you are using will avoid confusion:
   functions, and the Renderer knows how to access the service streams. This
   is the OpenHome approach and can be considered the best of both worlds,
   at the price of complexity and compatibility issues. This method is
-  implemented by the Kazoo Control Points, and a number of
-  Renderers, the Linn and Lumin ones of course, but also,
-  xref:UPMPDCLI-MS-STR-CRED[lately by upmpdcli]. At the moment, Lumin does
-  not work with upmpdcli except when the Credentials service is disabled by
-  setting the `lumincompat` configuration variable.
+  implemented by the Linn Kazoo Control Point, and a number of Renderers,
+  the Linn and Lumin ones of course, but also,
+  xref:UPMPDCLI-MS-STR-CRED[lately by upmpdcli]. At the moment, the Lumin
+  Control Point does not work with upmpdcli except when the Credentials
+  service is disabled by setting the `lumincompat` configuration variable.
 
 [[UPMPDCLI-MS-STR-MS]]
 === Accessing Streaming Services through the upmpdcli Media Server
