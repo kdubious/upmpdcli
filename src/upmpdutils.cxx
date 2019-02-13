@@ -172,7 +172,6 @@ string UpSong::didl() const
 	    
     } else {
         UPNPXMLD(upnpClass, upnp:class, "object.item.audioItem.musicTrack");
-	UPNPXML(genre, upnp:genre);
 	UPNPXML(album, upnp:album);
 	UPNPXML(tracknum, upnp:originalTrackNumber);
 
@@ -200,6 +199,7 @@ string UpSong::didl() const
         }
         ss << ">" << SoapHelp::xmlQuote(uri) << "</res>";
     }
+    UPNPXML(genre, upnp:genre);
     UPNPXML(artist, dc:creator);
     UPNPXML(artist, upnp:artist);
     UPNPXML(date, dc:date);
