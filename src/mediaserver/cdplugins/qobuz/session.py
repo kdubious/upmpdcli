@@ -228,6 +228,7 @@ def _parse_genre(data):
     return Genre(id=data['id'], name=data['name'])
 
 def _parse_album(json_obj, artist=None, artists=None):
+    #uplog("Qobuz:_parse_album:DATA:\n%s"%json.dumps(json_obj, indent=4))
     if artist is None and 'artist' in json_obj:
         artist = _parse_artist(json_obj['artist'])
     #if artists is None:
@@ -246,7 +247,13 @@ def _parse_album(json_obj, artist=None, artists=None):
     }
     if 'image' in json_obj and 'large' in json_obj['image']:
         kwargs['image'] = json_obj['image']['large']
-        
+    if 'maximum_bit_depth' in json_obj:
+        kwargs['maxbitdepth'] = str(json_obj['maximum_bit_depth'])
+    if 'maximum_sampling_rate' in json_obj:
+        kwargs['maxsamprate'] = str(json_obj['maximum_sampling_rate'])
+    if 'maximum_channel_count' in json_obj:
+        kwargs['maxchannels'] = str(json_obj['maximum_channel_count'])
+
     if 'releaseDate' in json_obj:
         try:
             # Keep this as a string else we fail to json-reserialize it later

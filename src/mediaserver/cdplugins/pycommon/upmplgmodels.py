@@ -36,6 +36,9 @@ class Album(Model):
     release_date = None
     image = None
     available = True
+    maxsamprate = "44.1"
+    maxbitdepth = "16"
+    maxchannels = "2"
 
 class Artist(Model):
     upnpclass = "object.container.person.musicArtist"
@@ -56,6 +59,7 @@ class Playlist(Model):
     # For spotify: wants an userid to retrieve a playlist's tracks
     userid = None
 
+
 class Track(Model):
     upnpclass = "object.item.audioItem.musicTrack"
     duration = -1
@@ -66,6 +70,9 @@ class Track(Model):
     artists = []
     album = None
     available = True
+    maxsamprate = "44.1"
+    maxbitdepth = "16"
+    maxchannels = "2"
 
 
 class SearchResult(Model):

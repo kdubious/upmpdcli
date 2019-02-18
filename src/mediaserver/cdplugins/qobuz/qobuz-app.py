@@ -141,6 +141,18 @@ def urls_from_id(view_func, items):
 def view(data_items, urls, end=True):
     for item, url in zip(data_items, urls):
         title = item.name
+
+        maxsamprate = '44.1'
+        maxbitdepth = '16'
+        try:
+            maxsamprate = item.maxsamprate
+            maxbitdepth = item.maxbitdepth
+        except:
+            pass
+
+        if maxsamprate != '44.1' or maxbitdepth != '16':
+            title += ' (' + maxsamprate + '/' + maxbitdepth + ')'
+
         try:
             image = item.image if item.image else None
         except:
