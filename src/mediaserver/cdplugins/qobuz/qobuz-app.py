@@ -151,7 +151,7 @@ def view(data_items, urls, end=True):
             pass
 
         if maxsamprate != '44.1' or maxbitdepth != '16':
-            title += ' (' + maxsamprate + '/' + maxbitdepth + ')'
+            title += ' (' + maxbitdepth + '/' +  maxsamprate + ')'
 
         try:
             image = item.image if item.image else None
