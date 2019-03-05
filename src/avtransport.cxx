@@ -1,18 +1,18 @@
-/* Copyright (C) 2014 J.F.Dockes
- *	 This program is free software; you can redistribute it and/or modify
- *	 it under the terms of the GNU Lesser General Public License as published by
- *	 the Free Software Foundation; either version 2.1 of the License, or
- *	 (at your option) any later version.
+/* Copyright (C) 2014-2019 J.F.Dockes
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
  *
- *	 This program is distributed in the hope that it will be useful,
- *	 but WITHOUT ANY WARRANTY; without even the implied warranty of
- *	 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *	 GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
  *
- *	 You should have received a copy of the GNU Lesser General Public License
- *	 along with this program; if not, write to the
- *	 Free Software Foundation, Inc.,
- *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the
+ * Free Software Foundation, Inc.,
+ * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 #include "avtransport.hxx"
@@ -97,7 +97,9 @@ UpMpdAVTransport::UpMpdAVTransport(UpMpd *dev, bool noev)
     // ohplaylist is also in use, so refrain.
 //    dev->m_mpdcli->consume(true);
 #ifdef NO_SETNEXT
-    // If no setnext, we'd like to fake stopping at each track but this does not work because mpd goes into PAUSED PLAY at the end of track, not STOP.
+    // If no setnext, we'd like to fake stopping at each track but
+    // this does not work because mpd goes into PAUSED PLAY at the end
+    // of track, not STOP.
 //    m_dev->m_mpdcli->single(true);
 #endif
     string scratch;
@@ -188,6 +190,34 @@ static string mpdsToPlaymode(const MpdStatus& mpds)
     return playmode;
 }
 
+static string mpdsToTActions(const MpdStatus &mpds)
+{
+    string tactions("Next,Previous,");
+    switch(mpds.state) {
+    case MpdStatus::MPDS_PLAY: 
+        tactions += "Pause,Stop,Seek";
+        break;
+    case MpdStatus::MPDS_PAUSE: 
+        tactions += "Play,Stop,Seek";
+        break;
+    default:
+        tactions += "Play";
+    }
+    return tactions;
+}
+
+static string mpdsToTState(const MpdStatus &mpds)
+{
+    string tstate{"STOPPED"};
+    switch(mpds.state) {
+    case MpdStatus::MPDS_PLAY: tstate = "PLAYING"; break;
+    case MpdStatus::MPDS_PAUSE: tstate = "PAUSED_PLAYBACK"; break;
+    default: break;
+    }
+    return tstate;
+}
+
+
 // AVTransport eventing
 // 
 // Some state variables do not generate events and must be polled by
@@ -231,23 +261,9 @@ bool UpMpdAVTransport::tpstateMToU(unordered_map<string, string>& status)
     //   " qlen " << mpds.qlen << endl;
     bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
         (mpds.state == MpdStatus::MPDS_PAUSE);
-
-    string tstate("STOPPED");
-    string tactions("Next,Previous");
-    switch(mpds.state) {
-    case MpdStatus::MPDS_PLAY: 
-        tstate = "PLAYING"; 
-        tactions += ",Pause,Stop,Seek";
-        break;
-    case MpdStatus::MPDS_PAUSE: 
-        tstate = "PAUSED_PLAYBACK"; 
-        tactions += ",Play,Stop,Seek";
-        break;
-    default:
-        tactions += ",Play";
-    }
-    status["TransportState"] = tstate;
-    status["CurrentTransportActions"] = tactions;
+    
+    status["TransportState"] = mpdsToTState(mpds);
+    status["CurrentTransportActions"] = mpdsToTActions(mpds);
     status["TransportStatus"] = m_dev->m_mpdcli->ok() ? "OK" : "ERROR_OCCURRED";
     status["TransportPlaySpeed"] = "1";
 
@@ -584,25 +600,20 @@ int UpMpdAVTransport::getPositionInfo(const SoapIncoming& sc, SoapOutgoing& data
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdAVTransport::getTransportInfo(const SoapIncoming& sc, SoapOutgoing& data)
+int UpMpdAVTransport::getTransportInfo(const SoapIncoming& sc,SoapOutgoing& data)
 {
     const MpdStatus &mpds = m_dev->getMpdStatus();
     //LOGDEB("UpMpdAVTransport::getTransportInfo. State: " << mpds.state<<endl);
 
-    string tstate("STOPPED");
-    switch(mpds.state) {
-    case MpdStatus::MPDS_PLAY: tstate = "PLAYING"; break;
-    case MpdStatus::MPDS_PAUSE: tstate = "PAUSED_PLAYBACK"; break;
-    default: break;
-    }
-    data.addarg("CurrentTransportState", tstate);
+    data.addarg("CurrentTransportState", mpdsToTState(mpds));
     data.addarg("CurrentTransportStatus", m_dev->m_mpdcli->ok() ? "OK" : 
                 "ERROR_OCCURRED");
     data.addarg("CurrentSpeed", "1");
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdAVTransport::getDeviceCapabilities(const SoapIncoming& sc, SoapOutgoing& data)
+int UpMpdAVTransport::getDeviceCapabilities(const SoapIncoming& sc,
+                                            SoapOutgoing& data)
 {
     data.addarg("PlayMedia", "NETWORK,HDD");
     data.addarg("RecMedia", "NOT_IMPLEMENTED");
@@ -783,18 +794,7 @@ int UpMpdAVTransport::getCurrentTransportActions(const SoapIncoming& sc,
                                                  SoapOutgoing& data)
 {
     const MpdStatus &mpds = m_dev->getMpdStatus();
-    string tactions("Next,Previous");
-    switch(mpds.state) {
-    case MpdStatus::MPDS_PLAY: 
-        tactions += ",Pause,Stop,Seek";
-        break;
-    case MpdStatus::MPDS_PAUSE: 
-        tactions += ",Play,Stop,Seek";
-        break;
-    default:
-        tactions += ",Play";
-    }
-    data.addarg("Actions", tactions);
+    data.addarg("Actions", mpdsToTActions(mpds));
     return UPNP_E_SUCCESS;
 }
 
