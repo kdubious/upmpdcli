@@ -46,6 +46,8 @@ using namespace std;
 using namespace std::placeholders;
 using namespace UPnPP;
 
+static const int minVolumeDelta = 5;
+
 static const string iconDesc(
     "<iconList>"
     "  <icon>"
@@ -111,25 +113,25 @@ bool UpMpd::readLibFile(const string& name, string& contents)
 UpMpd::UpMpd(const string& deviceid, const string& friendlyname,
              ohProductDesc_t& ohProductDesc,
              MPDCli *mpdcli, Options opts)
-    : UpnpDevice(deviceid), m_mpdcli(mpdcli), m_mpds(0),
+    : UpnpDevice(deviceid), m_mpdcli(mpdcli),
       m_options(opts.options),
       m_allopts(opts),
       m_mcachefn(opts.cachefn),
-      m_rdctl(0), m_avt(0), m_ohpr(0), m_ohpl(0), m_ohrd(0), m_ohrcv(0),
-      m_sndrcv(0), m_friendlyname(friendlyname)
+      m_friendlyname(friendlyname)
 {
-    bool avtnoev = (m_options & upmpdNoAV) != 0; 
+    bool noavt = (m_options & upmpdNoAV) != 0; 
     // Note: the order is significant here as it will be used when
     // calling the getStatus() methods, and we want AVTransport to
     // update the mpd status for everybody
-    m_avt = new UpMpdAVTransport(this, avtnoev);
-    m_services.push_back(m_avt);
-    m_rdctl = new UpMpdRenderCtl(this, avtnoev);
-    m_services.push_back(m_rdctl);
-    m_services.push_back(new UpMpdConMan(this));
+    if (!noavt) {
+        m_avt = new UpMpdAVTransport(this, noavt);
+        m_services.push_back(m_avt);
+        m_services.push_back(new UpMpdRenderCtl(this, noavt));
+        m_services.push_back(new UpMpdConMan(this));
+    }
 
     if (m_options & upmpdDoOH) {
-        m_ohif = new OHInfo(this);
+        m_ohif = new OHInfo(this, noavt);
         m_services.push_back(m_ohif);
         m_services.push_back(new OHTime(this));
         m_services.push_back(new OHVolume(this));
@@ -196,6 +198,56 @@ const MpdStatus& UpMpd::getMpdStatus()
 {
     m_mpds = &m_mpdcli->getStatus();
     return *m_mpds;
+}
+
+int UpMpd::getvolume()
+{
+    return m_desiredvolume >= 0 ? m_desiredvolume : 
+        m_mpdcli->getVolume();
+}
+
+bool UpMpd::setvolume(int volume)
+{
+    int previous_volume = m_mpdcli->getVolume();
+    int delta = previous_volume - volume;
+    if (delta < 0)
+        delta = -delta;
+    LOGDEB("UpMpd::setVolume: volume " << volume << " delta " << 
+           delta << endl);
+    bool ret{false};
+    if (delta >= minVolumeDelta) {
+        ret = m_mpdcli->setVolume(volume);
+        m_desiredvolume = -1;
+    } else {
+        m_desiredvolume = volume;
+    }
+    return ret;
+}
+
+bool UpMpd::flushvolume()
+{
+    bool ret{false};
+    if (m_desiredvolume >= 0) {
+        ret = m_mpdcli->setVolume(m_desiredvolume);
+        m_desiredvolume = -1;
+    }
+    return ret;
+}
+
+bool UpMpd::setmute(bool onoff)
+{
+    bool ret{false};
+    if (onoff) {
+        if (m_desiredvolume >= 0) {
+            m_mpdcli->setVolume(m_desiredvolume);
+            m_desiredvolume = -1;
+        }
+        ret = m_mpdcli->setVolume(0, true);
+    } else {
+        // Restore pre-mute
+        ret = m_mpdcli->setVolume(1, true);
+    }
+    return ret;
 }
 
 bool UpMpd::checkContentFormat(const string& uri, const string& didl,

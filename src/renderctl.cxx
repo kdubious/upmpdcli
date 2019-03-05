@@ -17,23 +17,23 @@
 
 #include "renderctl.hxx"
 
-#include <stdlib.h>                     // for atoi
-#include <upnp/upnp.h>                  // for UPNP_E_INVALID_PARAM, etc
+#include <stdlib.h>
+#include <upnp/upnp.h>
 
-#include <functional>                   // for _Bind, bind, _1, _2
-#include <iostream>                     // for basic_ostream::operator<<, etc
-#include <map>                          // for _Rb_tree_const_iterator, etc
-#include <string>                       // for string, basic_string
-#include <unordered_map>                // for unordered_map, etc
-#include <utility>                      // for pair
-#include <vector>                       // for vector
+#include <functional>
+#include <iostream>
+#include <map>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
-#include "libupnpp/log.hxx"             // for LOGDEB
-#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing, i2s, etc
+#include "libupnpp/log.hxx"
+#include "libupnpp/soaphelp.hxx"
 
-#include "mpdcli.hxx"                   // for MPDCli, MpdStatus
-#include "upmpd.hxx"                    // for UpMpd
-#include "upmpdutils.hxx"               // for dbvaluetopercent, mapget, etc
+#include "mpdcli.hxx"
+#include "upmpd.hxx"
+#include "upmpdutils.hxx"
 
 using namespace std;
 using namespace std::placeholders;
@@ -43,11 +43,9 @@ static const string
 sTpRender("urn:schemas-upnp-org:service:RenderingControl:1");
 static const string sIdRender("urn:upnp-org:serviceId:RenderingControl");
 
-static const int minVolumeDelta = 5;
-
 UpMpdRenderCtl::UpMpdRenderCtl(UpMpd *dev, bool noev)
-    : UpnpService(sTpRender, sIdRender, "RenderingControl.xml",
-                  dev, noev), m_dev(dev), m_desiredvolume(-1)
+    : UpnpService(sTpRender, sIdRender, "RenderingControl.xml", dev, noev),
+      m_dev(dev)
 {
     m_dev->addActionMapping(this, "SetMute", 
                             bind(&UpMpdRenderCtl::setMute, this, _1, _2));
@@ -101,9 +99,7 @@ const std::string UpMpdRenderCtl::serviceErrString(int error) const
 
 bool UpMpdRenderCtl::rdstateMToU(unordered_map<string, string>& status)
 {
-    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
-
-    int volume = m_desiredvolume >= 0 ? m_desiredvolume : mpds.volume;
+    int volume = m_dev->getvolume();
     if (volume < 0)
         volume = 0;
     status["Volume"] = SoapHelp::i2s(volume);
@@ -115,12 +111,7 @@ bool UpMpdRenderCtl::rdstateMToU(unordered_map<string, string>& status)
 bool UpMpdRenderCtl::getEventData(bool all, std::vector<std::string>& names, 
                                   std::vector<std::string>& values)
 {
-    //LOGDEB("UpMpdRenderCtl::getEventDataRendering. desiredvolume " << 
-    //		   m_desiredvolume << (all?" all " : "") << endl);
-    if (m_desiredvolume >= 0) {
-        m_dev->m_mpdcli->setVolume(m_desiredvolume);
-        m_desiredvolume = -1;
-    }
+    m_dev->flushvolume();
 
     unordered_map<string, string> newstate;
     rdstateMToU(newstate);
@@ -194,41 +185,6 @@ int UpMpdRenderCtl::getVolumeDBRange(const SoapIncoming& sc, SoapOutgoing& data)
 }
 #endif
 
-int UpMpdRenderCtl::getvolume_i()
-{
-    return m_desiredvolume >= 0 ? m_desiredvolume : 
-        m_dev->m_mpdcli->getVolume();
-}
-
-void UpMpdRenderCtl::setvolume_i(int volume)
-{
-    int previous_volume = m_dev->m_mpdcli->getVolume();
-    int delta = previous_volume - volume;
-    if (delta < 0)
-        delta = -delta;
-    LOGDEB("UpMpdRenderCtl::setVolume: volume " << volume << " delta " << 
-           delta << endl);
-    if (delta >= minVolumeDelta) {
-        m_dev->m_mpdcli->setVolume(volume);
-        m_desiredvolume = -1;
-    } else {
-        m_desiredvolume = volume;
-    }
-}
-
-void UpMpdRenderCtl::setmute_i(bool onoff)
-{
-    if (onoff) {
-        if (m_desiredvolume >= 0) {
-            m_dev->m_mpdcli->setVolume(m_desiredvolume);
-            m_desiredvolume = -1;
-        }
-        m_dev->m_mpdcli->setVolume(0, true);
-    } else {
-        // Restore pre-mute
-        m_dev->m_mpdcli->setVolume(1, true);
-    }
-}
 
 int UpMpdRenderCtl::setMute(const SoapIncoming& sc, SoapOutgoing& data)
 {
@@ -241,9 +197,9 @@ int UpMpdRenderCtl::setMute(const SoapIncoming& sc, SoapOutgoing& data)
         return UPNP_E_INVALID_PARAM;
     }
     if (desired[0] == 'F' || desired[0] == '0') {
-        setmute_i(false);
+        m_dev->setmute(false);
     } else if (desired[0] == 'T' || desired[0] == '1') {
-        setmute_i(true);
+        m_dev->setmute(true);
     } else {
         return UPNP_E_INVALID_PARAM;
     }
@@ -258,12 +214,13 @@ int UpMpdRenderCtl::getMute(const SoapIncoming& sc, SoapOutgoing& data)
         return UPNP_E_INVALID_PARAM;
     }
 
-    int volume = m_dev->m_mpdcli->getVolume();
+    int volume = m_dev->getvolume();
     data.addarg("CurrentMute", volume == 0 ? "1" : "0");
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdRenderCtl::setVolume(const SoapIncoming& sc, SoapOutgoing& data, bool isDb)
+int UpMpdRenderCtl::setVolume(const SoapIncoming& sc, SoapOutgoing& data,
+                              bool isDb)
 {
     string channel;
     if (!sc.get("Channel", &channel) || channel.compare("Master")) {
@@ -283,13 +240,14 @@ int UpMpdRenderCtl::setVolume(const SoapIncoming& sc, SoapOutgoing& data, bool i
         return UPNP_E_INVALID_PARAM;
     }
 	
-    setvolume_i(volume);
+    m_dev->setvolume(volume);
 
     m_dev->loopWakeup();
     return UPNP_E_SUCCESS;
 }
 
-int UpMpdRenderCtl::getVolume(const SoapIncoming& sc, SoapOutgoing& data, bool isDb)
+int UpMpdRenderCtl::getVolume(const SoapIncoming& sc, SoapOutgoing& data,
+                              bool isDb)
 {
     // LOGDEB("UpMpdRenderCtl::getVolume" << endl);
     string channel;
@@ -297,7 +255,7 @@ int UpMpdRenderCtl::getVolume(const SoapIncoming& sc, SoapOutgoing& data, bool i
         return UPNP_E_INVALID_PARAM;
     }
 	
-    int volume = getvolume_i();
+    int volume = m_dev->getvolume();
     if (isDb) {
         volume = percentodbvalue(volume);
     }
@@ -325,7 +283,7 @@ int UpMpdRenderCtl::selectPreset(const SoapIncoming& sc, SoapOutgoing& data)
 
     // Well there is only the volume actually...
     int volume = 50;
-    m_dev->m_mpdcli->setVolume(volume);
+    m_dev->setvolume(volume);
 
     return UPNP_E_SUCCESS;
 }

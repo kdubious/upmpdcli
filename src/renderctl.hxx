@@ -35,9 +35,6 @@ public:
     virtual bool getEventData(bool all, std::vector<std::string>& names, 
                               std::vector<std::string>& values);
     virtual const std::string serviceErrString(int) const;
-    int getvolume_i();
-    void setvolume_i(int volume);
-    void setmute_i(bool onoff);
 private:
     bool rdstateMToU(std::unordered_map<std::string, std::string>& status);
     int setMute(const SoapIncoming& sc, SoapOutgoing& data);
@@ -48,9 +45,6 @@ private:
     int selectPreset(const SoapIncoming& sc, SoapOutgoing& data);
 
     UpMpd *m_dev;
-    // Desired volume target. We may delay executing small volume
-    // changes to avoid saturating with small requests.
-    int m_desiredvolume;
     // State variable storage
     std::unordered_map<std::string, std::string> m_rdstate;
 };

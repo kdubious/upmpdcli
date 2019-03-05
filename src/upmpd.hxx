@@ -130,23 +130,31 @@ public:
         return m_radio;
     }
 
+    // Common implementations used by ohvolume and renderctl
+    int getvolume();
+    bool setvolume(int volume);
+    bool setmute(bool onoff);
+    bool flushvolume();
+    
 private:
-    MPDCli *m_mpdcli;
-    const MpdStatus *m_mpds;
-    unsigned int m_options;
+    MPDCli *m_mpdcli{0};
+    const MpdStatus *m_mpds{0};
+    unsigned int m_options{0};
     Options m_allopts;
     std::string m_mcachefn;
-    UpMpdRenderCtl *m_rdctl;
-    UpMpdAVTransport *m_avt;
-    OHProduct *m_ohpr;
-    OHPlaylist *m_ohpl;
-    OHRadio *m_ohrd;
-    OHInfo *m_ohif;
-    OHReceiver *m_ohrcv;
-    SenderReceiver *m_sndrcv;
+    UpMpdAVTransport *m_avt{0};
+    OHProduct *m_ohpr{0};
+    OHPlaylist *m_ohpl{0};
+    OHRadio *m_ohrd{0};
+    OHInfo *m_ohif{0};
+    OHReceiver *m_ohrcv{0};
+    SenderReceiver *m_sndrcv{0};
     std::vector<UpnpService*> m_services;
     std::string m_friendlyname;
     bool m_radio{false};
+    // Desired volume target. We may delay executing small volume
+    // changes to avoid saturating with small requests.
+    int m_desiredvolume{-1};
 };
 
 #endif /* _UPMPD_H_X_INCLUDED_ */

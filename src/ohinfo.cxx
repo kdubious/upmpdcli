@@ -40,8 +40,9 @@ using namespace std::placeholders;
 static const string sTpProduct("urn:av-openhome-org:service:Info:1");
 static const string sIdProduct("urn:av-openhome-org:serviceId:Info");
 
-OHInfo::OHInfo(UpMpd *dev)
-    : OHService(sTpProduct, sIdProduct, "OHInfo.xml", dev), m_ohpl(0)
+OHInfo::OHInfo(UpMpd *dev, bool updstatus)
+    : OHService(sTpProduct, sIdProduct, "OHInfo.xml", dev),
+      m_updstatus(updstatus)
 {
     dev->addActionMapping(this, "Counters", 
                           bind(&OHInfo::counters, this, _1, _2));
@@ -55,7 +56,8 @@ OHInfo::OHInfo(UpMpd *dev)
 
 void OHInfo::urimetadata(string& uri, string& metadata)
 {
-    const MpdStatus &mpds =  m_dev->getMpdStatusNoUpdate();
+    const MpdStatus &mpds =  m_updstatus ?
+        m_dev->getMpdStatus() : m_dev->getMpdStatusNoUpdate();
     bool is_song = (mpds.state == MpdStatus::MPDS_PLAY) || 
         (mpds.state == MpdStatus::MPDS_PAUSE);
 

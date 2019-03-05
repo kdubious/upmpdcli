@@ -92,7 +92,7 @@ bool OHVolume::makestate(unordered_map<string, string> &st)
     st["BalanceMax"] = "0";
     st["Fade"] = "0";
     st["FadeMax"] = "0";
-    int volume = m_dev->m_rdctl->getvolume_i();
+    int volume = m_dev->getvolume();
     st["Volume"] = SoapHelp::i2s(volume);
     st["Mute"] = volume == 0 ? "1" : "0";
     return true;
@@ -117,7 +117,7 @@ int OHVolume::setVolume(const SoapIncoming& sc, SoapOutgoing& data)
     if (!sc.get("Value", &volume)) {
         return UPNP_E_INVALID_PARAM;
     }
-    m_dev->m_rdctl->setvolume_i(volume);
+    m_dev->setvolume(volume);
     m_dev->loopWakeup();
     return UPNP_E_SUCCESS;
 }
@@ -130,17 +130,17 @@ int OHVolume::setMute(const SoapIncoming& sc, SoapOutgoing& data)
         return UPNP_E_INVALID_PARAM;
     }
     LOGDEB("OHVolume::setMute: " << mute << endl);
-    m_dev->m_rdctl->setmute_i(mute);
+    m_dev->setmute(mute);
     return UPNP_E_SUCCESS;
 }
 
 int OHVolume::volumeInc(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::volumeInc" << endl);
-    int newvol = m_dev->m_rdctl->getvolume_i() + 1;
+    int newvol = m_dev->getvolume() + 1;
     if (newvol > 100)
         newvol = 100;
-    m_dev->m_rdctl->setvolume_i(newvol);
+    m_dev->setvolume(newvol);
     m_dev->loopWakeup();
     return UPNP_E_SUCCESS;
 }
@@ -148,10 +148,10 @@ int OHVolume::volumeInc(const SoapIncoming& sc, SoapOutgoing& data)
 int OHVolume::volumeDec(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::volumeDec" << endl);
-    int newvol = m_dev->m_rdctl->getvolume_i() - 1;
+    int newvol = m_dev->getvolume() - 1;
     if (newvol < 0)
         newvol = 0;
-    m_dev->m_rdctl->setvolume_i(newvol);
+    m_dev->setvolume(newvol);
     m_dev->loopWakeup();
     return UPNP_E_SUCCESS;
 }
@@ -159,14 +159,14 @@ int OHVolume::volumeDec(const SoapIncoming& sc, SoapOutgoing& data)
 int OHVolume::volume(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::volume" << endl);
-    data.addarg("Value", SoapHelp::i2s(m_dev->m_rdctl->getvolume_i()));
+    data.addarg("Value", SoapHelp::i2s(m_dev->getvolume()));
     return UPNP_E_SUCCESS;
 }
 
 int OHVolume::mute(const SoapIncoming& sc, SoapOutgoing& data)
 {
     LOGDEB("OHVolume::mute" << endl);
-    bool mute = m_dev->m_rdctl->getvolume_i() == 0;
+    bool mute = m_dev->getvolume() == 0;
     data.addarg("Value", mute ? "1" : "0");
     return UPNP_E_SUCCESS;
 }

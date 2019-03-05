@@ -32,7 +32,10 @@ class OHPlaylist;
 
 class OHInfo : public OHService {
 public:
-    OHInfo(UpMpd *dev);
+    // updstatus is set if we are the first service (avt not
+    // running). We actually fetch the MPD status instead of using the
+    // cached data.
+    OHInfo(UpMpd *dev, bool updstatus);
 
     void setMetatext(const std::string& metatext);
 
@@ -55,7 +58,8 @@ private:
 
     std::string m_metatext;
     int m_metatextcnt{0};
-    OHPlaylist *m_ohpl;
+    bool m_updstatus{false};
+    OHPlaylist *m_ohpl{0};
 };
 
 #endif /* _OHINFO_H_X_INCLUDED_ */

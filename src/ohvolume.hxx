@@ -17,12 +17,12 @@
 #ifndef _OHVOLUME_H_X_INCLUDED_
 #define _OHVOLUME_H_X_INCLUDED_
 
-#include <string>                       // for string
-#include <unordered_map>                // for unordered_map
-#include <vector>                       // for vector
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-#include "libupnpp/device/device.hxx"   // for UpnpService
-#include "libupnpp/soaphelp.hxx"        // for SoapIncoming, SoapOutgoing
+#include "libupnpp/device/device.hxx"
+#include "libupnpp/soaphelp.hxx"
 
 #include "ohservice.hxx"
 
