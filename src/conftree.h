@@ -90,12 +90,12 @@ public:
     virtual ~ConfNull() {};
     virtual int get(const std::string& name, std::string& value,
                     const std::string& sk = std::string()) const = 0;
-    virtual bool hasNameAnywhere(const std::string& nm) const = 0;
     virtual int set(const std::string& nm, const std::string& val,
                     const std::string& sk = std::string()) = 0;
     virtual bool ok() const = 0;
     virtual std::vector<std::string> getNames(const std::string& sk,
                                               const char* = 0)const = 0;
+    virtual bool hasNameAnywhere(const std::string& nm) const = 0;
     virtual int erase(const std::string&, const std::string&) = 0;
     virtual int eraseKey(const std::string&) = 0;
     virtual void showall() const {};
@@ -140,13 +140,13 @@ public:
     virtual ~ConfSimple() {};
 
     /** Origin file changed. Only makes sense if we read the data from a file */
-    virtual bool sourceChanged() const;
+    virtual bool sourceChanged() const override;
 
     /**
      * Decide if we actually rewrite the backing-store after modifying the
      * tree.
      */
-    virtual bool holdWrites(bool on) {
+    virtual bool holdWrites(bool on) override {
         m_holdWrites = on;
         if (on == false) {
             return write();
@@ -158,16 +158,13 @@ public:
     /** Clear, then reparse from string */
     void reparse(const std::string& in);
 
-    /** Clear all content */
-    int clear();
-
     /**
      * Get string value for named parameter, from specified subsection (looks 
      * in global space if sk is empty).
      * @return 0 if name not found, 1 else
      */
     virtual int get(const std::string& name, std::string& value,
-                    const std::string& sk = std::string()) const;
+                    const std::string& sk = std::string()) const override;
 
     /**
      * Get integer value for named parameter, from specified subsection (looks 
@@ -183,7 +180,7 @@ public:
      * @return 0 for error, 1 else
      */
     virtual int set(const std::string& nm, const std::string& val,
-                    const std::string& sk = std::string());
+                    const std::string& sk = std::string()) override;
     /**
      * Set value for named integer parameter in specified subsection (or global)
      * @return 0 for error, 1 else
@@ -194,12 +191,15 @@ public:
     /**
      * Remove name and value from config
      */
-    virtual int erase(const std::string& name, const std::string& sk);
+    virtual int erase(const std::string& name, const std::string& sk) override;
 
     /**
      * Erase all names under given subkey (and subkey itself)
      */
-    virtual int eraseKey(const std::string& sk);
+    virtual int eraseKey(const std::string& sk) override;
+
+    /** Clear all content */
+    virtual int clear();
 
     virtual StatusCode getStatus() const;
     virtual bool ok() const {
@@ -220,7 +220,7 @@ public:
                                 void *clidata) const;
 
     /** Print all values to stdout */
-    virtual void showall() const;
+    virtual void showall() const override;
 
     /** Return all names in given submap. */
     virtual std::vector<std::string> getNames(const std::string& sk,
@@ -233,10 +233,10 @@ public:
     /**
      * Return all subkeys
      */
-    virtual std::vector<std::string> getSubKeys(bool) const {
+    virtual std::vector<std::string> getSubKeys(bool) const override {
         return getSubKeys();
     }
-    virtual std::vector<std::string> getSubKeys() const;
+    virtual std::vector<std::string> getSubKeys() const override;
     
     /** Return subkeys in file order. BEWARE: only for the original from the 
      * file: the data is not duplicated to further copies */
@@ -418,7 +418,7 @@ public:
         return *this;
     }
 
-    virtual bool sourceChanged() const {
+     virtual bool sourceChanged() const override {
         typename std::vector<T*>::const_iterator it;
         for (it = m_confs.begin(); it != m_confs.end(); it++) {
             if ((*it)->sourceChanged()) {
@@ -430,9 +430,8 @@ public:
 
     virtual int get(const std::string& name, std::string& value,
                     const std::string& sk, bool shallow) const {
-        typename std::vector<T*>::const_iterator it;
-        for (it = m_confs.begin(); it != m_confs.end(); it++) {
-            if ((*it)->get(name, value, sk)) {
+        for (const auto& conf : m_confs) {
+            if (conf->get(name, value, sk)) {
                 return true;
             }
             if (shallow) {
@@ -441,8 +440,9 @@ public:
         }
         return false;
     }
+
     virtual int get(const std::string& name, std::string& value,
-                    const std::string& sk) const {
+                    const std::string& sk) const override {
         return get(name, value, sk, false);
     }
 
