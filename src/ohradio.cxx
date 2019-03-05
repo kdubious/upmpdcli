@@ -118,8 +118,8 @@ OHRadio::OHRadio(UpMpd *dev)
 {
     // Need Python for the radiopl playlist-to-audio-url script
     string pypath;
-    if (!ExecCmd::which("python2", pypath)) {
-        LOGINF("OHRadio: python2 not found, radio service will not work\n");
+    if (!ExecCmd::which("python3", pypath)) {
+        LOGINF("OHRadio: python3 not found, radio service will not work\n");
         return;
     }
     if (!readRadios()) {
@@ -360,8 +360,8 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
         // provide a script to retrieve it.
         bool nompddata = mpds.currentsong.title.empty() &&
             mpds.currentsong.artist.empty();
-        if ((m_playpending || radio.preferScript || nompddata) &&
-            radio.metaScript.size()) {
+        if ((m_playpending || mpds.state == MpdStatus::MPDS_PLAY) &&
+            (radio.preferScript || nompddata) && radio.metaScript.size()) {
             maybeExecMetaScript(radio, mpds);
             mpds.currentsong.title = radio.dynTitle;
             mpds.currentsong.artist = radio.dynArtist;
