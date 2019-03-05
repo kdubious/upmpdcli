@@ -1,18 +1,18 @@
 /* Copyright (C) 2014 J.F.Dockes
- *	 This program is free software; you can redistribute it and/or modify
- *	 it under the terms of the GNU Lesser General Public License as published by
- *	 the Free Software Foundation; either version 2.1 of the License, or
- *	 (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
  *
- *	 This program is distributed in the hope that it will be useful,
- *	 but WITHOUT ANY WARRANTY; without even the implied warranty of
- *	 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *	 GNU Lesser General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
  *
- *	 You should have received a copy of the GNU Lesser General Public License
- *	 along with this program; if not, write to the
- *	 Free Software Foundation, Inc.,
- *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the
+ * Free Software Foundation, Inc.,
+ * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 #include "ohplaylist.hxx"
@@ -206,29 +206,28 @@ bool OHPlaylist::makeIdArray(string& out)
     unordered_map<string, string> nmeta;
 
     // Walk the playlist data from MPD
-    for (auto usong = vdata.begin(); usong != vdata.end(); usong++) {
-        auto inold = m_metacache.find(usong->uri);
+    for (const auto& usong : vdata) {
+        auto inold = m_metacache.find(usong.uri);
         if (inold != m_metacache.end()) {
             // Entries already in the metadata array just get
             // transferred to the new array
-            nmeta[usong->uri].swap(inold->second);
+            nmeta[usong.uri].swap(inold->second);
             m_metacache.erase(inold);
         } else {
             // Entries not in the arrays are translated from the
             // MPD data to our format. They were probably added by
             // another MPD client. 
-            if (nmeta.find(usong->uri) == nmeta.end()) {
-                nmeta[usong->uri] = didlmake(*usong);
+            if (nmeta.find(usong.uri) == nmeta.end()) {
+                nmeta[usong.uri] = didlmake(usong);
                 m_cachedirty = true;
                 LOGDEB("OHPlaylist::makeIdArray: using mpd data for " << 
-                       usong->mpdid << " uri " << usong->uri << endl);
+                       usong.mpdid << " uri " << usong.uri << endl);
             }
         }
     }
 
-    for (unordered_map<string, string>::const_iterator it = m_metacache.begin();
-         it != m_metacache.end(); it++) {
-        LOGDEB("OHPlaylist::makeIdArray: dropping uri " << it->first << endl);
+    for (const auto entry : m_metacache) {
+        LOGDEB("OHPlaylist::makeIdArray: dropping uri " << entry.first << endl);
     }
 
     // If we added entries or there are some stale entries, the new
@@ -788,15 +787,16 @@ int OHPlaylist::deleteId(const SoapIncoming& sc, SoapOutgoing& data)
         LOGERR("OHPlaylist::deleteId: no Id param\n");
         return UPNP_E_INVALID_PARAM;
     }
-    LOGDEB("OHPlaylist::deleteId" << endl);
     if (!m_active) {
         m_dev->m_ohpr->iSetSourceIndexByName("Playlist");
         id = idFromOldId(id);
         if (id < 0) {
+            // Error was logged by idFromOldId
             return UPNP_E_INTERNAL_ERROR;
         }
     }
-    const MpdStatus &mpds = m_dev->getMpdStatusNoUpdate();
+    LOGDEB("OHPlaylist::deleteId: " << id << endl);
+    const MpdStatus &mpds = m_dev->getMpdStatus();
     if (mpds.songid == id) {
         // MPD skips to the next track if the current one is removed,
         // but I think it's better to stop in this case
