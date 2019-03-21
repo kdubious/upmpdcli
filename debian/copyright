@@ -1,9 +1,9 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: upmpdcli
-Source: http://www.github.com/medoc92/upmpdcli
+Source: https://opensourceprojects.eu/p/upmpdcli/
 
 Files: *
-Copyright: 2005-2014, Jean-Francois Dockes <jf@dockes.org>
+Copyright: 2005-2019, Jean-Francois Dockes <jf@dockes.org>
 License: GPL-2+
  This package is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
