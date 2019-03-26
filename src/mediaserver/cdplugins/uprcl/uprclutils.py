@@ -57,7 +57,7 @@ audiomtypes = frozenset([
 # rclaudio and the Recoll configuration 'fields' file, and what
 # plgwithslave.cxx expects, which is less than consistent.
 upnp2rclfields = {
-    'upnp:album': 'album',
+    'upnp:album' : 'album',
     'upnp:artist' : 'artist',
     'comment' : 'comment',
     'composer' : 'composer',
@@ -72,7 +72,8 @@ upnp2rclfields = {
     'res:samplefreq' : 'sample_rate',
     'res:size' : 'fbytes',
     'tt' : 'title',
-    'upnp:originalTrackNumber' : 'tracknumber',
+    'dc:title' : 'title',
+    'upnp:originalTrackNumber' : 'tracknumber'
     }
 
 def _httpurl(httphp, path, query=''):
@@ -80,7 +81,7 @@ def _httpurl(httphp, path, query=''):
 
 def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     """
-    Transform a Doc objects into the format expected by the parent
+    Transform a Doc object into the format expected by the parent
 
     Args:
         id (str): objid for the entry
@@ -279,20 +280,24 @@ def _cmpentries_func(e1, e2):
     isct2 = tp2 == 'ct'
 
     # Containers come before items, and are sorted in alphabetic order
+    ret = -2
     if isct1 and  not isct2:
-        return 1
+        ret = -1
     elif not isct1 and isct2:
-        return -1
+        ret = 1
     elif isct1 and isct2:
         tt1 = e1['tt']
         tt2 = e2['tt']
         if tt1.lower() < tt2.lower():
-            return -1
+            ret = -1
         elif tt1.lower() > tt2.lower():
-            return 1
+            ret = 1
         else:
-            return 0
-
+            ret = 0
+    if ret != -2:
+        #uplog("cmpentries tp1 %s tp2 %s, returning %d"%(tp1,tp2,ret))
+        return ret
+    
     # Tracks. Sort by album then directory then track number
     k = 'upnp:album'
     a1 = e1[k] if k in e1 else ""

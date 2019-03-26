@@ -70,7 +70,7 @@ def _update_index():
         # Wait for indexer
         while not uprclindex.indexerdone():
             time.sleep(.5)
-            fin = timer()
+        fin = timer()
         uplog("Indexing took %.2f Seconds" % (fin - start))
 
         folders = Folders(g_rclconfdir, g_httphp, g_pathprefix)
@@ -155,7 +155,7 @@ def _uprcl_init_worker():
                                            'pathprefix':g_pathprefix})
     httpthread.daemon = True 
     httpthread.start()
-    
+
     _update_index()
 
     uplog("Init done")

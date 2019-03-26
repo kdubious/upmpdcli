@@ -18,23 +18,35 @@
 #
 # Object Id prefix: 0$uprcl$folders
 # 
-# Obect id inside the section.
-#    Container: $d<diridx> where <diridx> indexes into our directory vector.
-#    Item: $i<docidx> where <docidx> indexex into the docs vector.
-#
 # Data structure:
 #
-# The _dirvec vector has one entry for each directory. Each entry is a
-# dictionary, mapping the names inside the directory to a pair
-# (diridx,docidx), where:
-#  - diridx is an index into dirvec if the name is a directory, else -1
-#  - docidx is the index of the doc inside the doc array, or -1 if:
-#     - There is no doc entry, which could possibly happen if there is
-#       no result for an intermediary element in a path,
+# The _rcldocs list has one entry for each document in the index (mime:* search)
+#
+# The _dirvec list has one entry for each directory. Directories are
+# created as needed by splitting the paths/urls from _rcldocs (and
+# possibly adding some for contentgroups). Directories have no
+# direct relation with the index objects, they are identified by their
+# _dirvec index
+#
+# Obect ids inside the section:
+#    Container: $d<diridx> where <diridx> indexes into _dirvec
+#    Item: $i<docidx> where <docidx> indexes into _rcldocs
+#
+# Each _dirvec entry is a Python dict, mapping the directory entries'
+# names to a pair (diridx,docidx), where:
+#
+#  - diridx is an index into _dirvec if the name is a directory, else -1
+#  - docidx is an index into _rcldocs, or -1 if:
+#     - There is no _rcldocs entry, which could possibly happen if
+#       there is no result for an intermediary element in a path,
 #       because of some recoll issue, or because this is a synthetic
 #       'contentgroup' entry.
-#     - Or if the doc was not yet seen, the index will then be updated
-#       when we see it.
+#     - Or, while we build the structure, temporarily, if the doc was
+#       not yet seen. The value will then be updated when we see it.
+#
+# Note: docidx is usually set in the pair for a directory, but I don't
+# think that it is ever used. The Recoll doc for a directory has
+# nothing very interesting in it.
 #
 # Each directory has a special ".." entry with a diridx pointing to
 # the parent directory. This allows building a path from a container
@@ -45,6 +57,14 @@
 # Entry 0 in _dirvec is special: it holds the 'topdirs' from the recoll
 # configuration. The entries are paths instead of simple names, and
 # the docidx is 0. The diridx points to a dirvec entry.
+#
+# We also build an _xid2idx xdocid->objidx map to allow a Recoll
+# item search result to be connected back to the folders tree.
+# I'm not sure that this is at all useful (bogus objids for items in
+# search results are quite probably ok). Also quite probably, this
+# could also be done using the URL, as it is what we use to build the
+# folders tree in the first place.
+# _xid2idx is currently desactivated (see comment)
 
 import os
 import shlex
@@ -88,10 +108,49 @@ class Folders(object):
         return len(self._dirvec) - 1
 
 
+    # The root entry (diridx 0) is special because its keys are the
+    # topdirs paths, not simple names. We look with what topdir path
+    # this doc belongs to, then return the appropriate diridx and the
+    # split remainder of the path
+    def _pathbeyondtopdirs(self, doc):
+        url = doc.getbinurl().decode('utf-8', errors='replace')
+        url = url[7:]
+        # Determine the root entry (topdirs element). Special because
+        # its path is not a simple name.
+        fathidx = -1
+        for rtpath,idx in self._dirvec[0].items():
+            #uplog("type(url) %s type(rtpath) %s rtpath %s url %s" %
+            # (type(url),type(rtpath),rtpath, url))
+            if url.startswith(rtpath):
+                fathidx = idx[0]
+                break
+        if fathidx == -1:
+            uplog("No parent in topdirs: %s" % url)
+            return None,None
+
+        # Compute rest of path. If there is none, we're not interested.
+        url1 = url[len(rtpath):]
+        if len(url1) == 0:
+            return None,None
+
+        # If there is a contentgroup field, just add it as a virtual
+        # directory in the path. This only affects the visible tree,
+        # not the 'real' URLs of course.
+        if doc.contentgroup:
+            a = os.path.dirname(url1)
+            b = os.path.basename(url1)
+            url1 = os.path.join(a, doc.contentgroup, b)
+            
+        # Split path, then walk the vector, possibly creating
+        # directory entries as needed
+        path = url1.split('/')[1:]
+        return fathidx, path
+    
     # Walk the recoll docs array and split the URLs paths to build the
     # [folders] data structure
     def _rcl2folders(self, confdir):
         self._dirvec = []
+        self._xid2idx = {}
         start = timer()
 
         rclconf = rclconfig.RclConfig(confdir)
@@ -127,6 +186,11 @@ class Folders(object):
             if doc.mtype not in audiomtypes:
                 continue
 
+            # For linking item search results to the main
+            # array. Deactivated for now as it does not seem to be
+            # needed.
+            #self._xid2idx[doc.xdocid] = docidx
+            
             # Possibly enrich the doc entry with a cover art uri.
             arturi = docarturi(doc, self._httphp, self._pprefix)
             if arturi:
@@ -134,37 +198,10 @@ class Folders(object):
                 # it as a doc attribute
                 doc.albumarturi = arturi
 
-            url = doc.getbinurl().decode('utf-8', errors='replace')
-            url = url[7:]
-            # Determine the root entry (topdirs element). Special because
-            # its path is not a simple name.
-            fathidx = -1
-            for rtpath,idx in self._dirvec[0].items():
-                #uplog("type(url) %s type(rtpath) %s rtpath %s url %s" %
-                # (type(url),type(rtpath),rtpath, url))
-                if url.startswith(rtpath):
-                    fathidx = idx[0]
-                    break
-            if fathidx == -1:
-                uplog("No parent in topdirs: %s" % url)
+            fathidx, path = self._pathbeyondtopdirs(doc)
+            if not fathidx:
                 continue
-
-            # Compute rest of path
-            url1 = url[len(rtpath):]
-            if len(url1) == 0:
-                continue
-
-            # If there is a contentgroup field, just add it as a virtual
-            # directory in the path. This only affects the visible tree,
-            # not the 'real' URLs of course.
-            if doc.contentgroup:
-                a = os.path.dirname(url1)
-                b = os.path.basename(url1)
-                url1 = os.path.join(a, doc.contentgroup, b)
             
-            # Split path, then walk the vector, possibly creating
-            # directory entries as needed
-            path = url1.split('/')[1:]
             #uplog("%s"%path, file=sys.stderr)
             for idx in range(len(path)):
                 elt = path[idx]
@@ -376,3 +413,37 @@ class Folders(object):
             path += elt + "/"
 
         return path
+
+
+    # Compute object id for doc out of recoll search
+    def _objidforxdocid(self, doc):
+        if doc.xdocid not in self._xid2idx:
+            return None
+        return self._idprefix + '$i' + str(self._xid2idx[doc.xdocid])
+
+
+    # Only works for directories but we do not check. Caller beware.
+    def _objidforurl(self, doc):
+        fathidx, path = self._pathbeyondtopdirs(doc)
+        if not fathidx:
+            return None
+
+        for idx in range(len(path)):
+            elt = path[idx]
+            if not elt in self._dirvec[fathidx]:
+                uplog("objidforurl: element %s has no directory entry" % elt)
+                return None
+            # Update fathidx for next iteration
+            fathidx = self._dirvec[fathidx][elt][0]
+
+        return self._idprefix + '$d' + str(fathidx)
+
+
+    def objidfordoc(self, doc):
+        if doc.mtype == 'inode/directory':
+            id = self._objidforurl(doc)
+        else:
+            id = self._objidforxdocid(doc)
+        if not id:
+            id = self._idprefix + '$' + 'seeyoulater'
+        return id
