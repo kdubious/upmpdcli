@@ -137,8 +137,9 @@ def _makeSearchExp(out, v, field, oper, neg):
         field = fields[i]
         out.append(" (")
         _searchClauses(out, field, oper, swords, phrases)
-        if i == 1:
-            out.append(" AND mime:inode/directory")
+        # We'd like to do the following to avoid matching reg file names but
+        # recoll takes all mime: clause as global filters, so can't work
+        # if i == 1: out.append(" AND mime:inode/directory")
         out.append(")")
         if len(fields) == 2 and i == 0:
             out.append(" OR ")
