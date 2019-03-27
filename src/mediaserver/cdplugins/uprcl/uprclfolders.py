@@ -52,7 +52,7 @@
 # the parent directory. This allows building a path from a container
 # id (aka pwd).
 #
-# No need has emerged for a "." entry.
+# Only playlists have a "." entry (needed during init)
 # 
 # Entry 0 in _dirvec is special: it holds the 'topdirs' from the recoll
 # configuration. The entries are paths instead of simple names, and
@@ -81,6 +81,7 @@ from timeit import default_timer as timer
 from upmplgutils import uplog
 from uprclutils import docarturi, audiomtypes, rcldirentry, \
      rcldoctoentry, cmpentries
+import uprclutils
 from recoll import recoll
 from recoll import rclconfig
 
@@ -99,6 +100,7 @@ class Folders(object):
     def rcldocs(self):
         return self._rcldocs
     
+
     # Create new directory entry: insert in father and append dirvec slot
     # (with ".." entry)
     def _createdir(self, fathidx, docidx, nm):
@@ -108,13 +110,59 @@ class Folders(object):
         return len(self._dirvec) - 1
 
 
+    # Create directory for playlist. Create + populate. The docs which
+    # are pointed by the playlist entries may not be in the tree yet,
+    # so we don't know how to find them (can't walk the tree yet).
+    # Just store the diridx and populate all playlists at the end
+    def _createpldir(self, fathidx, docidx, doc, nm):
+        myidx = self._createdir(fathidx, docidx, nm)
+        # We need a "." entry
+        self._dirvec[myidx]["."] = (myidx, docidx)
+        self._playlists.append(myidx)
+        return myidx
+    
+
+    # Initialize all playlists after the tree is otherwise complete
+    def _initplaylists(self):
+        for diridx in self._playlists:
+            pldocidx = self._dirvec[diridx]["."][1]
+            pldoc = self._rcldocs[pldocidx]
+            plpath = uprclutils.docpath(pldoc)
+            try:
+                m3u = uprclutils.M3u(plpath)
+            except Exception as ex:
+                uplog("M3u open failed: %s %s" % (plpath,ex))
+                continue
+            for url in m3u:
+                if m3u.urlRE.match(url):
+                    # Actual URL (usually http). Create bogus doc
+                    doc = recoll.Doc()
+                    doc.setbinurl(bytearray(url))
+                    elt = os.path.split(url)[1]
+                    doc.title = elt.decode('utf-8', errors='ignore')
+                    doc.mtype = "audio/mpeg"
+                    self._rcldocs.append(doc)
+                    docidx = len(self._rcldocs) -1
+                    self._dirvec[diridx][elt] = (-1, docidx)
+                else:
+                    doc = recoll.Doc()
+                    doc.setbinurl(bytearray(b'file://' + url))
+                    fathidx, docidx = self._stat(doc)
+                    if docidx >= 0 and docidx < len(self._rcldocs):
+                        elt = os.path.split(url)[1]
+                        self._dirvec[diridx][elt] = (-1, docidx)
+                    else:
+                        uplog("No track found: playlist %s entry %s" %
+                              (plpath,url))
+                        pass
+        del self._playlists
+
     # The root entry (diridx 0) is special because its keys are the
     # topdirs paths, not simple names. We look with what topdir path
     # this doc belongs to, then return the appropriate diridx and the
     # split remainder of the path
     def _pathbeyondtopdirs(self, doc):
-        url = doc.getbinurl().decode('utf-8', errors='replace')
-        url = url[7:]
+        url = uprclutils.docpath(doc).decode('utf-8', errors='replace')
         # Determine the root entry (topdirs element). Special because
         # its path is not a simple name.
         fathidx = -1
@@ -125,7 +173,7 @@ class Folders(object):
                 fathidx = idx[0]
                 break
         if fathidx == -1:
-            uplog("No parent in topdirs: %s" % url)
+            # uplog("No parent in topdirs: %s" % url)
             return None,None
 
         # Compute rest of path. If there is none, we're not interested.
@@ -146,11 +194,17 @@ class Folders(object):
         path = url1.split('/')[1:]
         return fathidx, path
     
-    # Walk the recoll docs array and split the URLs paths to build the
-    # [folders] data structure
+
+    # Main folders build method: walk the recoll docs array and split
+    # the URLs paths to build the [folders] data structure
     def _rcl2folders(self, confdir):
         self._dirvec = []
         self._xid2idx = {}
+        # This is used to store the diridx for the playlists during
+        # the initial walk, for initialization when the tree is
+        # complete.
+        self._playlists = []
+
         start = timer()
 
         rclconf = rclconfig.RclConfig(confdir)
@@ -226,6 +280,8 @@ class Folders(object):
                         # Last element. If directory, needs a self._dirvec entry
                         if doc.mtype == 'inode/directory':
                             fathidx = self._createdir(fathidx, docidx, elt)
+                        elif doc.mtype == 'audio/x-mpegurl':
+                            fathidx = self._createpldir(fathidx, docidx,doc,elt)
                         else:
                             self._dirvec[fathidx][elt] = (-1, docidx)
 
@@ -233,6 +289,9 @@ class Folders(object):
             for ent in self._dirvec:
                 uplog("%s" % ent)
 
+
+        self._initplaylists()
+                    
         end = timer()
         uplog("_rcl2folders took %.2f Seconds" % (end - start))
 
@@ -326,12 +385,14 @@ class Folders(object):
         if diridx == 0 and len(self._dirvec[0]) == 2:
             diridx = 1
         
-        entries = []
+        #uplog("Folders browse: diridx %d content: [%s]" %
+        #    (diridx,self._dirvec[diridx]))
 
+        entries = []
         # The basename call is just for diridx==0 (topdirs). Remove it if
         # this proves a performance issue
         for nm,ids in self._dirvec[diridx].items():
-            if nm == "..":
+            if nm == ".." or nm == ".":
                 continue
             thisdiridx = ids[0]
             thisdocidx = ids[1]
@@ -415,33 +476,38 @@ class Folders(object):
         return path
 
 
-    # Compute object id for doc out of recoll search
+    # Compute object id for doc out of recoll search. Not used at the moment.
+    # and _xid2idx is not built
     def _objidforxdocid(self, doc):
         if doc.xdocid not in self._xid2idx:
             return None
         return self._idprefix + '$i' + str(self._xid2idx[doc.xdocid])
 
 
-    # Only works for directories but we do not check. Caller beware.
-    def _objidforurl(self, doc):
-        fathidx, path = self._pathbeyondtopdirs(doc)
+    def _stat(self, doc):
+        fathidx, pathl = self._pathbeyondtopdirs(doc)
         if not fathidx:
-            return None
-
-        for idx in range(len(path)):
-            elt = path[idx]
+            return -1,-1
+        docidx = -1
+        for elt in pathl:
             if not elt in self._dirvec[fathidx]:
-                uplog("objidforurl: element %s has no directory entry" % elt)
-                return None
-            # Update fathidx for next iteration
-            fathidx = self._dirvec[fathidx][elt][0]
+                #uplog("_stat: element %s has no entry in %s" %
+                #      (elt, self._dirvec[fathidx]))
+                break
+            fathidx, docidx = self._dirvec[fathidx][elt]
 
+        return fathidx, docidx
+        
+
+    # Only works for directories but we do not check. Caller beware.
+    def _objidforpath(self, doc):
+        fathidx, docidx = self._stat(doc)
         return self._idprefix + '$d' + str(fathidx)
 
 
     def objidfordoc(self, doc):
         if doc.mtype == 'inode/directory':
-            id = self._objidforurl(doc)
+            id = self._objidforpath(doc)
         else:
             id = self._objidforxdocid(doc)
         if not id:

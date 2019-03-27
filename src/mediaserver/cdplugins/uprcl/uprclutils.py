@@ -23,12 +23,14 @@ if PY3:
 else:
     from urllib import quote as urlquote
     
-import os
-import traceback
 import glob
-import subprocess
-import mutagen
 import io
+import locale
+import mutagen
+import os
+import re
+import subprocess
+import traceback
 
 from upmplgutils import uplog
 
@@ -50,7 +52,8 @@ audiomtypes = frozenset([
     'audio/ape',
     'audio/x-wav',
     'audio/x-wavpack',
-    'inode/directory'
+    'inode/directory',
+    'audio/x-mpegurl',
     ])
 
 # Correspondance between Recoll field names (on the right), defined by
@@ -433,6 +436,7 @@ def findmyip():
             return ipmask.split('/')[0]
     return '127.0.0.1'
 
+
 # Open embedded image. Returns mtype, size, f
 def embedded_open(path):
     try:
@@ -469,3 +473,39 @@ def embedded_open(path):
         raise Exception("can't open embedded image")
     else:
         return mtype, size, f
+
+
+class M3u(object):
+    urlRE = re.compile(b'''[a-zA-Z]+://''')
+
+    def __init__(self, fn):
+        data = open(fn, 'rb').read() 
+        try:
+            data = data.decode("utf-8-sig")
+            data = data.encode("utf-8")
+        except:
+            pass
+        self.urls = []
+        dn = os.path.dirname(os.path.abspath(fn))
+        for line in data.split(b'\n'):
+            line = line.strip(b' \r')
+            if not line or line[0] == b'#'[0]:
+                continue
+            if self.urlRE.match(line):
+                self.urls.append(line)
+            else:
+                if os.path.isabs(line):
+                    self.urls.append(os.path.normpath(line))
+                else:
+                    self.urls.append(os.path.normpath(os.path.join(dn, line)))
+        self.index = 0
+        
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.index >= len(self.urls):
+            raise StopIteration
+        else:
+            self.index += 1
+            return self.urls[self.index - 1]
