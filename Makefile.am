@@ -190,6 +190,8 @@ dist_cdpluginsspotifylib_DATA = \
 cdpluginsuprcldir = $(pkgdatadir)/cdplugins/uprcl
 dist_cdpluginsuprcl_DATA = \
                  src/mediaserver/cdplugins/uprcl/rclconfig-fields \
+                 src/mediaserver/cdplugins/uprcl/rclconfig-mimemap \
+                 src/mediaserver/cdplugins/uprcl/rclconfig-mimeconf \
                  src/mediaserver/cdplugins/uprcl/rwlock.py \
                  src/mediaserver/cdplugins/uprcl/uprcl-app.py \
                  src/mediaserver/cdplugins/uprcl/uprclfolders.py \

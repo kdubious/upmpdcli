@@ -35,9 +35,11 @@ def _maybeinitconfdir(confdir, topdirs):
     datadir = os.path.dirname(__file__)
     uplog("datadir: %s" % datadir)
 
-    path = os.path.join(confdir, "fields")
-    if not os.path.exists(path):
-        shutil.copyfile(os.path.join(datadir, "rclconfig-fields"), path)
+    for fn in ("fields", "mimemap", "mimeconf"):
+        dst = os.path.join(confdir, fn)
+        src = os.path.join(datadir, "rclconfig-" + fn)
+        if not os.path.exists(dst) and os.path.exists(src):
+            shutil.copyfile(src, dst)
 
     path = os.path.join(confdir, "recoll.conf")
     if not os.path.exists(path):
