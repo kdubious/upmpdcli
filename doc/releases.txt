@@ -1,5 +1,11 @@
 = Upmpdcli release notes
 
+== 2019-03-28 upmpdcli 1.4.2
+
+- Restore capability to run without UPnP-AV support at all.
+- Fix removing tracks from the OpenHome Playlist. This was not working
+  right when removing more than a few tracks.
+  
 == 2019-02-13 upmpdcli 1.4.1
 
 - Fix bug in Spotify plugin

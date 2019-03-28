@@ -22,6 +22,7 @@ import os
 import sys
 import base64
 import platform
+import shlex
 
 def _debug(s):
     print("%s"%s, file=sys.stderr)
@@ -251,16 +252,25 @@ class ConfStack(object):
             v = v.decode('utf-8')
         return v
 
-def stringToStrings(s):
-    '''Parse a string made of space-separated words and C-Style strings
-    (double-quoted with backslash escape). E.g.:
-        word1 word2 "compound \\"quoted\\" string" ->
-        ['word1', 'word2', 'compound "quoted string']'''
-    import shlex
+# Split string of strings, with possible quoting and escaping.
+# The default is do do Recoll stringToStrings emulation: whitespace
+# separated, and doublequotes only (C-style). E.G.:
+#   word1 word2 "compound \\"quoted\\" string" ->
+#       ['word1', 'word2', 'compound "quoted string']
+#
+# This is not the shlex default and can be changed by setting the
+# parameters
+def stringToStrings(s, quotes = '"', escape = '\\', escapedquotes = '"',
+                    whitespace = None):
     lex = shlex.shlex(s, posix=True)
-    lex.quotes = '"'
-    lex.escape = '\\'
-    lex.escapedquotes = '"'
+    if quotes is not None:
+        lex.quotes = quotes
+    if escape is not None:
+        lex.escape = escape
+    if escapedquotes is not None:
+        lex.escapedquotes = escapedquotes
+    if whitespace is not None:
+        lex.whitespace = whitespace
     l = []
     while True:
         tok = lex.get_token()
@@ -268,3 +278,13 @@ def stringToStrings(s):
             break
         l.append(tok)
     return l
+
+def stringsToString(vs):
+    out = []
+    for s in vs:
+        if s.find(" ") != -1 or s.find("\t") != -1 or s.find("\\") != -1:
+            out.append('"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"')
+        else:
+            out.append(s)
+    return " ".join(out)
+

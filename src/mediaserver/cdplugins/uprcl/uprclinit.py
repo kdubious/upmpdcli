@@ -29,6 +29,7 @@ from uprcltags import Tagged
 import uprclsearch
 import uprclindex
 from uprclhttp import runbottle
+import minimconfig
 
 from upmplgutils import uplog
 from uprclutils import findmyip, stringToStrings
@@ -44,8 +45,8 @@ except:
     g_rclconfdir = ""
     g_friendlyname = "UpMpd-mediaserver"
     g_trees = {}
-    # order in python3 maps is unstable
     g_trees_order = ['folders', 'untagged', 'tags']
+    g_minimconfig = None
     
 # Create or update Recoll index, then read and process the data.  This
 # runs in the separate uprcl_init_worker thread, and signals
@@ -143,7 +144,11 @@ def _uprcl_init_worker():
         l = ptt.split(':')
         pathmap[l[0]] = l[1]
 
-
+    global g_minimconfig
+    minimcfn = upconfig.get("uprclminimconfig")
+    if minimcfn:
+        g_minimconfig = minimconfig.MinimConfig(minimcfn)
+        
     host,port = g_httphp.split(':')
 
     # Start the bottle app. Its' both the control/config interface and
@@ -159,6 +164,7 @@ def _uprcl_init_worker():
     _update_index()
 
     uplog("Init done")
+
 
 def uprcl_init():
     global g_initrunning

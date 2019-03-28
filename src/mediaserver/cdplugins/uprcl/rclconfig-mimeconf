@@ -1,2 +1,5 @@
 [index]
 audio/x-mpegurl = internal text/plain
+audio/ape = execm rclaudio
+audio/x-musepack = execm rclaudio
+audio/x-wavpack = execm rclaudio

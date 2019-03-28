@@ -24,6 +24,7 @@ import time
 import copy
 
 from upmplgutils import uplog
+import uprclinit
 
 
 def _maybeinitconfdir(confdir, topdirs):
@@ -41,6 +42,10 @@ def _maybeinitconfdir(confdir, topdirs):
         if not os.path.exists(dst) and os.path.exists(src):
             shutil.copyfile(src, dst)
 
+    exclpats = []
+    if uprclinit.g_minimconfig:
+        exclpats = uprclinit.g_minimconfig.getexcludepatterns()
+
     path = os.path.join(confdir, "recoll.conf")
     if not os.path.exists(path):
         f = open(path, "w")
@@ -50,25 +55,6 @@ def _maybeinitconfdir(confdir, topdirs):
         f.write("noaspell=1\n")
         f.write("nomd5types = rclaudio rclimg\n")
         f.write("testmodifusemtime=1\n")
-        f.close()
-
-    # Only very recent Recoll versions have support for wavpack (only
-    # the config data is missing, rclaudio processes the files all
-    # right). Make sure that we have what's needed.
-    path = os.path.join(confdir, "mimemap")
-    if not os.path.exists(path):
-        f = open(path, "w")
-        f.write(".ape = audio/ape\n")
-        f.write(".mpc = audio/x-musepack\n")
-        f.write(".wv = audio/x-wavpack\n")
-        f.close()
-    path = os.path.join(confdir, "mimeconf")
-    if not os.path.exists(path):
-        f = open(path, "w")
-        f.write("[index]\n")
-        f.write("audio/ape = execm rclaudio\n")
-        f.write("audio/x-musepack = execm rclaudio\n")
-        f.write("audio/x-wavpack = execm rclaudio\n")
         f.close()
 
 
