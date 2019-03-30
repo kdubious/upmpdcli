@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017 J.F.Dockes
+# Copyright (C) 2017-2019 J.F.Dockes
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -158,6 +158,26 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
 
     return li
 
+
+def rcldirentry(id, pid, title, arturi=None, artist=None, upnpclass=None,
+                searchable='1', date=None):
+    """ Create container entry in format expected by parent """
+    #uplog("rcldirentry: id %s pid %s tt %s dte %s clss %s artist %s arturi %s" %
+    #      (id,pid,title,date,upnpclass,artist,arturi))
+    ret = {'id':id, 'pid':pid, 'tt':title, 'tp':'ct', 'searchable':searchable}
+    if arturi:
+        ret['upnp:albumArtURI'] = arturi
+    if artist:
+        ret['upnp:artist'] = artist
+    if date:
+        ret['dc:date'] = date
+    if upnpclass:
+        ret['upnp:class'] = upnpclass
+    else:
+        ret['upnp:class'] = 'object.container'
+    return ret
+
+
 # Bogus entry for the top directory while the index/db is updating
 def waitentry(id, pid, httphp):
     li = {}
@@ -200,42 +220,77 @@ def printable(s):
         return s.decode('utf-8', errors='replace') if s else ""
     else:
         return s
-   
+
+# Transform a string so that it can be used as a file name, using
+# minimserver rules: just remove any of: " * / : < > ? \ |
+def tag2fn(s):
+    if type(s) == type(u""):
+        s = s.encode(locale.getpreferredencoding())
+
+    return s.replace(b'"', b'').replace(b'*', b'').\
+           replace(b'/', b'').replace(b':', b'').replace(b'<', b'').\
+           replace(b'>', b'').replace(b'?', b'').replace(b'\\', b'').\
+           replace(b'|', b'')
+    
+##########################
 # Find cover art for doc.
 #
 # We return a special uri if the file has embedded image data, else an
 # uri for for the directory cover art (if any).
+
 # We are usually called repeatedly for the same directory, so we cache
 # one result.
+#
+# The doc can come from recoll (track or directory), or be virtual (playlist)
 _foldercache = {}
-_artexts = (b'.jpg', b'.png')
-_artnames = (b'cover', b'folder')
 
-_artfilenames = []
-for base in _artnames:
+# All standard cover art file names:
+_artexts = (b'.jpg', b'.png')
+def _artnamegen(base):
     for ext in _artexts:
-        _artfilenames.append(base + ext)
+        yield base + ext
+_folderartbases = (b'cover', b'folder')
+_folderartnames = []
+for base in _folderartbases:
+    for path in _artnamegen(base):
+        _folderartnames.append(path)
 
 def docarturi(doc, httphp, pathprefix):
-    global _foldercache, _artnames
+    global _foldercache
 
     bpp = pathprefix.encode('utf-8')
+    objpath = docpath(doc)
 
+    # Check for an image specific to the track file
+    base,ext = os.path.splitext(objpath)
+    for artpath in _artnamegen(base):
+        if os.path.exists(artpath):
+            return _httpurl(httphp, os.path.join(bpp, artpath))
+
+    # Else try to use an embedded img
     if doc.embdimg:
         arturi = embdimgurl(doc, httphp, pathprefix)
         if arturi:
             #uplog("docarturi: embedded: %s"%printable(arturi))
             return arturi
 
-    # Check for an image specific to the track file
-    path,ext = os.path.splitext(docpath(doc))
-    for ext in _artexts:
-        if os.path.exists(path + ext):
-            return _httpurl(httphp, os.path.join(bpp, path+ext))
+    # won't work for the virtual group directory itself: it has no doc
+    if doc.contentgroup:
+        base = os.path.join(os.path.dirname(objpath), tag2fn(doc.contentgroup))
+        for artpath in _artnamegen(base):
+            #uplog("docarturi: testing %s" % artpath)
+            if os.path.exists(artpath):
+                return _httpurl(httphp, os.path.join(bpp, artpath))
+            
+    # TBD Here minimserver would look for the group then album disc
+    # then album art
 
     # If doc is a directory, this returns itself, else the father dir.
     folder = docfolder(doc)
 
+    # Look for an appropriate image in the file folder. Generating the
+    # charcase combinations would be complicated so we list the folder
+    # and look for a case-insensitive match
     if folder not in _foldercache:
         _foldercache = {}
         _foldercache[folder] = None
@@ -248,7 +303,7 @@ def docarturi(doc, httphp, pathprefix):
                 except:
                     #traceback.print_exc()
                     continue
-                if flowersimple in _artfilenames:
+                if flowersimple in _folderartnames:
                     artnm = fsimple
                     path = os.path.join(bpp, folder, artnm)
                     _foldercache[folder] = _httpurl(httphp, path)
@@ -266,6 +321,7 @@ def docarturi(doc, httphp, pathprefix):
             pass
     return arturi
 
+
 def _keyvalornull(a, k):
     return a[k] if k in a else "NULL"
 def _logentry(nm, e1):
@@ -274,6 +330,7 @@ def _logentry(nm, e1):
     dr = os.path.dirname(_keyvalornull(e1, 'uri'))
     tn = _keyvalornull(e1, 'upnp:originalTrackNumber')
     uplog("%s tp %s alb %s dir %s tno %s" % (nm, tp,al,dr,tn))
+
 
 def _cmpentries_func(e1, e2):
     #uplog("cmpentries");_logentry("e1", e1);_logentry("e2", e2)
@@ -330,91 +387,6 @@ if PY3:
     cmpentries=functools.cmp_to_key(_cmpentries_func)
 else:
     cmpentries=_cmpentries_func
-
-def rcldirentry(id, pid, title, arturi=None, artist=None, upnpclass=None,
-                searchable='1', date=None):
-    """ Create container entry in format expected by parent """
-    #uplog("rcldirentry: id %s pid %s tt %s dte %s clss %s artist %s arturi %s" %
-    #      (id,pid,title,date,upnpclass,artist,arturi))
-    ret = {'id':id, 'pid':pid, 'tt':title, 'tp':'ct', 'searchable':searchable}
-    if arturi:
-        ret['upnp:albumArtURI'] = arturi
-    if artist:
-        ret['upnp:artist'] = artist
-    if date:
-        ret['dc:date'] = date
-    if upnpclass:
-        ret['upnp:class'] = upnpclass
-    else:
-        ret['upnp:class'] = 'object.container'
-    return ret
-
-
-# Parse string into (possibly multiword) tokens
-# 'a b "one phrase" c' -> [a, b, 'one phrase', c]
-def stringToStrings(str):
-    # States. Note that ESCAPE can only occur inside INQUOTE
-    SPACE, TOKEN, INQUOTE, ESCAPE = range(4)
-    
-    tokens = []
-    curtok = ""
-    state = SPACE;
-
-    for c in str:
-        if c == '"':
-            if state == SPACE:
-                state = INQUOTE
-            elif state == TOKEN:
-                curtok += '"'
-            elif state == INQUOTE:
-                if curtok:
-                    tokens.append(curtok);
-                curtok = ""
-                state = SPACE
-            elif state == ESCAPE:
-                curtok += '"'
-                state = INQUOTE
-            continue;
-
-        elif c == '\\':
-            if state == SPACE or state == TOKEN:
-                curtok += '\\'
-                state = TOKEN
-            elif state == INQUOTE:
-                state = ESCAPE
-            elif state == ESCAPE:
-                curtok += '\\'
-                state = INQUOTE
-            continue
-
-        elif c == ' ' or c == '\t' or c == '\n' or c == '\r':
-            if state == SPACE or state == TOKEN:
-                if curtok:
-                    tokens.append(curtok)
-                curtok = ""
-                state = SPACE
-            elif state == INQUOTE or state == ESCAPE:
-                curtok += c
-            continue;
-
-        else:
-            if state == ESCAPE:
-                state = INQUOTE
-            elif state == SPACE:
-                state = TOKEN
-            elif state == TOKEN or state == INQUOTE:
-                pass
-            curtok += c
-
-    if state == SPACE:
-        pass
-    elif state == TOKEN:
-        if curtok:
-            tokens.append(curtok)
-    elif state == INQUOTE or state == ESCAPE:
-        raise Exception("Bad string: <" + str + ">")
-
-    return tokens
 
 
 # Find first non loopback ip. This is surprisingly

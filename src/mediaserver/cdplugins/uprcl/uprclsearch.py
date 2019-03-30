@@ -21,7 +21,8 @@ import re
 from recoll import recoll
 
 from upmplgutils import uplog
-from uprclutils import stringToStrings, rcldoctoentry, cmpentries, upnp2rclfields
+from uprclutils import rcldoctoentry, cmpentries, upnp2rclfields
+from conftree import stringToStrings
 
 def _getchar(s, i):
     if i < len(s):

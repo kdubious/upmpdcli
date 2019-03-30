@@ -32,7 +32,8 @@ from uprclhttp import runbottle
 import minimconfig
 
 from upmplgutils import uplog
-from uprclutils import findmyip, stringToStrings
+from uprclutils import findmyip
+from conftree import stringToStrings
 
 # Once initialization (not on imports)
 try:

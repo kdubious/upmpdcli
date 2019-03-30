@@ -127,6 +127,9 @@ class Folders(object):
         for diridx in self._playlists:
             pldocidx = self._dirvec[diridx]["."][1]
             pldoc = self._rcldocs[pldocidx]
+            arturi = uprclutils.docarturi(pldoc, self._httphp,self._pprefix)
+            if arturi:
+                pldoc.albumarturi = arturi
             plpath = uprclutils.docpath(pldoc)
             try:
                 m3u = uprclutils.M3u(plpath)
@@ -152,8 +155,8 @@ class Folders(object):
                         elt = os.path.split(url)[1]
                         self._dirvec[diridx][elt] = (-1, docidx)
                     else:
-                        uplog("No track found: playlist %s entry %s" %
-                              (plpath,url))
+                        #uplog("No track found: playlist %s entry %s" %
+                        #      (plpath,url))
                         pass
         del self._playlists
 
@@ -189,8 +192,8 @@ class Folders(object):
             b = os.path.basename(url1)
             url1 = os.path.join(a, doc.contentgroup, b)
             
-        # Split path, then walk the vector, possibly creating
-        # directory entries as needed
+        # Split path. The caller will walk the list (possibly creating
+        # directory entries as needed, or doing something else).
         path = url1.split('/')[1:]
         return fathidx, path
     
@@ -236,7 +239,8 @@ class Folders(object):
         for docidx in range(len(self._rcldocs)):
             doc = self._rcldocs[docidx]
             
-            # No need to include non-audio types in the visible tree.
+            # Only include selected mtypes: tracks, playlists,
+            # directories etc.
             if doc.mtype not in audiomtypes:
                 continue
 
@@ -362,8 +366,18 @@ class Folders(object):
         return [rcldirentry(pid + 'folders', pid, '[folders]'),]
 
 
-    # Look all non-directory docs inside directory, and return the cover
-    # art we find.
+    # Look all non-directory docs inside directory, and return the
+    # cover art we find. The doc albumarturi field has been set during
+    # the initial walk by call to uprclutils.docarturi()
+    #
+    # TBD In the case where this is a contentgroup directory, we'd
+    # need to go look into the file system for a group.xxx
+    # image. Actually, the best approach would probably be to create
+    # virtual doc records for such directories, and set their
+    # albumarturi during the tree setup. As it is things work if the
+    # tracks rely on the group pic (instead of having an embedded pic
+    # or track pic) Also: playlists: need to look at the physical dir
+    # for a e.g. playlistname.jpg. 
     def _arturifordir(self, diridx):
         for nm,ids in self._dirvec[diridx].items():
             if ids[1] >= 0:
@@ -399,7 +413,7 @@ class Folders(object):
             if thisdocidx >= 0:
                 doc = self._rcldocs[thisdocidx]
             else:
-                uplog("No doc for %s" % pid)
+                # uplog("No doc for %s" % pid)
                 doc = None
             
             if thisdiridx >= 0:
@@ -428,6 +442,7 @@ class Folders(object):
             return sorted(entries, key=cmpentries)
         else:
             return sorted(entries, cmp=cmpentries)
+
 
     # Return path for objid, which has to be a container.This is good old
     # pwd... It is called from the search module for generating a 'dir:'

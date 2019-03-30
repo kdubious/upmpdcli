@@ -34,5 +34,6 @@ class MinimConfig(object):
                                              quotes = self.quotes,
                                              escape = self.escape,
                                              whitespace = self.whitespace)
-        uplog("Minim config exclude patterns: %s" % lpats)
-        return lpats
+            spats = conftree.stringsToString(lpats)
+        uplog("skippedNames from Minim excludePattern: %s" % spats)
+        return spats

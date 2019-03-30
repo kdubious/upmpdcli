@@ -15,13 +15,14 @@
 
 from __future__ import print_function
 
-import sys
+import conftree
+import copy
+import locale
 import os
 import shutil
-import conftree
 import subprocess
+import sys
 import time
-import copy
 
 from upmplgutils import uplog
 import uprclinit
@@ -42,19 +43,23 @@ def _maybeinitconfdir(confdir, topdirs):
         if not os.path.exists(dst) and os.path.exists(src):
             shutil.copyfile(src, dst)
 
-    exclpats = []
+    exclpats = ""
     if uprclinit.g_minimconfig:
         exclpats = uprclinit.g_minimconfig.getexcludepatterns()
 
     path = os.path.join(confdir, "recoll.conf")
     if not os.path.exists(path):
-        f = open(path, "w")
-        f.write("topdirs=%s\n" % topdirs)
-        f.write("idxabsmlen=0\n")
-        f.write("loglevel=2\n")
-        f.write("noaspell=1\n")
-        f.write("nomd5types = rclaudio rclimg\n")
-        f.write("testmodifusemtime=1\n")
+        f = open(path, "wb")
+        f.write(b"topdirs = %s\n"% topdirs.encode(locale.getpreferredencoding()))
+        f.write(b"idxabsmlen = 0\n")
+        f.write(b"loglevel = 2\n")
+        f.write(b"noaspell = 1\n")
+        f.write(b"nomd5types = rclaudio rclimg\n")
+        f.write(b"testmodifusemtime = 1\n")
+        if exclpats:
+            f.write(b"skippedNames+ = " + exclpats.encode("utf-8") + b"\n")
+        else:
+            f.write(b"skippedNames+ = \n")
         f.close()
 
 
