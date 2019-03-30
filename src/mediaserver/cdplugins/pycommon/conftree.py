@@ -282,7 +282,8 @@ def stringToStrings(s, quotes = '"', escape = '\\', escapedquotes = '"',
 def stringsToString(vs):
     out = []
     for s in vs:
-        if s.find(" ") != -1 or s.find("\t") != -1 or s.find("\\") != -1:
+        if s.find(" ") != -1 or s.find("\t") != -1 or s.find("\\") != -1 or \
+               s.find('"') != -1:
             out.append('"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"')
         else:
             out.append(s)
