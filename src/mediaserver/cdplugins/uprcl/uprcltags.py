@@ -20,45 +20,11 @@ import os
 import sqlite3
 import time
 import tempfile
-from timeit import default_timer as timer
 
 from upmplgutils import uplog
-from uprclutils import g_myprefix, audiomtypes, docfolder, \
-     rcldirentry, rcldoctoentry, cmpentries
+from uprclutils import g_myprefix, rcldirentry, rcldoctoentry, cmpentries
 
-# Tags for which we create auxiliary tables for facet descent.
-#
-# TBD: The list will come from the config file one day
-# TBD: alias et al configuration
-#
-# TBD: All Artists
-#
-# The key is the presentation name (container title). The value is the
-# auxiliary table name, used also as base for unique id and join
-# columns (with _id) appended, and is also currently the recoll field
-# name (with a provision to differ if needed, thanks to the
-# currently empty _coltorclfield dict).
-_tagtotable = {
-    'Artist' : 'artist',
-    'Date' : 'date',
-    'Genre' : 'genre',
-#   'All Artists' : 'allartists',
-    'Composer' : 'composer',
-    'Conductor' : 'conductor',
-    'Orchestra' : 'orchestra',
-    'Group' : 'contentgroup',
-    'Comment' : 'comment'
-    }
-
-def _clid(table):
-    return table + '_id'
-
-# Translation only used when fetching fields from the recoll
-# record. None at the moment
-_coltorclfield = {
-    }
-
-
+from uprcltagscreate import recolltosql, _clid, _tagtotable
 
 # The browseable object which defines the tree of tracks organized by tags.
 class Tagged(object):
@@ -68,16 +34,7 @@ class Tagged(object):
         self._conn = None
         self._rcldocs = docs
         self._init_sqconn()
-        # Compute an array of (table name, recoll field) translations. Most
-        # often they are identical.
-        self._tabtorclfield = []
-        for tb in _tagtotable.values():
-            if tb in _coltorclfield:
-                rclfld = _coltorclfield[tb]
-            else:
-                rclfld = tb
-            self._tabtorclfield.append((tb, rclfld))
-        self._recolltosql(docs)
+        recolltosql(self._conn, docs)
         
 
     def _init_sqconn(self):
@@ -92,164 +49,6 @@ class Tagged(object):
         # we just disable the same_thread checking on :memory:
         if self._conn is None:
             self._conn = sqlite3.connect(':memory:', check_same_thread=False)
-
-
-    # Create an empty db.
-    #
-    # There is then one table for each tag (Artist, Genre, Date,
-    # etc.).  Each tag table has 2 columns: <tagname>_id and value.
-    # 
-    # The tracks table is the "main" table, and has a record for each
-    # track, with a title column, and one join column for each tag, 
-    # also named <tagname>_id, and an album join column (album_id).
-    #
-    # The Albums table is special because it is built according to,
-    # and stores, the file system location (the album title is not
-    # enough to group tracks, there could be many albums with the same title).
-    def _createsqdb(self):
-        c = self._conn.cursor()
-        try:
-            c.execute('''DROP TABLE albums''')
-            c.execute('''DROP TABLE tracks''')
-        except:
-            pass
-        c.execute(
-            '''CREATE TABLE albums (album_id INTEGER PRIMARY KEY, artist_id INT,
-            albtitle TEXT, albfolder TEXT, albdate TEXT, albarturi TEXT)''')
-
-        tracksstmt = '''CREATE TABLE tracks
-        (docidx INT, album_id INT, trackno INT, title TEXT'''
-
-        for tb in _tagtotable.values():
-            try:
-                c.execute('DROP TABLE ' + tb)
-            except:
-                pass
-            stmt = 'CREATE TABLE ' + tb + \
-               ' (' + _clid(tb) + ' INTEGER PRIMARY KEY, value TEXT)'
-            c.execute(stmt)
-            tracksstmt += ',' + _clid(tb) + ' INT'
-
-        tracksstmt += ')'
-        c.execute(tracksstmt)
-    
-
-    # Insert new value if not existing, return rowid of new or existing row
-    def _auxtableinsert(self, tb, value):
-        c = self._conn.cursor()
-        stmt = 'SELECT ' + _clid(tb) + ' FROM ' + tb + ' WHERE value = ?'
-        c.execute(stmt, (value,))
-        r = c.fetchone()
-        if r:
-            rowid = r[0]
-        else:
-            stmt = 'INSERT INTO ' + tb + '(value) VALUES(?)'
-            c.execute(stmt, (value,))
-            rowid = c.lastrowid
-        return rowid
-
-
-    # tracknos like n/max are now supposedly processed by rclaudio and
-    # should not arrive here, but let's play it safe.
-    def _tracknofordoc(self, doc):
-        try:
-            return int(doc.tracknumber.split('/')[0])
-        except:
-            return 0
-
-    # Create album record if needed.
-    # The albums table is special, can't use auxtableinsert()
-    def _maybecreatealbum(self, c, doc):
-        folder = docfolder(doc).decode('utf-8', errors = 'replace')
-        album = getattr(doc, 'album', None)
-        if not album:
-            album = os.path.basename(folder)
-            #uplog("Using %s for alb: mime %s title %s" %
-            #(album,doc.mtype, doc.url))
-        if doc.albumartist:
-            albartist_id = self._auxtableinsert('artist', doc.albumartist)
-        else:
-            albartist_id = None
-        c.execute('''SELECT album_id, artist_id FROM albums
-        WHERE albtitle = ? AND albfolder = ?''', (album, folder))
-        r = c.fetchone()
-        if r:
-            album_id = r[0]
-            albartist_id = r[1]
-        else:
-            c.execute('''INSERT INTO albums(albtitle, albfolder, artist_id,
-            albdate, albarturi)
-            VALUES (?,?,?,?,?)''', (album, folder, albartist_id, doc.date,
-                                    doc.albumarturi))
-            album_id = c.lastrowid
-        return album_id, albartist_id
-
-
-    # Create the db and fill it up with the values we need, taken out of
-    # the recoll records list
-    def _recolltosql(self, docs):
-        start = timer()
-
-        self._createsqdb()
-
-        c = self._conn.cursor()
-        maxcnt = 0
-        totcnt = 0
-        for docidx in range(len(docs)):
-            doc = docs[docidx]
-            totcnt += 1
-
-            if totcnt % 1000 == 0:
-                time.sleep(0)
-            
-            # No need to include non-audio types in the visible tree.
-            if doc.mtype not in audiomtypes or doc.mtype == 'inode/directory':
-                continue
-
-            album_id, albartist_id = self._maybecreatealbum(c, doc)
-            
-            trackno = self._tracknofordoc(doc)
-            
-            # Set base values for column names, values list,
-            # placeholders
-            columns = 'docidx,album_id,trackno,title'
-            values = [docidx, album_id, trackno, doc.title]
-            placehold = '?,?,?,?'
-            # Append data for each auxiliary table if the doc has a value
-            # for the corresponding field (else let SQL set a dflt/null value)
-            for tb, rclfld in self._tabtorclfield:
-                value = getattr(doc, rclfld, None)
-                if not value:
-                    continue
-                rowid = self._auxtableinsert(tb, value)
-                columns += ',' + _clid(tb)
-                values.append(rowid)
-                placehold += ',?'
-
-            # Create the main record in the tracks table.
-            stmt='INSERT INTO tracks(' + columns + ') VALUES(' + placehold + ')'
-            c.execute(stmt, values)
-            #uplog(doc.title)
-
-            # If the album had no artist yet, set it from the track
-            # artist.  Means that if tracks for the same album have
-            # different artist values, we arbitrarily use the first
-            # one.
-            if not albartist_id:
-                lcols = columns.split(',')
-                try:
-                    i = lcols.index('artist_id')
-                    artist_id = values[i]
-                    stmt = 'UPDATE albums SET artist_id = ? WHERE album_id = ?'
-                    c.execute(stmt, (artist_id, album_id))
-                except:
-                    pass
-        ## End Big doc loop
-        
-        self._conn.commit()
-        end = timer()
-        uplog("recolltosql: processed %d docs in %.2f Seconds" %
-              (totcnt, end-start))
 
 
     # Create our top-level directories, with fixed entries, and stuff from
