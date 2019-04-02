@@ -62,9 +62,9 @@ _coltorclfield = {
 # track, with a title column, and one join column for each tag, 
 # also named <tagname>_id, and an album join column (album_id).
 #
-# The Albums table is special because it is built according to,
-# and stores, the file system location (the album title is not
-# enough to group tracks, there could be many albums with the same title).
+# The Albums table is special because it is built according to, and
+# stores, the file system location (the album title is not enough to
+# group tracks, there could be many albums with the same title).
 def _createsqdb(conn):
     c = conn.cursor()
     try:
@@ -118,9 +118,6 @@ def _tracknofordoc(doc):
 
 # Create album record if needed.
 # The albums table is special, can't use auxtableinsert()
-# Before we separated the create/query parts, this was called with a
-# cursor from recolltosql, not the connection. Does not seem to change
-# anything?
 def _maybecreatealbum(conn, doc):
     c = conn.cursor()
     folder = docfolder(doc).decode('utf-8', errors = 'replace')
@@ -134,14 +131,14 @@ def _maybecreatealbum(conn, doc):
     else:
         albartist_id = None
     c.execute('''SELECT album_id, artist_id FROM albums
-    WHERE albtitle = ? AND albfolder = ?''', (album, folder))
+      WHERE albtitle = ? AND albfolder = ?''', (album, folder))
     r = c.fetchone()
     if r:
         album_id = r[0]
         albartist_id = r[1]
     else:
         c.execute('''INSERT INTO albums(albtitle, albfolder, artist_id,
-        albdate, albarturi)
+          albdate, albarturi)
         VALUES (?,?,?,?,?)''', (album, folder, albartist_id, doc.date,
                                 doc.albumarturi))
         album_id = c.lastrowid
@@ -186,9 +183,9 @@ def recolltosql(conn, docs):
         
         # Set base values for column names, values list,
         # placeholders
-        columns = 'docidx,album_id,trackno,title'
+        columns = ['docidx', 'album_id', 'trackno', 'title']
         values = [docidx, album_id, trackno, doc.title]
-        placehold = '?,?,?,?'
+        placehold = ['?', '?', '?', '?']
         # Append data for each auxiliary table if the doc has a value
         # for the corresponding field (else let SQL set a dflt/null value)
         for tb, rclfld in _tabtorclfield:
@@ -196,12 +193,13 @@ def recolltosql(conn, docs):
             if not value:
                 continue
             rowid = _auxtableinsert(conn, tb, value)
-            columns += ',' + _clid(tb)
+            columns.append(_clid(tb))
             values.append(rowid)
-            placehold += ',?'
+            placehold.append('?')
 
         # Create the main record in the tracks table.
-        stmt='INSERT INTO tracks(' + columns + ') VALUES(' + placehold + ')'
+        stmt='INSERT INTO tracks(' + ','.join(columns) + \
+              ') VALUES(' + ','.join(placehold) + ')'
         c.execute(stmt, values)
         #uplog(doc.title)
 
@@ -210,14 +208,14 @@ def recolltosql(conn, docs):
         # different artist values, we arbitrarily use the first
         # one.
         if not albartist_id:
-            lcols = columns.split(',')
             try:
-                i = lcols.index('artist_id')
+                i = columns.index('artist_id')
                 artist_id = values[i]
                 stmt = 'UPDATE albums SET artist_id = ? WHERE album_id = ?'
                 c.execute(stmt, (artist_id, album_id))
             except:
                 pass
+
     ## End Big doc loop
     
     conn.commit()
