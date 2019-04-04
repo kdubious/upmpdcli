@@ -1,6 +1,6 @@
 [Unit]
 Description=UPnP Renderer front-end to MPD
-After=network.target
+After=network.target mpd.service
 
 [Service]
 Type=simple
