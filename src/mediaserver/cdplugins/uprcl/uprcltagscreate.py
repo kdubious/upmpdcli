@@ -65,7 +65,8 @@ _coltorclfield = {
 #
 # The Albums table is special because it is built according to, and
 # stores, the file system location (the album title is not enough to
-# group tracks, there could be many albums with the same title).
+# group tracks, there could be many albums with the same title). Also
+# we do tricks with grouping discs into albums etc.
 def _createsqdb(conn):
     c = conn.cursor()
     try:
@@ -74,17 +75,34 @@ def _createsqdb(conn):
     except:
         pass
 
-    # - albtdisc is set from the tracks DISCNUMBER tag or equivalent, while
-    #   initially walking the docs.
-    # - albalb is the id for the merged album, set by the album merging
-    #   pass, it is non null only the elements of a merged album.
     c.execute(
-        '''CREATE TABLE albums (album_id INTEGER PRIMARY KEY, artist_id INT,
-        albtitle TEXT, albfolder TEXT, albdate TEXT, albarturi TEXT,
-        albalb INT, albtdisc INT)''')
+        'CREATE TABLE albums (album_id INTEGER PRIMARY KEY,'
+        # artist_id is for an album_artist, either explicit from an
+        # albumartist attribute or implicit if all tracks have the
+        # same artist attribute
+        'artist_id INT,'
+        'albtitle TEXT, albfolder TEXT, albdate TEXT, albarturi TEXT,'
+        # albalb is non null only the elements of a merged album, and
+        # is the album_id id for the parent. It is set by the album
+        # merging pass.
+        'albalb INT,'
+        # albtdisc is set from the tracks DISCNUMBER tag or
+        # equivalent, while initially walking the docs. It signals
+        # candidates for merging. album/discs with albtdisc set are
+        # not selected for display in album lists, as they are
+        # supposedly represented by their parent album. The field is
+        # reset to null for albums with a discnumber which do not end
+        # up being merged.
+        'albtdisc INT,'
+        # Temp columns while creating the table for deciding if we
+        # have a uniform artist or not. albartok is initially true,
+        # set to false as soon as we find a differing track artist.
+        'albtartist INT,'
+        'albartok INT'
+        ')')
 
     tracksstmt = '''CREATE TABLE tracks
-    (docidx INT, album_id INT, trackno INT, title TEXT'''
+        (docidx INT, album_id INT, trackno INT, title TEXT'''
 
     for tb in _tagtotable.values():
         try:
@@ -124,18 +142,23 @@ def _tracknofordoc(doc):
         return 0
 
 
+# Detect '[disc N]' or '(disc N)' or ', disc N' at the end of an album title
 _albtitdnumre = "(.*)(\[disc ([0-9]+)\]|\(disc ([0-9]+)\)|,[ ]*disc ([0-9]+))$"
-_albtitdnumexp = re.compile(_albtitdnumre)
+_albtitdnumexp = re.compile(_albtitdnumre, flags=re.IGNORECASE)
+_folderdnumre = "(cd|disc)[ ]*([0-9]+)(.*)"
+_folderdnumexp = re.compile(_folderdnumre, flags=re.IGNORECASE)
 
 # Create album record for track if needed (not already there).
 # The albums table is special, can't use auxtableinsert()
 def _maybecreatealbum(conn, doc):
     c = conn.cursor()
     folder = docfolder(doc).decode('utf-8', errors = 'replace')
+
     album = getattr(doc, 'album', None)
     if not album:
         album = os.path.basename(folder)
-        uplog("Using %s for alb: mime %s title %s" % (album,doc.mtype, doc.url))
+        #uplog("Using %s for alb MIME %s title %s" % (album,doc.mtype,doc.url))
+
     if doc.albumartist:
         albartist_id = _auxtableinsert(conn, 'artist', doc.albumartist)
     else:
@@ -157,30 +180,81 @@ def _maybecreatealbum(conn, doc):
                     discnumber = m.group(i)
                     album = m.group(1)
                     break
+    if not discnumber:
+        uplog("Matching %s" % os.path.basename(folder))
+        m = _folderdnumexp.search(os.path.basename(folder))
+        if m:
+            uplog("GOT MATCH g3 %s" % m.group(2))
+            discnumber = int(m.group(2))
         
-    # See if this albumdisc already exists
-    stmt = '''SELECT album_id, artist_id FROM albums
-      WHERE albtitle = ? AND albfolder = ?'''
-    cols = [album, folder]
+    # See if this albumdisc already exists (created for a previous track)
+    stmt = '''SELECT album_id, artist_id, albartok, albtartist FROM albums
+       WHERE albtitle = ? AND albfolder = ?'''
+    wcols = [album, folder]
     if discnumber:
         stmt += ' AND albtdisc = ?'
-        cols.append(discnumber)
+        wcols.append(discnumber)
     #uplog("maybecreatealbum: %s %s" % (stmt, cols))
-    c.execute(stmt, cols)
+    c.execute(stmt, wcols)
     r = c.fetchone()
     if r:
         album_id = r[0]
         albartist_id = r[1]
+        albartok = r[2]
+        albtartist = r[3]
+        #uplog("albartist_id %s albartok %s" % (albartist_id, albartok))
+        if not albartist_id and albartok:
+            artid = _auxtableinsert(conn, 'artist', doc.artist)
+            # If we still have a possible common artist, check new track
+            if albtartist:
+                if artid != albtartist:
+                    #uplog("Unsetting albartok albid %d"%album_id)
+                    c.execute('''UPDATE albums SET albartok = 0
+                        WHERE album_id = ?''', (album_id,))
+            else:
+                #uplog("Setting albtartist albid %d"%album_id)
+                c.execute('''UPDATE albums SET albtartist = ?
+                    WHERE album_id = ?''', (artid, album_id))
     else:
-        uplog("Creating album")
         c.execute('''INSERT INTO
-        albums(albtitle, albfolder, artist_id, albdate, albarturi, albtdisc)
-        VALUES (?,?,?,?,?,?)''',
+            albums(albtitle, albfolder, artist_id, albdate, albarturi,
+            albtdisc, albartok) VALUES (?,?,?,?,?,?,?)''',
                   (album, folder, albartist_id, doc.date,
-                   doc.albumarturi, discnumber))
+                   doc.albumarturi, discnumber, 1))
         album_id = c.lastrowid
+        uplog("Created album %d %s disc %s folder %s" %
+              (album_id, album, discnumber, folder))
 
     return album_id, albartist_id
+
+
+def _artistvalue(conn, artid):
+    c = conn.cursor()
+    c.execute('''SELECT value FROM artist where artist_id = ?''', (artid,))
+    r = c.fetchone()
+    if r:
+        return r[0]
+    else:
+        return None
+
+
+# After the pass on tracks, look for all albums where the album artist
+# is not set but all the tracks have the same artist, and set the
+# album artist.
+def _setalbumartists(conn):
+    c = conn.cursor()
+
+    # Get all albums without an albumartist where the
+    # same_track_artist flag is on
+    c.execute('''SELECT album_id, albtartist FROM albums
+        WHERE albartok = 1 AND artist_id IS NULL''')
+    c1 = conn.cursor()
+    for r in c:
+        if r[1]:
+            uplog("alb %d set artist %s" % (r[0], _artistvalue(conn, r[1])))
+            c1.execute('''UPDATE albums SET artist_id = ?
+                WHERE album_id = ?''', (r[1], r[0]))
+
 
 # Check that the numbers are sequential
 def _checkseq(seq):
@@ -193,62 +267,81 @@ def _checkseq(seq):
         num = e
     return True
 
-def _createmergedalbums(conn):
-    ## TBD: checks on artists being the same and, later folder match filter
-    c = conn.cursor()
 
+def _membertotopalbum(conn, memberalbid):
+    c = conn.cursor()
+    c.execute('''SELECT * FROM albums WHERE album_id = ?''', (memberalbid,))
+    cols = [desc[0] for desc in c.description]
+    # Get array of column values, and set primary key and albtdisc to
+    # None before inserting the copy
+    tdiscindex = cols.index('albtdisc')
+    v = [e for e in c.fetchone()]
+    v[0] = None
+    v[tdiscindex] = None
+    c.execute('''INSERT INTO albums VALUES (%s)''' % ','.join('?'*len(v)),  v)
+    return c.lastrowid
+
+    
+def _createmergedalbums(conn):
+    ## TBD: folder match filter
+    c = conn.cursor()
+    merged = set()
     # Get all albums with a disc number. They are the candidates for merging.
-    c.execute('''SELECT album_id, albtdisc, albtitle FROM albums
+    c.execute('''SELECT album_id, albtitle, artist_id FROM albums
       WHERE albalb IS NULL AND albtdisc IS NOT NULL''')
+    c1 = conn.cursor()
     for r in c:
-        c1 = conn.cursor()
-        # Look for albums not already in a group, with the same title.
-        c1.execute('''SELECT album_id, albtdisc FROM albums
-          WHERE albtitle = ? AND albalb is NULL AND albtdisc IS NOT NULL''',
-                   (r[2],))
+        albid = r[0]
+        if albid in merged:
+            continue
+        albtitle = r[1]
+        artist = r[2]
+        uplog("_createmergedalbums: albid %d candidate for merging " % albid)
+
+        # Look for albums not already in a group, with the same title and artist
+        if artist:
+            c1.execute('''SELECT album_id, albtdisc FROM albums
+                WHERE albtitle = ? AND artist_id = ?
+                AND albalb is NULL AND albtdisc IS NOT NULL''',
+                       (albtitle, artist))
+        else:
+            c1.execute('''SELECT album_id, albtdisc FROM albums
+                WHERE albtitle = ? AND artist_id IS NULL
+                AND albalb is NULL AND albtdisc IS NOT NULL''',
+                       (albtitle,))
         rows1 = c1.fetchall()
+        uplog("_createmergedalbums: artid %s got %d possible(s) title %s" %
+              (artist, len(rows1), albtitle))
         if len(rows1) > 1:
             albids = [row[0] for row in rows1]
             dnos = sorted([row[1] for row in rows1])
             if not _checkseq(dnos):
                 uplog("mergedalbums: not merging bad seq %s for albtitle %s " %
-                      (dnos, r[2]))
+                      (dnos, albtitle))
                 c1.execute('''UPDATE albums SET albtdisc = NULL
                   WHERE album_id in (%s)''' % ','.join('?'*len(albids)), albids)
                 continue
 
-            uplog("album_id: %s %d rows for albtitle %s" %
-                  (r[0], len(rows1), r[2]))
-            # for row in rows1: uplog("   Same group: id %s " % row[0])
-
             # Create record for whole album by copying the first
-            # record, setting its its album_id and albtdisc to NULL
-            # (album_id will be auto-set).
-            c2 = conn.cursor()
-            c2.execute('''SELECT * FROM albums WHERE album_id = ?''', (r[0],))
-            v = [e for e in c2.fetchone()]
-            v[0] = None
-            c2.execute('''INSERT INTO albums
-              VALUES (%s)''' % ','.join('?'*len(v)),  v)
-            rowid = c2.lastrowid
-            c2.execute('''UPDATE albums set albtdisc = NULL WHERE album_id=?''',
-                       (rowid,))
+            # record, setting its album_id and albtdisc to NULL
+            topalbid = _membertotopalbum(conn, albids[0])
 
             # Update all album disc members with the top album id
-            uplog("Updating album_ids: %s" % albids)
-            values = [rowid,] + albids
-            c2.execute('''UPDATE albums SET albalb = ?
-              WHERE album_id in (%s)''' % ','.join('?'*len(albids)), values)
+            #uplog("Updating album_ids: %s" % albids)
+            values = [topalbid,] + albids
+            c1.execute('''UPDATE albums SET albalb = ?
+                WHERE album_id in (%s)''' % ','.join('?'*len(albids)), values)
+            merged.update(albids)
 
         elif len(rows1) == 1:
             # Album with a single disc having a discnumber. Just unset
             # the discnumber, we won't use it and its presence would
             # prevent the album from showing up. Alternatively we
             # could set albalb = album_id?
-            #uplog("Setting albtdisc to NULL albid %d" % r[0])
-            c1.execute('''UPDATE albums SET albtdisc = NULL WHERE album_id= ?''',
-                       (r[0],))
-            
+            uplog("Setting albtdisc to NULL albid %d" % albid)
+            c1.execute('''UPDATE albums SET albtdisc = NULL
+                WHERE album_id= ?''', (albid,))
+
 
 # Create the db and fill it up with the values we need, taken out of
 # the recoll records list
@@ -308,21 +401,9 @@ def recolltosql(conn, docs):
         c.execute(stmt, values)
         #uplog(doc.title)
 
-        # If the album had no artist yet, set it from the track
-        # artist.  Means that if tracks for the same album have
-        # different artist values, we arbitrarily use the first
-        # one.
-        if not albartist_id:
-            try:
-                i = columns.index('artist_id')
-                artist_id = values[i]
-                stmt = 'UPDATE albums SET artist_id = ? WHERE album_id = ?'
-                c.execute(stmt, (artist_id, album_id))
-            except:
-                pass
-
     ## End Big doc loop
 
+    _setalbumartists(conn)
     _createmergedalbums(conn)
     conn.commit()
     end = timer()
