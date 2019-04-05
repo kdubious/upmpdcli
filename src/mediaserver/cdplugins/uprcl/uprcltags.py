@@ -14,6 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# Manage the tags sections of the tree.
+#
+# Object Id prefixes:
+#     0$uprcl$=[tagname]
+#     0$uprcl$albums
+#     0$uprcl$items
+# Object Ids inside the subsections: complicated
+
 import sys
 PY3 = sys.version > '3'
 import os

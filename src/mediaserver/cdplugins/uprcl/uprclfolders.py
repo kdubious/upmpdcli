@@ -310,6 +310,7 @@ class Folders(object):
         rcldb = recoll.connect(confdir=confdir)
         rclq = rcldb.query()
         rclq.execute("mime:*", stemming=0)
+        #rclq.execute('ext:m3u*', stemming=0)
         uplog("Estimated alldocs query results: %d" % (rclq.rowcount))
 
         totcnt = 0
@@ -508,7 +509,7 @@ class Folders(object):
             if not elt in self._dirvec[fathidx]:
                 #uplog("_stat: element %s has no entry in %s" %
                 #      (elt, self._dirvec[fathidx]))
-                break
+                return -1,-1
             fathidx, docidx = self._dirvec[fathidx][elt]
 
         return fathidx, docidx

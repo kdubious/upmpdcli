@@ -100,7 +100,7 @@ class Untagged(object):
                     entries.append(e)
         else:
             # Non root: only items in there. flag needs to be 'meta'
-            doc = self.rcldocs[thisdocidx]
+            doc = self.rcldocs[idx]
             id = self._idprefix + '$u' + str(idx)
             e = rcldoctoentry(id, pid, self._httphp, self._pprefix, doc)
             if e:

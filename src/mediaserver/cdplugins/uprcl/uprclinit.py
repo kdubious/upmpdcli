@@ -25,6 +25,7 @@ from rwlock import ReadWriteLock
 
 from uprclfolders import Folders
 from uprcluntagged import Untagged
+from uprclplaylists import Playlists
 from uprcltags import Tagged
 import uprclsearch
 import uprclindex
@@ -46,7 +47,7 @@ except:
     g_rclconfdir = ""
     g_friendlyname = "UpMpd-mediaserver"
     g_trees = {}
-    g_trees_order = ['folders', 'untagged', 'tags']
+    g_trees_order = ['folders', 'untagged', 'playlists', 'tags']
     g_minimconfig = None
     
 # Create or update Recoll index, then read and process the data.  This
@@ -77,10 +78,12 @@ def _update_index():
 
         folders = Folders(g_rclconfdir, g_httphp, g_pathprefix)
         untagged = Untagged(folders.rcldocs(), g_httphp, g_pathprefix)
+        playlists = Playlists(folders, g_httphp, g_pathprefix)
         tagged = Tagged(folders.rcldocs(), g_httphp, g_pathprefix)
         newtrees = {}
         newtrees['folders'] = folders
         newtrees['untagged'] = untagged
+        newtrees['playlists'] = playlists
         newtrees['tags'] = tagged
         g_trees = newtrees
     finally:

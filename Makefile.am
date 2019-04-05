@@ -199,6 +199,7 @@ dist_cdpluginsuprcl_DATA = \
                  src/mediaserver/cdplugins/uprcl/uprclhttp.py \
                  src/mediaserver/cdplugins/uprcl/uprclindex.py \
                  src/mediaserver/cdplugins/uprcl/uprclinit.py \
+                 src/mediaserver/cdplugins/uprcl/uprclplaylists.py \
                  src/mediaserver/cdplugins/uprcl/uprclsearch.py \
                  src/mediaserver/cdplugins/uprcl/uprcltags.py \
                  src/mediaserver/cdplugins/uprcl/uprcltagscreate.py \

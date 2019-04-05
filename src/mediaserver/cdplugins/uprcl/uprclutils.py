@@ -144,11 +144,20 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     # and with the pathprefix prepended (the pathprefix is used by our
     # parent process to match urls to plugins)
     path = doc.getbinurl()
-    path = path[7:]
+    ssidx = path.find(b'//')
+    if path.find(b'file://') == 0:
+        path = path[7:]
+        path = os.path.join(pathprefix.encode('ascii'), path)
+        li['uri'] = _httpurl(httphp, path)
+    else:
+        li['uri'] = path[:ssidx+2].decode('ascii', errors='replace') +\
+                    urlquote(path[ssidx+1:])
+
     if 'tt' not in li:
-        li['tt'] = os.path.basename(path.decode('UTF-8', errors = 'replace'))
-    path = os.path.join(pathprefix.encode('ascii'), path)
-    li['uri'] = _httpurl(httphp, path)
+        li['tt'] = os.path.basename(path[ssidx+1:].decode('UTF-8',
+                                                          errors = 'replace'))
+
+        
     #uplog("rcldoctoentry: uri: %s" % li['uri'])
 
     # The album art uri is precooked with httphp and prefix

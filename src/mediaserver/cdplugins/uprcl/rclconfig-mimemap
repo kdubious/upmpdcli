@@ -1,5 +1,6 @@
 
 .m3u = audio/x-mpegurl
+.m3u8 = audio/x-mpegurl
 .ape = audio/ape
 .mpc = audio/x-musepack
 .wv = audio/x-wavpack
