@@ -55,7 +55,7 @@ class Tagged(object):
     # the tags tables
     def rootentries(self, pid):
         c = self._conn.cursor()
-        c.execute("SELECT COUNT(*) from albums")
+        c.execute("SELECT COUNT(*) FROM albums WHERE albtdisc is NULL")
         nalbs = str(c.fetchone()[0])
         c.execute("SELECT COUNT(*) from tracks")
         nitems = str(c.fetchone()[0])
@@ -110,29 +110,62 @@ class Tagged(object):
         return [r[0] for r in c.fetchall()]
 
 
-    def _trackentriesforalbum(self, albid, pid):
-        stmt = 'SELECT docidx FROM tracks WHERE album_id = ? ORDER BY trackno'
-        return self._trackentriesforstmt(stmt, (albid,), pid)
+    # Transform album id into possible list of ids for component album discs
+    def _albidsforalbid(self, albid):
+        c = self._conn.cursor()
+        c.execute('''SELECT album_id FROM albums
+          WHERE albalb = ? ORDER BY albtdisc''', (albid,))
+        rows = c.fetchall()
+        if len(rows) <= 1:
+            return (albid,)
+        else:
+            return [r[0] for r in rows]
 
+    def _trackentriesforalbum(self, albid, pid):
+        albids = self._albidsforalbid(albid)
+        uplog("_trackentriesforalbid: %d -> %s" % (albid, albids))
+        # I don't see a way to use a select..in statement and get the
+        # order right
+        tracks = []
+        for albid in albids:
+            stmt = '''SELECT docidx FROM tracks
+            WHERE album_id = ? ORDER BY trackno'''
+            tracks += self._trackentriesforstmt(stmt, (albid,), pid)
+
+        tno = None
+        for track in tracks:
+            tn = 1
+            if 'upnp:originalTrackNumber' in track:
+                tn = int(track['upnp:originalTrackNumber'])
+            if tno:
+                if tn <= tno:
+                    tn = tno + 1
+                tno = tn
+            else:
+                tno = tn
+            track['upnp:originalTrackNumber'] = str(tno)
+        return tracks
+            
 
     def _direntriesforalbums(self, pid, where):
-        entries = []
+        uplog("_direntriesforalbums. where: %s" % where)
         c = self._conn.cursor()
         if not where:
-            where = ' LEFT JOIN artist ON artist.artist_id = albums.artist_id '
-            frm = ' FROM albums '
+            where = '''WHERE albtdisc IS NULL'''
         else:
-            where += ' AND artist.artist_id = albums.artist_id '
-            frm = ' FROM albums,artist '
+            where += ''' AND albtdisc IS NULL'''
 
-        stmt = 'SELECT album_id, albtitle, albarturi, albdate, artist.value' + \
-               frm + where + ' ORDER BY albtitle'
+        stmt = '''SELECT album_id, albtitle, albarturi, albdate, artist.value
+            FROM albums LEFT JOIN artist ON artist.artist_id = albums.artist_id
+            %s ORDER BY albtitle''' % where
+
         uplog('direntriesforalbums: %s' % stmt)
         c.execute(stmt)
+        entries = []
         for r in c:
             id = pid + '$' + str(r[0])
             entries.append(
-                rcldirentry(id, pid, r[1], arturi=r[2], date=r[3],artist=r[4], 
+                rcldirentry(id, pid, r[1], arturi=r[2], date=r[3],artist=r[4],
                             upnpclass='object.container.album.musicAlbum'))
         return entries
 
@@ -193,14 +226,23 @@ class Tagged(object):
     # (designated by a docid set) belong
     def _subtreealbums(self, docidsl):
         docids = ','.join([str(r) for r in docidsl])
-        albids = []
-        stmt = 'SELECT album_id from tracks where docidx IN (' \
-               + docids + ') ' + 'GROUP BY album_id'
+        stmt = '''SELECT album_id FROM tracks
+            WHERE docidx IN (''' + docids + ') ' + 'GROUP BY album_id'
         c = self._conn.cursor()
         uplog('subtreealbums: executing %s' % stmt)
         c.execute(stmt)
-        for r in c:
-            albids.append(r[0])
+        rawalbids = [r[0] for r in c]
+        albids = set()
+        for rawalbid in rawalbids:
+            c.execute('''SELECT album_id, albalb FROM albums
+                WHERE album_id = ?''', (rawalbid,))
+            alb = c.fetchone()
+            if alb[1]:
+                albids.add(alb[1])
+            else:
+                albids.add(alb[0])
+        #
+        albids = [id for id in albids]
         uplog('subtreealbums: returning %s' % albids)
         return albids
     
