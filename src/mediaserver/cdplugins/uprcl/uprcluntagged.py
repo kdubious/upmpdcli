@@ -51,7 +51,7 @@ class Untagged(object):
     
         for docidx in range(len(docs)):
             doc = docs[docidx]
-            if doc.mtype == 'inode/directory':
+            if doc.mtype == 'inode/directory' or doc.mtype == 'audio/x-mpegurl':
                 continue
             if not doc.title:
                 self.utidx.append(docidx)
