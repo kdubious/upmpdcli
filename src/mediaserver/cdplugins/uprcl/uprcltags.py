@@ -197,14 +197,17 @@ class Tagged(object):
             entries = self._direntriesforalbums(pid, where)
         elif i == len(qpath)-2:
             albid = int(qpath[-1])
-            docids = ','.join([str(i) for i in docidsl])
-            stmt = 'SELECT COUNT(docidx) FROM tracks WHERE album_id = ?'
-            c.execute(stmt, (albid,))
+            rawalbids = self._albids2rawalbids((albid,))
+            uplog("_tagsbrowsealbums: albid %s rawalbids %s"%(albid,rawalbids))
+            stmt = '''SELECT COUNT(docidx) FROM tracks
+                WHERE album_id IN (%s)''' % ','.join('?'*len(rawalbids))
+            c.execute(stmt, rawalbids)
             r = c.fetchone()
             ntracks = int(r[0])
-            stmt = 'SELECT docidx FROM tracks ' + \
-                   'WHERE album_id = ? AND docidx IN ('+ docids + ')'
-            entries = self._trackentriesforstmt(stmt, (albid,), pid)
+            stmt = '''SELECT docidx FROM tracks 
+                WHERE album_id IN (%s) AND docidx IN (%s)''' % \
+            (','.join('?'*len(rawalbids)), ','.join('?'*len(docidsl)))
+            entries = self._trackentriesforstmt(stmt, rawalbids+docidsl, pid)
             if ntracks != len(entries):
                 id = pid + '$' + 'showca'
                 entries = [rcldirentry(id, pid, '>> Complete Album')] + entries
@@ -216,7 +219,6 @@ class Tagged(object):
             # I don't know what the .0 is for.
             # The 'hcalbum' level usually has 2 entries '>> Hide Content' 
             # and the album title. TBD
-            albid = int(qpath[-2])
             entries = self._trackentriesforalbum(albid, pid)
         
         return entries
@@ -230,6 +232,41 @@ class Tagged(object):
         return self._trackentriesforstmt(stmt, values, pid)
 
 
+    # Expand possibly merged albums to real ones. The tracks always
+    # refer to the raw albid, so this is necessary to compute a track
+    # list
+    def _albids2rawalbids(self, albids):
+        c = self._conn.cursor()
+        rawalbids = []
+        for albid in albids:
+            c.execute('''SELECT album_id FROM albums WHERE albalb = ?''',
+                      (albid,))
+            if c:
+                for r in c:
+                    rawalbids.append(r[0])
+            else:
+                rawalbids.append(albid)
+        return rawalbids
+    
+    # Translate albids so that the ones which are part of a merged
+    # album become the merged id. The returned list is same size or
+    # smaller because there maybe duplicate merged ids. Used to show
+    # album lists
+    def _rawalbids2albids(self, rawalbids):
+        albids = set()
+        c = self._conn.cursor()
+        for rawalbid in rawalbids:
+            c.execute('''SELECT album_id, albalb FROM albums
+                WHERE album_id = ?''', (rawalbid,))
+            alb = c.fetchone()
+            if alb[1]:
+                albids.add(alb[1])
+            else:
+                albids.add(alb[0])
+        #
+        return [id for id in albids]
+
+
     # Return all albums ids to which any of the currently selected tracks
     # (designated by a docid set) belong
     def _subtreealbums(self, docidsl):
@@ -240,17 +277,7 @@ class Tagged(object):
         uplog('subtreealbums: executing %s' % stmt)
         c.execute(stmt)
         rawalbids = [r[0] for r in c]
-        albids = set()
-        for rawalbid in rawalbids:
-            c.execute('''SELECT album_id, albalb FROM albums
-                WHERE album_id = ?''', (rawalbid,))
-            alb = c.fetchone()
-            if alb[1]:
-                albids.add(alb[1])
-            else:
-                albids.add(alb[0])
-        #
-        albids = [id for id in albids]
+        albids = self._rawalbids2albids(rawalbids)
         uplog('subtreealbums: returning %s' % albids)
         return albids
     
