@@ -227,12 +227,39 @@ class Tagged(object):
 
 
     # This is called when an 'items' element is encountered in the
-    # selection path. We just list the selected tracks TBD: need
-    # Complete Album here too ? Seems reasonable if all tracks are
-    # from the same album?
+    # selection path. 
     def _tagsbrowseitems(self, pid, qpath, i, selwhere, values):
         stmt = 'SELECT docidx FROM tracks ' + selwhere
-        return self._trackentriesforstmt(stmt, values, pid)
+        c = self._conn.cursor()
+        rows = c.execute(stmt, values)
+        docids = [r[0] for r in rows]
+        albids = self._subtreealbums(docids)
+        entries = []
+        displaytracks = True
+        if len(albids) == 1:
+            # Only display '>> Complete album' if not all tracks
+            # already there. If all tracks are there, we display
+            # the album entry (with the same id value: show album)
+            albid = albids[0]
+            tlist = self._trackentriesforalbum(albid, pid)
+            # Replace $items with $albums for the album entry
+            id = pid.replace('$items', '$albums') + '$' + str(albid) + '$showca'
+            if len(tlist) != len(docids):
+                entries.append(rcldirentry(id, pid, '>> Complete Album'))
+            else:
+                displaytracks = False
+                el = self._direntriesforalbums(pid,
+                                               "WHERE album_id = %s"%albid)
+                el[0]['id'] = id
+                entries.append(el[0])
+        if displaytracks:
+            entries += [rcldoctoentry(pid + '$i' + str(docid),
+                                      pid, self._httphp, self._pprefix,
+                                      self._rcldocs[docid]) for docid in docids]
+        if PY3:
+            return sorted(entries, key=cmpentries)
+        else:
+            return sorted(entries, cmp=cmpentries)
 
 
     # Expand possibly merged albums to real ones. The tracks always
