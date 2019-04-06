@@ -404,6 +404,8 @@ def recolltosql(conn, docs):
                or doc.mtype == 'audio/x-mpegurl':
             continue
 
+        # Do the artist apart from the other attrs, as we need the
+        # value for album creation.
         if doc.artist:
             trackartid = _auxtableinsert(conn, 'artist', doc.artist)
         else:
@@ -414,9 +416,9 @@ def recolltosql(conn, docs):
         
         # Set base values for column names, values list,
         # placeholders
-        columns = ['docidx', 'album_id', 'trackno', 'title']
-        values = [docidx, album_id, trackno, doc.title]
-        placehold = ['?', '?', '?', '?']
+        columns = ['docidx', 'album_id', 'trackno', 'title', 'artist_id']
+        values = [docidx, album_id, trackno, doc.title, trackartid]
+        placehold = ['?', '?', '?', '?', '?']
         # Append data for each auxiliary table if the doc has a value
         # for the corresponding field (else let SQL set a dflt/null value)
         for tb, rclfld in _tabtorclfield:

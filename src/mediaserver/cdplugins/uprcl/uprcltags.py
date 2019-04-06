@@ -78,16 +78,17 @@ class Tagged(object):
     # input list of docids.
     def _subtreetags(self, docidsl):
         docids = ','.join([str(i) for i in docidsl])
-        uplog("subtreetags, docids %s" % docids)
+        #uplog("subtreetags, docids %s" % docids)
         c = self._conn.cursor()
         tags = []
         for tt,tb in _tagtotable.items():
             stmt = 'SELECT COUNT(DISTINCT ' + _clid(tb) + \
                    ') FROM tracks WHERE docidx IN (' + docids + ')'
-            uplog("subtreetags: executing: <%s>" % stmt)
             c.execute(stmt)
             cnt = c.fetchone()[0]
-            uplog("Found %d distinct values for %s" % (cnt, tb))
+            if len(stmt) > 80:
+                stmt = stmt[:80] + "..."
+            uplog("subtreetags: %d values for %s (%s)"%(cnt,tb,stmt))
             if cnt > 1:
                 tags.append(tt)
         return tags
@@ -219,14 +220,16 @@ class Tagged(object):
             # I don't know what the .0 is for.
             # The 'hcalbum' level usually has 2 entries '>> Hide Content' 
             # and the album title. TBD
+            albid = int(qpath[-2])
             entries = self._trackentriesforalbum(albid, pid)
         
         return entries
 
 
     # This is called when an 'items' element is encountered in the
-    # selection path. We just list the selected tracks
-    # TBD: need Complete Album here too ?
+    # selection path. We just list the selected tracks TBD: need
+    # Complete Album here too ? Seems reasonable if all tracks are
+    # from the same album?
     def _tagsbrowseitems(self, pid, qpath, i, selwhere, values):
         stmt = 'SELECT docidx FROM tracks ' + selwhere
         return self._trackentriesforstmt(stmt, values, pid)
@@ -241,8 +244,9 @@ class Tagged(object):
         for albid in albids:
             c.execute('''SELECT album_id FROM albums WHERE albalb = ?''',
                       (albid,))
-            if c:
-                for r in c:
+            rows = c.fetchall()
+            if len(rows):
+                for r in rows:
                     rawalbids.append(r[0])
             else:
                 rawalbids.append(albid)
@@ -287,6 +291,12 @@ class Tagged(object):
     # records
     def _tagsbrowse(self, pid, qpath, flag):
         uplog("tagsbrowse. pid %s qpath %s" % (pid, qpath))
+
+        # Walk the qpath, which was generated from the objid and
+        # defines what tracks are selected and what we want to
+        # display. E.g =Artist$21$=Date would display all distinct
+        # dates for tracks by Artist #21. =Artist$21$=Date$48 the data
+        # for date 48 (the numbers are indexes into the aux tables)
         qlen = len(qpath)
         selwhat = ''
         selwhere = ''
@@ -294,12 +304,6 @@ class Tagged(object):
         i = 0
         while i < qlen:
             elt = qpath[i]
-
-            # '=colname'. Set the current column name, which will be used
-            # in different ways depending if this is the last element or
-            # not.
-            if elt.startswith('='):
-                col = _tagtotable[elt[1:]] 
 
             # Detect the special values: albums items etc. here. Their
             # presence changes how we process the rest (showing tracks and
@@ -309,44 +313,68 @@ class Tagged(object):
             elif elt == 'items':
                 return self._tagsbrowseitems(pid, qpath, i, selwhere, values)
             
+            # '=colname'. Set the current column name, which will be used
+            # in different ways depending if this is the last element or
+            # not.
+            if elt.startswith('='):
+                col = _tagtotable[elt[1:]] 
+
             selwhere = selwhere + ' AND ' if selwhere else ' WHERE '
             if i == qlen - 1:
-                # We want to display all unique values for the column
-                # artist.artist_id, artist.value
-                selwhat = col + '.' + _clid(col) + ', ' + col + '.value'
-                # tracks.artist_id = artist.artist_id
-                selwhere += 'tracks.' + _clid(col) + ' = ' + col + \
-                            '.' + _clid(col)
+                # We can only get here if the qpath ends with '=colname'
+                # (otherwise the else branch below fetches the 2 last
+                # elements and breaks the loop). We want to fetch all
+                # unique values for the column inside the current selection.
+
+                # e.g. artist.artist_id, artist.value
+                selwhat = '%s.%s, %s.value' % (col, _clid(col), col)
+                # e.g. tracks.artist_id = artist.artist_id
+                selwhere += 'tracks.%s = %s.%s' % (_clid(col), col, _clid(col))
             else:
                 # Look at the value specified for the =xx column. The
                 # selwhat value is only used as a flag
                 selwhat = 'tracks.docidx'
-                selwhere += 'tracks.' + _clid(col) + ' =  ?'
+                selwhere += 'tracks.%s =  ?' % _clid(col)
                 i += 1
                 values.append(int(qpath[i]))
             i += 1
             
 
-        # TBD: Need a ">> Complete Album" entry if there is a single
-        # album, no subqs and not all the tracks are listed
         entries = []
         if selwhat == 'tracks.docidx':
+            # We are displaying content for a given value of a given tag
             docids = self._docidsforsel(selwhere, values)
             albids = self._subtreealbums(docids)
             subqs = self._subtreetags(docids)
+            displaytracks = True
             if len(albids) > 1:
                 id = pid + '$albums'
-                entries.append(rcldirentry(id, pid, str(len(albids)) +
-                                           ' albums'))
-                if subqs:
-                    id = pid + '$items'
-                    entries.append(rcldirentry(id,pid, str(len(docids)) +
-                                               ' items'))
-            elif len(albids) == 1 and subqs:
-                id = pid + '$items'
-                entries.append(rcldirentry(id,pid, str(len(docids)) + ' items'))
+                label = '%d albums'
+                entries.append(rcldirentry(id, pid, label % len(albids)))
+            elif len(albids) == 1 and not subqs:
+                # Only display '>> Complete album' if not all tracks
+                # already there. If all tracks are there, we display
+                # the album entry (with the same id value: show album)
+                albid = albids[0]
+                tlist = self._trackentriesforalbum(albid, pid)
+                id = pid + '$albums$' + str(albid) + '$showca'
+                if len(tlist) != len(docids):
+                    entries.append(rcldirentry(id, pid, '>> Complete Album'))
+                else:
+                    displaytracks = False
+                    el = self._direntriesforalbums(pid,
+                                                   "WHERE album_id = %s"%albid)
+                    el[0]['id'] = id
+                    entries.append(el[0])
 
-            if not subqs:
+            if subqs:
+                id = pid + '$items'
+                label = '%d items'
+                entries.append(rcldirentry(id, pid, label % len(docids)))
+                for tt in subqs:
+                    id = pid + '$=' + tt
+                    entries.append(rcldirentry(id, pid, tt))
+            elif displaytracks:
                 for docidx in docids:
                     id = pid + '$*i' + str(docidx)
                     entries.append(rcldoctoentry(id, pid, self._httphp,
@@ -356,12 +384,8 @@ class Tagged(object):
                         entries = sorted(entries, key=cmpentries)
                     else:
                         entries = sorted(entries, cmp=cmpentries)
-            else:
-                for tt in subqs:
-                    id = pid + '$=' + tt
-                    entries.append(rcldirentry(id, pid, tt))
         else:
-            # SELECT col.value FROM tracks, col
+            # SELECT col.col_id, col.value FROM tracks, col
             # WHERE tracks.col_id = col.col_id
             # GROUP BY tracks.col_id
             # ORDER BY col.value
