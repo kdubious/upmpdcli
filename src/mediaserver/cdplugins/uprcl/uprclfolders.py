@@ -84,6 +84,7 @@ from uprclutils import docarturi, audiomtypes, rcldirentry, \
 import uprclutils
 from recoll import recoll
 from recoll import rclconfig
+import uprclinit
 
 class Folders(object):
 
@@ -310,8 +311,12 @@ class Folders(object):
         rcldb = recoll.connect(confdir=confdir)
         rclq = rcldb.query()
         rclq.execute("mime:*", stemming=0)
-        #rclq.execute('ext:m3u*', stemming=0)
+        #rclq.execute('album:a*', stemming=0)
         uplog("Estimated alldocs query results: %d" % (rclq.rowcount))
+
+        tagaliases = None
+        if uprclinit.g_minimconfig:
+            tagaliases = uprclinit.g_minimconfig.gettagaliases()
 
         totcnt = 0
         self._rcldocs = []
@@ -324,6 +329,14 @@ class Folders(object):
             try:
                 docs = rclq.fetchmany()
                 for doc in docs:
+                    if tagaliases:
+                        for orig,target,rep in tagaliases:
+                            val = doc.get(orig)
+                            #uplog("Rep %s doc[%s]=[%s] doc[%s]=[%s]"%
+                            #      (rep, orig, val, target, doc.get(target)))
+                            if val and (rep or not doc.get(target)):
+                                setattr(doc,target,val)
+
                     self._rcldocs.append(doc)
                     totcnt += 1
             except:

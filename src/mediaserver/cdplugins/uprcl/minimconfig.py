@@ -37,3 +37,54 @@ class MinimConfig(object):
             spats = conftree.stringsToString(lpats)
         uplog("skippedNames from Minim excludePattern: %s" % spats)
         return spats
+
+
+    # Split on commas and colons, a common minim format and return as
+    # list of pairs
+    def minimsplitsplit(self, str):
+        out = []
+        if not str:
+            return out
+        str = str.replace('\\:', ':')
+        lst = str.split(',')
+        for e in lst:
+            l = e.split(':')
+            if len(l) == 0:
+                a = ''
+                b = ''
+            elif len(l) == 1:
+                a = l[0]
+                b = ''
+            else:
+                a = l[0]
+                b = l[1]
+            out.append((a.strip(),b.strip()))
+        return out
+
+
+    def gettagaliases(self):
+        aliases = []
+        saliases = self.conf.get("minimserver.aliasTags")
+        uplog("Minim:gettagaliases:in: [%s]" % saliases)
+        lst = self.minimsplitsplit(saliases)
+        for orig,target in lst:
+            orig = orig.lower()
+            target = target.lower()
+            rep = True
+            if target[0] == '-'[0]:
+                rep = False
+                target = target[1:]
+            aliases.append((orig, target, rep))
+        uplog("Minim:gettagaliases:out: %s" % aliases)
+        return aliases
+
+        
+    def getindextags(self):
+        indexTags = []
+        sit = self.conf.get("minimserver.indexTags")
+        uplog("Minim:getindextags:in: [%s]" % sit)
+        if sit:
+            indexTags = self.minimsplitsplit(sit)
+        uplog("Minim:getindextags:out: %s" % indexTags)
+        return indexTags
+

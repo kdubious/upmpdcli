@@ -32,7 +32,7 @@ import tempfile
 from upmplgutils import uplog
 from uprclutils import g_myprefix, rcldirentry, rcldoctoentry, cmpentries
 
-from uprcltagscreate import recolltosql, _clid, _tagtotable
+from uprcltagscreate import recolltosql, _clid, _tagtotable, _tagdisplaytag
 
 # The browseable object which defines the tree of tracks organized by tags.
 class Tagged(object):
@@ -70,7 +70,8 @@ class Tagged(object):
         entries = [rcldirentry(pid + 'albums', pid, nalbs + ' albums'),
                    rcldirentry(pid + 'items', pid, nitems + ' items')]
         for tt in sorted(_tagtotable.keys()):
-            entries.append(rcldirentry(pid + '=' + tt , pid, tt))
+            entries.append(rcldirentry(pid + '=' + tt , pid,
+                                       _tagdisplaytag[tt]))
         return entries
 
 
@@ -400,7 +401,7 @@ class Tagged(object):
                 entries.append(rcldirentry(id, pid, label % len(docids)))
                 for tt in subqs:
                     id = pid + '$=' + tt
-                    entries.append(rcldirentry(id, pid, tt))
+                    entries.append(rcldirentry(id, pid, _tagdisplaytag[tt]))
             elif displaytracks:
                 for docidx in docids:
                     id = pid + '$*i' + str(docidx)

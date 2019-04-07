@@ -56,6 +56,7 @@ def _maybeinitconfdir(confdir, topdirs):
         f.write(b"noaspell = 1\n")
         f.write(b"nomd5types = rclaudio rclimg\n")
         f.write(b"testmodifusemtime = 1\n")
+        f.write(b"idxmetastoredlen = 20000\n")
         if exclpats:
             f.write(b"skippedNames+ = " + exclpats.encode("utf-8") + b"\n")
         else:

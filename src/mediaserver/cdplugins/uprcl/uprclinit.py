@@ -47,7 +47,7 @@ except:
     g_rclconfdir = ""
     g_friendlyname = "UpMpd-mediaserver"
     g_trees = {}
-    g_trees_order = ['folders', 'untagged', 'playlists', 'tags']
+    g_trees_order = ['folders', 'playlists', 'tags', 'untagged']
     g_minimconfig = None
     
 # Create or update Recoll index, then read and process the data.  This
