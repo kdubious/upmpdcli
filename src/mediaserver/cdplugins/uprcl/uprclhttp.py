@@ -90,8 +90,8 @@ class Streamer(object):
 # Bottle handle both the streaming and control requests.
 def runbottle(host='0.0.0.0', port=9278, pthstr='', pathprefix=''):
     global datadir
-    uplog("runbottle: host %s port %d pthstr %s pathprefix %s" %
-          (host, port, pthstr, pathprefix))
+    uplog("runbottle: version %s host %s port %d pthstr %s pathprefix %s" %
+          (bottle.__version__, host, port, pthstr, pathprefix))
     datadir = os.path.dirname(__file__)
     datadir = os.path.join(datadir, 'bottle')
     bottle.TEMPLATE_PATH = (os.path.join(datadir, 'views'),)
