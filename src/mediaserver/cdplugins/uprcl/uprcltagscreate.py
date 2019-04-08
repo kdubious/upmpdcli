@@ -23,20 +23,23 @@ from timeit import default_timer as timer
 from uprclutils import audiomtypes, docfolder, uplog
 import uprclinit
 
-# Tags for which we create auxiliary tables for facet descent. 
+# Tags for which we may create auxiliary tables for facet descent. 
 #
-# The key is the presentation name (container title). The value is the
-# auxiliary table name, used also as base for unique id and join
-# columns (with _id) appended, and is also currently the recoll field
-# name (with a provision to differ if needed, thanks to the
-# currently empty _coltorclfield dict).
+# The key is the tag name, used as container title in the tags tree,
+# except if an a different display value was set by the user
+# (_tagdisplaytag). The value is the auxiliary table name, used also
+# as base for unique id and join columns (with _id) appended, and is
+# also currently the recoll field name (with a provision to differ if
+# needed, thanks to the currently empty _coltorclfield dict).
 #
 # The keys must stay same as what Minim uses as we filter them with
 # indexTags from minim config
 #
 # Note: artist is actually doc.albumartist if set, else doc.artist and
 # is processed separately
-_tagtotable = {
+#
+# Only a smaller set of entries is normally used, as filtered by indexTags
+_alltagtotable = {
     'AlbumArtist' : 'albumartist',
     'All Artists' : 'allartists',
     'Artist' : 'artist',
@@ -52,14 +55,15 @@ _tagtotable = {
     'Performer' : 'performer',
     }
 
-_tagdisplaytag = {}
-
-# Translation only used when fetching fields from the recoll
-# record. None at the moment
+# Translations used when fetching fields from the recoll
+# record. Most have the same name as the column.
 _coltorclfield = {
     'allartists' : 'artist'
     }
 
+g_indextags = []
+g_tagdisplaytag = {}
+g_tagtotable = {}
 
 def _clid(table):
     return table + '_id'
@@ -77,6 +81,7 @@ def _clid(table):
 # stores, the file system location (the album title is not enough to
 # group tracks, there could be many albums with the same title). Also
 # we do tricks with grouping discs into albums etc.
+# Note: we create all tables even if not all tags are actually used.
 def _createsqdb(conn):
     c = conn.cursor()
     try:
@@ -114,7 +119,7 @@ def _createsqdb(conn):
     tracksstmt = '''CREATE TABLE tracks
         (docidx INT, album_id INT, trackno INT, title TEXT'''
 
-    for tb in _tagtotable.values():
+    for tb in _alltagtotable.values():
         try:
             c.execute('DROP TABLE ' + tb)
         except:
@@ -127,6 +132,51 @@ def _createsqdb(conn):
     tracksstmt += ')'
     c.execute(tracksstmt)
 
+# Peruse the configuration to decide what tags will actually show up
+# in the tree and how they will be displayed.
+def _prepareTags():
+    global g_tagdisplaytag
+    global g_tagtotable
+    global g_indextags
+
+    indextagsp = []
+    itemtags = []
+    if uprclinit.g_minimconfig:
+        indextagsp = uprclinit.g_minimconfig.getindextags()
+        itemtags = uprclinit.g_minimconfig.getitemtags()
+    if not indextagsp:
+        indextagsp = [('Artist',''), ('Date',''), ('Genre',''), ('Composer','')]
+
+    # Compute the list of index tags and the 
+    for v,d in indextagsp:
+        if v.lower() == 'none':
+            g_indextags = []
+            g_tagdisplaytag = {}
+            break
+        g_indextags.append(v)
+        g_tagdisplaytag[v] = d if d else v
+    uplog("prepareTags: g_indextags: %s g_tagdisplaytag %s" %
+          (g_indextags, g_tagdisplaytag))
+    
+    # Compute an array of (table name, recoll field)
+    # translations. Most often they are identical. This also
+    # determines what fields we create tables for.
+    tabtorclfield = []
+    for nm in g_indextags:
+        tb = _alltagtotable[nm]
+        if not tb: continue
+        g_tagtotable[nm] = tb
+        rclfld = _coltorclfield[tb] if tb in _coltorclfield else tb
+        uplog("recolltosql: using rclfield [%s] for sqlcol [%s]"% (rclfld, tb))
+        tabtorclfield.append((tb, rclfld))
+    for nm in itemtags:
+        tb = _alltagtotable[nm]
+        if not tb: continue
+        rclfld = _coltorclfield[tb] if tb in _coltorclfield else tb
+        uplog("recolltosql: using rclfield [%s] for sqlcol [%s]"% (rclfld, tb))
+        tabtorclfield.append((tb, rclfld))
+
+    return tabtorclfield
 
 # Insert new value if not existing, return rowid of new or existing row
 def _auxtableinsert(conn, tb, value):
@@ -382,49 +432,13 @@ def _createmergedalbums(conn):
                 WHERE album_id= ?''', (albid,))
 
 
-# Set up the tag display name to column to recoll field translations
-# and get rid of tags which are not going to display (keep just
-# indexTags)
-def _prepareTags():
-    global _tabtorclfield
-    global _tagdisplaytag
-    _tabtorclfield = []
-
-    indextagsp = []
-    if uprclinit.g_minimconfig:
-        indextagsp = uprclinit.g_minimconfig.getindextags()
-    if not indextagsp:
-        indextagsp = [('Artist',''), ('Date',''), ('Genre',''), ('Composer','')]
-    indextags = []
-    for v,d in indextagsp:
-        indextags.append(v)
-        _tagdisplaytag[v] = d if d else v
-        
-    # Compute an array of (table name, recoll field) translations. Most
-    # often they are identical.
-    todelete = []
-    for nm, tb in _tagtotable.items():
-        if nm not in indextags:
-            todelete.append(nm)
-            continue
-        if tb in _coltorclfield:
-            rclfld = _coltorclfield[tb]
-        else:
-            rclfld = tb
-        uplog("recolltosql: using rclfield [%s] for sqlcol [%s]"% (rclfld, tb))
-        _tabtorclfield.append((tb, rclfld))
-    for nm in todelete:
-        del _tagtotable[nm]
-
-
 # Create the db and fill it up with the values we need, taken out of
 # the recoll records list
 def recolltosql(conn, docs):
-    global _tabtorclfield
     start = timer()
 
     _createsqdb(conn)
-    _prepareTags()
+    tabtorclfield = _prepareTags()
 
     maxcnt = 0
     totcnt = 0
@@ -460,7 +474,7 @@ def recolltosql(conn, docs):
         placehold = ['?', '?', '?', '?', '?']
         # Append data for each auxiliary table if the doc has a value
         # for the corresponding field (else let SQL set a dflt/null value)
-        for tb, rclfld in _tabtorclfield:
+        for tb, rclfld in tabtorclfield:
             if tb == 'artist': # already done
                 continue
             value = getattr(doc, rclfld, None)

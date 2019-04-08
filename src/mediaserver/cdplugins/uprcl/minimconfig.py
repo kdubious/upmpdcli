@@ -45,8 +45,7 @@ class MinimConfig(object):
         out = []
         if not str:
             return out
-        str = str.replace('\\:', ':')
-        lst = str.split(',')
+        lst = str.replace('\\:', ':').split(',')
         for e in lst:
             l = e.split(':')
             if len(l) == 0:
@@ -80,11 +79,19 @@ class MinimConfig(object):
 
         
     def getindextags(self):
-        indexTags = []
+        indextags = []
         sit = self.conf.get("minimserver.indexTags")
         uplog("Minim:getindextags:in: [%s]" % sit)
         if sit:
-            indexTags = self.minimsplitsplit(sit)
-        uplog("Minim:getindextags:out: %s" % indexTags)
-        return indexTags
+            indextags = self.minimsplitsplit(sit)
+        uplog("Minim:getindextags:out: %s" % indextags)
+        return indextags
 
+    def getitemtags(self):
+        itemtags = []
+        sit = self.conf.get("minimserver.itemTags")
+        uplog("Minim:getitemtags:in: [%s]" % sit)
+        if sit:
+            itemtags = [i.strip() for i in sit.split(',')]
+        uplog("Minim:getindextags:out: %s" % itemtags)
+        return itemtags

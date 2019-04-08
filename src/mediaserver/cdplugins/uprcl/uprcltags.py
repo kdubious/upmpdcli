@@ -32,7 +32,8 @@ import tempfile
 from upmplgutils import uplog
 from uprclutils import g_myprefix, rcldirentry, rcldoctoentry, cmpentries
 
-from uprcltagscreate import recolltosql, _clid, _tagtotable, _tagdisplaytag
+from uprcltagscreate import recolltosql, _clid, g_tagtotable, \
+     g_tagdisplaytag, g_indextags
 
 # The browseable object which defines the tree of tracks organized by tags.
 class Tagged(object):
@@ -69,9 +70,9 @@ class Tagged(object):
         nitems = str(c.fetchone()[0])
         entries = [rcldirentry(pid + 'albums', pid, nalbs + ' albums'),
                    rcldirentry(pid + 'items', pid, nitems + ' items')]
-        for tt in sorted(_tagtotable.keys()):
+        for tt in sorted(g_tagdisplaytag.keys()):
             entries.append(rcldirentry(pid + '=' + tt , pid,
-                                       _tagdisplaytag[tt]))
+                                       g_tagdisplaytag[tt]))
         return entries
 
 
@@ -82,7 +83,8 @@ class Tagged(object):
         #uplog("subtreetags, docids %s" % docids)
         c = self._conn.cursor()
         tags = []
-        for tt,tb in _tagtotable.items():
+        for tt in g_indextags:
+            tb = g_tagtotable[tt]
             stmt = 'SELECT COUNT(DISTINCT ' + _clid(tb) + \
                    ') FROM tracks WHERE docidx IN (' + docids + ')'
             c.execute(stmt)
@@ -345,7 +347,7 @@ class Tagged(object):
             # in different ways depending if this is the last element or
             # not.
             if elt.startswith('='):
-                col = _tagtotable[elt[1:]] 
+                col = g_tagtotable[elt[1:]] 
 
             selwhere = selwhere + ' AND ' if selwhere else ' WHERE '
             if i == qlen - 1:
@@ -401,7 +403,7 @@ class Tagged(object):
                 entries.append(rcldirentry(id, pid, label % len(docids)))
                 for tt in subqs:
                     id = pid + '$=' + tt
-                    entries.append(rcldirentry(id, pid, _tagdisplaytag[tt]))
+                    entries.append(rcldirentry(id, pid, g_tagdisplaytag[tt]))
             elif displaytracks:
                 for docidx in docids:
                     id = pid + '$*i' + str(docidx)
