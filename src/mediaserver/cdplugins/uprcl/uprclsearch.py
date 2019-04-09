@@ -21,8 +21,8 @@ import re
 from recoll import recoll
 
 from upmplgutils import uplog
-from uprclutils import rcldoctoentry, cmpentries, upnp2rclfields
 from conftree import stringToStrings
+import uprclutils
 
 def _getchar(s, i):
     if i < len(s):
@@ -217,7 +217,7 @@ def _upnpsearchtorecoll(s):
                 out.append('OR')
             else:
                 try:
-                    field = upnp2rclfields[w]
+                    field = uprclutils.upnp2rclfields[w]
                 except Exception as ex:
                     #uplog("Field translation error: %s"%ex)
                     field = (w,)
@@ -251,8 +251,13 @@ def search(foldersobj, rclconfdir, objid, upnps, idprefix, httphp, pathprefix):
     while True:
         docs = rclq.fetchmany()
         for doc in docs:
+            arturi = uprclutils.docarturi(doc, httphp, pathprefix)
+            if arturi:
+                # The uri is quoted, so it's ascii and we can just store
+                # it as a doc attribute
+                doc.albumarturi = arturi
             id = foldersobj.objidfordoc(doc)
-            e = rcldoctoentry(id, objid, httphp, pathprefix, doc)
+            e = uprclutils.rcldoctoentry(id, objid, httphp, pathprefix, doc)
             if e:
                 entries.append(e)
         if (maxcnt > 0 and len(entries) >= maxcnt) or \
@@ -261,9 +266,9 @@ def search(foldersobj, rclconfdir, objid, upnps, idprefix, httphp, pathprefix):
     uplog("Search retrieved %d docs" % (len(entries),))
 
     if PY3:
-        return sorted(entries, key=cmpentries)
+        return sorted(entries, key=uprclutils.cmpentries)
     else:
-        return sorted(entries, cmp=cmpentries)
+        return sorted(entries, cmp=uprclutils.cmpentries)
 
 
 if __name__ == '__main__':
