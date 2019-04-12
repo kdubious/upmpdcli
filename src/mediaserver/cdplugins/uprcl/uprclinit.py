@@ -109,12 +109,17 @@ def _uprcl_init_worker():
     g_pathprefix = os.environ["UPMPD_PATHPREFIX"]
     if "UPMPD_CONFIG" not in os.environ:
         raise Exception("No UPMPD_CONFIG in environment")
-    global g_upconfig
-    g_upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
-
     global g_friendlyname
     if "UPMPD_FNAME" in os.environ:
         g_friendlyname = os.environ["UPMPD_FNAME"]
+
+    global g_upconfig
+    g_upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
+
+    global g_minimconfig
+    minimcfn = g_upconfig.get("uprclminimconfig")
+    if minimcfn:
+        g_minimconfig = minimconfig.MinimConfig(minimcfn)
 
     global g_httphp
     g_httphp = g_upconfig.get("uprclhostport")
@@ -131,7 +136,12 @@ def _uprcl_init_worker():
 
     global g_rcltopdirs
     g_rcltopdirs = g_upconfig.get("uprclmediadirs")
-    if g_rcltopdirs is None:
+    if not g_rcltopdirs:
+        if g_minimconfig:
+            g_rcltopdirs = g_minimconfig.getcontentdirs()
+            if g_rcltopdirs:
+                g_rcltopdirs = conftree.stringsToString(g_rcltopdirs)
+    if not g_rcltopdirs:
         raise Exception("uprclmediadirs not in config")
 
     pthstr = g_upconfig.get("uprclpaths")
@@ -148,11 +158,6 @@ def _uprcl_init_worker():
     for ptt in lpth:
         l = ptt.split(':')
         pathmap[l[0]] = l[1]
-
-    global g_minimconfig
-    minimcfn = g_upconfig.get("uprclminimconfig")
-    if minimcfn:
-        g_minimconfig = minimconfig.MinimConfig(minimcfn)
         
     host,port = g_httphp.split(':')
 

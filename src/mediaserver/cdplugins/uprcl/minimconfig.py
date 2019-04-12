@@ -97,6 +97,16 @@ class MinimConfig(object):
         return itemtags
 
 
+    def getcontentdirs(self):
+        # minim uses '\\n' as a separator for directories (actual
+        # backslash then n), not newline. Weird...
+        cdirs = []
+        s = self.conf.get("minimserver.contentDir")
+        if s:
+            cdirs = s.replace("\\n", "\n").split("\n")
+        return cdirs
+
+    
     def getsimplevalue(self, nm):
         return self.conf.get(nm).strip()
     
