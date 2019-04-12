@@ -40,28 +40,38 @@ def _maybeinitconfdir(confdir, topdirs):
     for fn in ("fields", "mimemap", "mimeconf"):
         dst = os.path.join(confdir, fn)
         src = os.path.join(datadir, "rclconfig-" + fn)
-        if not os.path.exists(dst) and os.path.exists(src):
-            shutil.copyfile(src, dst)
+        shutil.copyfile(src, dst)
 
     exclpats = ""
     if uprclinit.g_minimconfig:
         exclpats = uprclinit.g_minimconfig.getexcludepatterns()
 
+    userconfig = uprclinit.g_upconfig.get("uprclconfrecolluser")
+    if not userconfig:
+        userconfig = os.path.join(confdir, "recoll.conf.user")
+    if os.path.exists(userconfig):
+        userconfdata = open(userconfig, "rb").read()
+    else:
+        userconfdata = b''
+        
     path = os.path.join(confdir, "recoll.conf")
-    if not os.path.exists(path):
-        f = open(path, "wb")
-        f.write(b"topdirs = %s\n"% topdirs.encode(locale.getpreferredencoding()))
-        f.write(b"idxabsmlen = 0\n")
-        f.write(b"loglevel = 2\n")
-        f.write(b"noaspell = 1\n")
-        f.write(b"nomd5types = rclaudio rclimg\n")
-        f.write(b"testmodifusemtime = 1\n")
-        f.write(b"idxmetastoredlen = 20000\n")
-        if exclpats:
-            f.write(b"skippedNames+ = " + exclpats.encode("utf-8") + b"\n")
-        else:
-            f.write(b"skippedNames+ = \n")
-        f.close()
+    f = open(path, "wb")
+    f.write(b"topdirs = %s\n"% topdirs.encode(locale.getpreferredencoding()))
+    f.write(b"idxabsmlen = 0\n")
+    f.write(b"loglevel = 2\n")
+    f.write(b"noaspell = 1\n")
+    f.write(b"nomd5types = rclaudio rclimg\n")
+    f.write(b"testmodifusemtime = 1\n")
+    f.write(b"idxmetastoredlen = 20000\n")
+    f.write(b"audiotagfixerscript = %b\n" %
+            os.path.join(datadir, "minimtagfixer.py").encode('utf-8'))
+    if exclpats:
+        f.write(b"skippedNames+ = " + exclpats.encode("utf-8") + b"\n")
+    else:
+        f.write(b"skippedNames+ = \n")
+    if userconfdata:
+        f.write(userconfdata)
+    f.close()
 
 
 _idxproc = None

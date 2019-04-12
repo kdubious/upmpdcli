@@ -191,6 +191,7 @@ cdpluginsuprcldir = $(pkgdatadir)/cdplugins/uprcl
 dist_cdpluginsuprcl_DATA = \
                  src/mediaserver/cdplugins/uprcl/bottle.py \
                  src/mediaserver/cdplugins/uprcl/minimconfig.py \
+                 src/mediaserver/cdplugins/uprcl/minimtagfixer.py \
                  src/mediaserver/cdplugins/uprcl/rclconfig-fields \
                  src/mediaserver/cdplugins/uprcl/rclconfig-mimeconf \
                  src/mediaserver/cdplugins/uprcl/rclconfig-mimemap \

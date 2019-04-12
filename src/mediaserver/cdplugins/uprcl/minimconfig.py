@@ -18,7 +18,6 @@ from uprclutils import uplog
 
 class MinimConfig(object):
     def __init__(self, fn):
-        self.fn = fn
         self.conf = conftree.ConfSimple(fn)
         uplog("Minim config read: contentDir: %s" %
               self.conf.get("minimserver.contentDir"))
@@ -87,6 +86,7 @@ class MinimConfig(object):
         uplog("Minim:getindextags:out: %s" % indextags)
         return indextags
 
+
     def getitemtags(self):
         itemtags = []
         sit = self.conf.get("minimserver.itemTags")
@@ -95,3 +95,8 @@ class MinimConfig(object):
             itemtags = [i.strip() for i in sit.split(',')]
         uplog("Minim:getindextags:out: %s" % itemtags)
         return itemtags
+
+
+    def getsimplevalue(self, nm):
+        return self.conf.get(nm).strip()
+    

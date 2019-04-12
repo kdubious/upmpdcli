@@ -109,31 +109,32 @@ def _uprcl_init_worker():
     g_pathprefix = os.environ["UPMPD_PATHPREFIX"]
     if "UPMPD_CONFIG" not in os.environ:
         raise Exception("No UPMPD_CONFIG in environment")
-    upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
+    global g_upconfig
+    g_upconfig = conftree.ConfSimple(os.environ["UPMPD_CONFIG"])
 
     global g_friendlyname
     if "UPMPD_FNAME" in os.environ:
         g_friendlyname = os.environ["UPMPD_FNAME"]
 
     global g_httphp
-    g_httphp = upconfig.get("uprclhostport")
+    g_httphp = g_upconfig.get("uprclhostport")
     if g_httphp is None:
         ip = findmyip()
         g_httphp = ip + ":" + "9090"
         uplog("uprclhostport not in config, using %s" % g_httphp)
 
     global g_rclconfdir
-    g_rclconfdir = upconfig.get("uprclconfdir")
+    g_rclconfdir = g_upconfig.get("uprclconfdir")
     if g_rclconfdir is None:
         uplog("uprclconfdir not in config, using /var/cache/upmpdcli/uprcl")
         g_rclconfdir = "/var/cache/upmpdcli/uprcl"
 
     global g_rcltopdirs
-    g_rcltopdirs = upconfig.get("uprclmediadirs")
+    g_rcltopdirs = g_upconfig.get("uprclmediadirs")
     if g_rcltopdirs is None:
         raise Exception("uprclmediadirs not in config")
 
-    pthstr = upconfig.get("uprclpaths")
+    pthstr = g_upconfig.get("uprclpaths")
     if pthstr is None:
         uplog("uprclpaths not in config")
         pthlist = stringToStrings(g_rcltopdirs)
@@ -149,7 +150,7 @@ def _uprcl_init_worker():
         pathmap[l[0]] = l[1]
 
     global g_minimconfig
-    minimcfn = upconfig.get("uprclminimconfig")
+    minimcfn = g_upconfig.get("uprclminimconfig")
     if minimcfn:
         g_minimconfig = minimconfig.MinimConfig(minimcfn)
         
