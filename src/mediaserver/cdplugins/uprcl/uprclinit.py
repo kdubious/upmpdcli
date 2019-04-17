@@ -49,11 +49,14 @@ except:
     g_trees = {}
     g_trees_order = ['folders', 'playlists', 'tags', 'untagged']
     g_minimconfig = None
+
+def _reset_index():
+    _update_index(True)
     
 # Create or update Recoll index, then read and process the data.  This
 # runs in the separate uprcl_init_worker thread, and signals
 # startup/completion by setting/unsetting the g_initrunning flag
-def _update_index():
+def _update_index(rebuild=False):
     uplog("Creating/updating index in %s for %s" % (g_rclconfdir, g_rcltopdirs))
 
     # We take the writer lock, making sure that no browse/search
@@ -63,13 +66,13 @@ def _update_index():
     # lock).
     global g_initrunning, g_trees
     g_dblock.acquire_write()
-    g_initrunning = True
+    g_initrunning = "Rebuilding" if rebuild else "Updating"
     g_dblock.release_write()
     uplog("_update_index: initrunning set")
 
     try:
         start = timer()
-        uprclindex.runindexer(g_rclconfdir, g_rcltopdirs)
+        uprclindex.runindexer(g_rclconfdir, g_rcltopdirs, rebuild=rebuild)
         # Wait for indexer
         while not uprclindex.indexerdone():
             time.sleep(.5)
@@ -193,11 +196,12 @@ def ready():
 def updaterunning():
     return g_initrunning
 
-def start_update():
+def start_update(rebuild=False):
     try:
         if not ready():
             return
-        idxthread = threading.Thread(target=_update_index)
+        targ = _reset_index if rebuild else _update_index
+        idxthread = threading.Thread(target=targ)
         idxthread.daemon = True
     finally:
         # We need to release the reader lock before starting the index

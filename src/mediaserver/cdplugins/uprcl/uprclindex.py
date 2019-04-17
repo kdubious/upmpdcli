@@ -78,7 +78,7 @@ _idxproc = None
 _lastidxstatus = None
 
 
-def runindexer(confdir, topdirs):
+def runindexer(confdir, topdirs, rebuild=False):
     global _idxproc, _lastidxstatus
     if _idxproc is not None:
         raise Exception("uprclrunindexer: already running")
@@ -93,7 +93,10 @@ def runindexer(confdir, topdirs):
 
     env = copy.deepcopy(os.environ)
     env["HOME"] = confdir
-    _idxproc = subprocess.Popen(["recollindex", "-c", confdir])
+    if rebuild:
+        _idxproc = subprocess.Popen(["recollindex", "-c", confdir, "-z"])
+    else:
+        _idxproc = subprocess.Popen(["recollindex", "-c", confdir])
 
 def indexerdone():
     global _idxproc, _lastidxstatus

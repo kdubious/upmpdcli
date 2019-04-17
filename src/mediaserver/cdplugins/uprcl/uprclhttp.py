@@ -30,23 +30,31 @@ import uprclinit
 @bottle.post('/')
 @bottle.view('main')
 def main():
-    sub =  bottle.request.forms.get('sub')
-    #uplog("Main: sub value is %s" % sub)
-    if uprclinit.updaterunning():
-        status = 'Updating'
-    else:
+    what =  bottle.request.forms.get('what')
+    uplog("Main: what value is %s" % what)
+
+    status = uprclinit.updaterunning()
+    if not status:
         status = 'Ready'
 
-    if sub == 'Update Index':
+    reloadsecs='1'
+    if what == 'Update Index':
         uprclinit.start_update()
+    elif what == 'Reset Index':
+        uprclinit.start_update(rebuild=True)
+    elif what == 'Refresh Status':
+        reloadsecs = ''
+    elif not what:
+        if status == 'Updating':
+            reloadsecs = '2'
+        elif status == 'Rebuilding':
+            reloadsecs = '10'
+        else:
+            reloadsecs = ''
 
-    if sub:
-        headers = dict()
-        headers["Location"] = '/'
-        return bottle.HTTPResponse(status=302, **headers)
-    else:
-        return {'title':status, 'status':status,
-                'friendlyname':uprclinit.g_friendlyname}
+    return {'title':status, 'status':status, 'reloadsecs':reloadsecs,
+            'friendlyname':uprclinit.g_friendlyname}
+
 
 @bottle.route('/static/<filepath:path>')
 def static(filepath):
@@ -78,8 +86,12 @@ class Streamer(object):
             bottle.response.set_header("Content-Length", size)
             return f
         fullpath = os.path.join(self.root, filepath)
+        if not os.path.exists(fullpath):
+            uplog("uprcl: no such file: %s" % fullpath)
+            return bottle.HTTPResponse(status=404)
         uplog("Streaming: %s " % fullpath)
         mutf = mutagen.File(fullpath)
+            
         if mutf:
             return bottle.static_file(filepath, root=self.root,
                                       mimetype=mutf.mime[0])
