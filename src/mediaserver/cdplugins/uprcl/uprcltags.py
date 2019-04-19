@@ -352,7 +352,7 @@ class Tagged(object):
     # Main browsing routine. Given an objid, translate it into a select
     # statement, plus further processing, and return the corresponding
     # records
-    def _tagsbrowse(self, pid, qpath, flag):
+    def _tagsbrowse(self, pid, qpath, flag, path=''):
         uplog("tagsbrowse. pid %s qpath %s" % (pid, qpath))
 
         # Walk the qpath, which was generated from the objid and
@@ -362,8 +362,12 @@ class Tagged(object):
         # for date 48 (the numbers are indexes into the aux tables)
         qlen = len(qpath)
         selwhat = ''
-        selwhere = ''
-        values = []
+        if path:
+            selwhere = ' WHERE tracks.path LIKE ? '
+            values = [path + '%',]
+        else:
+            selwhere = ''
+            values = []
         i = 0
         while i < qlen:
             elt = qpath[i]
@@ -401,7 +405,6 @@ class Tagged(object):
                 i += 1
                 values.append(int(qpath[i]))
             i += 1
-            
 
         entries = []
         if selwhat == 'tracks.docidx':
@@ -483,30 +486,36 @@ class Tagged(object):
         return entries
 
 
+    # Implement the common part of browse() and browseFolder()
+    def _dobrowse(self, pid, flag, qpath, folder=''):
+        uplog("Tags:browsFolder: qpath %s"%qpath)
+        if qpath[0] == 'items':
+            args = (folder + '%',) if folder else ()
+            folderwhere = ' WHERE path LIKE ? ' if folder else ' '
+            stmt = 'SELECT docidx FROM tracks' + folderwhere
+            entries = self._trackentriesforstmt(stmt, args, pid)
+        elif qpath[0] == 'albums':
+            entries = self._albumsbrowse(pid, qpath, flag, folder)
+        elif qpath[0].startswith('='):
+            entries = self._tagsbrowse(pid, qpath, flag, folder)
+        else:
+            raise Exception('Bad path in tags tree (start): <%s>' % qpath)
+        return entries
+        
+
     # Call from the folders tree when Tag View is selected.
     def browseFolder(self, pid, flag, pthremain, folder):
-        uplog("Tags:browseFolder: pid %s pth %s folder %s" %
-              (pid, pthremain, folder))
+        uplog("Tags:browseFolder: pid %s pth %s fld %s"%(pid,pthremain,folder))
         l = pthremain.split('$')
-        # 1st elt in list is empty because pthremain begins with $
+        # 1st elt in list is empty because pthremain begins with $. so
+        # len(l)==2 is the root of tags from this folder
         if len(l) == 2:
             return self.rootentries(pid + '$', folder)
         else:
             qpath = l[2:]
-            uplog("Tags:browsFolder: qpath %s"%qpath)
-            if qpath[0] == 'items':
-                stmt = 'SELECT docidx FROM tracks'
-                entries = self._trackentriesforstmt(stmt, (), pid)
-            elif qpath[0] == 'albums':
-                entries = self._albumsbrowse(pid, qpath, flag, folder)
-            elif qpath[0].startswith('='):
-                entries = self._tagsbrowse(pid, qpath, flag)
-            else:
-                raise Exception('Bad path in tags tree (start): <%s>' % qpath)
-            return entries
+            return self._dobrowse(pid, flag, qpath, folder)
 
         
-
     # Top level browse routine. Handle the special cases and call the
     # appropriate worker routine.
     def browse(self, pid, flag):
@@ -514,18 +523,7 @@ class Tagged(object):
         uplog('tags:browse: idpath <%s>' % idpath)
         entries = []
         qpath = idpath.split('$')
-        if idpath.startswith('items'):
-            stmt = 'SELECT docidx FROM tracks'
-            entries = self._trackentriesforstmt(stmt, (), pid)
-        elif idpath.startswith('albums'):
-            entries = self._albumsbrowse(pid, qpath, flag)
-        elif idpath.startswith('='):
-            entries = self._tagsbrowse(pid, qpath, flag)
-        else:
-            raise Exception('Bad path in tags tree (start): <%s>' % idpath)
-        return entries
-
-
+        return self._dobrowse(pid, flag, qpath)
 
 
 
