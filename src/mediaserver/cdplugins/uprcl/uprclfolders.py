@@ -352,7 +352,8 @@ class Folders(object):
     ##############
     # Browsing the initialized [folders] hierarchy
 
-    # Extract dirvec index from objid, according to the way we generate them.
+    # Extract diridx and further path (leading to tags) from objid,
+    # according to the way we generate them.
     def _objidtodiridx(self, pid):
         if not pid.startswith(self._idprefix):
             raise Exception("folders.browse: bad pid %s" % pid)
@@ -360,19 +361,28 @@ class Folders(object):
         if len(self._rcldocs) == 0:
             raise Exception("folders:browse: no docs")
 
-        diridx = pid[len(self._idprefix):]
-        if not diridx:
+        dirpth = pid[len(self._idprefix):]
+        if not dirpth:
             diridx = 0
+            pathremain = ''
         else:
-            if diridx[1] != 'd':
+            if dirpth[0:2] != '$d':
                 raise Exception("folders:browse: called on non dir objid %s" %
                                 pid)
-            diridx = int(diridx[2:])
-            
+            # Other $sign?
+            nextdol = dirpth.find("$", 1)
+            if nextdol > 0:
+                diridx = int(dirpth[2:nextdol])
+            else:
+                diridx = int(dirpth[2:])
+            pathremain = None
+            if nextdol > 0:
+                pathremain = dirpth[nextdol:]
+
         if diridx >= len(self._dirvec):
             raise Exception("folders:browse: bad pid %s" % pid)
 
-        return diridx
+        return (diridx, pathremain)
 
 
     # Tell the top module what entries we define in the root
@@ -404,9 +414,17 @@ class Folders(object):
     # objid is like folders$index
     # flag is meta or children.
     def browse(self, pid, flag):
+        
+        diridx,pthremain = self._objidtodiridx(pid)
 
-        diridx = self._objidtodiridx(pid)
-
+        # If pthremain is set, this is pointing to 'Tag View'. Pass
+        # the request along to the tags browser.
+        if pthremain:
+            if not pthremain.find('$tagview.0') == 0:
+                raise Exception("uprclfolders: pid [%s]. bad pthremain"%pid)
+            return uprclinit.g_trees['tags'].browseFolder(pid, flag, pthremain,
+                                                          self.dirpath(pid))
+        
         # If there is only one entry in root, skip it. This means that 0
         # and 1 point to the same dir, but this does not seem to be an
         # issue
@@ -417,6 +435,12 @@ class Folders(object):
         #    (diridx,self._dirvec[diridx]))
 
         entries = []
+
+        # Add "Browse subtree by tags" entry
+        if pid != self._idprefix:
+            id = pid + '$tagview.0'
+            entries.append(rcldirentry(id, pid, ">> Tag View"))
+        
         # The basename call is just for diridx==0 (topdirs). Remove it if
         # this proves a performance issue
         for nm,ids in self._dirvec[diridx].items():
@@ -434,7 +458,7 @@ class Folders(object):
                 # Skip empty directories
                 if len(self._dirvec[thisdiridx]) == 1:
                     continue
-                id = self._idprefix + '$' + 'd' + str(thisdiridx)
+                id = self._idprefix + '$d' + str(thisdiridx)
                 if doc and doc.albumarturi:
                     arturi = doc.albumarturi
                 else:
@@ -465,7 +489,7 @@ class Folders(object):
         # We may get called from search, on the top dir (above
         # [folders]). Return empty in this case
         try:
-            diridx = self._objidtodiridx(objid)
+            diridx,pthremain = self._objidtodiridx(objid)
         except:
             return ""
 

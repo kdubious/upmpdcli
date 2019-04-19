@@ -199,17 +199,30 @@ def waitentry(id, pid, httphp):
     li['res.mime'] = "audio/mpeg"
     return li
 
-
+# dirname and basename which returns the last element, not null, when
+# the path ends in '/'
+def dirname(path):
+    if path[-1] == '/'[0] and path != '/':
+        return os.path.dirname(path[0:-1])
+    else:
+        return os.path.dirname(path)
+def basename(path):
+    if path[-1] == '/'[0] and path != '/':
+        return os.path.basename(path[0:-1])
+    else:
+        return os.path.basename(path)
+        
 # Compute fs path for URL. All Recoll URLs are like file://xx
 def docpath(doc):
     return doc.getbinurl()[7:]
 
 def docfolder(doc):
     path = docpath(doc)
-    if doc.mtype == 'inode/directory':
-        return path
-    else:
-        return os.path.dirname(path)
+    if doc.mtype != 'inode/directory':
+        path = os.path.dirname(path)
+    if path[-1] != b'/'[0]:
+        path += b'/'
+    return path
 
 def embdimgurl(doc, httphp, pathprefix):
     if doc.embdimg == 'jpg':

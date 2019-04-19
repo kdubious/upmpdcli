@@ -21,6 +21,7 @@ import re
 
 from timeit import default_timer as timer
 from uprclutils import audiomtypes, docfolder, uplog
+import uprclutils
 import uprclinit
 
 # Tags for which we may create auxiliary tables for facet descent. 
@@ -97,9 +98,11 @@ def _createsqdb(conn):
         # same artist attribute
         'artist_id INT,'
         'albtitle TEXT, albfolder TEXT, albdate TEXT, albarturi TEXT,'
-        # albalb is non null only the elements of a merged album, and
-        # is the album_id id for the parent. It is set by the album
-        # merging pass.
+        # During creation, albalb is non null only the elements of a
+        # merged album, and is the album_id id for the parent. It is
+        # set by the album merging pass. When the album merge is done,
+        # albalb is set to album_id for all remaining (single-disc,
+        # non merged) albums. 
         'albalb INT,'
         # albtdisc is set from the tracks DISCNUMBER tag or
         # equivalent, while initially walking the docs. It signals
@@ -117,7 +120,7 @@ def _createsqdb(conn):
         ')')
 
     tracksstmt = '''CREATE TABLE tracks
-        (docidx INT, album_id INT, trackno INT, title TEXT'''
+        (docidx INT, album_id INT, trackno INT, title TEXT, path TEXT'''
 
     for tb in _alltagtotable.values():
         try:
@@ -219,7 +222,7 @@ def _maybecreatealbum(conn, doc, trackartid):
 
     album = getattr(doc, 'album', None)
     if not album:
-        album = os.path.basename(folder)
+        album = uprclutils.basename(folder)
         #uplog("Using %s for alb MIME %s title %s" % (album,doc.mtype,doc.url))
 
     if doc.albumartist:
@@ -253,7 +256,7 @@ def _maybecreatealbum(conn, doc, trackartid):
                 break
             
     if not discnumber:
-        m = _folderdnumexp.search(os.path.basename(folder))
+        m = _folderdnumexp.search(uprclutils.basename(folder))
         if m:
             discnumber = int(m.group(2))
         
@@ -264,7 +267,7 @@ def _maybecreatealbum(conn, doc, trackartid):
     if discnumber:
         stmt += ' AND albtdisc = ?'
         wcols.append(discnumber)
-    #uplog("maybecreatealbum: %s %s" % (stmt, cols))
+    #uplog("maybecreatealbum: %s %s" % (stmt, wcols))
     c.execute(stmt, wcols)
     r = c.fetchone()
     if r:
@@ -353,10 +356,10 @@ def _membertotopalbum(conn, memberalbid):
 
 # Only keep albums in the same folder or in a sibling folder
 def _mergealbumsfilterfolders(folder, rows, colidx):
+    parent = uprclutils.dirname(folder)
     rows1 = []
     for row in rows:
-        if row[colidx] == folder or \
-               os.path.dirname(row[colidx]) == os.path.dirname(folder):
+        if row[colidx] == folder or uprclutils.dirname(row[colidx]) == parent:
             rows1.append(row)
     return rows1
 
@@ -368,7 +371,8 @@ def _createmergedalbums(conn):
     # Remember already merged
     merged = set()
 
-    # All candidates for merging: albums with a disc number.
+    # All candidates for merging: albums with a disc number not yet
+    # merged (albalb is null)
     c.execute('''SELECT album_id, albtitle, artist_id, albfolder FROM albums
       WHERE albalb IS NULL AND albtdisc IS NOT NULL''')
     c1 = conn.cursor()
@@ -431,6 +435,9 @@ def _createmergedalbums(conn):
             c1.execute('''UPDATE albums SET albtdisc = NULL
                 WHERE album_id= ?''', (albid,))
 
+    # finally, set albalb to albid for all single-disc albums
+    c.execute('''UPDATE albums SET albalb = album_id WHERE albtdisc IS NULL''')
+
 
 # Create the db and fill it up with the values we need, taken out of
 # the recoll records list
@@ -466,12 +473,16 @@ def recolltosql(conn, docs):
         album_id, albartist_id = _maybecreatealbum(conn, doc, trackartid)
         
         trackno = _tracknofordoc(doc)
-        
-        # Set base values for column names, values list,
-        # placeholders
-        columns = ['docidx', 'album_id', 'trackno', 'title', 'artist_id']
-        values = [docidx, album_id, trackno, doc.title, trackartid]
-        placehold = ['?', '?', '?', '?', '?']
+
+        if doc.url.find('file://') == 0:
+            path = doc.url[7:]
+        else:
+            path = ''
+
+        # Set base values for column names, values list, placeholders
+        columns = ['docidx','album_id','trackno','title','path','artist_id']
+        values = [docidx, album_id, trackno, doc.title, path, trackartid]
+        placehold = ['?', '?', '?', '?', '?', '?']
         # Append data for each auxiliary table if the doc has a value
         # for the corresponding field (else let SQL set a dflt/null value)
         for tb, rclfld in tabtorclfield:

@@ -62,36 +62,44 @@ class Tagged(object):
 
     # Create our top-level directories, with fixed entries, and stuff from
     # the tags tables
-    def rootentries(self, pid):
+    def rootentries(self, pid, path=''):
+        uplog("rootentries: pid %s path %s" % (pid, path))
+        entries = []
+        args = ()
+        nalbs = self._albcntforfolder(path)
+        entries.append(rcldirentry(pid + 'albums', pid, nalbs + ' albums'))
+        if path:
+            pthcl = 'path LIKE ?'
+            args = (path + '%',)
         c = self._conn.cursor()
-        c.execute("SELECT COUNT(*) FROM albums WHERE albtdisc is NULL")
-        nalbs = str(c.fetchone()[0])
-        c.execute("SELECT COUNT(*) from tracks")
+        stmt = "SELECT COUNT(*) from tracks"
+        if path:
+            stmt += " WHERE " + pthcl
+        uplog("Executing: %s" % stmt)
+        c.execute(stmt, args)
         nitems = str(c.fetchone()[0])
-        entries = [rcldirentry(pid + 'albums', pid, nalbs + ' albums'),
-                   rcldirentry(pid + 'items', pid, nitems + ' items')]
+        entries.append(rcldirentry(pid + 'items', pid, nitems + ' items'))
+
         for tt in sorted(g_tagdisplaytag.keys()):
             entries.append(rcldirentry(pid + '=' + tt , pid,
                                        g_tagdisplaytag[tt]))
         return entries
 
 
-    # Return the list of tags which have multiple values inside the
-    # input list of docids.
-    def _subtreetags(self, docidsl):
-        docids = ','.join([str(i) for i in docidsl])
-        #uplog("subtreetags, docids %s" % docids)
+    def _subtreetagswhere(self, where, values):
+        uplog("subtreetagswhere, clause: %s" % where)
         c = self._conn.cursor()
         tags = []
         for tt in g_indextags:
             tb = g_tagtotable[tt]
-            stmt = 'SELECT COUNT(DISTINCT ' + _clid(tb) + \
-                   ') FROM tracks WHERE docidx IN (' + docids + ')'
-            c.execute(stmt)
+            stmt = '''SELECT COUNT(DISTINCT %s) FROM tracks %s''' % \
+                   (_clid(tb), where)
+            uplog("subtreetagswhere, stmt:: [%s]" % stmt)
+            c.execute(stmt, values)
             cnt = c.fetchone()[0]
             if len(stmt) > 80:
                 stmt = stmt[:80] + "..."
-            uplog("subtreetags: %d values for %s (%s)"%(cnt,tb,stmt))
+            uplog("subtreetagswhere: %d values for %s (%s)"%(cnt,tb,stmt))
             if cnt > 1:
                 tags.append(tt)
         return tags
@@ -122,6 +130,21 @@ class Tagged(object):
         return [r[0] for r in c.fetchall()]
 
 
+    # Count albums under file system path. Query folder albums then group
+    def _albcntforfolder(self, path):
+        c = self._conn.cursor()
+        if path:
+            stmt = '''SELECT COUNT(DISTINCT albalb) FROM ALBUMS
+            WHERE albfolder LIKE ?'''
+            args = (path + "%",)
+        else:
+            stmt = "SELECT COUNT(*) FROM albums WHERE albtdisc is NULL"
+            args = ()
+        uplog("_albcntforfolder: stmt %s args %s" % (stmt, args))
+        c.execute(stmt, args)
+        return str(c.fetchone()[0])
+
+
     # Transform album id into possible list of ids for component album discs
     def _albidsforalbid(self, albid):
         c = self._conn.cursor()
@@ -132,6 +155,7 @@ class Tagged(object):
             return (albid,)
         else:
             return [r[0] for r in rows]
+
 
     def _trackentriesforalbum(self, albid, pid):
         albids = self._albidsforalbid(albid)
@@ -159,20 +183,29 @@ class Tagged(object):
         return tracks
             
 
-    def _direntriesforalbums(self, pid, where):
+    def _direntriesforalbums(self, pid, where, path=''):
         uplog("_direntriesforalbums. where: %s" % where)
         c = self._conn.cursor()
-        if not where:
-            where = '''WHERE albtdisc IS NULL'''
+        args = (path + '%',) if path else ()
+        if path:
+            if not where:
+                where = '''WHERE albfolder LIKE ?'''
+            else:
+                where += ''' AND albfolder LIKE ?'''
+            substmt = '''SELECT DISTINCT albalb FROM ALBUMS %s'''%where
+            where = '''WHERE album_id IN (%s)''' % substmt
         else:
-            where += ''' AND albtdisc IS NULL'''
+            if not where:
+                where = '''WHERE albtdisc IS NULL'''
+            else:
+                where += ''' AND albtdisc IS NULL'''
 
         stmt = '''SELECT album_id, albtitle, albarturi, albdate, artist.value
-            FROM albums LEFT JOIN artist ON artist.artist_id = albums.artist_id
-            %s ORDER BY albtitle''' % where
+        FROM albums LEFT JOIN artist ON artist.artist_id = albums.artist_id
+        %s ORDER BY albtitle''' % where
 
         uplog('direntriesforalbums: %s' % stmt)
-        c.execute(stmt)
+        c.execute(stmt, args)
         entries = []
         for r in c:
             id = pid + '$' + str(r[0])
@@ -375,7 +408,7 @@ class Tagged(object):
             # We are displaying content for a given value of a given tag
             docids = self._docidsforsel(selwhere, values)
             albids = self._subtreealbums(docids)
-            subqs = self._subtreetags(docids)
+            subqs = self._subtreetagswhere(selwhere, values)
             displaytracks = True
             if len(albids) > 1:
                 id = pid + '$albums'
@@ -435,11 +468,11 @@ class Tagged(object):
     # Browse the top-level tree named like 'xxx albums'. There are just 2
     # levels: the whole albums list, then for each entry the specified
     # albums track list
-    def _albumsbrowse(self, pid, qpath, flag):
+    def _albumsbrowse(self, pid, qpath, flag, path=''):
         c = self._conn.cursor()
         entries = []
         if len(qpath) == 1:
-            entries = self._direntriesforalbums(pid, '')
+            entries = self._direntriesforalbums(pid, '', path)
         elif len(qpath) == 2:
             e1 = qpath[1]
             album_id = int(e1)
@@ -449,6 +482,30 @@ class Tagged(object):
 
         return entries
 
+
+    # Call from the folders tree when Tag View is selected.
+    def browseFolder(self, pid, flag, pthremain, folder):
+        uplog("Tags:browseFolder: pid %s pth %s folder %s" %
+              (pid, pthremain, folder))
+        l = pthremain.split('$')
+        # 1st elt in list is empty because pthremain begins with $
+        if len(l) == 2:
+            return self.rootentries(pid + '$', folder)
+        else:
+            qpath = l[2:]
+            uplog("Tags:browsFolder: qpath %s"%qpath)
+            if qpath[0] == 'items':
+                stmt = 'SELECT docidx FROM tracks'
+                entries = self._trackentriesforstmt(stmt, (), pid)
+            elif qpath[0] == 'albums':
+                entries = self._albumsbrowse(pid, qpath, flag, folder)
+            elif qpath[0].startswith('='):
+                entries = self._tagsbrowse(pid, qpath, flag)
+            else:
+                raise Exception('Bad path in tags tree (start): <%s>' % qpath)
+            return entries
+
+        
 
     # Top level browse routine. Handle the special cases and call the
     # appropriate worker routine.
