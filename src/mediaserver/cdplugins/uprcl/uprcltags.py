@@ -60,8 +60,9 @@ class Tagged(object):
             self._conn = sqlite3.connect(':memory:', check_same_thread=False)
 
 
-    # Create our top-level directories, with fixed entries, and stuff from
-    # the tags tables
+    # Create our top-level directories, with fixed entries, and stuff
+    # from the tags tables. This may be called (indirectly) from the folders
+    # hierarchy, with a path restriction
     def rootentries(self, pid, path=''):
         uplog("rootentries: pid %s path %s" % (pid, path))
         entries = []
@@ -86,20 +87,20 @@ class Tagged(object):
         return entries
 
 
-    def _subtreetagswhere(self, where, values):
-        uplog("subtreetagswhere, clause: %s" % where)
+    # List all tags which still have multiple values inside this selection level
+    def _subtreetags(self, where, values):
         c = self._conn.cursor()
         tags = []
         for tt in g_indextags:
             tb = g_tagtotable[tt]
             stmt = '''SELECT COUNT(DISTINCT %s) FROM tracks %s''' % \
                    (_clid(tb), where)
-            uplog("subtreetagswhere, stmt:: [%s]" % stmt)
+            uplog("subtreetags: stmt:: [%s]" % stmt)
             c.execute(stmt, values)
             cnt = c.fetchone()[0]
             if len(stmt) > 80:
                 stmt = stmt[:80] + "..."
-            uplog("subtreetagswhere: %d values for %s (%s)"%(cnt,tb,stmt))
+            uplog("subtreetags: %d values for %s (%s)"%(cnt,tb,stmt))
             if cnt > 1:
                 tags.append(tt)
         return tags
@@ -130,7 +131,59 @@ class Tagged(object):
         return [r[0] for r in c.fetchall()]
 
 
-    # Count albums under file system path. Query folder albums then group
+    # Expand multiple possibly merged albums to real ones. The tracks
+    # always refer to the raw albid, so this is necessary to compute a
+    # track list. Multiple albums as input, no sorting.
+    def _albids2rawalbids(self, albids):
+        c = self._conn.cursor()
+        rawalbids = []
+        for albid in albids:
+            c.execute('''SELECT album_id FROM albums WHERE albalb = ?''',
+                      (albid,))
+            rows = c.fetchall()
+            if len(rows):
+                for r in rows:
+                    rawalbids.append(r[0])
+            else:
+                rawalbids.append(albid)
+        return rawalbids
+    
+
+    # Expand single possibly merged album into list of ids for component discs
+    def _albid2rawalbidssorted(self, albid):
+        c = self._conn.cursor()
+        c.execute('''SELECT album_id FROM albums
+          WHERE albalb = ? ORDER BY albtdisc''', (albid,))
+        rows = c.fetchall()
+        if len(rows) <= 1:
+            return (albid,)
+        else:
+            return [r[0] for r in rows]
+
+
+    # Translate albids so that the ones which are part of a merged
+    # album become the merged id. The returned list is same size or
+    # smaller because there maybe duplicate merged ids. Used to show
+    # album lists
+    def _rawalbids2albids(self, rawalbids):
+        albids = set()
+        c = self._conn.cursor()
+        for rawalbid in rawalbids:
+            c.execute('''SELECT album_id, albalb FROM albums
+                WHERE album_id = ?''', (rawalbid,))
+            alb = c.fetchone()
+            if alb[1]:
+                albids.add(alb[1])
+            else:
+                albids.add(alb[0])
+        #
+        return [id for id in albids]
+
+
+    # Count albums under file system path. We use albalb because
+    # merged albums may come from multiple folders, and have no
+    # albfolder. So this returns merged albums for which at least one
+    # disk is under this folder path
     def _albcntforfolder(self, path):
         c = self._conn.cursor()
         if path:
@@ -145,20 +198,10 @@ class Tagged(object):
         return str(c.fetchone()[0])
 
 
-    # Transform album id into possible list of ids for component album discs
-    def _albidsforalbid(self, albid):
-        c = self._conn.cursor()
-        c.execute('''SELECT album_id FROM albums
-          WHERE albalb = ? ORDER BY albtdisc''', (albid,))
-        rows = c.fetchall()
-        if len(rows) <= 1:
-            return (albid,)
-        else:
-            return [r[0] for r in rows]
-
-
+    # Track list for possibly merged album: get tracks from all
+    # components, then renumber trackno
     def _trackentriesforalbum(self, albid, pid):
-        albids = self._albidsforalbid(albid)
+        albids = self._albid2rawalbidssorted(albid)
         uplog("_trackentriesforalbid: %d -> %s" % (albid, albids))
         # I don't see a way to use a select..in statement and get the
         # order right
@@ -182,6 +225,18 @@ class Tagged(object):
             track['upnp:originalTrackNumber'] = str(tno)
         return tracks
             
+
+    # Return all albums ids to which any of the selected tracks belong
+    def _subtreealbums(self, selwhere, values):
+        stmt = 'SELECT DISTINCT album_id FROM tracks ' + selwhere 
+        c = self._conn.cursor()
+        uplog('subtreealbums: executing %s' % stmt)
+        c.execute(stmt, values)
+        rawalbids = [r[0] for r in c]
+        albids = self._rawalbids2albids(rawalbids)
+        uplog('subtreealbums: returning %s' % albids)
+        return albids
+    
 
     def _direntriesforalbums(self, pid, where, path=''):
         uplog("_direntriesforalbums. where: %s" % where)
@@ -225,14 +280,15 @@ class Tagged(object):
         uplog("_tagsbrowsealbums: pid %s qpath %s i %s selwhere %s values %s" %
               (pid, qpath, i, selwhere, values))
         c = self._conn.cursor()
-        docidsl = self._docidsforsel(selwhere, values)
         entries = []
         if i == len(qpath)-1:
-            albidsl = self._subtreealbums(docidsl)
+            # List of albums to which belong any track from selection
+            albidsl = self._subtreealbums(selwhere, values)
             albids = ','.join([str(a) for a in albidsl])
             where = ' WHERE album_id in (' + albids + ') '
             entries = self._direntriesforalbums(pid, where)
         elif i == len(qpath)-2:
+            # Album track list. Maybe a merged album->multiple phys albids
             albid = int(qpath[-1])
             rawalbids = self._albids2rawalbids((albid,))
             uplog("_tagsbrowsealbums: albid %s rawalbids %s"%(albid,rawalbids))
@@ -241,6 +297,7 @@ class Tagged(object):
             c.execute(stmt, rawalbids)
             r = c.fetchone()
             ntracks = int(r[0])
+            docidsl = self._docidsforsel(selwhere, values)
             stmt = '''SELECT docidx FROM tracks 
                 WHERE album_id IN (%s) AND docidx IN (%s)''' % \
             (','.join('?'*len(rawalbids)), ','.join('?'*len(docidsl)))
@@ -249,6 +306,7 @@ class Tagged(object):
                 id = pid + '$' + 'showca'
                 entries = [rcldirentry(id, pid, '>> Complete Album')] + entries
         elif i == len(qpath)-3:
+            # 'Complete album' entry
             # Note that minim has an additional level here, probably to
             # present groups or multiple groups ? The trackids ids are
             # like: 
@@ -269,7 +327,7 @@ class Tagged(object):
         c = self._conn.cursor()
         rows = c.execute(stmt, values)
         docids = [r[0] for r in rows]
-        albids = self._subtreealbums(docids)
+        albids = self._subtreealbums(selwhere, values)
         entries = []
         displaytracks = True
         if len(albids) == 1:
@@ -284,8 +342,7 @@ class Tagged(object):
                 entries.append(rcldirentry(id, pid, '>> Complete Album'))
             else:
                 displaytracks = False
-                el = self._direntriesforalbums(pid,
-                                               "WHERE album_id = %s"%albid)
+                el = self._direntriesforalbums(pid, "WHERE album_id = %s"%albid)
                 el[0]['id'] = id
                 entries.append(el[0])
         if displaytracks:
@@ -297,57 +354,6 @@ class Tagged(object):
         else:
             return sorted(entries, cmp=cmpentries)
 
-
-    # Expand possibly merged albums to real ones. The tracks always
-    # refer to the raw albid, so this is necessary to compute a track
-    # list
-    def _albids2rawalbids(self, albids):
-        c = self._conn.cursor()
-        rawalbids = []
-        for albid in albids:
-            c.execute('''SELECT album_id FROM albums WHERE albalb = ?''',
-                      (albid,))
-            rows = c.fetchall()
-            if len(rows):
-                for r in rows:
-                    rawalbids.append(r[0])
-            else:
-                rawalbids.append(albid)
-        return rawalbids
-    
-    # Translate albids so that the ones which are part of a merged
-    # album become the merged id. The returned list is same size or
-    # smaller because there maybe duplicate merged ids. Used to show
-    # album lists
-    def _rawalbids2albids(self, rawalbids):
-        albids = set()
-        c = self._conn.cursor()
-        for rawalbid in rawalbids:
-            c.execute('''SELECT album_id, albalb FROM albums
-                WHERE album_id = ?''', (rawalbid,))
-            alb = c.fetchone()
-            if alb[1]:
-                albids.add(alb[1])
-            else:
-                albids.add(alb[0])
-        #
-        return [id for id in albids]
-
-
-    # Return all albums ids to which any of the currently selected tracks
-    # (designated by a docid set) belong
-    def _subtreealbums(self, docidsl):
-        docids = ','.join([str(r) for r in docidsl])
-        stmt = '''SELECT album_id FROM tracks
-            WHERE docidx IN (''' + docids + ') ' + 'GROUP BY album_id'
-        c = self._conn.cursor()
-        uplog('subtreealbums: executing %s' % stmt)
-        c.execute(stmt)
-        rawalbids = [r[0] for r in c]
-        albids = self._rawalbids2albids(rawalbids)
-        uplog('subtreealbums: returning %s' % albids)
-        return albids
-    
 
     # Main browsing routine. Given an objid, translate it into a select
     # statement, plus further processing, and return the corresponding
@@ -410,8 +416,8 @@ class Tagged(object):
         if selwhat == 'tracks.docidx':
             # We are displaying content for a given value of a given tag
             docids = self._docidsforsel(selwhere, values)
-            albids = self._subtreealbums(docids)
-            subqs = self._subtreetagswhere(selwhere, values)
+            albids = self._subtreealbums(selwhere, values)
+            subqs = self._subtreetags(selwhere, values)
             displaytracks = True
             if len(albids) > 1:
                 id = pid + '$albums'
