@@ -97,6 +97,9 @@ class Folders(object):
         self._maxrclcnt = 0
         self._fetchalldocs(confdir)
         self._rcl2folders(confdir)
+        self._enabletags = uprclinit.g_minimconfig.getboolvalue("showExtras",
+                                                                True)
+
 
     def rcldocs(self):
         return self._rcldocs
@@ -311,42 +314,30 @@ class Folders(object):
         rcldb = recoll.connect(confdir=confdir)
         rclq = rcldb.query()
         rclq.execute("mime:*", stemming=0)
-        #rclq.execute('album:a*', stemming=0)
+        #rclq.execute('album:a* OR album:b* OR album:c*', stemming=0)
         uplog("Estimated alldocs query results: %d" % (rclq.rowcount))
 
         tagaliases = None
         if uprclinit.g_minimconfig:
             tagaliases = uprclinit.g_minimconfig.gettagaliases()
 
-        totcnt = 0
         self._rcldocs = []
-        while True:
-            # There are issues at the end of list with fetchmany (sets
-            # an exception). Works in python2 for some reason, but
-            # breaks p3. Until recoll is fixed, catch exception
-            # here. Also does not work if we try to fetch by bigger
-            # slices (we get an exception and a truncated list)
-            try:
-                docs = rclq.fetchmany()
-                for doc in docs:
-                    if tagaliases:
-                        for orig,target,rep in tagaliases:
-                            val = doc.get(orig)
-                            #uplog("Rep %s doc[%s]=[%s] doc[%s]=[%s]"%
-                            #      (rep, orig, val, target, doc.get(target)))
-                            if val and (rep or not doc.get(target)):
-                                setattr(doc,target,val)
+        for doc in rclq:
+            if tagaliases:
+                for orig, target, rep in tagaliases:
+                    val = doc.get(orig)
+                    #uplog("Rep %s doc[%s]=[%s] doc[%s]=[%s]"%
+                    #      (rep, orig, val, target, doc.get(target)))
+                    if val and (rep or not doc.get(target)):
+                        setattr(doc, target, val)
 
-                    self._rcldocs.append(doc)
-                    totcnt += 1
-            except:
-                docs = []
-            if (self._maxrclcnt > 0 and totcnt >= self._maxrclcnt) or \
-                   len(docs) != rclq.arraysize:
+            self._rcldocs.append(doc)
+            if self._maxrclcnt > 0 and len(self._rcldocs) >= self._maxrclcnt:
                 break
             time.sleep(0)
         end = timer()
-        uplog("Retrieved %d docs in %.2f Seconds" % (totcnt,end - start))
+        uplog("Retrieved %d docs in %.2f Seconds" %
+              (len(self._rcldocs), end - start))
 
 
     ##############
@@ -437,7 +428,7 @@ class Folders(object):
         entries = []
 
         # Add "Browse subtree by tags" entry
-        if pid != self._idprefix:
+        if pid != self._idprefix and self._enabletags:
             id = pid + '$tagview.0'
             entries.append(rcldirentry(id, pid, ">> Tag View"))
         

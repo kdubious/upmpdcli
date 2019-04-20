@@ -142,11 +142,8 @@ def _prepareTags():
     global g_tagtotable
     global g_indextags
 
-    indextagsp = []
-    itemtags = []
-    if uprclinit.g_minimconfig:
-        indextagsp = uprclinit.g_minimconfig.getindextags()
-        itemtags = uprclinit.g_minimconfig.getitemtags()
+    indextagsp = uprclinit.g_minimconfig.getindextags()
+    itemtags = uprclinit.g_minimconfig.getitemtags()
     if not indextagsp:
         indextagsp = [('Artist',''), ('Date',''), ('Genre',''), ('Composer','')]
 
@@ -441,7 +438,7 @@ def _createmergedalbums(conn):
 
 # Create the db and fill it up with the values we need, taken out of
 # the recoll records list
-def recolltosql(conn, docs):
+def recolltosql(conn, rcldocs):
     start = timer()
 
     _createsqdb(conn)
@@ -450,8 +447,8 @@ def recolltosql(conn, docs):
     maxcnt = 0
     totcnt = 0
     c = conn.cursor()
-    for docidx in range(len(docs)):
-        doc = docs[docidx]
+    for docidx in range(len(rcldocs)):
+        doc = rcldocs[docidx]
         totcnt += 1
 
         if totcnt % 1000 == 0:

@@ -81,7 +81,7 @@ def _update_index(rebuild=False):
 
         folders = Folders(g_rclconfdir, g_httphp, g_pathprefix)
         untagged = Untagged(folders.rcldocs(), g_httphp, g_pathprefix)
-        playlists = Playlists(folders, g_httphp, g_pathprefix)
+        playlists = Playlists(folders.rcldocs(), g_httphp, g_pathprefix)
         tagged = Tagged(folders.rcldocs(), g_httphp, g_pathprefix)
         newtrees = {}
         newtrees['folders'] = folders
@@ -121,8 +121,7 @@ def _uprcl_init_worker():
 
     global g_minimconfig
     minimcfn = g_upconfig.get("uprclminimconfig")
-    if minimcfn:
-        g_minimconfig = minimconfig.MinimConfig(minimcfn)
+    g_minimconfig = minimconfig.MinimConfig(minimcfn)
 
     global g_httphp
     g_httphp = g_upconfig.get("uprclhostport")
@@ -140,10 +139,9 @@ def _uprcl_init_worker():
     global g_rcltopdirs
     g_rcltopdirs = g_upconfig.get("uprclmediadirs")
     if not g_rcltopdirs:
-        if g_minimconfig:
-            g_rcltopdirs = g_minimconfig.getcontentdirs()
-            if g_rcltopdirs:
-                g_rcltopdirs = conftree.stringsToString(g_rcltopdirs)
+        g_rcltopdirs = g_minimconfig.getcontentdirs()
+        if g_rcltopdirs:
+            g_rcltopdirs = conftree.stringsToString(g_rcltopdirs)
     if not g_rcltopdirs:
         raise Exception("uprclmediadirs not in config")
 

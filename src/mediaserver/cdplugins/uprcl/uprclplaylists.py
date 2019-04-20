@@ -27,26 +27,25 @@ PY3 = sys.version > '3'
 from upmplgutils import uplog
 from uprclutils import rcldoctoentry, rcldirentry, cmpentries
 import uprclutils
+import uprclinit
 from recoll import recoll
 
 class Playlists(object):
-    def __init__(self, folders, httphp, pathprefix):
+    def __init__(self, rcldocs, httphp, pathprefix):
         self._idprefix = '0$uprcl$playlists'
         self._httphp = httphp
         self._pprefix = pathprefix
-        self._folders = folders
-        self.recoll2playlists(self._folders.rcldocs())
+        self.recoll2playlists(rcldocs)
         
     # Create the untagged entries static vector by filtering the global
     # doc vector, storing the indexes of the playlists.
     # We keep a reference to the doc vector.
-    def recoll2playlists(self, docs):
-        self.rcldocs = docs
+    def recoll2playlists(self, rcldocs):
         # The -1 entry is because we use index 0 for our root.
         self.utidx = [-1]
     
-        for docidx in range(len(docs)):
-            doc = docs[docidx]
+        for docidx in range(len(rcldocs)):
+            doc = rcldocs[docidx]
             if doc.mtype == 'audio/x-mpegurl':
                 self.utidx.append(docidx)
 
@@ -55,9 +54,6 @@ class Playlists(object):
         #uplog("playlists:objidtoidx: %s" % pid)
         if not pid.startswith(self._idprefix):
             raise Exception("playlists:browse: bad pid %s" % pid)
-
-        if len(self.rcldocs) == 0:
-            raise Exception("playlists:browse: no docs")
 
         idx = pid[len(self._idprefix):]
         if not idx:
@@ -85,11 +81,12 @@ class Playlists(object):
     def browse(self, pid, flag):
         idx = self._objidtoidx(pid)
 
+        rcldocs = uprclinit.g_trees['folders'].rcldocs()
         entries = []
         if idx == 0:
             # Browsing root
             for i in range(len(self.utidx))[1:]:
-                doc = self.rcldocs[self.utidx[i]]
+                doc = rcldocs[self.utidx[i]]
                 id = self._idprefix + '$p' + str(i)
                 title = doc.title if doc.title else doc.filename
                 e = rcldirentry(id, pid, title,
@@ -98,7 +95,7 @@ class Playlists(object):
                     entries.append(e)
 
         else:
-            pldoc = self.rcldocs[self.utidx[idx]]
+            pldoc = rcldocs[self.utidx[idx]]
             plpath = uprclutils.docpath(pldoc)
             #uplog("playlists: plpath %s" % plpath)
             try:
@@ -121,7 +118,7 @@ class Playlists(object):
                     if docidx < 0:
                         uplog("playlists: can't stat %s"%doc.getbinurl())
                         continue
-                    doc = self._folders.rcldocs()[docidx]
+                    doc = rcldocs[docidx]
 
                 id = pid + '$e' + str(len(entries))
                 e = rcldoctoentry(id, pid, self._httphp, self._pprefix, doc)

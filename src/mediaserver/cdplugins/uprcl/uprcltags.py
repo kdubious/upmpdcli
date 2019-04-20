@@ -37,13 +37,12 @@ from uprcltagscreate import recolltosql, _clid, g_tagtotable, \
 
 # The browseable object which defines the tree of tracks organized by tags.
 class Tagged(object):
-    def __init__(self, docs, httphp, pathprefix):
+    def __init__(self, rcldocs, httphp, pathprefix):
         self._httphp = httphp
         self._pprefix = pathprefix
         self._conn = None
-        self._rcldocs = docs
         self._init_sqconn()
-        recolltosql(self._conn, docs)
+        recolltosql(self._conn, rcldocs)
         
 
     def _init_sqconn(self):
@@ -66,22 +65,21 @@ class Tagged(object):
     def rootentries(self, pid, path=''):
         uplog("rootentries: pid %s path %s" % (pid, path))
         entries = []
-        args = ()
         nalbs = self._albcntforfolder(path)
         entries.append(rcldirentry(pid + 'albums', pid, nalbs + ' albums'))
         if path:
-            pthcl = 'path LIKE ?'
+            where = ' WHERE tracks.path LIKE ? '
             args = (path + '%',)
+        else:
+            where = ' '
+            args = ()
         c = self._conn.cursor()
         stmt = "SELECT COUNT(*) from tracks"
-        if path:
-            stmt += " WHERE " + pthcl
-        uplog("Executing: %s" % stmt)
-        c.execute(stmt, args)
+        c.execute(stmt+where, args)
         nitems = str(c.fetchone()[0])
         entries.append(rcldirentry(pid + 'items', pid, nitems + ' items'))
-
-        for tt in sorted(g_tagdisplaytag.keys()):
+        subqs = self._subtreetags(where, args)
+        for tt in subqs:
             entries.append(rcldirentry(pid + '=' + tt , pid,
                                        g_tagdisplaytag[tt]))
         return entries
@@ -95,12 +93,12 @@ class Tagged(object):
             tb = g_tagtotable[tt]
             stmt = '''SELECT COUNT(DISTINCT %s) FROM tracks %s''' % \
                    (_clid(tb), where)
-            uplog("subtreetags: stmt:: [%s]" % stmt)
+            #uplog("subtreetags: stmt: [%s]" % stmt)
             c.execute(stmt, values)
             cnt = c.fetchone()[0]
             if len(stmt) > 80:
                 stmt = stmt[:80] + "..."
-            uplog("subtreetags: %d values for %s (%s)"%(cnt,tb,stmt))
+            uplog("subtreetags: %d values for %s (%s,%s)"%(cnt,tb,stmt,values))
             if cnt > 1:
                 tags.append(tt)
         return tags
@@ -109,11 +107,12 @@ class Tagged(object):
     # Build a list of track directory entries for an SQL statement
     # which selects docidxs (SELECT docidx,... FROM tracks WHERE...)
     def _trackentriesforstmt(self, stmt, values, pid):
+        rcldocs = uprclinit.g_trees['folders'].rcldocs()
         c = self._conn.cursor()
         c.execute(stmt, values)
         entries = [rcldoctoentry(pid + '$i' + str(r[0]),
                                  pid, self._httphp, self._pprefix,
-                                 self._rcldocs[r[0]]) for r in c]
+                                 rcldocs[r[0]]) for r in c]
         if PY3:
             return sorted(entries, key=cmpentries)
         else:
@@ -346,9 +345,10 @@ class Tagged(object):
                 el[0]['id'] = id
                 entries.append(el[0])
         if displaytracks:
+            rcldocs = uprclinit.g_trees['folders'].rcldocs()
             entries += [rcldoctoentry(pid + '$i' + str(docid),
                                       pid, self._httphp, self._pprefix,
-                                      self._rcldocs[docid]) for docid in docids]
+                                      rcldocs[docid]) for docid in docids]
         if PY3:
             return sorted(entries, key=cmpentries)
         else:
@@ -447,11 +447,12 @@ class Tagged(object):
                     id = pid + '$=' + tt
                     entries.append(rcldirentry(id, pid, g_tagdisplaytag[tt]))
             elif displaytracks:
+                rcldocs = uprclinit.g_trees['folders'].rcldocs()
                 for docidx in docids:
                     id = pid + '$*i' + str(docidx)
                     entries.append(rcldoctoentry(id, pid, self._httphp,
                                                  self._pprefix,
-                                                 self._rcldocs[docidx]))
+                                                 rcldocs[docidx]))
                     if PY3:
                         entries = sorted(entries, key=cmpentries)
                     else:
@@ -497,7 +498,7 @@ class Tagged(object):
         uplog("Tags:browsFolder: qpath %s"%qpath)
         if qpath[0] == 'items':
             args = (folder + '%',) if folder else ()
-            folderwhere = ' WHERE path LIKE ? ' if folder else ' '
+            folderwhere = ' WHERE tracks.path LIKE ? ' if folder else ' '
             stmt = 'SELECT docidx FROM tracks' + folderwhere
             entries = self._trackentriesforstmt(stmt, args, pid)
         elif qpath[0] == 'albums':

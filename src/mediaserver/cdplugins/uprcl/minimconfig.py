@@ -17,10 +17,13 @@ import conftree
 from uprclutils import uplog
 
 class MinimConfig(object):
-    def __init__(self, fn):
-        self.conf = conftree.ConfSimple(fn)
-        uplog("Minim config read: contentDir: %s" %
-              self.conf.get("minimserver.contentDir"))
+    def __init__(self, fn = ''):
+        if fn:
+            self.conf = conftree.ConfSimple(fn)
+            uplog("Minim config read: contentDir: %s" %
+                  self.conf.get("minimserver.contentDir"))
+        else:
+            self.conf = conftree.ConfSimple('/dev/null')
         self.quotes = "\"'"
         self.escape = ''
         self.whitespace = ', '
@@ -108,5 +111,21 @@ class MinimConfig(object):
 
     
     def getsimplevalue(self, nm):
-        return self.conf.get(nm).strip()
-    
+        s = self.conf.get(nm)
+        if s:
+            return s.strip()
+        else:
+            return s
+
+
+    def getboolvalue(self, nm, dflt):
+        val = self.getsimplevalue(nm)
+        if val is None or val == '':
+            return dflt
+        if val == '0' or val.lower()[0] == 'f' or val.lower()[0] == 'n':
+            return False
+        else:
+            return True
+
+        
+        

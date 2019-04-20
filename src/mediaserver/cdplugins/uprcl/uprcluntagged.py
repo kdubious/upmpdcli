@@ -33,24 +33,24 @@ import sys
 
 from upmplgutils import uplog
 from uprclutils import rcldoctoentry, rcldirentry
+import uprclinit
 
 class Untagged(object):
-    def __init__(self, docs, httphp, pathprefix):
+    def __init__(self, rcldocs, httphp, pathprefix):
         self._idprefix = '0$uprcl$untagged'
         self._httphp = httphp
         self._pprefix = pathprefix
-        self.recoll2untagged(docs)
+        self.recoll2untagged(rcldocs)
         
     # Create the untagged entries static vector by filtering the global
     # doc vector, storing the indexes of all tracks without a title
     # field. We keep a reference to the doc vector.
-    def recoll2untagged(self, docs):
-        self.rcldocs = docs
+    def recoll2untagged(self, rcldocs):
         # The -1 entry is because we use index 0 for our root.
         self.utidx = [-1]
     
-        for docidx in range(len(docs)):
-            doc = docs[docidx]
+        for docidx in range(len(rcldocs)):
+            doc = rcldocs[docidx]
             if doc.mtype == 'inode/directory' or doc.mtype == 'audio/x-mpegurl':
                 continue
             if not doc.title:
@@ -60,9 +60,6 @@ class Untagged(object):
     def _objidtoidx(self, pid):
         if not pid.startswith(self._idprefix):
             raise Exception("untagged:browse: bad pid %s" % pid)
-
-        if len(self.rcldocs) == 0:
-            raise Exception("untagged:browse: no docs")
 
         idx = pid[len(self._idprefix):]
         if not idx:
@@ -90,17 +87,18 @@ class Untagged(object):
         idx = self._objidtoidx(pid)
 
         entries = []
+        rcldocs = uprclinit.g_trees['folders'].rcldocs()
         if idx == 0:
             # Browsing root
             for i in range(len(self.utidx))[1:]:
-                doc = self.rcldocs[self.utidx[i]]
+                doc = rcldocs[self.utidx[i]]
                 id = self._idprefix + '$u' + str(i)
                 e = rcldoctoentry(id, pid, self._httphp, self._pprefix, doc)
                 if e:
                     entries.append(e)
         else:
             # Non root: only items in there. flag needs to be 'meta'
-            doc = self.rcldocs[idx]
+            doc = rcldocs[idx]
             id = self._idprefix + '$u' + str(idx)
             e = rcldoctoentry(id, pid, self._httphp, self._pprefix, doc)
             if e:

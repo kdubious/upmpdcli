@@ -42,9 +42,7 @@ def _maybeinitconfdir(confdir, topdirs):
         src = os.path.join(datadir, "rclconfig-" + fn)
         shutil.copyfile(src, dst)
 
-    exclpats = ""
-    if uprclinit.g_minimconfig:
-        exclpats = uprclinit.g_minimconfig.getexcludepatterns()
+    exclpats = uprclinit.g_minimconfig.getexcludepatterns()
 
     userconfig = uprclinit.g_upconfig.get("uprclconfrecolluser")
     if not userconfig:
@@ -59,6 +57,8 @@ def _maybeinitconfdir(confdir, topdirs):
     f.write(b"topdirs = %s\n"% topdirs.encode(locale.getpreferredencoding()))
     f.write(b"idxabsmlen = 0\n")
     f.write(b"loglevel = 2\n")
+    #f.write(b"idxlogfilename = /tmp/loguprcl.txt\n")
+    #f.write(b"pylogfilename = /tmp/logpyuprcl.txt\n")
     f.write(b"noaspell = 1\n")
     f.write(b"nomd5types = rclaudio rclimg\n")
     f.write(b"testmodifusemtime = 1\n")

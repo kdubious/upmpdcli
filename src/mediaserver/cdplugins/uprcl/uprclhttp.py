@@ -31,7 +31,7 @@ import uprclinit
 @bottle.view('main')
 def main():
     what =  bottle.request.forms.get('what')
-    uplog("Main: what value is %s" % what)
+    #uplog("bottle:main: what value is %s" % what)
 
     status = uprclinit.updaterunning()
     if not status:
