@@ -381,13 +381,6 @@ uprcluser:: Bogus user name variable. Used for consistency with other Media Serv
 the service should be started (so, do set it if you want a Media Server).
 
 
-[[uprclmediadirs]]
-uprclmediadirs:: Media
-directories This is a space-separated list of directories
-to explore for music files. This is used directly as the recoll "topdirs"
-value, so you can use double-quote quoting for paths with embedded
-spaces.
-
 [[uprcltitle]]
 uprcltitle:: Plugin Title. This
 will be displayed as the plugin entry in the Media Server root
@@ -401,24 +394,34 @@ produce. If the variable is not set, we will use port 9090 and the first
 non-loopback ipv4 address in "ip addr" output, which may be right or
 not. Example: 192.168.1.1:9090
 
+[[uprclconfdir]]
+uprclconfdir:: uprcl Recoll index directory This is usually not defined and defaults to
+/var/cache/upmpdcli/uprcl. The name is a bit misleading because there is
+little real configuration data in there: it's mostly programmatically
+generated from actual configuration found elsewhere (but also see
+uprclconfrecolluser).
+
+[[uprclconfrecolluser]]
+uprclconfrecolluser:: Name of the user Recoll config additions file This is the name of a file with additional parameters for the
+uprcl recoll.conf file, to which the contents will be appended before
+indexing. The default is /var/cache/upmpdcli/uprcl/recoll.conf.user. If
+set, should be an absolute path.
+
+[[uprclminimconfig]]
+uprclminimconfig:: Name of the Minim Server configuration file If set, this is the name of a Minim Server configuration file from
+which we should fetch parameters like aliasTags, etc. (See the
+manual). Not set by default, and optional.
+
+[[uprclmediadirs]]
+uprclmediadirs:: Media directories This is a space-separated list of directories to explore for music
+files. This is used directly as the recoll "topdirs" value, so you can
+use double-quote quoting for paths with embedded spaces. If not set, we
+will try to use contentDirs from the Minim config.
+
 [[uprclpaths]]
 uprclpaths:: Path translations. Translations from real paths to ones relative to the HTTP server
 doc tree. If this is not set, uprcl will use a null translation for each
 of the uprclmediadirs entries.
-
-[[uprclconfdir]]
-uprclconfdir:: Recoll index
-directory This is usually not defined and defaults to
-/var/cache/upmpdcli/uprcl. The name is a bit misleading because there is
-no real configuration data in there: it's all programmatically
-generated from actual configuration found elsewhere.
-
-[[uprclautostart]]
-uprclautostart:: Initialize uprcl as soon as
-upmpdcli starts This is useful because uprcl initialization
-can take quite some time so it is better not to wait for the first
-access. The general default is false for the autostart variables, so this
-needs to be explicitely set to true.
 
 === Songcast Receiver parameters 
 

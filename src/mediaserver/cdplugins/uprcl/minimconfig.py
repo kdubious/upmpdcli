@@ -114,7 +114,7 @@ class MinimConfig(object):
         uplog("Minim:getitemtags:in: [%s]" % sit)
         if sit:
             itemtags = [i.strip() for i in sit.split(',')]
-        uplog("Minim:getindextags:out: %s" % itemtags)
+        uplog("Minim:getitemtags:out: %s" % itemtags)
         return itemtags
 
 

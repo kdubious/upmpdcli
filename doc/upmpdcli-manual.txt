@@ -790,33 +790,46 @@ authorization annex>>.
 [[UPRCL]]
 == Upmpdcli local Media Server: uprcl
 
-The current (2018-11) upmpdcli code base includes a Media Server function
+The current (2019-04) upmpdcli code base includes a Media Server function
 for local music files, analog to MinimServer or ReadyMedia/MiniDLNA. The
-plugin module is named uprcl.
+plugin module is named *uprcl*.
 
-Why yet another Media Server ? MinimServer is great, and free, but not
-open-source. MiniDLNA is nice too, but audio file format support is
-incomplete (there was a patch for DSD but it was never merged apparently),
-I've always found it a bit clunky (for example: no incremental updates),
-and development does not seem very active.
+Why yet another Media Server ? Mostly because my favorite, MinimServer is
+great, and free, but not open-source, so I find it prudent to have an
+alternative. Also, fun :)
 
-The new upmpdcli Media Server is at most beta quality. It probably has even
-less format support than MiniDLNA... But it's written in Python, and I have
-good hope that it can evolve faster.
+*uprcl* only implements a small fraction of MinimServer vast list of
+capabilities at this point, but it's slowly making progress, and I find it
+works well enough, at least with the upmpdcli renderer, to now be my main
+Media Server.
 
-Some features:
+Some *uprcl* features:
 
-- Mostly written in Python, except for the pieces shared with the streaming
-  plugins: UPnP interface proper, and plugin management, which are C++, but
-  should not need a lot of changes.
-- Tries to mimick the MinimServer tree view, which I find quite nice. We're
-  not quite there yet, many functions and niceties, and the customization
-  capability are missing.
+- Mostly written in Python, except for the part shared with the streaming
+  media server plugins, which is in C++.
+- Tries to mimick the MinimServer tree view and functionality. We're
+  not quite there yet, many functions and niceties are still missing.
 - Uses Recoll and python-recoll (hence the uprcl name) for harvesting the
-  metadata and searching. Recoll already had almost everything needed in
-  this area, no development needed. It can perform incremental updates and
-  file system monitoring.
+  metadata and searching.
 - Uses Python Sqlite3 (on a memory DB) for the tags tree. 
+- Can retrieve some parameters from the MinimServer configuration
+  file. Will support more in the future.
+
+The list of MinimServer functions which are _not_ supported would be too
+long. Here follows what *uprcl* does support, at least partially, at this
+point (1.4.3pre):
+
+- +contentDir+ will be used if +uprclmediadirs+ is not set in
+  '/etc/upmpdcli.conf' 
+- +excludePattern+
+- +aliasTags+
+- +indexTags+
+- +showExtras+
+- Multidisc albums (partial).
+
+All in all, not a lot of the customization options are supported for
+now. I'd love feedback about what is missing most.
+
 
 Installation and configuration: have a look at the
 xref:uprcluser[configuration variables]
