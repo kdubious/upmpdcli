@@ -61,6 +61,7 @@ audiomtypes = frozenset([
 # plgwithslave.cxx expects, which is less than consistent.
 upnp2rclfields = {
     'upnp:album' : 'album',
+    'upnp:albumArtURI' : 'albumarturi',
     'upnp:artist' : 'artist',
     'comment' : 'comment',
     'composer' : 'composer',
@@ -152,18 +153,11 @@ def rcldoctoentry(id, pid, httphp, pathprefix, doc):
     else:
         li['uri'] = path[:ssidx+2].decode('ascii', errors='replace') +\
                     urlquote(path[ssidx+1:])
+    #uplog("rcldoctoentry: uri: %s" % li['uri'])
 
     if 'tt' not in li:
         li['tt'] = os.path.basename(path[ssidx+1:].decode('UTF-8',
                                                           errors = 'replace'))
-
-        
-    #uplog("rcldoctoentry: uri: %s" % li['uri'])
-
-    # The album art uri is precooked with httphp and prefix
-    if doc.albumarturi:
-        li['upnp:albumArtURI'] = doc.albumarturi
-        #uplog("Set upnp:albumArtURI to %s" % li['upnp:albumArtURI'])
 
     return li
 

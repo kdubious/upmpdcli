@@ -29,18 +29,24 @@ class MinimConfig(object):
         self.whitespace = ', '
 
 
-    def getexcludepatterns(self):
-        spats = self.conf.get("minimserver.excludePattern")
-        if spats:
-            lpats = conftree.stringToStrings(spats,
-                                             quotes = self.quotes,
-                                             escape = self.escape,
-                                             whitespace = self.whitespace)
-            spats = conftree.stringsToString(lpats)
-        uplog("skippedNames from Minim excludePattern: %s" % spats)
-        return spats
+    def getsimplevalue(self, nm):
+        s = self.conf.get(nm)
+        if s:
+            return s.strip()
+        else:
+            return s
 
 
+    def getboolvalue(self, nm, dflt):
+        val = self.getsimplevalue(nm)
+        if val is None or val == '':
+            return dflt
+        if val == '0' or val.lower()[0] == 'f' or val.lower()[0] == 'n':
+            return False
+        else:
+            return True
+
+        
     # Split on commas and colons, a common minim format and return as
     # list of pairs
     def minimsplitsplit(self, str):
@@ -61,6 +67,18 @@ class MinimConfig(object):
                 b = l[1]
             out.append((a.strip(),b.strip()))
         return out
+
+
+    def getexcludepatterns(self):
+        spats = self.conf.get("minimserver.excludePattern")
+        if spats:
+            lpats = conftree.stringToStrings(spats,
+                                             quotes = self.quotes,
+                                             escape = self.escape,
+                                             whitespace = self.whitespace)
+            spats = conftree.stringsToString(lpats)
+        uplog("skippedNames from Minim excludePattern: %s" % spats)
+        return spats
 
 
     def gettagaliases(self):
@@ -110,22 +128,13 @@ class MinimConfig(object):
         return cdirs
 
     
-    def getsimplevalue(self, nm):
-        s = self.conf.get(nm)
-        if s:
-            return s.strip()
-        else:
-            return s
+    def gettranscodingspec(self):
+        s = self.conf.get("stream.transcode")
+        if not s:
+            return None
 
-
-    def getboolvalue(self, nm, dflt):
-        val = self.getsimplevalue(nm)
-        if val is None or val == '':
-            return dflt
-        if val == '0' or val.lower()[0] == 'f' or val.lower()[0] == 'n':
-            return False
-        else:
-            return True
-
-        
-        
+        specs = self.minimsplitsplit(s)
+        # each spec is a pair of (input,output)
+        # TBD
+        pass
+    
