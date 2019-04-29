@@ -78,10 +78,8 @@ static const int read_timeout(60);
 
 class PlgWithSlave::Internal {
 public:
-    Internal(PlgWithSlave *_plg, const string& hst,
-             int prt, const string& pp)
-        : plg(_plg), cmd(read_timeout), upnphost(hst),
-          upnpport(prt), pathprefix(pp), laststream(this) {
+    Internal(PlgWithSlave *_plg)
+        : plg(_plg), cmd(read_timeout), laststream(this) {
 
         string val;
         if (g_config->get("plgproxymethod", val) && !val.compare("proxy")) {
@@ -107,13 +105,6 @@ public:
 
     PlgWithSlave *plg;
     CmdTalk cmd;
-    // Upnp Host and port. This would only be used to generate URLs
-    // *if* we were using the libupnp miniserver. We currently use
-    // microhttp because it can do redirects
-    string upnphost;
-    int upnpport;
-    // path prefix (this is used by upmpdcli that gets it for us).
-    string pathprefix;
     bool doingproxy{false};
 
     // This is only used by spotify (also needs login in the c++
@@ -180,7 +171,10 @@ StreamProxy::UrlTransReturn translateurl(
     return method;
 }
 
-// Static
+// Static because it may be used from ohcredentials without a plugin
+// object, just to perform a login and retrieve the authentication
+// data. The host and port are bogus in this case, as the script will
+// not need to generate URLs
 bool PlgWithSlave::startPluginCmd(CmdTalk& cmd, const string& appname,
                                   const string& host, unsigned int port,
                                   const string& pathpref)
@@ -206,7 +200,9 @@ bool PlgWithSlave::startPluginCmd(CmdTalk& cmd, const string& appname,
     return true;
 }
 
-// Static
+// Static, because it can be called from ohcredentials, indirectly
+// through contentdirectory. The proxy may be needed for access from
+// the CP even if no plugin is enabled.
 bool PlgWithSlave::maybeStartProxy(CDPluginServices *cdsrv)
 {
     if (nullptr == o_proxy) {
@@ -230,12 +226,14 @@ bool PlgWithSlave::Internal::maybeStartCmd()
         LOGDEB1("PlgWithSlave::maybeStartCmd: already running\n");
         return true;
     }
-    if (!maybeStartProxy(this->plg->m_services)) {
+    if (!maybeStartProxy(plg->m_services)) {
         LOGDEB1("PlgWithSlave::maybeStartCmd: maybeStartMHD failed\n");
         return false;
     }
-    int port = CDPluginServices::microhttpport();
-    if (!startPluginCmd(cmd, plg->m_name, upnphost, port, pathprefix)) {
+    if (!startPluginCmd(cmd, plg->m_name,
+                        plg->m_services->microhttphost(),
+                        plg->m_services->microhttpport(),
+                        plg->m_services->getpathprefix(plg))) {
         LOGDEB1("PlgWithSlave::maybeStartCmd: startPluginCmd failed\n");
         return false;
     }
@@ -314,10 +312,7 @@ string PlgWithSlave::get_media_url(const string& path)
 PlgWithSlave::PlgWithSlave(const string& name, CDPluginServices *services)
     : CDPlugin(name, services)
 {
-    m = new Internal(this,
-                     services->getupnpaddr(this),
-                     services->getupnpport(this),
-                     services->getpathprefix(this));
+    m = new Internal(this);
 }
 
 PlgWithSlave::~PlgWithSlave()

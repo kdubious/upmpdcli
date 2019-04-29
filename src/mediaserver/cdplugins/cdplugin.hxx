@@ -110,37 +110,42 @@ public:
     /// on the path prefix above.
     virtual CDPlugin *getpluginforpath(const std::string& path) = 0;
 
-    /// Retrieve the "friendly name" for the media server, for display purposes
+    /// Retrieve the "friendly name" for the media server, for display
+    /// purposes.
     virtual std::string getfname() = 0;
     
     /// IP address and port used by the libupnp HTTP server.
     ///
     /// This is the host address / network interface and port used by
-    /// libupnp, which can only support one. URLs intended to be
-    /// served this way (by adding a vdir) should should use this
-    /// address as this is the only one guaranteed to be accessible
-    /// from clients (in case this server has several interfaces).
-    /// The getupnpport() call is unused at present because no module
-    /// uses the internal server (all use the microhttpd started by
-    /// plgwithslave).
-    /// The getupnpaddr() call is used to determine the host for the
-    /// microhttp server (so it works on the same i/f as the upnp one,
-    /// always).
-    ///
-    /// The microhttpd instance uses port 49149 by default. The value
-    /// can be changed with the "plgmicrohttpport" configuration
-    /// variable. The local mediaserver (uprcl) uses neither the
-    /// libupnp HTTP server nor microhttpd, but an internal Python
-    /// server instance, on port 9090 by default (can be changed with
-    /// the "uprclhostport" configuration variable).
+    /// libupnp, which only supports one. URLs intended to be served
+    /// by the libupnp miniserver (by adding a vdir) should should use
+    /// this address as this is the only one guaranteed to be
+    /// accessible from clients (in case this server has several
+    /// interfaces). These calls are unused at present because no
+    /// plugin uses the libupnp miniserver (tidal/qobuz/spotify/google
+    /// use the microhttpd started by plgwithslave and uprcl uses a
+    /// python server).
     virtual std::string getupnpaddr(CDPlugin *) = 0;
     virtual int getupnpport(CDPlugin *) = 0;
 
-    /// Main configuration file access.
-    static bool config_get(const std::string& nm, std::string& val);
-
-    /// Port to start the microhttp server on
+    /// Port on which the microhttp server listens on. Static because
+    /// needed to start a proxy in conjunction with ohcredentials.
+    /// Port 49149 is used by default. The value can be changed with
+    /// the "plgmicrohttpport" configuration variable.
+    ///
+    /// Note: The local mediaserver (uprcl) uses neither the libupnp
+    /// HTTP server nor microhttpd, but an internal Python server
+    /// instance, on port 9090 by default (can be changed with the
+    /// "uprclhostport" configuration variable).
     static int microhttpport();
+
+    /// microhttp server IP host. The default is to use the same
+    /// address as the UPnP device. This can be changed with
+    /// "plgmicrohttphost". The only use would be to set it to
+    /// 127.0.0.1, restricting the use of the media server to a
+    /// (typically upmpcli) renderer running on the same host, but
+    /// allowing playlists to be portable to another network.
+    virtual std::string microhttphost() = 0;
     
     /// For modules which use the common microhttpd server
     /// (tidal/qobuz/gmusic). Returns something like "/tidal" (no end

@@ -1,18 +1,18 @@
 /* Copyright (C) 2016 J.F.Dockes
- *	 This program is free software; you can redistribute it and/or modify
- *	 it under the terms of the GNU Lesser General Public License as published by
- *	 the Free Software Foundation; either version 2.1 of the License, or
- *	 (at your option) any later version.
+ *       This program is free software; you can redistribute it and/or modify
+ *       it under the terms of the GNU Lesser General Public License as published by
+ *       the Free Software Foundation; either version 2.1 of the License, or
+ *       (at your option) any later version.
  *
- *	 This program is distributed in the hope that it will be useful,
- *	 but WITHOUT ANY WARRANTY; without even the implied warranty of
- *	 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *	 GNU Lesser General Public License for more details.
+ *       This program is distributed in the hope that it will be useful,
+ *       but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *       GNU Lesser General Public License for more details.
  *
- *	 You should have received a copy of the GNU Lesser General Public License
- *	 along with this program; if not, write to the
- *	 Free Software Foundation, Inc.,
- *	 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *       You should have received a copy of the GNU Lesser General Public License
+ *       along with this program; if not, write to the
+ *       Free Software Foundation, Inc.,
+ *       59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 #include "contentdirectory.hxx"
@@ -44,54 +44,61 @@ using namespace UPnPProvider;
 class ContentDirectory::Internal {
 public:
     Internal (ContentDirectory *sv, MediaServer *dv)
-	: service(sv), msdev(dv), updateID("1") { }
+        : service(sv), msdev(dv), updateID("1") { }
 
     ~Internal() {
-	for (auto& it : plugins) {
-	    delete it.second;
-	}
+        for (auto& it : plugins) {
+            delete it.second;
+        }
     }
 
     // Start plugins which have long init so that the user has less to
     // wait on first access
     void maybeStartSomePlugins(bool enabled);
-    CDPlugin *pluginFactory(const string& appname) {
-	LOGDEB("ContentDirectory::pluginFactory: for " << appname << endl);
 
-	if (host.empty()) {
-	    UpnpDevice *dev;
-	    if (!service || !(dev = service->getDevice())) {
-		LOGERR("ContentDirectory::Internal: no service or dev ??\n");
-		return nullptr;
-	    }
-	    unsigned short usport;
-	    if (!dev->ipv4(&host, &usport)) {
-		LOGERR("ContentDirectory::Internal: can't get server IP\n");
-		return nullptr;
-	    }
-            port = usport;
-	    LOGDEB("ContentDirectory: host "<< host<< " port " << port << endl);
-	}
+    void maybeInitUpnpHost() {
+        if (upnphost.empty()) {
+            UpnpDevice *dev;
+            if (!service || !(dev = service->getDevice())) {
+                LOGERR("ContentDirectory::Internal: no service or dev ??\n");
+                return;
+            }
+            unsigned short usport;
+            if (!dev->ipv4(&upnphost, &usport)) {
+                LOGERR("ContentDirectory::Internal: can't get server IP\n");
+                return;
+            }
+            upnpport = usport;
+            LOGDEB("ContentDirectory: upnphost "<< upnphost <<
+                   " upnpport " << upnpport << endl);
+        }
+    }
+    
+    CDPlugin *pluginFactory(const string& appname) {
+        LOGDEB("ContentDirectory::pluginFactory: for " << appname << endl);
+
+        maybeInitUpnpHost();
         return new PlgWithSlave(appname, service);
     }
+
     CDPlugin *pluginForApp(const string& appname) {
-	auto it = plugins.find(appname);
-	if (it != plugins.end()) {
-	    return it->second;
-	} else {
-	    CDPlugin *plug = pluginFactory(appname);
-	    if (plug) {
-		plugins[appname] = plug;
-	    }
-	    return plug;
-	}
+        auto it = plugins.find(appname);
+        if (it != plugins.end()) {
+            return it->second;
+        } else {
+            CDPlugin *plug = pluginFactory(appname);
+            if (plug) {
+                plugins[appname] = plug;
+            }
+            return plug;
+        }
     }
 
     ContentDirectory *service;
     MediaServer *msdev;
     unordered_map<string, CDPlugin *> plugins;
-    string host;
-    int port;
+    string upnphost;
+    int upnpport;
     string updateID;
 };
 
@@ -214,22 +221,22 @@ static size_t readroot(int offs, int cnt, vector<UpSong>& out)
 {
     //LOGDEB("readroot: offs " << offs << " cnt " << cnt << endl);
     if (rootdir.empty()) {
-	makerootdir();
+        makerootdir();
     }
     out.clear();
     if (cnt <= 0)
         cnt = rootdir.size();
     
     if (offs < 0 || cnt <= 0) {
-	return rootdir.size();
+        return rootdir.size();
     }
-	
+        
     for (int i = 0; i < cnt; i++) {
-	if (size_t(offs + i) < rootdir.size()) {
-	    out.push_back(rootdir[offs + i]);
-	} else {
-	    break;
-	}
+        if (size_t(offs + i) < rootdir.size()) {
+            out.push_back(rootdir[offs + i]);
+        } else {
+            break;
+        }
     }
     //LOGDEB("readroot: returning " << out.size() << " entries\n");
     return rootdir.size();
@@ -240,13 +247,13 @@ static string appForId(const string& id)
     string app;
     string::size_type dol0 = id.find_first_of("$");
     if (dol0 == string::npos) {
-	LOGERR("ContentDirectory::appForId: bad id [" << id << "]\n");
-	return string();
+        LOGERR("ContentDirectory::appForId: bad id [" << id << "]\n");
+        return string();
     } 
     string::size_type dol1 = id.find_first_of("$", dol0 + 1);
     if (dol1 == string::npos) {
-	LOGERR("ContentDirectory::appForId: bad id [" << id << "]\n");
-	return string();
+        LOGERR("ContentDirectory::appForId: bad id [" << id << "]\n");
+        return string();
     } 
     return id.substr(dol0 + 1, dol1 - dol0 -1);
 }
@@ -331,10 +338,10 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
     }
 
     LOGDEB("ContentDirectory::actBrowse: " << " ObjectID " << in_ObjectID <<
-	   " BrowseFlag " << in_BrowseFlag << " Filter " << in_Filter <<
-	   " StartingIndex " << in_StartingIndex <<
-	   " RequestedCount " << in_RequestedCount <<
-	   " SortCriteria " << in_SortCriteria << endl);
+           " BrowseFlag " << in_BrowseFlag << " Filter " << in_Filter <<
+           " StartingIndex " << in_StartingIndex <<
+           " RequestedCount " << in_RequestedCount <<
+           " SortCriteria " << in_SortCriteria << endl);
 
     last_objid = in_ObjectID;
     
@@ -343,9 +350,9 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
 
     CDPlugin::BrowseFlag bf;
     if (!in_BrowseFlag.compare("BrowseMetadata")) {
-	bf = CDPlugin::BFMeta;
+        bf = CDPlugin::BFMeta;
     } else {
-	bf = CDPlugin::BFChildren;
+        bf = CDPlugin::BFChildren;
     }
     std::string out_Result;
     std::string out_NumberReturned;
@@ -356,20 +363,20 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
     vector<UpSong> entries;
     size_t totalmatches = 0;
     if (!in_ObjectID.compare("0")) {
-	// Root directory: we do this ourselves
-	totalmatches = readroot(in_StartingIndex, in_RequestedCount, entries);
+        // Root directory: we do this ourselves
+        totalmatches = readroot(in_StartingIndex, in_RequestedCount, entries);
     } else {
-	// Pass off request to appropriate app, defined by 1st elt in id
-	string app = appForId(in_ObjectID);
-	CDPlugin *plg = m->pluginForApp(app);
-	if (plg) {
-	    totalmatches = plg->browse(in_ObjectID, in_StartingIndex,
+        // Pass off request to appropriate app, defined by 1st elt in id
+        string app = appForId(in_ObjectID);
+        CDPlugin *plg = m->pluginForApp(app);
+        if (plg) {
+            totalmatches = plg->browse(in_ObjectID, in_StartingIndex,
                                        in_RequestedCount, entries,
                                        sortcrits, bf);
-	} else {
-	    LOGERR("ContentDirectory::Browse: unknown app: [" << app << "]\n");
+        } else {
+            LOGERR("ContentDirectory::Browse: unknown app: [" << app << "]\n");
             return UPNP_E_INVALID_PARAM;
-	}
+        }
     }
 
     // Process and send out result
@@ -378,7 +385,7 @@ int ContentDirectory::actBrowse(const SoapIncoming& sc, SoapOutgoing& data)
     out_UpdateID = m->updateID;
     out_Result = headDIDL();
     for (unsigned int i = 0; i < entries.size(); i++) {
-	out_Result += entries[i].didl();
+        out_Result += entries[i].didl();
     } 
     out_Result += tailDIDL();
     LOGDEB1("ContentDirectory::Browse: didl: " << out_Result << endl);
@@ -432,11 +439,11 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
     }
 
     LOGDEB("ContentDirectory::actSearch: " <<
-	   " ContainerID " << in_ContainerID <<
-	   " SearchCriteria " << in_SearchCriteria <<
-	   " Filter " << in_Filter << " StartingIndex " << in_StartingIndex <<
-	   " RequestedCount " << in_RequestedCount <<
-	   " SortCriteria " << in_SortCriteria << endl);
+           " ContainerID " << in_ContainerID <<
+           " SearchCriteria " << in_SearchCriteria <<
+           " Filter " << in_Filter << " StartingIndex " << in_StartingIndex <<
+           " RequestedCount " << in_RequestedCount <<
+           " SortCriteria " << in_SortCriteria << endl);
 
     vector<string> sortcrits;
     stringToStrings(in_SortCriteria, sortcrits);
@@ -450,10 +457,10 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
     vector<UpSong> entries;
     size_t totalmatches = 0;
     if (!in_ContainerID.compare("0")) {
-	// Root directory: can't search in there: we don't know what
-	// plugin to pass the search to. Substitute last browsed. Yes
-	// it does break in multiuser mode, and yes it's preposterous.
-	LOGERR("ContentDirectory::actSearch: Can't search in root. "
+        // Root directory: can't search in there: we don't know what
+        // plugin to pass the search to. Substitute last browsed. Yes
+        // it does break in multiuser mode, and yes it's preposterous.
+        LOGERR("ContentDirectory::actSearch: Can't search in root. "
                "Substituting last browsed container\n");
         in_ContainerID = last_objid;
     }
@@ -476,7 +483,7 @@ int ContentDirectory::actSearch(const SoapIncoming& sc, SoapOutgoing& data)
     out_UpdateID = m->updateID;
     out_Result = headDIDL();
     for (unsigned int i = 0; i < entries.size(); i++) {
-	out_Result += entries[i].didl();
+        out_Result += entries[i].didl();
     } 
     out_Result += tailDIDL();
     
@@ -517,13 +524,13 @@ CDPlugin *ContentDirectory::getpluginforpath(const string& path)
 
 std::string ContentDirectory::getupnpaddr(CDPlugin *)
 {
-    return m->host;
+    return m->upnphost;
 }
 
 
 int ContentDirectory::getupnpport(CDPlugin *)
 {
-    return m->port;
+    return m->upnpport;
 }
 
 std::string ContentDirectory::getfname()
@@ -531,22 +538,27 @@ std::string ContentDirectory::getfname()
     return m->msdev->getfname();
 }
 
-bool CDPluginServices::config_get(const string& nm, string& val)
+// Note that this is not needed by ohcredentials (the slave script
+// does not generate URLs in this case, and the mhttp servers listens
+// on all addresses).
+string ContentDirectory::microhttphost()
 {
-    if (nullptr == g_config) {
-        return false;
+    string host;
+    if (g_config && g_config->get("plgmicrohttphost", host)) {
+        LOGDEB("ContentDirectory::microhttphost: from config:" << host << endl);
+        return host;
     }
-    return g_config->get(nm, val);
+    m->maybeInitUpnpHost();
+    return m->upnphost;
 }
 
+// Static for use needed by ohcredentials
 int CDPluginServices::microhttpport()
 {
     int port = 49149;
     string sport;
-    if (g_config->get("plgmicrohttpport", sport)) {
+    if (g_config && g_config->get("plgmicrohttpport", sport)) {
         port = atoi(sport.c_str());
     }
     return port;
 }
-
-

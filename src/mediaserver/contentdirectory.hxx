@@ -73,21 +73,26 @@ public:
 
     ~ContentDirectory();
 
-    /// Return plugin based on path prefix
-    CDPlugin *getpluginforpath(const std::string& path);
-
-    /// Retrieve the IP address and port for the libupnp server. URLs
-    /// intended to be served this way (by adding a vdir) should use
-    /// these as host/port
-    virtual std::string getupnpaddr(CDPlugin *);
-    virtual int getupnpport(CDPlugin *);
-
-    virtual std::string getfname();
-
     /// Check if the configuration indicates that the media server
     /// needs to be started.
     static bool mediaServerNeeded();
 
+    /////////// CDPluginServices methods
+
+    /// Return plugin based on path prefix
+    CDPlugin *getpluginforpath(const std::string& path);
+    /// Friendly name
+    virtual std::string getfname();
+
+    /// Retrieve the IP address and port for the libupnp server. URLs
+    /// intended to be served this way (by adding a vdir) should use
+    /// these as host/port. Not used at present.
+    virtual std::string getupnpaddr(CDPlugin *);
+    virtual int getupnpport(CDPlugin *);
+    /// Host to use in proxy urls. This is normally the same as the
+    /// UPnP host, but can be forced in the configuration. The
+    /// microhttp server listens on all addresses.
+    virtual std::string microhttphost();
     
 private:
     int actGetSearchCapabilities(const SoapIncoming& sc, SoapOutgoing& data);
