@@ -544,7 +544,7 @@ std::string ContentDirectory::getfname()
 string ContentDirectory::microhttphost()
 {
     string host;
-    if (g_config && g_config->get("plgmicrohttphost", host)) {
+    if (g_config && g_config->get("plgmicrohttphost", host) && !host.empty()) {
         LOGDEB("ContentDirectory::microhttphost: from config:" << host << endl);
         return host;
     }
