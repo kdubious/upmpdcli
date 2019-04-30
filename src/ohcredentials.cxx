@@ -60,13 +60,20 @@ static const map<string, string> idmap {
     {"qobuz.com", "qobuz"}
 };
 
-// This is used for translating urls for the special use of
-// Kazoo/Lumin. The media server, which is used to run the http server
-// and for getting the real media URLs, must run on this host (for one
-// thing the creds are passed through a local file).
-// *** Note that this needs xxxautostart to work, else the HTTP server
-//     won't be listening (as long as nobody accesses the app section
-//     of the media server) ***
+// The URLs from kazoo look like:
+//   <service>://track?version=2&trackId=<trkid>
+// We translate them to something which points to our proxy server, and
+// that MPD will accept/use:
+//   http://<upnphost>:<sport>/<servicename>/track?version=1&trackId=<trkid>
+// Where upnphost is the host used by libupnp, and sport the port on
+// which the microhttpd listens.
+// We retrieve upnphost from the upnp device during init, and sport by a
+// call to the CDPluginServices.
+//
+// The media server, which is used to run the microhttpd and for
+// getting the real media URLs, must run on this host (for one thing
+// the creds are passed either through shared memory or through a
+// local file).
 static string upnphost;
 
 // Called from OHPlaylist. The CP (Kazoo/Lumin mostly) will send URIs

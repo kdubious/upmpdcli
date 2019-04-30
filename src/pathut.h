@@ -150,6 +150,9 @@ public:
 /// Convert \ separators to /
 void path_slashize(std::string& s);
 void path_backslashize(std::string& s);
+#include "safeunistd.h"
+#else
+#include <unistd.h>
 #endif
 
 /// Lock/pid file class. This is quite close to the pidfile_xxx

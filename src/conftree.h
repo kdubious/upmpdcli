@@ -202,7 +202,7 @@ public:
     virtual int clear();
 
     virtual StatusCode getStatus() const;
-    virtual bool ok() const {
+    virtual bool ok() const override {
         return getStatus() != STATUS_ERROR;
     }
 
@@ -223,12 +223,12 @@ public:
     virtual void showall() const override;
 
     /** Return all names in given submap. */
-    virtual std::vector<std::string> getNames(const std::string& sk,
-                                              const char *pattern = 0) const;
+    virtual std::vector<std::string> getNames(
+        const std::string& sk, const char *pattern = 0) const override;
 
     /** Check if name is present in any submap. This is relatively expensive
      * but useful for saving further processing sometimes */
-    virtual bool hasNameAnywhere(const std::string& nm) const;
+    virtual bool hasNameAnywhere(const std::string& nm) const override;
 
     /**
      * Return all subkeys
@@ -446,7 +446,7 @@ public:
         return get(name, value, sk, false);
     }
 
-    virtual bool hasNameAnywhere(const std::string& nm) const {
+    virtual bool hasNameAnywhere(const std::string& nm) const override {
         typename std::vector<T*>::const_iterator it;
         for (it = m_confs.begin(); it != m_confs.end(); it++) {
             if ((*it)->hasNameAnywhere(nm)) {
@@ -457,7 +457,7 @@ public:
     }
 
     virtual int set(const std::string& nm, const std::string& val,
-                    const std::string& sk = std::string()) {
+                    const std::string& sk = std::string()) override {
         if (!m_ok) {
             return 0;
         }
@@ -487,18 +487,18 @@ public:
         return m_confs.front()->set(nm, val, sk);
     }
 
-    virtual int erase(const std::string& nm, const std::string& sk) {
+    virtual int erase(const std::string& nm, const std::string& sk) override {
         return m_confs.front()->erase(nm, sk);
     }
-    virtual int eraseKey(const std::string& sk) {
+    virtual int eraseKey(const std::string& sk) override {
         return m_confs.front()->eraseKey(sk);
     }
-    virtual bool holdWrites(bool on) {
+    virtual bool holdWrites(bool on) override {
         return m_confs.front()->holdWrites(on);
     }
 
-    virtual std::vector<std::string> getNames(const std::string& sk,
-                                              const char *pattern = 0) const {
+    virtual std::vector<std::string> getNames(
+        const std::string& sk, const char *pattern = 0) const override {
         return getNames1(sk, pattern, false);
     }
     virtual std::vector<std::string> getNamesShallow(const std::string& sk,
@@ -527,10 +527,10 @@ public:
         return nms;
     }
 
-    virtual std::vector<std::string> getSubKeys() const {
+    virtual std::vector<std::string> getSubKeys() const override {
         return getSubKeys(false);
     }
-    virtual std::vector<std::string> getSubKeys(bool shallow) const {
+    virtual std::vector<std::string> getSubKeys(bool shallow) const override {
         std::vector<std::string> sks;
         typename std::vector<T*>::const_iterator it;
         for (it = m_confs.begin(); it != m_confs.end(); it++) {
@@ -547,7 +547,7 @@ public:
         return sks;
     }
 
-    virtual bool ok() const {
+    virtual bool ok() const override {
         return m_ok;
     }
 
