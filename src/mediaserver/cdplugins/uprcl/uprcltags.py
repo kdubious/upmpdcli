@@ -31,7 +31,7 @@ import tempfile
 
 from upmplgutils import uplog
 from uprclutils import g_myprefix, rcldirentry, rcldoctoentry, cmpentries
-
+import uprclinit
 from uprcltagscreate import recolltosql, _clid, g_tagtotable, \
      g_tagdisplaytag, g_indextags
 
