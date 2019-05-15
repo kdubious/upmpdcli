@@ -81,7 +81,8 @@ class Playlists(object):
     def browse(self, pid, flag):
         idx = self._objidtoidx(pid)
 
-        rcldocs = uprclinit.g_trees['folders'].rcldocs()
+        folders = uprclinit.g_trees['folders']
+        rcldocs = folders.rcldocs()
         entries = []
         if idx == 0:
             # Browsing root
@@ -114,7 +115,7 @@ class Playlists(object):
                     doc.mtype = "audio/mpeg"
                 else:
                     doc.setbinurl(bytearray(b'file://' + url))
-                    fathidx, docidx = self._folders._stat(doc)
+                    fathidx, docidx = folders._stat(doc)
                     if docidx < 0:
                         uplog("playlists: can't stat %s"%doc.getbinurl())
                         continue
