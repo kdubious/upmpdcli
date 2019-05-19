@@ -62,7 +62,7 @@ void OHInfo::urimetadata(string& uri, string& metadata)
         (mpds.state == MpdStatus::MPDS_PAUSE);
 
     if (is_song) {
-        uri = mpds.currentsong.uri;
+        uri = mpds.currentsong.rsrc.uri;
         // If somebody (e.g. ohradio) took care to set the metatext, use it.
         // Metatext is reset by OHProduct::setSourceIndex.
         if (!m_metatext.empty()) {

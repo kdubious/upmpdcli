@@ -139,6 +139,32 @@ diffmaps(const unordered_map<string, string>& old,
         ss << "<" #TAG ">" << SoapHelp::xmlQuote(DEF) << "</" #TAG ">"; \
     }
 
+static void printResource(ostringstream& ss, const UpSong::Res& res) {
+    ss << "<res";
+    if (res.duration_secs) {
+        ss << " duration=\"" << upnpduration(res.duration_secs * 1000) << "\"";
+    }
+    if (res.size) {
+        ss << " size=\"" << lltodecstr(res.size) << "\"";
+    }
+    if (res.bitrate) {
+        ss << " bitrate=\"" << SoapHelp::i2s(res.bitrate) << "\"";
+    }
+    if (res.samplefreq) {
+        ss << " sampleFrequency=\"" << SoapHelp::i2s(res.samplefreq) << "\"";
+    }
+    if (res.bitsPerSample) {
+        ss << " bitsPerSample=\"" << SoapHelp::i2s(res.bitsPerSample) << "\"";
+    }            
+    if (res.channels) {
+        ss << " nrAudioChannels=\"" << SoapHelp::i2s(res.channels) << "\"";
+    }
+    if (!res.mime.empty()) {
+        ss << " protocolInfo=\"http-get:*:" << res.mime << ":* " << "\"";
+    }
+    ss << ">" << SoapHelp::xmlQuote(res.uri) << "</res>";
+}
+
 string UpSong::didl() const
 {
     ostringstream ss;
@@ -174,30 +200,7 @@ string UpSong::didl() const
         UPNPXMLD(upnpClass, upnp:class, "object.item.audioItem.musicTrack");
 	UPNPXML(album, upnp:album);
 	UPNPXML(tracknum, upnp:originalTrackNumber);
-
-	ss << "<res";
-        if (duration_secs) {
-            ss << " duration=\"" << upnpduration(duration_secs * 1000)  << "\"";
-        }
-        if (size) {
-            ss << " size=\"" << lltodecstr(size)                        << "\"";
-        }
-        if (bitrate) {
-            ss << " bitrate=\"" << SoapHelp::i2s(bitrate)               << "\"";
-        }
-        if (samplefreq) {
-	    ss << " sampleFrequency=\"" << SoapHelp::i2s(samplefreq)    << "\"";
-        }
-        if (bitsPerSample) {
-	    ss << " bitsPerSample=\"" << SoapHelp::i2s(bitsPerSample)   << "\"";
-        }            
-        if (channels) {
-            ss << " nrAudioChannels=\"" << SoapHelp::i2s(channels)      << "\"";
-        }
-        if (!mime.empty()) {
-	    ss << " protocolInfo=\"http-get:*:" << mime << ":* "        << "\"";
-        }
-        ss << ">" << SoapHelp::xmlQuote(uri) << "</res>";
+        printResource(ss, rsrc);
     }
     UPNPXML(genre, upnp:genre);
     UPNPXML(artist, dc:creator);
@@ -244,9 +247,9 @@ bool dirObjToUpSong(const UPnPDirObject& dobj, UpSong *ups)
     string stmp;
     dobj.getrprop(0, "duration", stmp);
     if (!stmp.empty()) {
-        ups->duration_secs = upnpdurationtos(stmp);
+        ups->rsrc.duration_secs = upnpdurationtos(stmp);
     } else {
-        ups->duration_secs = 0;
+        ups->rsrc.duration_secs = 0;
     }
     ups->tracknum = dobj.getprop("upnp:originalTrackNumber");
     return true;
@@ -257,7 +260,7 @@ void noMetaUpSong(UpSong *ups)
     ups->artist = "Unknown";
     ups->album = "Unknown";
     ups->title = "Unknown (streaming?)";
-    ups->duration_secs = 0;
+    ups->rsrc.duration_secs = 0;
     ups->tracknum = "0";
     return;
 }

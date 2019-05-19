@@ -310,7 +310,7 @@ void OHRadio::maybeExecMetaScript(RadioMeta& radio, MpdStatus &mpds)
         m_dev->m_mpdcli->getQueueData(queue);
         bool found = false;
         for (const auto& entry : queue) {
-            if (entry.uri == audioUri) {
+            if (entry.rsrc.uri == audioUri) {
                 found = true;
                 break;
             }
@@ -318,8 +318,8 @@ void OHRadio::maybeExecMetaScript(RadioMeta& radio, MpdStatus &mpds)
         if (!found) {
             UpSong song;
             song.album = radio.title;
-            song.uri = audioUri;
-            LOGDEB0("ohRadio:execmetascript: inserting: " << song.uri << endl);
+            song.rsrc.uri = audioUri;
+            LOGDEB0("ohRadio:execmetascript: inserting: " << song.rsrc.uri << endl);
             m_dev->m_mpdcli->single(false);
             m_dev->m_mpdcli->consume(true);
             if (m_dev->m_mpdcli->insert(audioUri, -1, song) < 0) {
@@ -397,7 +397,7 @@ bool OHRadio::makestate(unordered_map<string, string>& st)
     }
     st["ProtocolInfo"] = Protocolinfo::the()->gettext();
     st["TransportState"] =  mpdstatusToTransportState(mpds.state);
-    st["Uri"] = mpds.currentsong.uri;
+    st["Uri"] = mpds.currentsong.rsrc.uri;
     return true;
 }
 
@@ -462,7 +462,7 @@ int OHRadio::setPlaying()
     m_dev->m_mpdcli->clearQueue();
     UpSong song;
     song.album = radio.title;
-    song.uri = radio.uri;
+    song.rsrc.uri = radio.uri;
     if (m_dev->m_mpdcli->insert(audiourl, 0, song) < 0) {
         LOGDEB("OHRadio::setPlaying: mpd insert failed\n");
         return UPNP_E_INTERNAL_ERROR;

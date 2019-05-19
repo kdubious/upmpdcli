@@ -267,7 +267,7 @@ bool UpMpdAVTransport::tpstateMToU(unordered_map<string, string>& status)
     status["TransportStatus"] = m_dev->m_mpdcli->ok() ? "OK" : "ERROR_OCCURRED";
     status["TransportPlaySpeed"] = "1";
 
-    const string& uri = mpds.currentsong.uri;
+    const string& uri = mpds.currentsong.rsrc.uri;
 
     // MPD may have switched to the next track, or may be playing
     // something else altogether if some other client told it to
@@ -326,7 +326,7 @@ bool UpMpdAVTransport::tpstateMToU(unordered_map<string, string>& status)
     status["NextAVTransportURI"] = "NOT_IMPLEMENTED";
     status["NextAVTransportURIMetaData"] = "NOT_IMPLEMENTED";
 #else
-    status["NextAVTransportURI"] = mpds.nextsong.uri;
+    status["NextAVTransportURI"] = mpds.nextsong.rsrc.uri;
     if ((m_dev->m_options & UpMpd::upmpdOwnQueue)) {
         status["NextAVTransportURIMetaData"] = is_song ? m_nextMetadata : "";
     } else {
@@ -577,7 +577,7 @@ int UpMpdAVTransport::getPositionInfo(const SoapIncoming& sc, SoapOutgoing& data
         data.addarg("TrackMetaData", "");
     }
 
-    const string& uri = mpds.currentsong.uri;
+    const string& uri = mpds.currentsong.rsrc.uri;
     if (is_song && !uri.empty()) {
         data.addarg("TrackURI", SoapHelp::xmlQuote(uri));
     } else {
@@ -636,7 +636,7 @@ int UpMpdAVTransport::getMediaInfo(const SoapIncoming& sc, SoapOutgoing& data)
         data.addarg("MediaDuration", "00:00:00");
     }
 
-    const string& thisuri = mpds.currentsong.uri;
+    const string& thisuri = mpds.currentsong.rsrc.uri;
     if (is_song && !thisuri.empty()) {
         data.addarg("CurrentURI", SoapHelp::xmlQuote(thisuri));
     } else {
@@ -655,7 +655,7 @@ int UpMpdAVTransport::getMediaInfo(const SoapIncoming& sc, SoapOutgoing& data)
         data.addarg("NextURI", m_nextUri);
         data.addarg("NextURIMetaData", is_song ? m_nextMetadata : "");
     } else {
-        data.addarg("NextURI", mpds.nextsong.uri);
+        data.addarg("NextURI", mpds.nextsong.rsrc.uri);
         data.addarg("NextURIMetaData", is_song ? didlmake(mpds.nextsong) : "");
     }
     string playmedium("NONE");

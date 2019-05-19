@@ -42,7 +42,6 @@ public:
     }
     std::string id;
     std::string parentid;
-    std::string uri;
     std::string name; // only set for radios apparently. 
     std::string artist; 
     std::string album;
@@ -51,15 +50,26 @@ public:
     std::string genre;
     std::string artUri;
     std::string upnpClass;
-    std::string mime;
     std::string date;
-    
-    int duration_secs{0};
-    int64_t size{0};
-    int bitrate{0};
-    int samplefreq{0};
-    int bitsPerSample{0};
-    int channels{0};
+
+    // The entries in the following struct have misc uses, but as a
+    // group, they describe an UPnP resource (for converting to DIDL
+    // for sending to CP).
+    struct Res {
+        std::string uri;
+        int duration_secs{0};
+        int64_t size{0};
+        int bitrate{0};
+        int samplefreq{0};
+        int bitsPerSample{0};
+        int channels{0};
+        std::string mime;
+    };
+    // Base data: all track upsongs have data in there
+    Res rsrc;
+    // Additional resources for other formats etc. for the same
+    // track. Only used by the media server, and usually empty.
+    std::vector<Res> resources;
     
     int mpdid{0};
     bool iscontainer{false};
@@ -68,7 +78,7 @@ public:
     std::string dump() {
         return std::string("class [" + upnpClass + "] Artist [" + artist +
                            "] Album [" +  album + " Title [" + title +
-                           "] Tno [" + tracknum + "] Uri [" + uri + "]");
+                           "] Tno [" + tracknum + "] Uri [" + rsrc.uri + "]");
     }
     // Format to DIDL fragment 
     std::string didl() const;

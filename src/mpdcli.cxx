@@ -269,9 +269,9 @@ bool MPDCli::updStatus()
     m_stat.songpos = mpd_status_get_song_pos(mpds);
     m_stat.songid = mpd_status_get_song_id(mpds);
     if (m_stat.songpos >= 0) {
-        string prevuri = m_stat.currentsong.uri;
+        string prevuri = m_stat.currentsong.rsrc.uri;
         statSong(m_stat.currentsong);
-        if (m_stat.currentsong.uri.compare(prevuri)) {
+        if (m_stat.currentsong.rsrc.uri.compare(prevuri)) {
             m_stat.trackcounter++;
             m_stat.detailscounter = 0;
         }
@@ -290,9 +290,9 @@ bool MPDCli::updStatus()
         // For radios, we don't get the didl resource info from the
         // media server, so fill in the details from mpd data if we
         // can.
-        m_stat.currentsong.samplefreq = m_stat.sample_rate;
-        m_stat.currentsong.bitrate = m_stat.kbrate * 1000;
-        m_stat.currentsong.channels = m_stat.channels;
+        m_stat.currentsong.rsrc.samplefreq = m_stat.sample_rate;
+        m_stat.currentsong.rsrc.bitrate = m_stat.kbrate * 1000;
+        m_stat.currentsong.rsrc.channels = m_stat.channels;
 
         LOGDEB1("MPD AUDIO FORMAT: " <<  int(maf->sample_rate) << " samps/S " <<
                 m_stat.kbrate << " kbits/S " << int(maf->bits) << " bits " <<
@@ -361,7 +361,7 @@ bool MPDCli::restoreState(const MpdState& st)
     }
     clearQueue();
     for (unsigned int i = 0; i < st.queue.size(); i++) {
-        if (insert(st.queue[i].uri, i, st.queue[i]) < 0) {
+        if (insert(st.queue[i].rsrc.uri, i, st.queue[i]) < 0) {
             LOGERR("MPDCli::restoreState: insert failed\n");
             return false;
         }
@@ -423,18 +423,18 @@ UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
 
     cp = mpd_song_get_uri(song);
     if (cp != 0)
-        upsong.uri = cp;
+        upsong.rsrc.uri = cp;
     else 
-        upsong.uri.clear();
+        upsong.rsrc.uri.clear();
     // If the URI looks like a local file
     // name, replace with a bogus http uri. This is to fool
     // Bubble UPnP into accepting to play them (it does not
     // actually need an URI as it's going to use seekid, but
     // it believes it does).
-    if (!looksLikeTransportURI(upsong.uri)) {
+    if (!looksLikeTransportURI(upsong.rsrc.uri)) {
         //LOGDEB("MPDCli::mapSong: id " << upsong.mpdid << 
-        // " replacing [" << upsong.uri << "]" << endl);
-        upsong.uri = "http://127.0.0.1/" + upsong.uri;
+        // " replacing [" << upsong.rsrc.uri << "]" << endl);
+        upsong.rsrc.uri = "http://127.0.0.1/" + upsong.rsrc.uri;
     }
     cp = mpd_song_get_tag(song, MPD_TAG_NAME, 0);
     if (cp != 0)
@@ -474,7 +474,7 @@ UpSong&  MPDCli::mapSong(UpSong& upsong, struct mpd_song *song)
     else
         upsong.genre.clear();
 
-    upsong.duration_secs = mpd_song_get_duration(song);
+    upsong.rsrc.duration_secs = mpd_song_get_duration(song);
     upsong.mpdid = mpd_song_get_id(song);
 
 //    LOGDEB1("MPDCli::mapSong: got mpdid " << upsong.mpdid << " " << 

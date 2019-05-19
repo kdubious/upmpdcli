@@ -372,36 +372,36 @@ static int resultToEntries(const string& encoded, int stidx, int cnt,
             }
         } else  if (!stp.compare("it")) {
             song.iscontainer = false;
-            JSONTOUPS(uri, uri);
+            JSONTOUPS(rsrc.uri, uri);
             JSONTOUPS(artist, dc:creator);
             JSONTOUPS(genre, upnp:genre);
             JSONTOUPS(album, upnp:album);
             JSONTOUPS(tracknum, upnp:originalTrackNumber);
-            JSONTOUPS(mime, res:mime);
+            JSONTOUPS(rsrc.mime, res:mime);
 
             string ss = decoded[i].get("duration", "").asString();
             if (!ss.empty()) {
-                song.duration_secs = atoi(ss.c_str());
+                song.rsrc.duration_secs = atoi(ss.c_str());
             }
             ss = decoded[i].get("res:size", "").asString();
             if (!ss.empty()) {
-                song.size = atoll(ss.c_str());
+                song.rsrc.size = atoll(ss.c_str());
             }
             ss = decoded[i].get("res:bitrate", "").asString();
             if (!ss.empty()) {
-                song.bitrate = atoi(ss.c_str());
+                song.rsrc.bitrate = atoi(ss.c_str());
             }
             ss = decoded[i].get("res:samplefreq", "").asString();
             if (!ss.empty()) {
-                song.samplefreq = atoi(ss.c_str());
+                song.rsrc.samplefreq = atoi(ss.c_str());
             }
             ss = decoded[i].get("res:bitsPerSample", "").asString();
             if (!ss.empty()) {
-                song.bitsPerSample = atoi(ss.c_str());
+                song.rsrc.bitsPerSample = atoi(ss.c_str());
             }
             ss = decoded[i].get("res:channels", "").asString();
             if (!ss.empty()) {
-                song.channels = atoi(ss.c_str());
+                song.rsrc.channels = atoi(ss.c_str());
             }
         } else {
             LOGERR("PlgWithSlave::result: bad type in entry: " << stp <<

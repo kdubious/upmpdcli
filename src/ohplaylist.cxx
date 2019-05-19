@@ -165,10 +165,10 @@ bool OHPlaylist::makeIdArray(string& out)
         // queue. Only do this if the metadata originated from mpd of
         // course...
         if (mpds.songid != -1) {
-            auto it = m_metacache.find(mpds.currentsong.uri);
+            auto it = m_metacache.find(mpds.currentsong.rsrc.uri);
             if (it != m_metacache.end() && 
                 it->second.find("<orig>mpd</orig>") != string::npos) {
-                m_metacache[mpds.currentsong.uri] = didlmake(mpds.currentsong);
+                m_metacache[mpds.currentsong.rsrc.uri] = didlmake(mpds.currentsong);
             }
         }
         return true;
@@ -207,21 +207,21 @@ bool OHPlaylist::makeIdArray(string& out)
 
     // Walk the playlist data from MPD
     for (const auto& usong : vdata) {
-        auto inold = m_metacache.find(usong.uri);
+        auto inold = m_metacache.find(usong.rsrc.uri);
         if (inold != m_metacache.end()) {
             // Entries already in the metadata array just get
             // transferred to the new array
-            nmeta[usong.uri].swap(inold->second);
+            nmeta[usong.rsrc.uri].swap(inold->second);
             m_metacache.erase(inold);
         } else {
             // Entries not in the arrays are translated from the
             // MPD data to our format. They were probably added by
             // another MPD client. 
-            if (nmeta.find(usong.uri) == nmeta.end()) {
-                nmeta[usong.uri] = didlmake(usong);
+            if (nmeta.find(usong.rsrc.uri) == nmeta.end()) {
+                nmeta[usong.rsrc.uri] = didlmake(usong);
                 m_cachedirty = true;
                 LOGDEB("OHPlaylist::makeIdArray: using mpd data for " << 
-                       usong.mpdid << " uri " << usong.uri << endl);
+                       usong.mpdid << " uri " << usong.rsrc.uri << endl);
             }
         }
     }
@@ -249,7 +249,7 @@ int OHPlaylist::idFromOldId(int oldid)
     string uri;
     for (const auto& entry: m_mpdsavedstate.queue) {
         if (entry.mpdid == oldid) {
-            uri = entry.uri;
+            uri = entry.rsrc.uri;
             break;
         }
     }
@@ -263,7 +263,7 @@ int OHPlaylist::idFromOldId(int oldid)
         return -1;
     }
     for (const auto& entry: vdata) {
-        if (!entry.uri.compare(uri)) {
+        if (!entry.rsrc.uri.compare(uri)) {
             return entry.mpdid;
         }
     }
@@ -583,12 +583,12 @@ int OHPlaylist::ohread(const SoapIncoming& sc, SoapOutgoing& data)
             LOGERR("OHPlaylist::ohread: statsong failed for " << id << endl);
             return UPNP_E_INTERNAL_ERROR;
         }
-        auto cached = m_metacache.find(song.uri);
+        auto cached = m_metacache.find(song.rsrc.uri);
         if (cached != m_metacache.end()) {
             metadata = cached->second;
         } else {
             metadata = didlmake(song);
-            m_metacache[song.uri] = metadata;
+            m_metacache[song.rsrc.uri] = metadata;
             m_cachedirty = true;
         }
     } else {
@@ -604,7 +604,7 @@ int OHPlaylist::ohread(const SoapIncoming& sc, SoapOutgoing& data)
             return UPNP_E_INTERNAL_ERROR;
         }
     }
-    data.addarg("Uri", SoapHelp::xmlQuote(song.uri));
+    data.addarg("Uri", SoapHelp::xmlQuote(song.rsrc.uri));
     data.addarg("Metadata", metadata);
     return UPNP_E_SUCCESS;
 }
@@ -644,16 +644,16 @@ int OHPlaylist::readList(const SoapIncoming& sc, SoapOutgoing& data)
                     LOGDEB("OHPlaylist::readList:stat failed for " << id <<endl);
                     continue;
                 }
-                auto mit = m_metacache.find(song.uri);
+                auto mit = m_metacache.find(song.rsrc.uri);
                 if (mit != m_metacache.end()) {
                     LOGDEB1("OHPlaylist::readList: meta for id " << id << " uri "
-                            << song.uri << " found in cache " << endl);
+                            << song.rsrc.uri << " found in cache " << endl);
                     metadata = SoapHelp::xmlQuote(mit->second);
                 } else {
                     LOGDEB("OHPlaylist::readList: meta for id " << id << " uri "
-                           << song.uri << " not found " << endl);
+                           << song.rsrc.uri << " not found " << endl);
                     metadata = didlmake(song);
-                    m_metacache[song.uri] = metadata;
+                    m_metacache[song.rsrc.uri] = metadata;
                     m_cachedirty = true;
                     metadata = SoapHelp::xmlQuote(metadata);
                 }
@@ -673,7 +673,7 @@ int OHPlaylist::readList(const SoapIncoming& sc, SoapOutgoing& data)
             out += "<Entry><Id>";
             out += SoapHelp::xmlQuote(it->c_str());
             out += "</Id><Uri>";
-            out += SoapHelp::xmlQuote(song.uri);
+            out += SoapHelp::xmlQuote(song.rsrc.uri);
             out += "</Uri><Metadata>";
             out += metadata;
             out += "</Metadata></Entry>";
@@ -873,7 +873,7 @@ bool OHPlaylist::urlMap(unordered_map<int, string>& umap)
             vector<UpSong> songs;
             if (ireadList(ids, songs)) {
                 for (auto it = songs.begin(); it != songs.end(); it++) {
-                    umap[it->mpdid] = it->uri;
+                    umap[it->mpdid] = it->rsrc.uri;
                 }
                 return true;
             }
