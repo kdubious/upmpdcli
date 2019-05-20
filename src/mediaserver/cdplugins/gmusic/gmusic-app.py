@@ -315,16 +315,16 @@ def search(a):
     if objkind and objkind not in ['artist', 'album', 'playlist', 'track']:
         msgproc.log('Unknown objkind \'%s\'' % objkind)
         objkind = None
-    if not objkind or objkind == 'artist':
+    if (not objkind or objkind == 'artist') and searchresults.artists:
         view(searchresults.artists,
              urls_from_id(artist_view, searchresults.artists), end=False)
-    if not objkind or objkind == 'album':
+    if (not objkind or objkind == 'album') and searchresults.albums:
         view(searchresults.albums,
              urls_from_id(album_view, searchresults.albums), end=False)
-    if not objkind or objkind == 'playlist':
+    if (not objkind or objkind == 'playlist') and searchresults.playlists:
         view(searchresults.playlists,
              urls_from_id(playlist_view, searchresults.playlists), end=False)
-    if not objkind or objkind == 'track':
+    if (not objkind or objkind == 'track') and searchresults.tracks:
         track_list(searchresults.tracks)
 
     #msgproc.log("search results: %s" % xbmcplugin.entries)

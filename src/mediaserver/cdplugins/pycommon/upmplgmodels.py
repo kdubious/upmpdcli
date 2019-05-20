@@ -18,6 +18,11 @@
 
 from __future__ import unicode_literals
 
+def sortmodellist(l):
+    l.sort(key = lambda e: e.name)
+    return l
+    
+
 class Model(object):
     id = None
     name = None

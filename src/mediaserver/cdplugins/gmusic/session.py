@@ -21,7 +21,7 @@ import json
 import datetime
 import time
 from upmplgmodels import Artist, Album, Track, Playlist, SearchResult, \
-     Category, Genre
+     Category, Genre, sortmodellist
 from gmusicapi import Mobileclient
 from upmplgutils import uplog
 
@@ -221,10 +221,19 @@ class Session(object):
         print("get_media_url got: %s" % url, file=sys.stderr)
         return url
 
+    # Note: some albums returned by search have no tracks when queried
+    # here, and I see no way to predict this from the album record
+    # itself. To avoid returning empty albums, we'd have to call
+    # get_album_info in search, but this would make things very
+    # slow. So just handle the situation here.
     def get_album_tracks(self, album_id):
         data = self.api.get_album_info(album_id, include_tracks=True)
-        album = _parse_album(data)
-        return [_parse_track(t, album) for t in data['tracks']]
+        #uplog("get_album_tracks: data: %s" % data)
+        if 'tracks' in data:
+            album = _parse_album(data)
+            return [_parse_track(t, album) for t in data['tracks']]
+        else:
+            return  []
 
     def get_promoted_tracks(self):
         data = self.api.get_promoted_songs()
@@ -233,7 +242,7 @@ class Session(object):
 
     def get_genres(self, parent=None):
         data = self.api.get_genres(parent_genre_id=parent)
-        return [_parse_genre(g) for g in data]
+        return sortmodellist([_parse_genre(g) for g in data])
                 
     def get_artist_info(self, artist_id, doRelated=False):
         ret = {"albums" : [], "toptracks" : [], "related" : []} 
@@ -252,11 +261,14 @@ class Session(object):
                                         max_rel_artist=maxrel)
         #self.dmpdata("artist_info", data)
         if 'albums' in data:
-            ret["albums"] = [_parse_album(alb) for alb in data['albums']]
+            ret["albums"] = sortmodellist(
+                [_parse_album(alb) for alb in data['albums']])
         if 'topTracks' in data:
-            ret["toptracks"] = [_parse_track(t) for t in data['topTracks']]
+            ret["toptracks"] = sortmodellist(
+                [_parse_track(t) for t in data['topTracks']])
         if 'related_artists' in data:
-            ret["related"] = [_parse_artist(a) for a in data['related_artists']]
+            ret["related"] = sortmodellist(
+                [_parse_artist(a) for a in data['related_artists']])
         return ret
 
     def get_artist_related(self, artist_id):
@@ -264,7 +276,7 @@ class Session(object):
         return data["related"]
     
     def search(self, query):
-        data = self.api.search(query, max_results=50)
+        data = self.api.search(query, max_results=100)
         #self.dmpdata("Search", data)
 
         tr = [_parse_track(i['track']) for i in data['song_hits']]
@@ -380,6 +392,7 @@ def _parse_ln_album(data):
 
 
 def _parse_album(data, artist=None):
+    #uplog("_parse_album: data %s" % data)
     if artist is None:
         artist_name = "Unknown"
         if 'artist' in data:
