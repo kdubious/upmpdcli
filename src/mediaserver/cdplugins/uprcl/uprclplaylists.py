@@ -126,7 +126,4 @@ class Playlists(object):
                 if e:
                     entries.append(e)
 
-        if PY3:
-            return sorted(entries, key=cmpentries)
-        else:
-            return sorted(entries, cmp=cmpentries)
+        return sorted(entries, key=cmpentries)

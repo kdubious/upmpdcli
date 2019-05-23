@@ -113,10 +113,7 @@ class Tagged(object):
         entries = [rcldoctoentry(pid + '$i' + str(r[0]),
                                  pid, self._httphp, self._pprefix,
                                  rcldocs[r[0]]) for r in c]
-        if PY3:
-            return sorted(entries, key=cmpentries)
-        else:
-            return sorted(entries, cmp=cmpentries)
+        return sorted(entries, key=cmpentries)
     
 
     # Return a list of trackids as selected by the current
@@ -349,10 +346,7 @@ class Tagged(object):
             entries += [rcldoctoentry(pid + '$i' + str(docid),
                                       pid, self._httphp, self._pprefix,
                                       rcldocs[docid]) for docid in docids]
-        if PY3:
-            return sorted(entries, key=cmpentries)
-        else:
-            return sorted(entries, cmp=cmpentries)
+        return sorted(entries, key=cmpentries)
 
 
     # Main browsing routine. Given an objid, translate it into a select
@@ -453,10 +447,7 @@ class Tagged(object):
                     entries.append(rcldoctoentry(id, pid, self._httphp,
                                                  self._pprefix,
                                                  rcldocs[docidx]))
-                    if PY3:
-                        entries = sorted(entries, key=cmpentries)
-                    else:
-                        entries = sorted(entries, cmp=cmpentries)
+                    entries = sorted(entries, key=cmpentries)
         else:
             # SELECT col.col_id, col.value FROM tracks, col
             # WHERE tracks.col_id = col.col_id

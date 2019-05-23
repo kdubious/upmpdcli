@@ -399,10 +399,7 @@ def _cmpentries_func(e1, e2):
         uplog("upnp:originalTrackNumber %s %s"% (a1, a2))
         return 0
 
-if PY3:
-    cmpentries=functools.cmp_to_key(_cmpentries_func)
-else:
-    cmpentries=_cmpentries_func
+cmpentries=functools.cmp_to_key(_cmpentries_func)
 
 
 # Find first non loopback ip. This is surprisingly

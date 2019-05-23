@@ -265,11 +265,8 @@ def search(foldersobj, rclconfdir, objid, upnps, idprefix, httphp, pathprefix):
             break
     uplog("Search retrieved %d docs" % (len(entries),))
 
-    if PY3:
-        return sorted(entries, key=uprclutils.cmpentries)
-    else:
-        return sorted(entries, cmp=uprclutils.cmpentries)
-
+    entries.sort(key=uprclutils.cmpentries)
+    return entries
 
 if __name__ == '__main__':
     s = '(upnp:artist derivedFrom  "abc\\"def\\g") or (dc:title:xxx) '

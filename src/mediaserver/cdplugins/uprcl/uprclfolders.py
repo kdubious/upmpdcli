@@ -426,12 +426,6 @@ class Folders(object):
         #    (diridx,self._dirvec[diridx]))
 
         entries = []
-
-        # Add "Browse subtree by tags" entry
-        if pid != self._idprefix and self._enabletags:
-            id = pid + '$tagview.0'
-            entries.append(rcldirentry(id, pid, ">> Tag View"))
-        
         # The basename call is just for diridx==0 (topdirs). Remove it if
         # this proves a performance issue
         for nm,ids in self._dirvec[diridx].items():
@@ -467,11 +461,13 @@ class Folders(object):
                 if e:
                     entries.append(e)
 
-        if PY3:
-            return sorted(entries, key=cmpentries)
-        else:
-            return sorted(entries, cmp=cmpentries)
+        entries.sort(key=cmpentries)
 
+        # Add "Browse subtree by tags" entry
+        if pid != self._idprefix and self._enabletags:
+            id = pid + '$tagview.0'
+            entries.insert(0, rcldirentry(id, pid, ">> Tag View"))
+        return entries
 
     # Return path for objid, which has to be a container.This is good old
     # pwd... It is called from the search module for generating a 'dir:'
