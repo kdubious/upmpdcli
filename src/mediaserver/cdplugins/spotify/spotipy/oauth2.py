@@ -11,6 +11,8 @@ import sys
 import six
 import six.moves.urllib.parse as urllibparse
 
+def deb(s):
+    print("%s"%s, file=sys.stderr)
 
 class SpotifyOauthError(Exception):
     pass
@@ -47,6 +49,7 @@ class SpotifyClientCredentials(object):
         if not client_secret:
             raise SpotifyOauthError('No client secret')
 
+        #deb("SpotifyClientCredentials: client_id %s client_secret %s" % (client_id, client_secret))
         self.client_id = client_id
         self.client_secret = client_secret
         self.token_info = None
@@ -57,7 +60,9 @@ class SpotifyClientCredentials(object):
         If a valid access token is in memory, returns it
         Else feches a new token and returns it
         """
+        #deb("SpotifyClientCredentials: get_access_token")
         if self.token_info and not self.is_token_expired(self.token_info):
+            #deb("SpotifyClientCredentials: get_access_token: current token valid")
             return self.token_info['access_token']
 
         token_info = self._request_access_token()
@@ -67,6 +72,7 @@ class SpotifyClientCredentials(object):
 
     def _request_access_token(self):
         """Gets client credentials access token """
+        #deb("SpotifyClientCredentials: _request_access_token")
         payload = { 'grant_type': 'client_credentials'}
 
         headers = _make_authorization_headers(self.client_id, self.client_secret)
@@ -74,7 +80,7 @@ class SpotifyClientCredentials(object):
         response = requests.post(self.OAUTH_TOKEN_URL, data=payload,
             headers=headers, verify=True, proxies=self.proxies)
         if response.status_code != 200:
-            raise SpotifyOauthError(response.reason)
+            raise SpotifyOauthError("SpotifyClientCredentials: _request_access_token" % response.reason)
         token_info = response.json()
         return token_info
 
@@ -123,8 +129,10 @@ class SpotifyOAuth(object):
     def get_cached_token(self):
         ''' Gets a cached auth token
         '''
+        #deb("SpotifyOAuth: get_cached_token")
         token_info = None
         if self.cache_path:
+            #deb("SpotifyOAuth: cache_path %s" % self.cache_path)
             try:
                 f = open(self.cache_path)
                 token_info_string = f.read()
@@ -133,12 +141,16 @@ class SpotifyOAuth(object):
 
                 # if scopes don't match, then bail
                 if 'scope' not in token_info or not self._is_scope_subset(self.scope, token_info['scope']):
+                    deb("SpotifyOAuth::get_cached_token: no scope or no match")
                     return None
 
                 if self.is_token_expired(token_info):
+                    deb("SpotifyOAuth::get_cached_token: expired: refreshing")
                     token_info = self.refresh_access_token(token_info['refresh_token'])
 
             except IOError:
+                deb("SpotifyOAuth::get_cached_token: COULD NOT OPEN/READ %s" %
+					self.cache_path)
                 pass
         return token_info
 
@@ -238,9 +250,9 @@ class SpotifyOAuth(object):
             headers=headers, proxies=self.proxies)
         if response.status_code != 200:
             if False:  # debugging code
-                print('headers', headers)
-                print('request', response.url)
-            self._warn("couldn't refresh token: code:%d reason:%s" \
+                deb("SpotifyOAuth::refresh_a_t: headers %s"  % headers)
+                deb("SpotifyOAuth::refresh_a_t:reqest %s" % response.url)
+            deb("SpotifyOAuth::refresh_a_t: couldn't refresh token: code: %d reason: %s"
                 % (response.status_code, response.reason))
             return None
         token_info = response.json()
