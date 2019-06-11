@@ -50,7 +50,7 @@ fi
 
 AC_ARG_ENABLE(spotify, AC_HELP_STRING([--disable-spotify],
               [Disable spotify streaming module.]),
-              enableSpotify=$enableval, enableSpotify="yes")
+              enableSpotify=$enableval, enableSpotify="no")
 AM_CONDITIONAL(ENABLESPOTIFY, [test X$enableSpotify = Xyes])
 
 # The 3 following checks for libthreadutil libixml and libupnp are normally
