@@ -1,0 +1,61 @@
+diff --git a/.gitignore b/.gitignore
+index b57bf37..f75da18 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -19,3 +19,5 @@ web.tar.gz
+ uprclbottle.tar.gz
+ .deps
+ .gitignore
++
++.vscode/
+\ No newline at end of file
+diff --git a/Makefile.am b/Makefile.am
+index b07950d..ea3070e 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -261,8 +261,7 @@ install-data-hook: web.tar.gz rdpl2stream.tar.gz uprclbottle.tar.gz
+ 	(cd $(DESTDIR)/$(cdpluginsspotifydir); chmod a+x spotify-app.py) 
+ 	(cd $(DESTDIR)/$(cdpluginsuprcldir); chmod a+x uprcl-app.py) 
+ 	(cd $(DESTDIR)/$(radioscriptsdir);chmod a+rx . *)
+-        
+-dist_pkgdata_SCRIPTS = samplescripts/Analog-Input
++	rm -rf $(DESTDIR)/$(pkgdatadir)/cdplugins
+ 
+ dist_sysconf_DATA = src/upmpdcli.conf-dist
+ 
+diff --git a/configure.ac b/configure.ac
+index 67bab1b..935844d 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -50,7 +50,7 @@ fi
+ 
+ AC_ARG_ENABLE(spotify, AC_HELP_STRING([--disable-spotify],
+               [Disable spotify streaming module.]),
+-              enableSpotify=$enableval, enableSpotify="yes")
++              enableSpotify=$enableval, enableSpotify="no")
+ AM_CONDITIONAL(ENABLESPOTIFY, [test X$enableSpotify = Xyes])
+ 
+ # The 3 following checks for libthreadutil libixml and libupnp are normally
+diff --git a/src/upmpdcli.conf-dist b/src/upmpdcli.conf-dist
+index 0fd459c..bccc371 100644
+--- a/src/upmpdcli.conf-dist
++++ b/src/upmpdcli.conf-dist
+@@ -72,6 +72,9 @@
+ # off.</descr></var>
+ #openhome = 1
+ 
++# Actually there is a reason to disable OpenHome: it slows down the startup!
++openhome = 0
++
+ # <var name="lumincompat" type="bool" values="1"><brief>For upmpdcli
+ # version 1.3: enable Lumin compatibility mode (lose ohcredentials)
+ # (0/1).</brief><descr>For some unknown reason, Lumin 1.10 can't discover
+@@ -167,7 +170,7 @@
+ # <var name="onstart" type="fn"><brief>Command to run when playback is
+ # about to begin.</brief><descr>Specify the full path to the program,
+ # e.g. /usr/bin/logger.</descr></var>
+-#onstart =
++onstart = /opt/mp/upmpdcli_start
+ 
+ # <var name="onplay" type="fn"><brief>Command to run when MPD state
+ # switches to "PLAY".  </brief><descr>Specify the full path to the program,
